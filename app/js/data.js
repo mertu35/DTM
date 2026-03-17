@@ -33,11 +33,10 @@ function getDefaultReferans() {
     sehir: 'Karaman',
     ilceler: ['Merkez', 'Ayrancı', 'Başyayla', 'Ermenek', 'Kazımkarabekir', 'Sarıveliler'],
     mudurlukler: [
-      'Yatırım ve İnşaat Müdürlüğü',
-      'Plan Proje Yatırım ve İnşaat Müdürlüğü',
-      'İmar ve Kentsel İyileştirme Müdürlüğü',
-      'Destek Hizmetleri Müdürlüğü',
-      'Encümen Müdürlüğü'
+      'Yatırım ve İnşaat Müdürlüğü'
+    ],
+    idareList: [
+      'KARAMAN İL ÖZEL İDARESİ'
     ]
   };
 }
@@ -140,12 +139,23 @@ function saveProjeListesi(list) {
   localStorage.setItem(PROJECTS_LIST_KEY, JSON.stringify(list));
 }
 
+function generateDosyaAdi() {
+  const bugun = new Date();
+  const tarih = bugun.getFullYear().toString() +
+    String(bugun.getMonth() + 1).padStart(2, '0') +
+    String(bugun.getDate()).padStart(2, '0');
+  const sayacKey = 'DTM_sayac_' + tarih;
+  const sayac = (parseInt(localStorage.getItem(sayacKey) || '0') + 1);
+  localStorage.setItem(sayacKey, sayac);
+  return 'DTM_' + tarih + '_' + String(sayac).padStart(3, '0');
+}
+
 function exportProjeJSON(proje) {
   const blob = new Blob([JSON.stringify(proje, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = (proje.isAdi || 'proje') + '.json';
+  a.download = generateDosyaAdi() + '.json';
   a.click();
   URL.revokeObjectURL(url);
 }

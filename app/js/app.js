@@ -173,7 +173,9 @@ function renderVeriGirisPage() {
         <div class="form-grid">
           <div class="form-group">
             <label>İdare Adı</label>
-            <input type="text" id="idareAdi" value="${proje.idareAdi}" onchange="onFieldChange('idareAdi', this.value)">
+            <select id="idareAdi" onchange="onFieldChange('idareAdi', this.value)">
+              ${referans.idareList.map(i => `<option value="${i}" ${proje.idareAdi === i ? 'selected' : ''}>${i}</option>`).join('')}
+            </select>
           </div>
           <div class="form-group">
             <label>Müdürlük</label>
@@ -482,7 +484,7 @@ function renderBelgelerPage() {
     <div class="action-bar">
       <button class="btn btn-primary" onclick="yazdirBelge()">&#128424; Yazdır</button>
     </div>
-    <div class="belge-preview">${belgeHTML}</div>
+    <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
 }
 
@@ -584,6 +586,38 @@ function renderVeriMerkeziPage() {
           <tbody>${firmaRows}</tbody>
         </table>
         <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('firmaList', {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:''})">+ Ekle</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h3>İdare Listesi</h3><span class="toggle-icon">&#9660;</span>
+      </div>
+      <div class="card-body">
+        ${referans.idareList.map((il, i) => `
+          <span style="display:inline-flex;align-items:center;gap:4px;margin:3px;padding:4px 8px;background:var(--gray-100);border-radius:4px;">
+            ${il} <button class="btn btn-danger btn-sm" onclick="onRefDelete('idareList', ${i})" style="padding:1px 5px">&times;</button>
+          </span>`).join('')}
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <input type="text" id="yeniIdare" placeholder="Yeni idare adı" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px;flex:1">
+          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniIdare').value;if(v){referans.idareList.push(v);saveReferans(referans);renderPage();}">Ekle</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h3>Müdürlük Listesi</h3><span class="toggle-icon">&#9660;</span>
+      </div>
+      <div class="card-body">
+        ${referans.mudurlukler.map((m, i) => `
+          <span style="display:inline-flex;align-items:center;gap:4px;margin:3px;padding:4px 8px;background:var(--gray-100);border-radius:4px;">
+            ${m} <button class="btn btn-danger btn-sm" onclick="onRefDelete('mudurlukler', ${i})" style="padding:1px 5px">&times;</button>
+          </span>`).join('')}
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <input type="text" id="yeniMudurluk" placeholder="Yeni müdürlük adı" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px;flex:1">
+          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniMudurluk').value;if(v){referans.mudurlukler.push(v);saveReferans(referans);renderPage();}">Ekle</button>
+        </div>
       </div>
     </div>
 
@@ -722,7 +756,7 @@ function renderKaydetYuklePage() {
       <div class="card-body">
         <p style="margin-bottom:12px"><strong>${proje.isAdi || '(İsimsiz Proje)'}</strong></p>
         <div class="action-bar">
-          <button class="btn btn-primary" onclick="exportProjeJSON(proje)">&#128190; JSON Olarak Kaydet</button>
+          <button class="btn btn-primary" onclick="exportProjeJSON(proje)">&#128190; Dosyayı Kaydet</button>
           <button class="btn btn-danger" onclick="if(confirm('Tüm proje verileri silinecek. Emin misiniz?')){localStorage.removeItem('${STORAGE_KEY}');proje=getDefaultProje();renderPage();}">Yeni Proje</button>
         </div>
       </div>
@@ -739,12 +773,24 @@ function renderKaydetYuklePage() {
     </div>
 
     <div class="card">
-      <div class="card-header"><h3>Referans Verilerini Yedekle</h3></div>
-      <div class="card-body">
-        <div class="action-bar">
-          <button class="btn btn-outline" onclick="exportRefJSON()">Referans Verilerini Kaydet</button>
-          <input type="file" id="refFileInput" accept=".json">
-          <button class="btn btn-outline" onclick="yukleReferans()">Referans Yükle</button>
+      <div class="card-header" style="background:linear-gradient(135deg,#e8f4fd,#dbeafe);border-bottom:2px solid #3b82f6;">
+        <h3 style="color:#1e40af;">&#128190; Veri Merkezini Yedekle</h3>
+      </div>
+      <div class="card-body" style="background:#f8faff;">
+        <div style="display:flex;gap:24px;align-items:stretch;flex-wrap:wrap;">
+          <div style="flex:1;min-width:220px;background:#fff;border:1.5px solid #3b82f6;border-radius:10px;padding:18px 22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(59,130,246,0.08);">
+            <div style="font-weight:600;color:#1e40af;font-size:13px;letter-spacing:.3px;">&#128200; Yedek Al</div>
+            <div style="font-size:12px;color:#64748b;">Veri Merkezi verilerini JSON olarak bilgisayara kaydet.</div>
+            <button class="btn btn-primary" onclick="exportRefJSON()" style="margin-top:auto;">Veri Merkezini Kaydet</button>
+          </div>
+          <div style="flex:1;min-width:220px;background:#fff;border:1.5px solid #10b981;border-radius:10px;padding:18px 22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(16,185,129,0.08);">
+            <div style="font-weight:600;color:#065f46;font-size:13px;letter-spacing:.3px;">&#128196; Yedekten Geri Yükle</div>
+            <div style="font-size:12px;color:#64748b;">Daha önce kaydedilmiş verileri geri getir.</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:auto;flex-wrap:wrap;">
+              <button class="btn btn-success" id="eskiVerilerBtn" onclick="yukleReferans()" style="white-space:nowrap;" disabled>Eski Verileri Getir</button>
+              <input type="file" id="refFileInput" accept=".json" style="font-size:12px;color:#475569;" onchange="document.getElementById('eskiVerilerBtn').disabled = !this.files.length;">
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -770,7 +816,7 @@ function exportRefJSON() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'referans_verileri.json';
+  a.download = generateDosyaAdi() + '_REF.json';
   a.click();
   URL.revokeObjectURL(url);
 }

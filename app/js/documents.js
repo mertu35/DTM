@@ -359,8 +359,8 @@ function renderSozlesme(proje, referans) {
     <table class="sozlesme-sayfa-tablo">
       <thead><tr><td class="sozlesme-sayfa-header">
         T.C.<br>
-        <strong>KARAMAN İL ÖZEL İDARESİ</strong><br>
-        YATIRIM VE İNŞAAT MÜDÜRLÜĞÜ
+        <strong>${proje.idareAdi}</strong><br>
+        ${proje.mudurluk.toUpperCase()}
       </td></tr></thead>
       <tbody><tr><td>
     <div class="belge">
@@ -376,7 +376,7 @@ function renderSozlesme(proje, referans) {
 
       <div class="madde">
         <p><strong>Madde 1- Sözleşmenin Tarafları</strong></p>
-        <p>Bu sözleşme bir tarafta <strong>KARAMAN İL ÖZEL İDARESİ</strong> <strong>YATIRIM VE İNŞAAT MÜDÜRLÜĞÜ</strong> (Bundan böyle idare diye anılacaktır) ile diğer tarafta <strong>${kazanan.ad}</strong> (bundan böyle yüklenici olarak anılacaktır) arasında aşağıda yazılı şartlar dahilinde akdedilmiştir.</p>
+        <p>Bu sözleşme bir tarafta <strong>${proje.idareAdi}</strong> <strong>${proje.mudurluk.toUpperCase()}</strong> (Bundan böyle idare diye anılacaktır) ile diğer tarafta <strong>${kazanan.ad}</strong> (bundan böyle yüklenici olarak anılacaktır) arasında aşağıda yazılı şartlar dahilinde akdedilmiştir.</p>
       </div>
 
       <div class="madde">

@@ -345,6 +345,9 @@ body {
   font-size: 11pt;
   color: #000;
 }
+.belge-preview.landscape {
+  max-width: 297mm;
+}
 
 .belge-preview .belge-ust { text-align: center; margin-bottom: 20px; }
 .belge-preview .belge-baslik { text-align: center; font-size: 14pt; margin: 15px 0; font-weight: bold; }
