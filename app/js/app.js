@@ -34,7 +34,8 @@ function renderPage() {
 
 // ===================== VERİ GİRİŞ SAYFASI =====================
 function renderVeriGirisPage() {
-  const ymGorevliRows = proje.ymGorevliler.map((g, i) => `
+  const ymSayisi = proje.ymGorevliSayisi || 1;
+  const ymGorevliRows = proje.ymGorevliler.slice(0, ymSayisi).map((g, i) => `
     <div class="form-grid">
       <div class="form-group">
         <label>Y.M. Görevlisi ${i + 1}</label>
@@ -48,8 +49,10 @@ function renderVeriGirisPage() {
         <input type="text" value="${g.unvan || getUnvanByAd(g.ad, referans)}" readonly>
       </div>
     </div>`).join('');
+  const ymEkleBtn = ymSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('ym')" style="margin-top:6px;">+ Y.M. Görevlisi Ekle</button>` : '';
 
-  const dtGorevliRows = proje.dtGorevliler.map((g, i) => `
+  const dtSayisi = proje.dtGorevliSayisi || 1;
+  const dtGorevliRows = proje.dtGorevliler.slice(0, dtSayisi).map((g, i) => `
     <div class="form-grid">
       <div class="form-group">
         <label>D.T. Görevlisi ${i + 1}</label>
@@ -63,6 +66,7 @@ function renderVeriGirisPage() {
         <input type="text" value="${g.unvan || getUnvanByAd(g.ad, referans)}" readonly>
       </div>
     </div>`).join('');
+  const dtEkleBtn = dtSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('dt')" style="margin-top:6px;">+ D.T. Görevlisi Ekle</button>` : '';
 
   const kalemler = proje.isTuru === 'Yapım İşi' ? '' : proje.isKalemleri.map((k, i) => `
     <tr>
@@ -222,6 +226,7 @@ function renderVeriGirisPage() {
       </div>
       <div class="card-body">
         ${ymGorevliRows}
+        ${ymEkleBtn}
         <div class="form-grid" style="margin-top:12px">
           <div class="form-group">
             <label>Y.M. Onay Tarihi</label>
@@ -242,6 +247,7 @@ function renderVeriGirisPage() {
       </div>
       <div class="card-body">
         ${dtGorevliRows}
+        ${dtEkleBtn}
         <div class="form-grid" style="margin-top:12px">
           <div class="form-group">
             <label>D.T. Onay Tarihi</label>
@@ -390,6 +396,16 @@ function bindVeriGiris() {}
 function onFieldChange(field, value) {
   proje[field] = value;
   autoSave();
+}
+
+function onGorevliEkle(tip) {
+  if (tip === 'ym') {
+    proje.ymGorevliSayisi = Math.min((proje.ymGorevliSayisi || 1) + 1, 3);
+  } else {
+    proje.dtGorevliSayisi = Math.min((proje.dtGorevliSayisi || 1) + 1, 3);
+  }
+  saveProje();
+  renderPage();
 }
 
 function onGorevliChange(el, type) {
