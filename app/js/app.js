@@ -404,7 +404,7 @@ function onGorevliEkle(tip) {
   } else {
     proje.dtGorevliSayisi = Math.min((proje.dtGorevliSayisi || 1) + 1, 3);
   }
-  saveProje();
+  saveProje(proje);
   renderPage();
 }
 
