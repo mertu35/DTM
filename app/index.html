@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doğrudan Temin Modülü</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>DTM</h1>
+        <p>Doğrudan Temin Modülü</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">Veri Girişi</div>
+        <div class="nav-item active" data-page="veri-giris">
+          <span class="nav-icon">&#9997;</span> Veri Giriş Formu
+        </div>
+        <div class="nav-section">Belgeler</div>
+        <div class="nav-item" data-page="belgeler">
+          <span class="nav-icon">&#128196;</span> Belge Önizleme / Yazdır
+        </div>
+        <div class="nav-section">Yönetim</div>
+        <div class="nav-item" data-page="veri-merkezi">
+          <span class="nav-icon">&#9881;</span> Veri Merkezi
+        </div>
+        <div class="nav-item" data-page="dashboard">
+          <span class="nav-icon">&#128202;</span> Dashboard
+        </div>
+        <div class="nav-section">İşlemler</div>
+        <div class="nav-item" data-page="kaydet-yukle">
+          <span class="nav-icon">&#128190;</span> Kaydet / Yükle
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+      <!-- Pages rendered by app.js -->
+    </main>
+  </div>
+
+  <script src="js/utils.js?v=20260317"></script>
+  <script src="js/data.js?v=20260317"></script>
+  <script src="js/calculations.js?v=20260317"></script>
+  <script src="js/documents.js?v=20260317"></script>
+  <script src="js/app.js?v=20260317"></script>
+</body>
+</html>
