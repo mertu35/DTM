@@ -5,6 +5,7 @@ let currentPage = 'anasayfa';
 let saveTimeout = null;
 let projeAktif = false;
 let currentProjeKilitli = false;
+let currentProjeBaskaKullanici = false;
 
 // ===== AUTH =====
 async function doLogin() {
@@ -236,6 +237,7 @@ function yeniProjeOlustur() {
   proje.isAdi = isAdi;
   currentCloudProjeId = null;
   currentProjeKilitli = false;
+  currentProjeBaskaKullanici = false;
   document.getElementById('yeniProjeModal').style.display = 'none';
   projeAktif = true;
   currentPage = 'veri-giris';
@@ -381,7 +383,14 @@ function renderVeriGirisPage() {
     </div>`;
   }).join('');
 
-  const kilitBanner = currentProjeKilitli ? `
+  const kilitBanner = currentProjeBaskaKullanici ? `
+    <div style="background:#eff6ff;border:1.5px solid #3b82f6;border-radius:8px;padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:20px">👁️</span>
+      <div>
+        <strong style="color:#1e40af;font-size:14px">İzleme Modu.</strong>
+        <span style="color:#1e3a8a;font-size:13px"> Bu proje başka bir kullanıcıya ait. Sadece görüntüleyebilirsiniz.</span>
+      </div>
+    </div>` : currentProjeKilitli ? `
     <div style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:8px;padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
       <span style="font-size:20px">🔒</span>
       <div>
@@ -1044,11 +1053,13 @@ async function renderKaydetYuklePage() {
             const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
             const aktif = p.id === currentCloudProjeId;
             const kilitli = p.locked === true;
+            const baskaKullanici = currentDTMUser?.role === 'admin' && p.userId !== currentDTMUser.uid;
             return `<div class="ky-proje-item ${aktif ? 'ky-proje-aktif' : ''} ${kilitli ? 'ky-proje-kilitli' : ''}">
               <div class="ky-proje-info">
                 <div class="ky-proje-name">
                   ${aktif ? '<span class="ky-aktif-dot"></span>' : '<span class="ky-proje-dot"></span>'}
                   ${kilitli ? '<span title="Kilitli" style="margin-right:4px">🔒</span>' : ''}
+                  ${baskaKullanici ? '<span title="İzleme Modu" style="margin-right:4px">👁️</span>' : ''}
                   ${p.isAdi || '(İsimsiz)'}
                 </div>
                 <div class="ky-proje-meta">
@@ -1056,12 +1067,13 @@ async function renderKaydetYuklePage() {
                   <span class="ky-proje-date">📅 ${tarih}</span>
                   ${aktif ? '<span class="ky-aktif-badge">Aktif</span>' : ''}
                   ${kilitli ? '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:4px;font-weight:600">Kilitli</span>' : ''}
+                  ${baskaKullanici ? '<span style="font-size:11px;background:#eff6ff;color:#1e40af;padding:2px 7px;border-radius:4px;font-weight:600">İzleme</span>' : ''}
                 </div>
               </div>
               <div class="ky-proje-actions">
                 <button class="ky-btn-open" onclick="cloudProjeAc('${p.id}')" title="Projeyi Aç">Aç</button>
-                <button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" onclick="cloudProjeKilitle('${p.id}', ${!kilitli})" title="${kilitli ? 'Kilidi Aç' : 'Kilitle'}">${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>
-                <button class="ky-btn-delete" onclick="cloudProjeSil('${p.id}', '${(p.isAdi||'').replace(/'/g,'')}', ${kilitli})" title="Projeyi Sil">Sil</button>
+                ${!baskaKullanici ? `<button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" onclick="cloudProjeKilitle('${p.id}', ${!kilitli})" title="${kilitli ? 'Kilidi Aç' : 'Kilitle'}">${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>` : ''}
+                ${!baskaKullanici ? `<button class="ky-btn-delete" onclick="cloudProjeSil('${p.id}', '${(p.isAdi||'').replace(/'/g,'')}', ${kilitli})" title="Projeyi Sil">Sil</button>` : ''}
               </div>
             </div>`;
           }).join('')}
@@ -1154,6 +1166,7 @@ function renderVeriMerkeziYedek() {
 function bindKaydetYukle() {}
 
 async function cloudKaydet() {
+  if (currentProjeBaskaKullanici) { alert('Bu proje başka bir kullanıcıya ait. Değişiklik yapamazsınız.'); return; }
   if (currentProjeKilitli) { alert('Bu proje kilitli. Değişiklikler kaydedilemez.'); return; }
   try {
     if (currentCloudProjeId) {
@@ -1174,7 +1187,8 @@ async function cloudProjeAc(projeId) {
     const doc = await getProjeFromCloud(projeId);
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
-    currentProjeKilitli = doc.locked === true;
+    currentProjeBaskaKullanici = currentDTMUser?.role === 'admin' && doc.userId !== currentDTMUser.uid;
+    currentProjeKilitli = doc.locked === true || currentProjeBaskaKullanici;
     saveProje(proje);
     projeAktif = true;
     currentPage = 'veri-giris';
@@ -1214,6 +1228,8 @@ function yeniProje() {
   localStorage.removeItem(STORAGE_KEY);
   proje = getDefaultProje();
   currentCloudProjeId = null;
+  currentProjeKilitli = false;
+  currentProjeBaskaKullanici = false;
   renderPage();
 }
 
