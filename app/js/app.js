@@ -39,6 +39,7 @@ async function doLogout() {
 }
 
 async function onAuthReady(user) {
+  document.getElementById('loadingOverlay').style.display = 'none';
   if (user && currentDTMUser) {
     // Referansı buluttan yükle
     try {
@@ -70,7 +71,7 @@ async function onAuthReady(user) {
     init();
     checkDuyurular();
   } else {
-    document.getElementById('loginOverlay').style.display = '';
+    document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('appLayout').style.display = 'none';
   }
 }
