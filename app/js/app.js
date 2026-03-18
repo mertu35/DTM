@@ -1,8 +1,9 @@
 // ===================== APP.JS =====================
-let proje = loadProje();
+let proje = getDefaultProje();
 let referans = loadReferans();
-let currentPage = 'veri-giris';
+let currentPage = 'anasayfa';
 let saveTimeout = null;
+let projeAktif = false;
 
 // ===== AUTH =====
 async function doLogin() {
@@ -56,8 +57,13 @@ async function onAuthReady(user) {
     document.getElementById('sidebarUserName').textContent = currentDTMUser.displayName || currentDTMUser.username;
     document.getElementById('sidebarUserRole').textContent = currentDTMUser.role === 'admin' ? 'Yönetici' : 'Kullanıcı';
     // Ekranları göster/gizle
+    // Her oturumda temiz başla
+    proje = getDefaultProje();
+    currentCloudProjeId = null;
+    localStorage.removeItem(STORAGE_KEY);
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('appLayout').style.display = '';
+    updateLastLogin();
     init();
   } else {
     document.getElementById('loginOverlay').style.display = '';
@@ -87,6 +93,20 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// Proje gerektiren menüler
+const PROJE_GEREKEN_SAYFALAR = ['veri-giris', 'belgeler'];
+
+function updateNavLock() {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const page = item.dataset.page;
+    if (PROJE_GEREKEN_SAYFALAR.includes(page)) {
+      item.style.opacity = projeAktif ? '' : '0.35';
+      item.style.pointerEvents = projeAktif ? '' : 'none';
+      item.title = projeAktif ? '' : 'Önce bir proje oluşturun veya açın.';
+    }
+  });
+}
+
 function init() {
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -94,8 +114,13 @@ function init() {
       item.classList.add('active');
       currentPage = item.dataset.page;
       renderPage();
+      updateNavLock();
     });
   });
+  // Başlangıç aktif nav item
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector(`[data-page="${currentPage}"]`)?.classList.add('active');
+  updateNavLock();
   renderPage();
 }
 
@@ -107,13 +132,122 @@ function autoSave() {
 function renderPage() {
   const main = document.getElementById('mainContent');
   switch (currentPage) {
+    case 'anasayfa': renderAnaSayfaPage(); break;
     case 'veri-giris': main.innerHTML = renderVeriGirisPage(); bindVeriGiris(); break;
     case 'belgeler': main.innerHTML = renderBelgelerPage(); bindBelgeler(); break;
     case 'veri-merkezi': main.innerHTML = renderVeriMerkeziPage(); bindVeriMerkezi(); break;
     case 'dashboard': main.innerHTML = renderDashboardPage(); break;
     case 'kaydet-yukle': renderKaydetYuklePage(); break;
     case 'kullanici-yonetimi': renderKullaniciYonetimiPage(); break;
+    case 'profil': main.innerHTML = renderProfilPage(); bindProfil(); break;
   }
+}
+
+// ===================== ANA SAYFA =====================
+async function renderAnaSayfaPage() {
+  const main = document.getElementById('mainContent');
+  const ad = currentDTMUser?.displayName?.split(' ')[0] || 'Hoş Geldiniz';
+  const saat = new Date().getHours();
+  const selamlama = saat < 12 ? 'Günaydın' : saat < 18 ? 'İyi Günler' : 'İyi Akşamlar';
+
+  main.innerHTML = `
+    <div style="max-width:700px;margin:0 auto;padding:32px 16px">
+      <div style="text-align:center;margin-bottom:40px">
+        <div style="font-size:48px;margin-bottom:12px">🏛️</div>
+        <h1 style="font-size:26px;font-weight:700;color:var(--gray-800);margin-bottom:6px">${selamlama}, ${ad}!</h1>
+        <p style="color:var(--gray-500);font-size:14px">Doğrudan Temin Modülü'ne hoş geldiniz.</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
+        <div onclick="yeniProjeBaslat()" style="background:var(--primary);color:#fff;border-radius:12px;padding:28px 24px;cursor:pointer;transition:opacity 0.15s;text-align:center" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+          <div style="font-size:36px;margin-bottom:10px">📋</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:4px">Yeni Proje</div>
+          <div style="font-size:12px;opacity:0.85">Yeni bir proje oluştur</div>
+        </div>
+        <div onclick="projeAcSayfasinaGit()" style="background:#fff;border:2px solid var(--gray-200);border-radius:12px;padding:28px 24px;cursor:pointer;transition:border-color 0.15s;text-align:center" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--gray-200)'">
+          <div style="font-size:36px;margin-bottom:10px">📂</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:4px;color:var(--gray-800)">Proje Aç</div>
+          <div style="font-size:12px;color:var(--gray-500)">Kayıtlı projeleri görüntüle</div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid var(--gray-200);border-radius:12px;overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--gray-100);font-weight:600;font-size:14px;color:var(--gray-700)">
+          ⏱ Son Projeler
+        </div>
+        <div id="sonProjelerList" style="padding:16px 20px;color:var(--gray-400);font-size:13px;text-align:center">
+          Yükleniyor...
+        </div>
+      </div>
+    </div>
+
+    <!-- Yeni Proje Modal -->
+    <div id="yeniProjeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:12px;padding:32px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+        <h3 style="margin-bottom:8px;font-size:18px;color:var(--gray-800)">📋 Yeni Proje Oluştur</h3>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:20px">Projeye bir isim verin.</p>
+        <label style="font-size:13px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:6px">İş / Hizmet Adı</label>
+        <input id="yeniProjeAdi" type="text" placeholder="Örn: Çatı Onarım İşi" style="width:100%;padding:10px 12px;border:1px solid var(--gray-300);border-radius:6px;font-size:14px;margin-bottom:20px;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')yeniProjeOlustur()">
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button onclick="document.getElementById('yeniProjeModal').style.display='none'" style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">İptal</button>
+          <button onclick="yeniProjeOlustur()" class="btn btn-primary" style="padding:8px 20px">Oluştur</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Son projeleri yükle
+  try {
+    const projeler = await getUserProjeler();
+    const listEl = document.getElementById('sonProjelerList');
+    if (!listEl) return;
+    if (projeler.length === 0) {
+      listEl.innerHTML = '<span>Henüz kayıtlı proje yok.</span>';
+    } else {
+      const son5 = projeler.slice(0, 5);
+      listEl.innerHTML = son5.map(p => {
+        const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
+        return `<div onclick="cloudProjeAc('${p.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100);cursor:pointer" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
+          <span style="font-weight:500;font-size:13px">${p.isAdi || '(İsimsiz)'}</span>
+          <span style="font-size:12px;color:var(--gray-400)">${tarih}</span>
+        </div>`;
+      }).join('');
+    }
+  } catch(e) {
+    const listEl = document.getElementById('sonProjelerList');
+    if (listEl) listEl.innerHTML = '<span>Projeler yüklenemedi.</span>';
+  }
+}
+
+function yeniProjeBaslat() {
+  const modal = document.getElementById('yeniProjeModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('yeniProjeAdi')?.focus(), 100);
+  }
+}
+
+function yeniProjeOlustur() {
+  const isAdi = document.getElementById('yeniProjeAdi')?.value.trim();
+  if (!isAdi) { alert('Lütfen bir proje adı girin.'); return; }
+  proje = getDefaultProje();
+  proje.isAdi = isAdi;
+  currentCloudProjeId = null;
+  document.getElementById('yeniProjeModal').style.display = 'none';
+  projeAktif = true;
+  currentPage = 'veri-giris';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('[data-page="veri-giris"]')?.classList.add('active');
+  updateNavLock();
+  renderPage();
+}
+
+function projeAcSayfasinaGit() {
+  currentPage = 'kaydet-yukle';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('[data-page="kaydet-yukle"]')?.classList.add('active');
+  renderPage();
 }
 
 // ===================== VERİ GİRİŞ SAYFASI =====================
@@ -850,73 +984,117 @@ async function renderKaydetYuklePage() {
   const main = document.getElementById('mainContent');
   // İlk render - loading göster
   main.innerHTML = `
-    <div class="page-header">
-      <h2>Kaydet / Yükle</h2>
-      <p>Projeleri buluta kaydedin veya yerel dosya olarak yönetin.</p>
-    </div>
-    ${renderKaydetYukleStatic()}
-    <div class="card">
-      <div class="card-header"><h3>&#9729; Projelerim</h3></div>
-      <div class="card-body">
-        <div id="projelerListBody" style="text-align:center;padding:20px;color:var(--gray-400)">Projeler yükleniyor...</div>
+    <div class="ky-page">
+      <div class="ky-page-header">
+        <div class="ky-page-header-icon">💾</div>
+        <div>
+          <h2>Kaydet / Yükle</h2>
+          <p>Projeleri buluta kaydedin veya yerel dosya olarak yönetin</p>
+        </div>
+      </div>
+
+      ${renderKaydetYukleStatic()}
+
+      <div class="ky-projeler-card">
+        <div class="ky-projeler-header">
+          <div class="ky-projeler-header-left">
+            <span class="ky-projeler-icon">☁️</span>
+            <h3>Projelerim</h3>
+            ${currentDTMUser?.role === 'admin' ? '<span class="ky-admin-badge">Tüm kullanıcılar</span>' : ''}
+          </div>
+        </div>
+        <div class="ky-projeler-body" id="projelerListBody">
+          <div class="ky-loading">
+            <div class="ky-loading-spinner"></div>
+            <span>Projeler yükleniyor...</span>
+          </div>
+        </div>
       </div>
     </div>
-    ${renderVeriMerkeziYedek()}
   `;
   // Projeleri yükle
   try {
     const projeler = await getUserProjeler();
     const projeListHTML = projeler.length === 0
-      ? `<p style="color:var(--gray-400);font-size:13px">Henüz kayıtlı proje yok.</p>`
-      : `<table class="data-table">
-          <thead><tr><th>Proje Adı</th>${currentDTMUser?.role === 'admin' ? '<th>Kullanıcı</th>' : ''}<th>Tarih</th><th></th></tr></thead>
-          <tbody>
-            ${projeler.map(p => {
-              const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
-              return `<tr>
-                <td><strong>${p.isAdi || '(İsimsiz)'}</strong></td>
-                ${currentDTMUser?.role === 'admin' ? `<td style="font-size:12px;color:var(--gray-500)">${p.userDisplayName || '-'}</td>` : ''}
-                <td style="font-size:12px;color:var(--gray-500)">${tarih}</td>
-                <td style="display:flex;gap:6px">
-                  <button class="btn btn-primary btn-sm" onclick="cloudProjeAc('${p.id}')">Aç</button>
-                  <button class="btn btn-danger btn-sm" onclick="cloudProjeSil('${p.id}', '${(p.isAdi||'').replace(/'/g,"\\'")}')">Sil</button>
-                </td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>`;
+      ? `<div class="ky-empty-state">
+           <div class="ky-empty-icon">📂</div>
+           <div class="ky-empty-title">Henüz buluta kayıtlı proje yok</div>
+           <div class="ky-empty-desc">Yukarıdaki "Buluta Kaydet" butonu ile ilk projenizi kaydedin.</div>
+         </div>`
+      : `<div class="ky-proje-grid">
+          ${projeler.map(p => {
+            const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
+            const aktif = p.id === currentCloudProjeId;
+            return `<div class="ky-proje-item ${aktif ? 'ky-proje-aktif' : ''}">
+              <div class="ky-proje-info">
+                <div class="ky-proje-name">
+                  ${aktif ? '<span class="ky-aktif-dot"></span>' : '<span class="ky-proje-dot"></span>'}
+                  ${p.isAdi || '(İsimsiz)'}
+                </div>
+                <div class="ky-proje-meta">
+                  ${currentDTMUser?.role === 'admin' ? `<span class="ky-proje-user">👤 ${p.userDisplayName || '-'}</span>` : ''}
+                  <span class="ky-proje-date">📅 ${tarih}</span>
+                  ${aktif ? '<span class="ky-aktif-badge">Aktif</span>' : ''}
+                </div>
+              </div>
+              <div class="ky-proje-actions">
+                <button class="ky-btn-open" onclick="cloudProjeAc('${p.id}')" title="Projeyi Aç">Aç</button>
+                <button class="ky-btn-delete" onclick="cloudProjeSil('${p.id}', '${(p.isAdi||'').replace(/'/g,'')}' )" title="Projeyi Sil">Sil</button>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
     document.getElementById('projelerListBody').innerHTML = projeListHTML;
   } catch(e) {
     document.getElementById('projelerListBody').innerHTML =
-      `<p style="color:red;font-size:13px">Projeler yüklenemedi: ${e.message}</p>`;
+      `<div class="ky-error">Projeler yüklenemedi: ${e.message}</div>`;
   }
 }
 
 function renderKaydetYukleStatic() {
-  const cloudBtnText = currentCloudProjeId ? '&#9729; Buluta Güncelle' : '&#9729; Buluta Kaydet';
+  if (!projeAktif) return ''; // Aktif proje yoksa Mevcut Proje kartını gizle
+  const cloudBtnText = currentCloudProjeId ? '☁️ Güncelle' : '☁️ Buluta Kaydet';
+  const isAdi = proje.isAdi || '(İsimsiz Proje)';
+  const kayitliClass = currentCloudProjeId ? 'ky-status-saved' : 'ky-status-unsaved';
+  const kayitliText = currentCloudProjeId ? '☁️ Bulutta kayıtlı' : '⚠️ Kaydedilmedi';
+
   return `
-    <div class="card">
-      <div class="card-header"><h3>&#128196; Mevcut Proje</h3></div>
-      <div class="card-body">
-        <p style="margin-bottom:12px"><strong>${proje.isAdi || '(İsimsiz Proje)'}</strong>
-          ${currentCloudProjeId ? `<span style="font-size:11px;color:var(--success);margin-left:8px">&#9729; Bulutta kayıtlı</span>` : ''}
-        </p>
-        <div class="action-bar" style="flex-wrap:wrap;gap:8px">
-          <button class="btn btn-primary" onclick="cloudKaydet()">${cloudBtnText}</button>
-          <button class="btn btn-outline" onclick="exportProjeJSON(proje)">&#128190; Dosyayı İndir</button>
-          <button class="btn btn-danger" onclick="yeniProje()">&#10009; Yeni Proje</button>
+    <div class="ky-top-grid">
+
+      <!-- Mevcut Proje Kartı -->
+      <div class="ky-card ky-card-project">
+        <div class="ky-card-glow ky-card-glow-blue"></div>
+        <div class="ky-card-top">
+          <div class="ky-card-icon-wrap ky-icon-blue">💾</div>
+          <div class="ky-card-label">Aktif Proje</div>
+        </div>
+        <div class="ky-card-project-name">${isAdi}</div>
+        <div class="ky-status ${kayitliClass}">${kayitliText}</div>
+        <div class="ky-card-buttons">
+          <button class="ky-btn ky-btn-primary" onclick="cloudKaydet()">${cloudBtnText}</button>
+          <div class="ky-btn-row">
+            <button class="ky-btn ky-btn-outline" onclick="exportProjeJSON(proje)">📥 İndir</button>
+            <button class="ky-btn ky-btn-ghost-danger" onclick="yeniProje()">✕ Yeni Proje</button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="card">
-      <div class="card-header"><h3>&#128194; Dosyadan Yükle</h3></div>
-      <div class="card-body">
-        <p style="margin-bottom:12px;font-size:13px;color:var(--gray-500)">Bilgisayardan JSON dosyası yükleyin.</p>
-        <div style="display:flex;align-items:center;gap:10px">
-          <input type="file" id="fileInput" accept=".json">
-          <button class="btn btn-success" onclick="yukleProje()">Yükle</button>
+      <!-- Dosyadan Yükle Kartı -->
+      <div class="ky-card ky-card-upload">
+        <div class="ky-card-glow ky-card-glow-green"></div>
+        <div class="ky-card-top">
+          <div class="ky-card-icon-wrap ky-icon-green">📁</div>
+          <div class="ky-card-label">Dosyadan Yükle</div>
         </div>
+        <div class="ky-upload-desc">Daha önce indirdiğiniz JSON proje dosyasını seçerek tekrar yükleyin.</div>
+        <div class="ky-upload-area">
+          <label class="ky-file-label" id="kyFileLabel">
+            <span class="ky-file-icon">📄</span>
+            <span class="ky-file-text">Dosya seçmek için tıklayın</span>
+            <input type="file" id="fileInput" accept=".json" onchange="if(this.files[0]){document.getElementById('kyFileLabel').querySelector('.ky-file-text').textContent=this.files[0].name;document.getElementById('kyFileLabel').classList.add('ky-file-selected')}">
+          </label>
+        </div>
+        <button class="ky-btn ky-btn-success" onclick="yukleProje()">📤 Yükle</button>
       </div>
     </div>
   `;
@@ -972,9 +1150,11 @@ async function cloudProjeAc(projeId) {
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
     saveProje(proje);
+    projeAktif = true;
     currentPage = 'veri-giris';
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.querySelector('[data-page="veri-giris"]').classList.add('active');
+    updateNavLock();
     renderPage();
   } catch(e) {
     alert('Hata: ' + e.message);
@@ -1144,5 +1324,108 @@ async function kullaniciSil(uid, ad) {
     renderKullaniciYonetimiPage();
   } catch(e) {
     alert('Hata: ' + e.message);
+  }
+}
+
+// ===================== PROFİL SAYFASI =====================
+function renderProfilPage() {
+  const u = currentDTMUser || {};
+  const lastLogin = auth.currentUser?.metadata?.lastSignInTime
+    ? new Date(auth.currentUser.metadata.lastSignInTime).toLocaleString('tr-TR')
+    : '-';
+  const createdAt = auth.currentUser?.metadata?.creationTime
+    ? new Date(auth.currentUser.metadata.creationTime).toLocaleString('tr-TR')
+    : '-';
+
+  return `
+    <div style="max-width:600px;margin:0 auto">
+      <div class="page-header">
+        <h2>Profilim</h2>
+        <p>Hesap bilgilerinizi görüntüleyin ve yönetin.</p>
+      </div>
+
+      <!-- Profil Kartı -->
+      <div style="background:linear-gradient(135deg,#1a40a3,#1a56db);border-radius:16px;padding:28px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:-40px;right:-40px;width:150px;height:150px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
+        <div style="display:flex;align-items:center;gap:20px">
+          <div style="width:64px;height:64px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">&#128100;</div>
+          <div>
+            <div style="font-size:22px;font-weight:700">${u.displayName || '-'}</div>
+            <div style="font-size:14px;opacity:0.8;margin-top:4px">@${u.username || '-'}</div>
+            <div style="margin-top:8px">
+              <span style="background:rgba(255,255,255,0.2);font-size:11px;font-weight:600;padding:3px 12px;border-radius:20px">
+                ${u.role === 'admin' ? '⭐ Yönetici' : '👤 Kullanıcı'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bilgi Kartı -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><h3>&#128203; Hesap Bilgileri</h3></div>
+        <div class="card-body">
+          <table class="data-table">
+            <tbody>
+              <tr><td style="color:var(--gray-500);width:160px">Ad Soyad</td><td><strong>${u.displayName || '-'}</strong></td></tr>
+              <tr><td style="color:var(--gray-500)">Kullanıcı Adı</td><td>${u.username || '-'}</td></tr>
+              <tr><td style="color:var(--gray-500)">Rol</td><td>${u.role === 'admin' ? '⭐ Yönetici' : '👤 Kullanıcı'}</td></tr>
+              <tr><td style="color:var(--gray-500)">Son Giriş</td><td>${lastLogin}</td></tr>
+              <tr><td style="color:var(--gray-500)">Hesap Oluşturma</td><td>${createdAt}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Şifre Değiştir -->
+      <div class="card">
+        <div class="card-header"><h3>&#128274; Şifre Değiştir</h3></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label>Mevcut Şifre</label>
+            <input type="password" id="mevcutSifre" placeholder="Mevcut şifrenizi girin">
+          </div>
+          <div class="form-group">
+            <label>Yeni Şifre</label>
+            <input type="password" id="yeniSifre" placeholder="En az 6 karakter">
+          </div>
+          <div class="form-group">
+            <label>Yeni Şifre (Tekrar)</label>
+            <input type="password" id="yeniSifreTekrar" placeholder="Yeni şifrenizi tekrar girin">
+          </div>
+          <div id="sifreMsg" style="font-size:13px;margin-bottom:10px"></div>
+          <button class="btn btn-primary" onclick="sifreDegistir()">Şifreyi Güncelle</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function bindProfil() {}
+
+async function sifreDegistir() {
+  const mevcut = document.getElementById('mevcutSifre').value;
+  const yeni = document.getElementById('yeniSifre').value;
+  const tekrar = document.getElementById('yeniSifreTekrar').value;
+  const msg = document.getElementById('sifreMsg');
+
+  if (!mevcut || !yeni || !tekrar) { msg.style.color = 'red'; msg.textContent = 'Tüm alanları doldurun.'; return; }
+  if (yeni.length < 6) { msg.style.color = 'red'; msg.textContent = 'Yeni şifre en az 6 karakter olmalı.'; return; }
+  if (yeni !== tekrar) { msg.style.color = 'red'; msg.textContent = 'Yeni şifreler eşleşmiyor.'; return; }
+
+  msg.style.color = 'var(--gray-500)'; msg.textContent = 'Güncelleniyor...';
+  try {
+    await changePassword(mevcut, yeni);
+    msg.style.color = 'green'; msg.textContent = '✓ Şifreniz başarıyla güncellendi!';
+    document.getElementById('mevcutSifre').value = '';
+    document.getElementById('yeniSifre').value = '';
+    document.getElementById('yeniSifreTekrar').value = '';
+  } catch(e) {
+    msg.style.color = 'red';
+    if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+      msg.textContent = 'Mevcut şifre hatalı.';
+    } else {
+      msg.textContent = 'Hata: ' + e.message;
+    }
   }
 }

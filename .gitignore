@@ -1,0 +1,6 @@
+# Firebase config - API anahtarı içerir, paylaşılmaz!
+app/js/config.js
+
+# OS
+.DS_Store
+Thumbs.db

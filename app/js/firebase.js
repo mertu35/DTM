@@ -1,13 +1,5 @@
 // ===================== FIREBASE.JS =====================
-const firebaseConfig = {
-  apiKey: "AIzaSyA3Wm_jGplJ3W51Fu8o-UAZajeBsvJeCsg",
-  authDomain: "dtmd-b927d.firebaseapp.com",
-  projectId: "dtmd-b927d",
-  storageBucket: "dtmd-b927d.firebasestorage.app",
-  messagingSenderId: "759515234039",
-  appId: "1:759515234039:web:38f8357cb07e19b1a49df2"
-};
-
+// firebaseConfig, config.js dosyasından yükleniyor (gitignore'da)
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -72,6 +64,23 @@ async function updateUserPassword(username, newPassword) {
   }
 }
 
+// Şifre değiştir (mevcut şifre ile yeniden auth gerekli)
+async function changePassword(mevcutSifre, yeniSifre) {
+  const user = auth.currentUser;
+  const credential = firebase.auth.EmailAuthProvider.credential(user.email, mevcutSifre);
+  await user.reauthenticateWithCredential(credential);
+  await user.updatePassword(yeniSifre);
+}
+
+// Son giriş tarihini Firestore'a kaydet
+async function updateLastLogin() {
+  const user = auth.currentUser;
+  if (!user) return;
+  await db.collection('users').doc(user.uid).update({
+    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(() => {});
+}
+
 // ===== REFERANS FIRESTORE FONKSİYONLARI =====
 
 // Kullanıcının referans verisini Firestore'dan yükle
@@ -125,14 +134,18 @@ async function getUserProjeler() {
   if (!user) return [];
   let query;
   if (currentDTMUser?.role === 'admin') {
-    query = db.collection('projeler').orderBy('updatedAt', 'desc');
+    query = db.collection('projeler');
   } else {
-    query = db.collection('projeler')
-      .where('userId', '==', user.uid)
-      .orderBy('updatedAt', 'desc');
+    query = db.collection('projeler').where('userId', '==', user.uid);
   }
   const snap = await query.get();
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  // Index gerektirmemek için client tarafında sırala
+  return docs.sort((a, b) => {
+    const tA = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : 0;
+    const tB = b.updatedAt?.toMillis ? b.updatedAt.toMillis() : 0;
+    return tB - tA;
+  });
 }
 
 // Projeyi sil

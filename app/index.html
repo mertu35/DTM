@@ -41,8 +41,11 @@
         <p style="font-size:10px;opacity:0.6;margin-top:2px;">v1.0.0</p>
       </div>
       <nav class="sidebar-nav">
+        <div class="nav-item" data-page="anasayfa" style="margin-bottom:4px">
+          <span class="nav-icon">&#127968;</span> Ana Sayfa
+        </div>
         <div class="nav-section">Veri Girişi</div>
-        <div class="nav-item active" data-page="veri-giris">
+        <div class="nav-item" data-page="veri-giris">
           <span class="nav-icon">&#9997;</span> Veri Giriş Formu
         </div>
         <div class="nav-section">Belgeler</div>
@@ -63,6 +66,9 @@
         <div class="nav-section">İşlemler</div>
         <div class="nav-item" data-page="kaydet-yukle">
           <span class="nav-icon">&#128190;</span> Kaydet / Yükle
+        </div>
+        <div class="nav-item" data-page="profil">
+          <span class="nav-icon">&#128100;</span> Profilim
         </div>
       </nav>
 
@@ -91,6 +97,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
   <!-- App scripts -->
+  <script src="js/config.js"></script>
   <script src="js/firebase.js?v=20260319"></script>
   <script src="js/utils.js?v=20260319"></script>
   <script src="js/data.js?v=20260319"></script>
