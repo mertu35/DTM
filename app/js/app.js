@@ -39,7 +39,8 @@ async function doLogout() {
 }
 
 async function onAuthReady(user) {
-  document.getElementById('loadingOverlay').style.display = 'none';
+  const lo = document.getElementById('loadingOverlay');
+  if (lo) lo.style.display = 'none';
   if (user && currentDTMUser) {
     // Referansı buluttan yükle
     try {
