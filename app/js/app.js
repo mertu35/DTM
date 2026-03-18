@@ -74,6 +74,10 @@ async function onAuthReady(user) {
   } else {
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('appLayout').style.display = 'none';
+    const btn = document.getElementById('loginBtn');
+    if (btn) { btn.disabled = false; btn.textContent = 'Giriş Yap'; }
+    const err = document.getElementById('loginError');
+    if (err) err.style.display = 'none';
   }
 }
 
