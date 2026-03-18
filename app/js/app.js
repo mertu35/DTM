@@ -4,6 +4,7 @@ let referans = loadReferans();
 let currentPage = 'anasayfa';
 let saveTimeout = null;
 let projeAktif = false;
+let currentProjeKilitli = false;
 
 // ===== AUTH =====
 async function doLogin() {
@@ -155,7 +156,7 @@ async function renderAnaSayfaPage() {
       <div style="text-align:center;margin-bottom:40px">
         <div style="font-size:48px;margin-bottom:12px">🏛️</div>
         <h1 style="font-size:26px;font-weight:700;color:var(--gray-800);margin-bottom:6px">${selamlama}, ${ad}!</h1>
-        <p style="color:var(--gray-500);font-size:14px">Doğrudan Temin Modülü'ne hoş geldiniz.</p>
+        <p style="color:var(--gray-500);font-size:14px">Doğrudan Temin Modülü'ne Hoş Geldiniz.</p>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
@@ -209,7 +210,7 @@ async function renderAnaSayfaPage() {
       listEl.innerHTML = son5.map(p => {
         const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
         return `<div onclick="cloudProjeAc('${p.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100);cursor:pointer" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
-          <span style="font-weight:500;font-size:13px">${p.isAdi || '(İsimsiz)'}</span>
+          <span style="font-weight:500;font-size:13px">${p.locked ? '🔒 ' : ''}${p.isAdi || '(İsimsiz)'}</span>
           <span style="font-size:12px;color:var(--gray-400)">${tarih}</span>
         </div>`;
       }).join('');
@@ -234,6 +235,7 @@ function yeniProjeOlustur() {
   proje = getDefaultProje();
   proje.isAdi = isAdi;
   currentCloudProjeId = null;
+  currentProjeKilitli = false;
   document.getElementById('yeniProjeModal').style.display = 'none';
   projeAktif = true;
   currentPage = 'veri-giris';
@@ -379,7 +381,17 @@ function renderVeriGirisPage() {
     </div>`;
   }).join('');
 
+  const kilitBanner = currentProjeKilitli ? `
+    <div style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:8px;padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:20px">🔒</span>
+      <div>
+        <strong style="color:#92400e;font-size:14px">Bu proje kilitli.</strong>
+        <span style="color:#78350f;font-size:13px"> Düzenleme yapılamaz. Kilidi kaldırmak için Kaydet / Yükle sayfasına gidin.</span>
+      </div>
+    </div>` : '';
+
   return `
+    ${kilitBanner}
     <div class="page-header">
       <h2>Veri Giriş Formu</h2>
       <p>Proje bilgilerini girin, belgeler otomatik oluşturulacaktır.</p>
@@ -609,7 +621,13 @@ function renderVeriGirisPage() {
   `;
 }
 
-function bindVeriGiris() {}
+function bindVeriGiris() {
+  if (currentProjeKilitli) {
+    document.querySelectorAll('#mainContent input, #mainContent select, #mainContent button').forEach(el => {
+      el.disabled = true;
+    });
+  }
+}
 
 function onFieldChange(field, value) {
   proje[field] = value;
@@ -1025,21 +1043,25 @@ async function renderKaydetYuklePage() {
           ${projeler.map(p => {
             const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
             const aktif = p.id === currentCloudProjeId;
-            return `<div class="ky-proje-item ${aktif ? 'ky-proje-aktif' : ''}">
+            const kilitli = p.locked === true;
+            return `<div class="ky-proje-item ${aktif ? 'ky-proje-aktif' : ''} ${kilitli ? 'ky-proje-kilitli' : ''}">
               <div class="ky-proje-info">
                 <div class="ky-proje-name">
                   ${aktif ? '<span class="ky-aktif-dot"></span>' : '<span class="ky-proje-dot"></span>'}
+                  ${kilitli ? '<span title="Kilitli" style="margin-right:4px">🔒</span>' : ''}
                   ${p.isAdi || '(İsimsiz)'}
                 </div>
                 <div class="ky-proje-meta">
                   ${currentDTMUser?.role === 'admin' ? `<span class="ky-proje-user">👤 ${p.userDisplayName || '-'}</span>` : ''}
                   <span class="ky-proje-date">📅 ${tarih}</span>
                   ${aktif ? '<span class="ky-aktif-badge">Aktif</span>' : ''}
+                  ${kilitli ? '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:4px;font-weight:600">Kilitli</span>' : ''}
                 </div>
               </div>
               <div class="ky-proje-actions">
                 <button class="ky-btn-open" onclick="cloudProjeAc('${p.id}')" title="Projeyi Aç">Aç</button>
-                <button class="ky-btn-delete" onclick="cloudProjeSil('${p.id}', '${(p.isAdi||'').replace(/'/g,'')}' )" title="Projeyi Sil">Sil</button>
+                <button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" onclick="cloudProjeKilitle('${p.id}', ${!kilitli})" title="${kilitli ? 'Kilidi Aç' : 'Kilitle'}">${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>
+                <button class="ky-btn-delete" onclick="cloudProjeSil('${p.id}', '${(p.isAdi||'').replace(/'/g,'')}', ${kilitli})" title="Projeyi Sil">Sil</button>
               </div>
             </div>`;
           }).join('')}
@@ -1052,15 +1074,12 @@ async function renderKaydetYuklePage() {
 }
 
 function renderKaydetYukleStatic() {
-  if (!projeAktif) return ''; // Aktif proje yoksa Mevcut Proje kartını gizle
-  const cloudBtnText = currentCloudProjeId ? '☁️ Güncelle' : '☁️ Buluta Kaydet';
-  const isAdi = proje.isAdi || '(İsimsiz Proje)';
-  const kayitliClass = currentCloudProjeId ? 'ky-status-saved' : 'ky-status-unsaved';
-  const kayitliText = currentCloudProjeId ? '☁️ Bulutta kayıtlı' : '⚠️ Kaydedilmedi';
-
-  return `
-    <div class="ky-top-grid">
-
+  const aktifProjeKarti = projeAktif ? (() => {
+    const cloudBtnText = currentCloudProjeId ? '☁️ Güncelle' : '☁️ Buluta Kaydet';
+    const isAdi = proje.isAdi || '(İsimsiz Proje)';
+    const kayitliClass = currentCloudProjeId ? 'ky-status-saved' : 'ky-status-unsaved';
+    const kayitliText = currentCloudProjeId ? '☁️ Bulutta kayıtlı' : '⚠️ Kaydedilmedi';
+    return `
       <!-- Mevcut Proje Kartı -->
       <div class="ky-card ky-card-project">
         <div class="ky-card-glow ky-card-glow-blue"></div>
@@ -1077,7 +1096,12 @@ function renderKaydetYukleStatic() {
             <button class="ky-btn ky-btn-ghost-danger" onclick="yeniProje()">✕ Yeni Proje</button>
           </div>
         </div>
-      </div>
+      </div>`;
+  })() : '';
+
+  return `
+    <div class="ky-top-grid">
+      ${aktifProjeKarti}
 
       <!-- Dosyadan Yükle Kartı -->
       <div class="ky-card ky-card-upload">
@@ -1130,6 +1154,7 @@ function renderVeriMerkeziYedek() {
 function bindKaydetYukle() {}
 
 async function cloudKaydet() {
+  if (currentProjeKilitli) { alert('Bu proje kilitli. Değişiklikler kaydedilemez.'); return; }
   try {
     if (currentCloudProjeId) {
       await updateProjeInCloud(currentCloudProjeId, proje);
@@ -1149,6 +1174,7 @@ async function cloudProjeAc(projeId) {
     const doc = await getProjeFromCloud(projeId);
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
+    currentProjeKilitli = doc.locked === true;
     saveProje(proje);
     projeAktif = true;
     currentPage = 'veri-giris';
@@ -1161,11 +1187,22 @@ async function cloudProjeAc(projeId) {
   }
 }
 
-async function cloudProjeSil(projeId, isAdi) {
+async function cloudProjeSil(projeId, isAdi, kilitli) {
+  if (kilitli) { alert(`"${isAdi}" projesi kilitli. Silmek için önce kilidi açın.`); return; }
   if (!confirm(`"${isAdi}" projesi silinecek. Emin misiniz?`)) return;
   try {
     await deleteProjeFromCloud(projeId);
-    if (currentCloudProjeId === projeId) currentCloudProjeId = null;
+    if (currentCloudProjeId === projeId) { currentCloudProjeId = null; currentProjeKilitli = false; }
+    renderPage();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}
+
+async function cloudProjeKilitle(projeId, kilitle) {
+  try {
+    await toggleProjeLock(projeId, kilitle);
+    if (currentCloudProjeId === projeId) currentProjeKilitli = kilitle;
     renderPage();
   } catch(e) {
     alert('Hata: ' + e.message);

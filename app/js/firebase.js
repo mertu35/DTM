@@ -159,3 +159,12 @@ async function getProjeFromCloud(projeId) {
   if (!snap.exists) throw new Error('Proje bulunamadı');
   return { id: snap.id, ...snap.data() };
 }
+
+// Proje kilit durumunu değiştir
+async function toggleProjeLock(projeId, locked) {
+  await db.collection('projeler').doc(projeId).update({
+    locked: locked,
+    lockedAt: locked ? firebase.firestore.FieldValue.serverTimestamp() : null,
+    lockedBy: locked ? (currentDTMUser?.displayName || currentDTMUser?.username || '') : null
+  });
+}

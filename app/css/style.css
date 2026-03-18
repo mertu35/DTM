@@ -1023,10 +1023,12 @@ body {
 .ky-aktif-dot {
   width: 8px;
   height: 8px;
+  min-width: 8px;
   background: var(--primary);
   border-radius: 50%;
   display: inline-block;
   flex-shrink: 0;
+  margin: 3px;
   box-shadow: 0 0 0 3px rgba(26,86,219,0.2);
   animation: ky-pulse 2s ease-in-out infinite;
 }
@@ -1105,6 +1107,34 @@ body {
   color: #fff;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(224,36,36,0.3);
+}
+
+/* Kilit butonu */
+.ky-btn-lock {
+  padding: 6px 16px;
+  background: transparent;
+  color: #92400e;
+  border: 1.5px solid #f59e0b;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ky-btn-lock:hover {
+  background: #fef3c7;
+  transform: translateY(-1px);
+}
+.ky-btn-lock-active {
+  background: #fef3c7;
+  color: #065f46;
+  border-color: #10b981;
+}
+.ky-btn-lock-active:hover {
+  background: #d1fae5;
+}
+.ky-proje-kilitli {
+  border-left: 3px solid #f59e0b !important;
 }
 
 /* Error state */
