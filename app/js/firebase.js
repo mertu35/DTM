@@ -160,6 +160,42 @@ async function getProjeFromCloud(projeId) {
   return { id: snap.id, ...snap.data() };
 }
 
+// ===== DUYURU FONKSİYONLARI =====
+
+// Tüm duyuruları getir
+async function getDuyurular() {
+  const snap = await db.collection('duyurular').orderBy('createdAt', 'desc').get();
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+// Duyuru oluştur (admin)
+async function createDuyuru(baslik, mesaj) {
+  await db.collection('duyurular').add({
+    baslik,
+    mesaj,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    createdBy: currentDTMUser?.displayName || currentDTMUser?.username || ''
+  });
+}
+
+// Duyuru sil (admin)
+async function deleteDuyuru(id) {
+  await db.collection('duyurular').doc(id).delete();
+}
+
+// Kullanıcının okunan duyurularını getir
+async function getOkunanDuyurular() {
+  const snap = await db.collection('users').doc(currentDTMUser.uid).get();
+  return snap.data()?.okunanDuyurular || [];
+}
+
+// Duyuruyu okundu olarak işaretle
+async function duyuruOkunduIsaretle(duyuruId) {
+  await db.collection('users').doc(currentDTMUser.uid).update({
+    okunanDuyurular: firebase.firestore.FieldValue.arrayUnion(duyuruId)
+  });
+}
+
 // Proje kilit durumunu değiştir
 async function toggleProjeLock(projeId, locked) {
   await db.collection('projeler').doc(projeId).update({

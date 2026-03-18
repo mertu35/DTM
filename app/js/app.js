@@ -6,6 +6,7 @@ let saveTimeout = null;
 let projeAktif = false;
 let currentProjeKilitli = false;
 let currentProjeBaskaKullanici = false;
+let okunmamiDuyuruSayisi = 0;
 
 // ===== AUTH =====
 async function doLogin() {
@@ -67,6 +68,7 @@ async function onAuthReady(user) {
     document.getElementById('appLayout').style.display = '';
     updateLastLogin();
     init();
+    checkDuyurular();
   } else {
     document.getElementById('loginOverlay').style.display = '';
     document.getElementById('appLayout').style.display = 'none';
@@ -141,6 +143,7 @@ function renderPage() {
     case 'dashboard': main.innerHTML = renderDashboardPage(); break;
     case 'kaydet-yukle': renderKaydetYuklePage(); break;
     case 'kullanici-yonetimi': renderKullaniciYonetimiPage(); break;
+    case 'duyurular': renderDuyurularPage(); break;
     case 'profil': main.innerHTML = renderProfilPage(); bindProfil(); break;
   }
 }
@@ -1481,4 +1484,119 @@ async function sifreDegistir() {
       msg.textContent = 'Hata: ' + e.message;
     }
   }
+}
+
+// ===================== DUYURULAR =====================
+async function checkDuyurular() {
+  try {
+    const [duyurular, okunanlar] = await Promise.all([getDuyurular(), getOkunanDuyurular()]);
+    const okunmamilar = duyurular.filter(d => !okunanlar.includes(d.id));
+    okunmamiDuyuruSayisi = okunmamilar.length;
+    updateDuyuruBadge();
+    if (okunmamilar.length > 0) showDuyuruPopup(okunmamilar.length);
+  } catch(e) {}
+}
+
+function updateDuyuruBadge() {
+  const badge = document.getElementById('duyuruBadge');
+  if (!badge) return;
+  badge.textContent = okunmamiDuyuruSayisi;
+  badge.style.display = okunmamiDuyuruSayisi > 0 ? 'inline-flex' : 'none';
+}
+
+function showDuyuruPopup(sayi) {
+  const popup = document.getElementById('duyuruPopup');
+  if (!popup) return;
+  document.getElementById('duyuruPopupCount').textContent = sayi === 1 ? '1 yeni duyurunuz var.' : `${sayi} yeni duyurunuz var.`;
+  popup.style.display = 'flex';
+}
+
+function closeDuyuruPopup() {
+  document.getElementById('duyuruPopup').style.display = 'none';
+}
+
+function duyurularSayfasinaGit() {
+  closeDuyuruPopup();
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('[data-page="duyurular"]')?.classList.add('active');
+  currentPage = 'duyurular';
+  renderPage();
+}
+
+async function renderDuyurularPage() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div class="page-header"><h2>Duyurular</h2><p>Yönetici tarafından paylaşılan duyurular.</p></div>
+    <div style="text-align:center;padding:40px;color:var(--gray-400)">Yükleniyor...</div>`;
+  try {
+    const [duyurular, okunanlar] = await Promise.all([getDuyurular(), getOkunanDuyurular()]);
+    const adminForm = currentDTMUser?.role === 'admin' ? `
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><h3>Yeni Duyuru Yayınla</h3></div>
+        <div class="card-body">
+          <div class="form-group"><label>Başlık</label><input type="text" id="duyuruBaslik" placeholder="Duyuru başlığı"></div>
+          <div class="form-group"><label>Mesaj</label><textarea id="duyuruMesaj" rows="4" placeholder="Duyuru içeriği..." style="width:100%;padding:8px;border:1px solid var(--gray-200);border-radius:6px;font-size:14px;resize:vertical"></textarea></div>
+          <div id="duyuruMsg" style="margin:8px 0;font-size:13px"></div>
+          <button class="btn btn-primary" onclick="duyuruOlustur()">Yayınla</button>
+        </div>
+      </div>` : '';
+    const listHTML = duyurular.length === 0
+      ? `<div style="text-align:center;padding:40px;color:var(--gray-400)">Henüz duyuru yok.</div>`
+      : duyurular.map(d => {
+          const okundu = okunanlar.includes(d.id);
+          const tarih = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('tr-TR') : '-';
+          return `
+            <div class="duyuru-item ${okundu ? 'duyuru-okundu' : 'duyuru-okunmadi'}">
+              <div class="duyuru-ust">
+                <div class="duyuru-baslik">
+                  ${!okundu ? '<span class="duyuru-yeni">Yeni</span>' : ''}
+                  ${d.baslik}
+                </div>
+                <div class="duyuru-meta">${d.createdBy} &middot; ${tarih}</div>
+              </div>
+              <div class="duyuru-mesaj">${d.mesaj}</div>
+              <div class="duyuru-actions">
+                ${!okundu ? `<button class="btn btn-sm btn-outline" onclick="duyuruOku('${d.id}')">Okundu</button>` : '<span style="color:var(--gray-400);font-size:12px">Okundu</span>'}
+                ${currentDTMUser?.role === 'admin' ? `<button class="btn btn-sm btn-danger" onclick="duyuruSil('${d.id}')">Sil</button>` : ''}
+              </div>
+            </div>`;
+        }).join('');
+    main.innerHTML = `
+      <div class="page-header"><h2>Duyurular</h2><p>Yönetici tarafından paylaşılan duyurular.</p></div>
+      ${adminForm}
+      <div class="card"><div class="card-header"><h3>Tüm Duyurular</h3></div><div class="card-body" style="padding:0">${listHTML}</div></div>`;
+  } catch(e) {
+    main.innerHTML = `<div class="page-header"><h2>Duyurular</h2></div><div style="color:red;padding:20px">Yüklenemedi: ${e.message}</div>`;
+  }
+}
+
+async function duyuruOlustur() {
+  const baslik = document.getElementById('duyuruBaslik').value.trim();
+  const mesaj = document.getElementById('duyuruMesaj').value.trim();
+  const msg = document.getElementById('duyuruMsg');
+  if (!baslik || !mesaj) { msg.style.color = 'red'; msg.textContent = 'Başlık ve mesaj zorunlu.'; return; }
+  try {
+    await createDuyuru(baslik, mesaj);
+    msg.style.color = 'green'; msg.textContent = 'Duyuru yayınlandı!';
+    document.getElementById('duyuruBaslik').value = '';
+    document.getElementById('duyuruMesaj').value = '';
+    renderDuyurularPage();
+  } catch(e) { msg.style.color = 'red'; msg.textContent = 'Hata: ' + e.message; }
+}
+
+async function duyuruOku(duyuruId) {
+  try {
+    await duyuruOkunduIsaretle(duyuruId);
+    okunmamiDuyuruSayisi = Math.max(0, okunmamiDuyuruSayisi - 1);
+    updateDuyuruBadge();
+    renderDuyurularPage();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+async function duyuruSil(duyuruId) {
+  if (!confirm('Bu duyuru silinecek. Emin misiniz?')) return;
+  try {
+    await deleteDuyuru(duyuruId);
+    renderDuyurularPage();
+  } catch(e) { alert('Hata: ' + e.message); }
 }
