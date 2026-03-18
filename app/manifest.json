@@ -1,0 +1,18 @@
+{
+  "name": "Doğrudan Temin Modülü",
+  "short_name": "DTM",
+  "description": "Karaman İl Özel İdaresi - Doğrudan Temin Modülü",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1e3a5f",
+  "theme_color": "#1e3a5f",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

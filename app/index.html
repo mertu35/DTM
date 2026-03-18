@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Doğrudan Temin Modülü</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e3a5f">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -104,5 +108,14 @@
   <script src="js/calculations.js?v=20260319"></script>
   <script src="js/documents.js?v=20260319"></script>
   <script src="js/app.js?v=20260319"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(() => console.log('DTM: Service Worker aktif'))
+          .catch(err => console.warn('DTM: Service Worker hatası', err));
+      });
+    }
+  </script>
 </body>
 </html>
