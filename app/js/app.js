@@ -4,6 +4,89 @@ let referans = loadReferans();
 let currentPage = 'veri-giris';
 let saveTimeout = null;
 
+// ===== AUTH =====
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const errDiv = document.getElementById('loginError');
+  if (!username || !password) { showLoginError('Kullanıcı adı ve şifre gerekli.'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Giriş yapılıyor...';
+  errDiv.style.display = 'none';
+  try {
+    await dtmLogin(username, password);
+  } catch(e) {
+    showLoginError('Kullanıcı adı veya şifre hatalı.');
+    btn.disabled = false;
+    btn.textContent = 'Giriş Yap';
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function doLogout() {
+  if (!confirm('Çıkış yapmak istediğinize emin misiniz?')) return;
+  await dtmLogout();
+}
+
+async function onAuthReady(user) {
+  if (user && currentDTMUser) {
+    // Referansı buluttan yükle
+    try {
+      const cloudRef = await loadReferansFromCloud();
+      if (cloudRef) {
+        referans = Object.assign(getDefaultReferans(), cloudRef);
+      } else {
+        referans = loadReferans();
+        await saveReferansToCloud(referans);
+      }
+    } catch(e) {
+      referans = loadReferans();
+    }
+    // Admin menüyü göster
+    document.querySelectorAll('.admin-only').forEach(el => {
+      el.style.display = currentDTMUser.role === 'admin' ? '' : 'none';
+    });
+    // Kullanıcı bilgisi
+    document.getElementById('sidebarUserName').textContent = currentDTMUser.displayName || currentDTMUser.username;
+    document.getElementById('sidebarUserRole').textContent = currentDTMUser.role === 'admin' ? 'Yönetici' : 'Kullanıcı';
+    // Ekranları göster/gizle
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('appLayout').style.display = '';
+    init();
+  } else {
+    document.getElementById('loginOverlay').style.display = '';
+    document.getElementById('appLayout').style.display = 'none';
+  }
+}
+
+// Enter tuşu ile login
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('loginPassword').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('loginUsername').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('loginPassword').focus();
+  });
+  // Firebase auth state dinleyici
+  auth.onAuthStateChanged(async user => {
+    if (user) {
+      if (!currentDTMUser) {
+        const snap = await db.collection('users').doc(user.uid).get();
+        if (snap.exists) currentDTMUser = { uid: user.uid, ...snap.data() };
+      }
+      onAuthReady(user);
+    } else {
+      onAuthReady(null);
+    }
+  });
+});
+
 function init() {
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -28,7 +111,8 @@ function renderPage() {
     case 'belgeler': main.innerHTML = renderBelgelerPage(); bindBelgeler(); break;
     case 'veri-merkezi': main.innerHTML = renderVeriMerkeziPage(); bindVeriMerkezi(); break;
     case 'dashboard': main.innerHTML = renderDashboardPage(); break;
-    case 'kaydet-yukle': main.innerHTML = renderKaydetYuklePage(); bindKaydetYukle(); break;
+    case 'kaydet-yukle': renderKaydetYuklePage(); break;
+    case 'kullanici-yonetimi': renderKullaniciYonetimiPage(); break;
   }
 }
 
@@ -760,34 +844,86 @@ function renderDashboardPage() {
 }
 
 // ===================== KAYDET / YÜKLE SAYFASI =====================
-function renderKaydetYuklePage() {
-  return `
+let currentCloudProjeId = null; // Açık olan cloud proje ID'si
+
+async function renderKaydetYuklePage() {
+  const main = document.getElementById('mainContent');
+  // İlk render - loading göster
+  main.innerHTML = `
     <div class="page-header">
       <h2>Kaydet / Yükle</h2>
-      <p>Proje verilerini JSON dosyası olarak kaydedin veya yükleyin.</p>
+      <p>Projeleri buluta kaydedin veya yerel dosya olarak yönetin.</p>
     </div>
-
+    ${renderKaydetYukleStatic()}
     <div class="card">
-      <div class="card-header"><h3>Mevcut Proje</h3></div>
+      <div class="card-header"><h3>&#9729; Projelerim</h3></div>
       <div class="card-body">
-        <p style="margin-bottom:12px"><strong>${proje.isAdi || '(İsimsiz Proje)'}</strong></p>
-        <div class="action-bar">
-          <button class="btn btn-primary" onclick="exportProjeJSON(proje)">&#128190; Dosyayı Kaydet</button>
-          <button class="btn btn-danger" onclick="if(confirm('Tüm proje verileri silinecek. Emin misiniz?')){localStorage.removeItem('${STORAGE_KEY}');proje=getDefaultProje();renderPage();}">Yeni Proje</button>
+        <div id="projelerListBody" style="text-align:center;padding:20px;color:var(--gray-400)">Projeler yükleniyor...</div>
+      </div>
+    </div>
+    ${renderVeriMerkeziYedek()}
+  `;
+  // Projeleri yükle
+  try {
+    const projeler = await getUserProjeler();
+    const projeListHTML = projeler.length === 0
+      ? `<p style="color:var(--gray-400);font-size:13px">Henüz kayıtlı proje yok.</p>`
+      : `<table class="data-table">
+          <thead><tr><th>Proje Adı</th>${currentDTMUser?.role === 'admin' ? '<th>Kullanıcı</th>' : ''}<th>Tarih</th><th></th></tr></thead>
+          <tbody>
+            ${projeler.map(p => {
+              const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
+              return `<tr>
+                <td><strong>${p.isAdi || '(İsimsiz)'}</strong></td>
+                ${currentDTMUser?.role === 'admin' ? `<td style="font-size:12px;color:var(--gray-500)">${p.userDisplayName || '-'}</td>` : ''}
+                <td style="font-size:12px;color:var(--gray-500)">${tarih}</td>
+                <td style="display:flex;gap:6px">
+                  <button class="btn btn-primary btn-sm" onclick="cloudProjeAc('${p.id}')">Aç</button>
+                  <button class="btn btn-danger btn-sm" onclick="cloudProjeSil('${p.id}', '${(p.isAdi||'').replace(/'/g,"\\'")}')">Sil</button>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    document.getElementById('projelerListBody').innerHTML = projeListHTML;
+  } catch(e) {
+    document.getElementById('projelerListBody').innerHTML =
+      `<p style="color:red;font-size:13px">Projeler yüklenemedi: ${e.message}</p>`;
+  }
+}
+
+function renderKaydetYukleStatic() {
+  const cloudBtnText = currentCloudProjeId ? '&#9729; Buluta Güncelle' : '&#9729; Buluta Kaydet';
+  return `
+    <div class="card">
+      <div class="card-header"><h3>&#128196; Mevcut Proje</h3></div>
+      <div class="card-body">
+        <p style="margin-bottom:12px"><strong>${proje.isAdi || '(İsimsiz Proje)'}</strong>
+          ${currentCloudProjeId ? `<span style="font-size:11px;color:var(--success);margin-left:8px">&#9729; Bulutta kayıtlı</span>` : ''}
+        </p>
+        <div class="action-bar" style="flex-wrap:wrap;gap:8px">
+          <button class="btn btn-primary" onclick="cloudKaydet()">${cloudBtnText}</button>
+          <button class="btn btn-outline" onclick="exportProjeJSON(proje)">&#128190; Dosyayı İndir</button>
+          <button class="btn btn-danger" onclick="yeniProje()">&#10009; Yeni Proje</button>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header"><h3>Proje Yükle</h3></div>
+      <div class="card-header"><h3>&#128194; Dosyadan Yükle</h3></div>
       <div class="card-body">
-        <p style="margin-bottom:12px">Daha önce kaydedilmiş bir JSON dosyasını yükleyin.</p>
-        <input type="file" id="fileInput" accept=".json" style="margin-bottom:12px">
-        <br>
-        <button class="btn btn-success" onclick="yukleProje()">Yükle</button>
+        <p style="margin-bottom:12px;font-size:13px;color:var(--gray-500)">Bilgisayardan JSON dosyası yükleyin.</p>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="file" id="fileInput" accept=".json">
+          <button class="btn btn-success" onclick="yukleProje()">Yükle</button>
+        </div>
       </div>
     </div>
+  `;
+}
 
+function renderVeriMerkeziYedek() {
+  return `
     <div class="card">
       <div class="card-header" style="background:linear-gradient(135deg,#e8f4fd,#dbeafe);border-bottom:2px solid #3b82f6;">
         <h3 style="color:#1e40af;">&#128190; Veri Merkezini Yedekle</h3>
@@ -795,12 +931,12 @@ function renderKaydetYuklePage() {
       <div class="card-body" style="background:#f8faff;">
         <div style="display:flex;gap:24px;align-items:stretch;flex-wrap:wrap;">
           <div style="flex:1;min-width:220px;background:#fff;border:1.5px solid #3b82f6;border-radius:10px;padding:18px 22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(59,130,246,0.08);">
-            <div style="font-weight:600;color:#1e40af;font-size:13px;letter-spacing:.3px;">&#128200; Yedek Al</div>
+            <div style="font-weight:600;color:#1e40af;font-size:13px;">&#128200; Yedek Al</div>
             <div style="font-size:12px;color:#64748b;">Veri Merkezi verilerini JSON olarak bilgisayara kaydet.</div>
             <button class="btn btn-primary" onclick="exportRefJSON()" style="margin-top:auto;">Veri Merkezini Kaydet</button>
           </div>
           <div style="flex:1;min-width:220px;background:#fff;border:1.5px solid #10b981;border-radius:10px;padding:18px 22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(16,185,129,0.08);">
-            <div style="font-weight:600;color:#065f46;font-size:13px;letter-spacing:.3px;">&#128196; Yedekten Geri Yükle</div>
+            <div style="font-weight:600;color:#065f46;font-size:13px;">&#128196; Yedekten Geri Yükle</div>
             <div style="font-size:12px;color:#64748b;">Daha önce kaydedilmiş verileri geri getir.</div>
             <div style="display:flex;align-items:center;gap:10px;margin-top:auto;flex-wrap:wrap;">
               <button class="btn btn-success" id="eskiVerilerBtn" onclick="yukleReferans()" style="white-space:nowrap;" disabled>Eski Verileri Getir</button>
@@ -814,6 +950,55 @@ function renderKaydetYuklePage() {
 }
 
 function bindKaydetYukle() {}
+
+async function cloudKaydet() {
+  try {
+    if (currentCloudProjeId) {
+      await updateProjeInCloud(currentCloudProjeId, proje);
+      alert('✓ Proje buluta güncellendi!');
+    } else {
+      currentCloudProjeId = await saveProjeToCloud(proje);
+      alert('✓ Proje buluta kaydedildi!');
+    }
+    renderPage();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}
+
+async function cloudProjeAc(projeId) {
+  try {
+    const doc = await getProjeFromCloud(projeId);
+    proje = Object.assign(getDefaultProje(), doc.data);
+    currentCloudProjeId = projeId;
+    saveProje(proje);
+    currentPage = 'veri-giris';
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector('[data-page="veri-giris"]').classList.add('active');
+    renderPage();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}
+
+async function cloudProjeSil(projeId, isAdi) {
+  if (!confirm(`"${isAdi}" projesi silinecek. Emin misiniz?`)) return;
+  try {
+    await deleteProjeFromCloud(projeId);
+    if (currentCloudProjeId === projeId) currentCloudProjeId = null;
+    renderPage();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}
+
+function yeniProje() {
+  if (!confirm('Mevcut proje silinecek. Emin misiniz?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  proje = getDefaultProje();
+  currentCloudProjeId = null;
+  renderPage();
+}
 
 function yukleProje() {
   const input = document.getElementById('fileInput');
@@ -854,5 +1039,110 @@ function yukleReferans() {
   reader.readAsText(input.files[0]);
 }
 
-// Init
-document.addEventListener('DOMContentLoaded', init);
+// ===================== KULLANICI YÖNETİMİ (ADMIN) =====================
+async function renderKullaniciYonetimiPage() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div class="page-header">
+      <h2>Kullanıcı Yönetimi</h2>
+      <p>Sisteme erişim yetkisi olan kullanıcıları yönetin.</p>
+    </div>
+    <div style="text-align:center;padding:40px;color:var(--gray-400)">Kullanıcılar yükleniyor...</div>
+  `;
+  try {
+    const users = await getAllUsers();
+    main.innerHTML = `
+      <div class="page-header">
+        <h2>Kullanıcı Yönetimi</h2>
+        <p>Sisteme erişim yetkisi olan kullanıcıları yönetin.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>&#128100; Yeni Kullanıcı Ekle</h3></div>
+        <div class="card-body">
+          <div class="form-grid" style="max-width:600px">
+            <div class="form-group">
+              <label>Ad Soyad</label>
+              <input type="text" id="yeniAd" placeholder="Ad Soyad">
+            </div>
+            <div class="form-group">
+              <label>Kullanıcı Adı</label>
+              <input type="text" id="yeniUsername" placeholder="kullaniciadi">
+            </div>
+            <div class="form-group">
+              <label>Şifre</label>
+              <input type="password" id="yeniSifre" placeholder="En az 6 karakter">
+            </div>
+            <div class="form-group">
+              <label>Rol</label>
+              <select id="yeniRol">
+                <option value="user">Kullanıcı</option>
+                <option value="admin">Yönetici</option>
+              </select>
+            </div>
+          </div>
+          <div id="kullaniciMsg" style="margin:8px 0;font-size:13px"></div>
+          <button class="btn btn-primary" onclick="kullaniciEkle()">+ Kullanıcı Ekle</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>&#128101; Mevcut Kullanıcılar</h3></div>
+        <div class="card-body">
+          <table class="data-table">
+            <thead><tr><th>Ad Soyad</th><th>Kullanıcı Adı</th><th>Rol</th><th></th></tr></thead>
+            <tbody>
+              ${users.map(u => `
+                <tr>
+                  <td>${u.displayName || '-'}</td>
+                  <td>${u.username || '-'}</td>
+                  <td><span class="badge ${u.role === 'admin' ? 'badge-admin' : 'badge-user'}">${u.role === 'admin' ? 'Yönetici' : 'Kullanıcı'}</span></td>
+                  <td>
+                    ${u.uid !== currentDTMUser.uid ? `<button class="btn btn-danger btn-sm" onclick="kullaniciSil('${u.uid}', '${u.displayName}')">Sil</button>` : '<span style="color:var(--gray-400);font-size:12px">(Aktif oturum)</span>'}
+                  </td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    main.innerHTML = `<div class="page-header"><h2>Kullanıcı Yönetimi</h2></div>
+      <div style="color:red;padding:20px">Hata: ${e.message}</div>`;
+  }
+}
+
+async function kullaniciEkle() {
+  const ad = document.getElementById('yeniAd').value.trim();
+  const username = document.getElementById('yeniUsername').value.trim();
+  const sifre = document.getElementById('yeniSifre').value;
+  const rol = document.getElementById('yeniRol').value;
+  const msg = document.getElementById('kullaniciMsg');
+
+  if (!ad || !username || !sifre) { msg.style.color = 'red'; msg.textContent = 'Tüm alanları doldurun.'; return; }
+  if (sifre.length < 6) { msg.style.color = 'red'; msg.textContent = 'Şifre en az 6 karakter olmalı.'; return; }
+
+  msg.style.color = 'var(--gray-500)'; msg.textContent = 'Kullanıcı oluşturuluyor...';
+  try {
+    await createDTMUser(username, sifre, ad, rol);
+    msg.style.color = 'green'; msg.textContent = `✓ "${ad}" kullanıcısı başarıyla oluşturuldu.`;
+    document.getElementById('yeniAd').value = '';
+    document.getElementById('yeniUsername').value = '';
+    document.getElementById('yeniSifre').value = '';
+    renderKullaniciYonetimiPage();
+  } catch(e) {
+    msg.style.color = 'red';
+    if (e.code === 'auth/email-already-in-use') msg.textContent = 'Bu kullanıcı adı zaten kullanımda.';
+    else msg.textContent = 'Hata: ' + e.message;
+  }
+}
+
+async function kullaniciSil(uid, ad) {
+  if (!confirm(`"${ad}" kullanıcısı silinecek. Emin misiniz?`)) return;
+  try {
+    await db.collection('users').doc(uid).delete();
+    renderKullaniciYonetimiPage();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}

@@ -107,6 +107,9 @@ function loadProje() {
 
 function saveReferans(ref) {
   localStorage.setItem(REF_STORAGE_KEY, JSON.stringify(ref));
+  if (typeof saveReferansToCloud === 'function') {
+    saveReferansToCloud(ref).catch(() => {});
+  }
 }
 
 function loadReferans() {

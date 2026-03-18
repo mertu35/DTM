@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Kullanıcılar - sadece giriş yapmış kullanıcılar okuyabilir
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Projeler - giriş yapmış kullanıcılar kendi projelerini görebilir
+    // Admin tüm projeleri görebilir
+    match /projeler/{projeId} {
+      allow read: if request.auth != null &&
+        (resource.data.userId == request.auth.uid ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null &&
+        (resource.data.userId == request.auth.uid ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+  }
+}

@@ -21,5 +21,5 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     with http.server.HTTPServer(("", PORT), NoCacheHandler) as httpd:
-        print(f"DTM sunucu çalışıyor → http://localhost:{PORT}")
+        print(f"DTM sunucu calisiyor: http://localhost:{PORT}")
         httpd.serve_forever()

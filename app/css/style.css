@@ -74,6 +74,124 @@ body {
   overflow-y: auto;
 }
 
+/* Sidebar - Kullanıcı Bilgisi */
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-top: 1px solid var(--gray-700);
+  gap: 8px;
+}
+.sidebar-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+.sidebar-user-avatar {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.sidebar-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-user-role {
+  font-size: 11px;
+  color: var(--gray-400);
+}
+.btn-logout {
+  background: none;
+  border: 1px solid var(--gray-600);
+  color: var(--gray-400);
+  border-radius: 6px;
+  padding: 5px 9px;
+  cursor: pointer;
+  font-size: 13px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  transform: rotate(90deg);
+}
+.btn-logout:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+/* Login Ekranı */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #1a1f2e 0%, #1a40a3 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.login-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.login-logo {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.login-logo h1 {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -1px;
+}
+.login-logo p {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+.login-version {
+  font-size: 11px;
+  color: var(--gray-400);
+  background: var(--gray-100);
+  padding: 2px 8px;
+  border-radius: 20px;
+  display: inline-block;
+  margin-top: 6px;
+}
+.login-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* Badge */
+.badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+}
+.badge-admin {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badge-user {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
 .nav-section {
   padding: 8px 20px 4px;
   font-size: 10px;
