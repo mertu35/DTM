@@ -1722,10 +1722,9 @@ async function renderProjelerimPage() {
     if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
 
     const bolumler = [
-      { key: 'taslak',          baslik: '📝 Taslaklar',       renk: '#f9fafb', kenar: '#e5e7eb', yaziRenk: '#374151' },
-      { key: 'gonderildi',      baslik: '📤 Gönderildi',      renk: '#eff6ff', kenar: '#bfdbfe', yaziRenk: '#1e40af' },
-      { key: 'geri_gonderildi', baslik: '↩ Geri Gönderildi', renk: '#fef2f2', kenar: '#fecaca', yaziRenk: '#991b1b' },
-      { key: 'onaylandi',       baslik: '✅ Onaylandı',       renk: '#f0fdf4', kenar: '#bbf7d0', yaziRenk: '#15803d' }
+      { keys: ['taslak'],                    baslik: '📂 Devam Edenler',     renk: '#f9fafb', kenar: '#e5e7eb', yaziRenk: '#374151' },
+      { keys: ['geri_gonderildi'],           baslik: '⏳ İşlem Bekleyenler', renk: '#fef2f2', kenar: '#fecaca', yaziRenk: '#991b1b' },
+      { keys: ['gonderildi', 'onaylandi'],   baslik: '✅ Onaylananlar',       renk: '#f0fdf4', kenar: '#bbf7d0', yaziRenk: '#15803d' }
     ];
 
     const projeKart = (p) => {
@@ -1733,7 +1732,14 @@ async function renderProjelerimPage() {
       const isAdiSafe = (p.isAdi||'').replace(/'/g,'');
       const kilitli = p.locked === true;
       const gonderildi = p.status === 'gonderildi' || p.status === 'onaylandi';
-      const canOpen = true;
+
+      let durmBilgisi = '';
+      if (p.status === 'gonderildi') {
+        durmBilgisi = `<div style="font-size:12px;color:#1e40af;margin-top:4px">⏳ Gerçekleştirmecinin onayı bekleniyor</div>`;
+      } else if (p.status === 'onaylandi') {
+        durmBilgisi = `<div style="font-size:12px;color:#15803d;margin-top:4px;font-weight:600">✅ Onaylandı</div>`;
+      }
+
       return `<div class="ky-proje-item">
         <div class="ky-proje-info">
           <div class="ky-proje-name">
@@ -1744,6 +1750,7 @@ async function renderProjelerimPage() {
             <span class="ky-proje-date">📅 ${tarih}</span>
             ${p.atananGerceklestirmeciAd ? `<span class="ky-proje-user">👷 ${p.atananGerceklestirmeciAd}</span>` : ''}
           </div>
+          ${durmBilgisi}
           ${p.status === 'geri_gonderildi' && p.geriGonderNot ? `
             <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:7px 10px;margin-top:6px;font-size:12px;color:#991b1b">
               <strong>Not:</strong> ${p.geriGonderNot}
@@ -1762,7 +1769,7 @@ async function renderProjelerimPage() {
         <button class="btn btn-primary" onclick="yeniProjeBaslat()">&#43; Yeni Proje</button>
       </div>
       ${bolumler.map(b => {
-        const grup = projeler.filter(p => (p.status || 'taslak') === b.key);
+        const grup = projeler.filter(p => b.keys.includes(p.status || 'taslak'));
         return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
           <div style="padding:12px 16px;background:${b.renk};border-bottom:1px solid ${b.kenar};font-weight:700;font-size:13px;color:${b.yaziRenk}">
             ${b.baslik} (${grup.length})
