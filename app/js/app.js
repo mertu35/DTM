@@ -1232,6 +1232,12 @@ async function cloudKaydet() {
   try {
     if (currentCloudProjeId) {
       await updateProjeInCloud(currentCloudProjeId, proje);
+      // Geri gönderme notunu temizle
+      await db.collection('projeler').doc(currentCloudProjeId).update({
+        geriGonderNot: null,
+        geriGonderAt: null,
+        geriGonderBy: null
+      }).catch(() => {});
       alert('✓ Proje buluta güncellendi!');
     } else {
       currentCloudProjeId = await saveProjeToCloud(proje);
