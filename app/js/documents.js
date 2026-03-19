@@ -303,7 +303,7 @@ function renderTeklifTutanagi(proje, referans) {
       ${kazananHTML}
 
       <div style="margin:12px 0;border:0.5mm solid #000;padding:10px 14px;page-break-inside:avoid">
-        <p style="text-align:justify;line-height:1.4">4734 sayılı Kamu İhale Kanunu'nun 22 nci Maddesi uyarınca doğrudan temin usulüyle yapılacak alımlara ilişkin yapılan piyasa araştırmasında ${teklifVerenMetni} teklif edilen fiyatlar ${tarafMetni} değerlendirilerek yukarıda adı ve adresleri belirtilen ${kazananKisiMetni} alım yapılması uygun görülmüştür. ${formatDate(proje.dtOnayTarihi)}</p>
+        <p style="text-align:justify;line-height:1.4">4734 sayılı Kamu İhale Kanunu'nun 22 nci Maddesi uyarınca <strong>doğrudan temin usulüyle</strong> yapılacak alımlara ilişkin yapılan piyasa araştırmasında ${teklifVerenMetni} teklif edilen fiyatlar ${tarafMetni} değerlendirilerek yukarıda adı ve adresleri belirtilen ${kazananKisiMetni} alım yapılması uygun görülmüştür. ${formatDate(proje.dtOnayTarihi)}</p>
 
         <div style="display:flex;align-items:flex-start;margin-top:14px;gap:0">
           <!-- Görevliler sol tarafta -->
