@@ -66,6 +66,32 @@ if (!document.getElementById('toastStyle')) {
   document.head.appendChild(s);
 }
 
+// ===== ÖZEL ONAY MODAL =====
+function showConfirm(mesaj, onayBtn = 'Evet', iptalBtn = 'İptal') {
+  return new Promise(resolve => {
+    const mevcut = document.getElementById('dtmConfirmModal');
+    if (mevcut) mevcut.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'dtmConfirmModal';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <p style="font-size:15px;color:#1f2937;line-height:1.6;margin:0 0 22px">${mesaj}</p>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button id="dtmConfirmIptal" style="background:#f3f4f6;color:#374151;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">${iptalBtn}</button>
+          <button id="dtmConfirmOnay" style="background:#dc2626;color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">${onayBtn}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    function kapat(sonuc) { overlay.remove(); resolve(sonuc); }
+    document.getElementById('dtmConfirmOnay').onclick = () => kapat(true);
+    document.getElementById('dtmConfirmIptal').onclick = () => kapat(false);
+    overlay.addEventListener('click', e => { if (e.target === overlay) kapat(false); });
+  });
+}
+
 // ===== AUTH =====
 async function doLogin() {
   const username = document.getElementById('loginUsername').value.trim();
@@ -92,7 +118,7 @@ function showLoginError(msg) {
 }
 
 async function doLogout() {
-  if (!confirm('Çıkış yapmak istediğinize emin misiniz?')) return;
+  if (!await showConfirm('Çıkış yapmak istediğinize emin misiniz?', 'Çıkış Yap')) return;
   await dtmLogout();
 }
 
@@ -1571,7 +1597,7 @@ async function belgeyeGit(projeId) {
 }
 
 async function onayiKaldirClick(projeId, isAdi) {
-  if (!confirm(`"${isAdi}" projesinin onayı kaldırılacak.\n\nOluşturulan belgeler silinecek. Emin misiniz?`)) return;
+  if (!await showConfirm(`"${isAdi}" projesinin onayı kaldırılacak.<br><br>Oluşturulan belgeler silinecek. Emin misiniz?`, 'Onayı Kaldır')) return;
   try {
     await db.collection('projeler').doc(projeId).update({
       status: 'gonderildi',
@@ -1586,7 +1612,7 @@ async function onayiKaldirClick(projeId, isAdi) {
 }
 
 async function onaylaClick(projeId, isAdi) {
-  if (!confirm(`"${isAdi}" projesi onaylanacak.\n\nBu işlem geri alınamaz. Emin misiniz?`)) return;
+  if (!await showConfirm(`"${isAdi}" projesi onaylanacak.<br><br>Bu işlem geri alınamaz. Emin misiniz?`, 'Onayla')) return;
   try {
     await onaylaProje(projeId);
     // Belge oluşturma sayfasına yönlendir
@@ -1611,7 +1637,7 @@ async function geriGonderClick(projeId, isAdi) {
 
 async function cloudProjeSil(projeId, isAdi, kilitli) {
   if (kilitli) { showToast(`"${isAdi}" projesi kilitli. Silmek için önce kilidi açın.`, 'warning'); return; }
-  if (!confirm(`"${isAdi}" projesi silinecek. Emin misiniz?`)) return;
+  if (!await showConfirm(`"${isAdi}" projesi kalıcı olarak silinecek. Emin misiniz?`, 'Sil')) return;
   try {
     await deleteProjeFromCloud(projeId);
     if (currentCloudProjeId === projeId) { currentCloudProjeId = null; currentProjeKilitli = false; }
@@ -1631,8 +1657,8 @@ async function cloudProjeKilitle(projeId, kilitle) {
   }
 }
 
-function yeniProje() {
-  if (!confirm('Mevcut proje silinecek. Emin misiniz?')) return;
+async function yeniProje() {
+  if (!await showConfirm('Mevcut proje silinecek. Emin misiniz?', 'Sil')) return;
   localStorage.removeItem(STORAGE_KEY);
   proje = getDefaultProje();
   currentCloudProjeId = null;
@@ -1797,7 +1823,7 @@ async function kullaniciRolDegistir(uid, yeniRol) {
 }
 
 async function kullaniciSil(uid, ad) {
-  if (!confirm(`"${ad}" kullanıcısı silinecek. Emin misiniz?`)) return;
+  if (!await showConfirm(`"${ad}" kullanıcısı kalıcı olarak silinecek. Emin misiniz?`, 'Sil')) return;
   try {
     await db.collection('users').doc(uid).delete();
     renderKullaniciYonetimiPage();
@@ -2350,7 +2376,7 @@ async function duyuruOku(duyuruId) {
 }
 
 async function duyuruSil(duyuruId) {
-  if (!confirm('Bu duyuru silinecek. Emin misiniz?')) return;
+  if (!await showConfirm('Bu duyuru silinecek. Emin misiniz?', 'Sil')) return;
   try {
     await deleteDuyuru(duyuruId);
     renderDuyurularPage();
