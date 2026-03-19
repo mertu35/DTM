@@ -695,10 +695,10 @@ function renderVeriGirisPage() {
     ${!currentProjeKilitli ? `
     <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid #e5e7eb;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:100;box-shadow:0 -2px 8px rgba(0,0,0,0.06)">
       <span style="font-size:13px;color:#6b7280">
-        ${currentCloudProjeId ? '☁️ Değişiklikler kaydedilmedi.' : '💡 Proje henüz buluta kaydedilmedi.'}
+        ${currentCloudProjeId ? '💡 Değişikliklerinizi kaydetmeyi unutmayın.' : '💡 Proje henüz kaydedilmedi.'}
       </span>
       <button class="btn btn-primary" onclick="cloudKaydet()" style="min-width:140px">
-        ${currentCloudProjeId ? '☁️ Güncelle' : '☁️ Buluta Kaydet'}
+        💾 Kaydet
       </button>
     </div>` : ''}
   `;
@@ -1214,7 +1214,7 @@ async function renderKaydetYuklePage() {
       ? `<div class="ky-empty-state">
            <div class="ky-empty-icon">📂</div>
            <div class="ky-empty-title">Henüz buluta kayıtlı proje yok</div>
-           <div class="ky-empty-desc">Yukarıdaki "Buluta Kaydet" butonu ile ilk projenizi kaydedin.</div>
+           <div class="ky-empty-desc">Yukarıdaki "Kaydet" butonu ile ilk projenizi kaydedin.</div>
          </div>`
       : `<div class="ky-proje-grid">
           ${projeler.map(p => {
@@ -1265,7 +1265,7 @@ async function renderKaydetYuklePage() {
 
 function renderKaydetYukleStatic() {
   const aktifProjeKarti = projeAktif ? (() => {
-    const cloudBtnText = currentCloudProjeId ? '☁️ Güncelle' : '☁️ Buluta Kaydet';
+    const cloudBtnText = '💾 Kaydet';
     const isAdi = proje.isAdi || '(İsimsiz Proje)';
     const kayitliClass = currentCloudProjeId ? 'ky-status-saved' : 'ky-status-unsaved';
     const kayitliText = currentCloudProjeId ? '☁️ Bulutta kayıtlı' : '⚠️ Kaydedilmedi';
