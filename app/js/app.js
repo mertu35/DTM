@@ -1261,9 +1261,47 @@ async function cloudProjeAc(projeId) {
 }
 
 async function gonderiClick(projeId, isAdi) {
-  if (!confirm(`"${isAdi}" projesi gerçekleştirmeciye gönderilecek.\n\nBu işlem geri alınamaz, proje kilitlenecek.\n\nEmin misiniz?`)) return;
+  // Gerçekleştirmecileri yükle
+  let gerceklestirmeciler;
   try {
-    await gonderiProje(projeId);
+    gerceklestirmeciler = await getGerceklestirmeciler();
+  } catch(e) {
+    alert('Gerçekleştirmeciler yüklenemedi: ' + e.message); return;
+  }
+  if (gerceklestirmeciler.length === 0) {
+    alert('Sistemde kayıtlı gerçekleştirmeci bulunamadı.'); return;
+  }
+
+  // Modal oluştur
+  const modalHtml = `
+    <div id="gonderiModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:14px;padding:32px 28px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+        <h3 style="font-size:17px;font-weight:700;color:#1f2937;margin-bottom:6px">📤 Gerçekleştirmeciye Gönder</h3>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:20px"><strong>${isAdi}</strong> projesi seçtiğiniz kişiye gönderilecek. Bu işlem geri alınamaz.</p>
+        <div style="margin-bottom:20px">
+          <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Gerçekleştirmeci Seçin</label>
+          <select id="gerceklestirmeciSelect" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <option value="">-- Seçin --</option>
+            ${gerceklestirmeciler.map(g => `<option value="${g.uid}" data-ad="${g.displayName}">${g.displayName}</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button onclick="document.getElementById('gonderiModal').remove()" style="padding:9px 20px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">İptal</button>
+          <button onclick="gonderiOnayla('${projeId}')" style="padding:9px 20px;background:#16a34a;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Gönder</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+async function gonderiOnayla(projeId) {
+  const select = document.getElementById('gerceklestirmeciSelect');
+  const uid = select.value;
+  const ad = select.options[select.selectedIndex]?.dataset?.ad || '';
+  if (!uid) { alert('Lütfen bir gerçekleştirmeci seçin.'); return; }
+  document.getElementById('gonderiModal').remove();
+  try {
+    await gonderiProje(projeId, uid, ad);
     if (currentCloudProjeId === projeId) currentProjeKilitli = true;
     renderPage();
   } catch(e) {
