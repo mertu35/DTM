@@ -164,7 +164,9 @@ async function getUserProjeler() {
   if (['admin', 'superadmin'].includes(currentDTMUser?.role)) {
     query = db.collection('projeler');
   } else if (currentDTMUser?.role === 'gerceklestirmeci') {
-    query = db.collection('projeler').where('atananGerceklestirmeciUid', '==', user.uid);
+    query = db.collection('projeler')
+      .where('atananGerceklestirmeciUid', '==', user.uid)
+      .where('status', '==', 'gonderildi');
   } else {
     query = db.collection('projeler').where('userId', '==', user.uid);
   }
