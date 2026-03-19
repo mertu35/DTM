@@ -8,6 +8,7 @@ let currentProjeKilitli = false;
 let currentProjeBaskaKullanici = false;
 let currentProjeStatus = 'taslak';
 let okunmamiDuyuruSayisi = 0;
+let currentBelgelerProjeId = null;
 
 // ===== ROL YARDIMCISI =====
 function getRoleLabel(role) {
@@ -129,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Proje gerektiren menüler
-const PROJE_GEREKEN_SAYFALAR = ['veri-giris', 'belgeler'];
+const PROJE_GEREKEN_SAYFALAR = ['veri-giris'];
 
 function updateNavLock() {
   document.querySelectorAll('.nav-item').forEach(item => {
@@ -169,9 +170,9 @@ function renderPage() {
   switch (currentPage) {
     case 'anasayfa': renderAnaSayfaPage(); break;
     case 'veri-giris': main.innerHTML = renderVeriGirisPage(); bindVeriGiris(); break;
-    case 'belgeler': main.innerHTML = renderBelgelerPage(); bindBelgeler(); break;
+    case 'belgeler': renderBelgelerPage(); break;
     case 'veri-merkezi': main.innerHTML = renderVeriMerkeziPage(); bindVeriMerkezi(); break;
-    case 'dashboard': main.innerHTML = renderDashboardPage(); break;
+    case 'dashboard': renderDashboardPage(); break;
     case 'kaydet-yukle': renderKaydetYuklePage(); break;
     case 'kullanici-yonetimi': renderKullaniciYonetimiPage(); break;
     case 'duyurular': renderDuyurularPage(); break;
@@ -276,11 +277,21 @@ async function renderAnaSayfaPage() {
 }
 
 function yeniProjeBaslat() {
-  const modal = document.getElementById('yeniProjeModal');
-  if (modal) {
-    modal.style.display = 'flex';
-    setTimeout(() => document.getElementById('yeniProjeAdi')?.focus(), 100);
+  let modal = document.getElementById('yeniProjeModal');
+  if (!modal) {
+    // Modal sadece Ana Sayfa'da render ediliyor; önce oraya git, sonra aç
+    currentPage = 'anasayfa';
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector('[data-page="anasayfa"]')?.classList.add('active');
+    renderPage();
+    setTimeout(() => {
+      const m = document.getElementById('yeniProjeModal');
+      if (m) { m.style.display = 'flex'; setTimeout(() => document.getElementById('yeniProjeAdi')?.focus(), 50); }
+    }, 400);
+    return;
   }
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('yeniProjeAdi')?.focus(), 100);
 }
 
 function yeniProjeOlustur() {
@@ -767,7 +778,57 @@ function toggleCard(header) {
 // ===================== BELGELER SAYFASI =====================
 let currentBelge = 'yaklasik-maliyet';
 
-function renderBelgelerPage() {
+async function renderBelgelerPage() {
+  const main = document.getElementById('mainContent');
+
+  // DURUM 1: Proje seçilmedi → proje listesini göster
+  if (!currentBelgelerProjeId) {
+    main.innerHTML = `
+      <div class="page-header">
+        <h2>&#128196; Belge Önizleme</h2>
+        <p>Belge oluşturmak istediğiniz projeyi seçin.</p>
+      </div>
+      <div id="belgelerProjeList">
+        <div style="text-align:center;padding:40px;color:var(--gray-400)">Yükleniyor...</div>
+      </div>`;
+    try {
+      const projeler = await getUserProjeler();
+      const listEl = document.getElementById('belgelerProjeList');
+      if (!listEl) return;
+      if (projeler.length === 0) {
+        listEl.innerHTML = `
+          <div style="text-align:center;padding:60px 20px;color:var(--gray-400)">
+            <div style="font-size:48px;margin-bottom:16px">&#128196;</div>
+            <div style="font-size:15px;font-weight:600;margin-bottom:8px">Henüz proje yok</div>
+            <div style="font-size:13px">Önce bir proje oluşturun.</div>
+          </div>`;
+        return;
+      }
+      listEl.innerHTML = `<div class="ky-proje-grid">
+        ${projeler.map(p => {
+          const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
+          return `<div class="ky-proje-item">
+            <div class="ky-proje-info">
+              <div class="ky-proje-name">${p.isAdi || '(İsimsiz)'}</div>
+              <div class="ky-proje-meta">
+                <span class="ky-proje-date">&#128197; ${tarih}</span>
+                ${getStatusBadge(p.status || 'taslak')}
+              </div>
+            </div>
+            <div class="ky-proje-actions">
+              <button class="ky-btn-open" onclick="belgelerProjeAc('${p.id}')">Belgeyi Gör</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    } catch(e) {
+      const listEl = document.getElementById('belgelerProjeList');
+      if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${e.message}</div>`;
+    }
+    return;
+  }
+
+  // DURUM 2: Proje seçili → belge tab'larını göster
   const belgeler = [
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
@@ -789,10 +850,17 @@ function renderBelgelerPage() {
     case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
   }
 
-  return `
-    <div class="page-header">
-      <h2>Belge Önizleme</h2>
-      <p>Belgeyi seçin, önizleyin ve yazdırın.</p>
+  main.innerHTML = `
+    <div class="page-header" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <button onclick="currentBelgelerProjeId=null; renderPage();"
+        style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:6px 12px;
+               cursor:pointer;font-size:13px;color:var(--gray-600);white-space:nowrap;margin-top:4px">
+        &#8592; Proje Listesi
+      </button>
+      <div>
+        <h2>&#128196; Belge Önizleme</h2>
+        <p style="display:flex;align-items:center;gap:8px">${proje.isAdi || ''} ${getStatusBadge(currentProjeStatus)}</p>
+      </div>
     </div>
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar">
@@ -800,6 +868,20 @@ function renderBelgelerPage() {
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
+}
+
+async function belgelerProjeAc(projeId) {
+  try {
+    const doc = await getProjeFromCloud(projeId);
+    proje = Object.assign(getDefaultProje(), doc.data);
+    currentCloudProjeId = projeId;
+    currentProjeStatus = doc.status || 'taslak';
+    currentBelgelerProjeId = projeId;
+    currentBelge = 'yaklasik-maliyet';
+    renderPage();
+  } catch(e) {
+    alert('Proje yüklenemedi: ' + e.message);
+  }
 }
 
 function bindBelgeler() {}
@@ -974,87 +1056,110 @@ function onRefAdd(list, item) {
 }
 
 // ===================== DASHBOARD SAYFASI =====================
-function renderDashboardPage() {
-  const yaklasikMaliyet = hesaplaYaklasikMaliyet(proje);
-  const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
-  const kazanan = kazananIdx >= 0 ? getKazananFirma(proje, referans) : null;
-  const tasarruf = kazanan ? yaklasikMaliyet - kazanan.toplam : 0;
-  const tasarrufOran = yaklasikMaliyet > 0 && kazanan ? (tasarruf / yaklasikMaliyet * 100) : 0;
-  const hak = hesaplaHakedis(proje);
-  const kalemler = getKalemler(proje);
-
-  const firmaKarsilastirma = proje.teklifFirmalar.filter(f=>f.ad).map((f, i) => {
-    const ymF = proje.ymFirmalar[i];
-    const ymToplam = ymF ? hesaplaYMFirmaToplam(ymF, kalemler) : 0;
-    const teklifToplam = hesaplaTeklifFirmaToplam(f, kalemler);
-    const fark = ymToplam - teklifToplam;
-    const isKazanan = i === kazananIdx;
-    return `<tr style="${isKazanan ? 'background:rgba(13,159,110,0.1)' : ''}">
-      <td>${i + 1}</td>
-      <td>${f.ad} ${isKazanan ? '<strong>(KAZANAN)</strong>' : ''}</td>
-      <td class="rakam">${formatCurrency(ymToplam)}</td>
-      <td class="rakam">${formatCurrency(teklifToplam)}</td>
-      <td class="rakam">${formatCurrency(fark)}</td>
-      <td class="rakam">${ymToplam > 0 ? (fark/ymToplam*100).toFixed(1) + '%' : '-'}</td>
-    </tr>`;
-  }).join('');
-
-  return `
+async function renderDashboardPage() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
     <div class="page-header">
-      <h2>${proje.isAdi || 'Proje'} - Dashboard</h2>
-      <p>${proje.idareAdi} - ${proje.mudurluk}</p>
+      <h2>&#128202; Dashboard</h2>
+      <p>Projelerinizin genel özeti.</p>
     </div>
+    <div style="text-align:center;padding:60px;color:var(--gray-400)">
+      <div style="font-size:32px;margin-bottom:12px">&#128202;</div>
+      Yükleniyor...
+    </div>`;
 
-    <div class="stat-grid">
-      <div class="stat-card primary">
-        <div class="stat-label">Yaklaşık Maliyet</div>
-        <div class="stat-value">${formatCurrencyInt(yaklasikMaliyet)} TL</div>
-        <div class="stat-sub">KDV Hariç</div>
-      </div>
-      <div class="stat-card success">
-        <div class="stat-label">Kazanan Teklif</div>
-        <div class="stat-value">${kazanan ? formatCurrencyInt(kazanan.toplam) + ' TL' : '-'}</div>
-        <div class="stat-sub">${kazanan ? kazanan.ad : ''}</div>
-      </div>
-      <div class="stat-card warning">
-        <div class="stat-label">Tasarruf</div>
-        <div class="stat-value">${formatCurrencyInt(tasarruf)} TL</div>
-        <div class="stat-sub">%${tasarrufOran.toFixed(1)}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Ödenecek Tutar</div>
-        <div class="stat-value">${hak ? formatCurrencyInt(hak.odenecek) + ' TL' : '-'}</div>
-        <div class="stat-sub">Kesintiler sonrası</div>
-      </div>
-    </div>
+  try {
+    const projeler = await getUserProjeler();
 
-    <div class="card">
-      <div class="card-header"><h3>Firma Karşılaştırması</h3></div>
-      <div class="card-body">
-        <table class="data-table">
-          <thead>
-            <tr><th>#</th><th>Firma</th><th>Y.M. Teklifi</th><th>Resmi Teklif</th><th>Fark</th><th>Fark %</th></tr>
-          </thead>
-          <tbody>${firmaKarsilastirma}</tbody>
-        </table>
-      </div>
-    </div>
+    const toplamSayi     = projeler.length;
+    const onaylananSayi  = projeler.filter(p => p.status === 'onaylandi').length;
+    const bekleyenSayi   = projeler.filter(p => p.status === 'taslak' || p.status === 'gonderildi').length;
+    const geriGonderSayi = projeler.filter(p => p.status === 'geri_gonderildi').length;
 
-    <div class="card">
-      <div class="card-header"><h3>Proje Bilgileri</h3></div>
-      <div class="card-body">
-        <table class="data-table">
-          <tbody>
-            <tr><td><strong>Sözleşme Tarihi</strong></td><td>${formatDate(proje.sozlesmeTarihi)}</td></tr>
-            <tr><td><strong>İş Süresi</strong></td><td>${proje.isSuresi} Takvim Günü</td></tr>
-            <tr><td><strong>Bitiş Tarihi</strong></td><td>${formatDate(proje.fiiliBitimTarihi || calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi))}</td></tr>
-            <tr><td><strong>Y.M. Onay</strong></td><td>${formatDate(proje.ymOnayTarihi)} / Sayi: ${proje.ymOnayNo}</td></tr>
-            <tr><td><strong>D.T. Onay</strong></td><td>${formatDate(proje.dtOnayTarihi)} / Sayi: ${proje.dtOnayNo}</td></tr>
-          </tbody>
-        </table>
+    const onaylananlar = projeler.filter(p => p.status === 'onaylandi');
+
+    const onayliSatirlar = onaylananlar.map(p => {
+      const projData = p.data ? Object.assign(getDefaultProje(), p.data) : getDefaultProje();
+      const kalemler = getKalemler(projData);
+      const ym = hesaplaYaklasikMaliyet(projData);
+      const kazananIdx = projData.kazananFirmaIndex >= 0 ? projData.kazananFirmaIndex : hesaplaKazananFirma(projData);
+      const kazananFirma = kazananIdx >= 0 ? projData.teklifFirmalar[kazananIdx] : null;
+      const kazananToplam = kazananFirma ? hesaplaTeklifFirmaToplam(kazananFirma, kalemler) : 0;
+      const tasarruf = ym > 0 && kazananToplam > 0 ? ym - kazananToplam : 0;
+      const tasarrufOran = ym > 0 && tasarruf > 0 ? (tasarruf / ym * 100).toFixed(1) : null;
+      const tarih = p.onaylandiAt?.toDate
+        ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR')
+        : (p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-');
+      return `<tr onclick="cloudProjeAc('${p.id}')" style="cursor:pointer"
+        onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
+        <td style="font-weight:500">${p.isAdi || '(İsimsiz)'}</td>
+        <td>${tarih}</td>
+        <td class="rakam">${ym > 0 ? formatCurrencyInt(ym) + ' TL' : '-'}</td>
+        <td class="rakam">${kazananFirma ? kazananFirma.ad : '-'}</td>
+        <td class="rakam">${kazananToplam > 0 ? formatCurrencyInt(kazananToplam) + ' TL' : '-'}</td>
+        <td class="rakam" style="color:${tasarruf > 0 ? '#065f46' : 'inherit'};font-weight:${tasarruf > 0 ? '600' : 'normal'}">
+          ${tasarrufOran ? '%' + tasarrufOran : '-'}
+        </td>
+      </tr>`;
+    }).join('');
+
+    main.innerHTML = `
+      <div class="page-header">
+        <h2>&#128202; Dashboard</h2>
+        <p>Projelerinizin genel özeti.</p>
       </div>
-    </div>
-  `;
+
+      <div class="stat-grid">
+        <div class="stat-card primary">
+          <div class="stat-label">Toplam Proje</div>
+          <div class="stat-value">${toplamSayi}</div>
+          <div class="stat-sub">Tüm projeler</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-label">Onaylanan</div>
+          <div class="stat-value">${onaylananSayi}</div>
+          <div class="stat-sub">Tamamlanan</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-label">Bekleyen</div>
+          <div class="stat-value">${bekleyenSayi}</div>
+          <div class="stat-sub">Taslak + Gönderildi</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Geri Gönderilen</div>
+          <div class="stat-value">${geriGonderSayi}</div>
+          <div class="stat-sub">Revizyon bekliyor</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>&#10003; Onaylanan Projeler (${onaylananSayi})</h3></div>
+        <div class="card-body">
+          ${onaylananlar.length === 0
+            ? `<div style="text-align:center;padding:40px;color:var(--gray-400);font-size:13px">
+                 Henüz onaylanmış proje yok.
+               </div>`
+            : `<table class="data-table">
+                 <thead>
+                   <tr>
+                     <th>Proje Adı</th>
+                     <th>Onay Tarihi</th>
+                     <th>Yaklaşık Maliyet</th>
+                     <th>Kazanan Firma</th>
+                     <th>Kazanan Teklif</th>
+                     <th>Tasarruf %</th>
+                   </tr>
+                 </thead>
+                 <tbody>${onayliSatirlar}</tbody>
+               </table>`}
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    main.innerHTML = `
+      <div class="page-header"><h2>&#128202; Dashboard</h2></div>
+      <div style="color:red;padding:20px">Hata: ${e.message}</div>`;
+  }
 }
 
 // ===================== KAYDET / YÜKLE SAYFASI =====================
@@ -1623,7 +1728,10 @@ async function renderProjelerimPage() {
     };
 
     main.innerHTML = `
-      <div class="page-header"><h2>Projelerim</h2><p>Tüm projeleriniz ve durumları.</p></div>
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div><h2>Projelerim</h2><p>Tüm projeleriniz ve durumları.</p></div>
+        <button class="btn btn-primary" onclick="yeniProjeBaslat()">&#43; Yeni Proje</button>
+      </div>
       ${bolumler.map(b => {
         const grup = projeler.filter(p => (p.status || 'taslak') === b.key);
         return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
