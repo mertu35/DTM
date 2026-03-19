@@ -685,13 +685,6 @@ function renderHakedisRaporu(proje, referans) {
   const odenecekYazi = sayidanYaziya(hak.odenecek);
   const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
 
-  const gorevliImzalar = dtGorevliler.map(g =>
-    `<td style="border:none;text-align:center;padding-top:40px">
-      <strong>${g.ad}</strong><br>
-      <span style="font-size:9.5pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
-    </td>`
-  ).join('');
-
   return `
     <div class="belge">
       <h2 class="belge-baslik">HAKEDİŞ RAPORU</h2>
@@ -745,14 +738,23 @@ function renderHakedisRaporu(proje, referans) {
       <div style="margin-top:40px">
         <table style="width:100%;border-collapse:collapse">
           <tr>
-            <td style="border:none;text-align:center;width:30%;padding-top:40px">
-              <p style="font-weight:bold;margin-bottom:30px">YÜKLENİCİ</p>
+            <td style="border:none;text-align:center;font-weight:bold;padding-bottom:6px;width:30%">YÜKLENİCİ</td>
+            <td style="border:none;text-align:center;font-weight:bold;padding-bottom:6px;width:70%">DÜZENLEYENLER</td>
+          </tr>
+          <tr style="height:50px;vertical-align:bottom">
+            <td style="border:none;text-align:center">
               <strong>${proje.teklifFirmalar[kazananIdx]?.ad || ''}</strong>
             </td>
-            <td style="border:none;text-align:center;width:70%">
-              <p style="font-weight:bold;margin-bottom:5px;letter-spacing:0">DÜZENLEYENLER</p>
+            <td style="border:none">
               <table style="width:100%;border-collapse:collapse">
-                <tr>${gorevliImzalar}</tr>
+                <tr>
+                  ${dtGorevliler.map(g =>
+                    `<td style="border:none;text-align:center;vertical-align:bottom">
+                      <strong>${g.ad}</strong><br>
+                      <span style="font-size:9.5pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
+                    </td>`
+                  ).join('')}
+                </tr>
               </table>
             </td>
           </tr>
