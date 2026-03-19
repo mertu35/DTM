@@ -93,6 +93,7 @@ async function onAuthReady(user) {
     updateLastLogin();
     init();
     checkDuyurular();
+    if (currentDTMUser.role === 'gerceklestirmeci') checkGonderilenProjeler();
   } else {
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('appLayout').style.display = 'none';
@@ -1491,9 +1492,18 @@ async function renderGonderilenProjelerPage() {
   `;
   try {
     const projeler = await getUserProjeler();
+    // Görülen projeleri işaretle, badge sıfırla
+    if (projeler.length > 0) {
+      const ids = projeler.map(p => p.id);
+      db.collection('users').doc(currentDTMUser.uid).update({
+        gorulenProjeler: firebase.firestore.FieldValue.arrayUnion(...ids)
+      }).catch(() => {});
+      const badge = document.getElementById('gonderilenBadge');
+      if (badge) badge.style.display = 'none';
+    }
     if (projeler.length === 0) {
       main.innerHTML = `
-        <div class="page-header"><h2>Gönderilen Projeler</h2><p>Kullanıcılar tarafından onayınıza gönderilen projeler.</p></div>
+        <div class="page-header"><h2>Projeler</h2><p>Kullanıcılar tarafından onayınıza gönderilen projeler.</p></div>
         <div style="text-align:center;padding:60px;color:var(--gray-400)">
           <div style="font-size:48px;margin-bottom:16px">📋</div>
           <div style="font-size:14px">Henüz gönderilmiş proje yok.</div>
@@ -1501,7 +1511,7 @@ async function renderGonderilenProjelerPage() {
       return;
     }
     main.innerHTML = `
-      <div class="page-header"><h2>Gönderilen Projeler</h2><p>Kullanıcılar tarafından onayınıza gönderilen projeler.</p></div>
+      <div class="page-header"><h2>Projeler</h2><p>Kullanıcılar tarafından onayınıza gönderilen projeler.</p></div>
       <div class="ky-proje-grid">
         ${projeler.map(p => {
           const tarih = p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') : '-';
@@ -1647,6 +1657,19 @@ async function sifreDegistir() {
 }
 
 // ===================== DUYURULAR =====================
+async function checkGonderilenProjeler() {
+  try {
+    const snap = await db.collection('projeler').where('status', '==', 'gonderildi').get();
+    const gorulenler = (await db.collection('users').doc(currentDTMUser.uid).get()).data()?.gorulenProjeler || [];
+    const yeniSayi = snap.docs.filter(d => !gorulenler.includes(d.id)).length;
+    const badge = document.getElementById('gonderilenBadge');
+    if (badge) {
+      badge.textContent = yeniSayi;
+      badge.style.display = yeniSayi > 0 ? 'inline-flex' : 'none';
+    }
+  } catch(e) {}
+}
+
 async function checkDuyurular() {
   try {
     const [duyurular, okunanlar] = await Promise.all([getDuyurular(), getOkunanDuyurular()]);
