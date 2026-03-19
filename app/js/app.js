@@ -1740,6 +1740,7 @@ async function renderProjelerimPage() {
         durmBilgisi = `<div style="font-size:12px;color:#15803d;margin-top:4px;font-weight:600">✅ Onaylandı</div>`;
       }
 
+      const aktif = p.status === 'taslak' || p.status === 'geri_gonderildi';
       return `<div class="ky-proje-item">
         <div class="ky-proje-info">
           <div class="ky-proje-name">
@@ -1758,7 +1759,9 @@ async function renderProjelerimPage() {
         </div>
         <div class="ky-proje-actions">
           <button class="ky-btn-open" onclick="cloudProjeAc('${p.id}')">Aç</button>
-          ${!gonderildi && !kilitli ? `<button class="ky-btn-delete" onclick="cloudProjeSil('${p.id}', '${isAdiSafe}', ${kilitli})">Sil</button>` : ''}
+          ${aktif && !kilitli ? `<button class="ky-btn-lock" onclick="gonderiClick('${p.id}', '${isAdiSafe}')" style="background:#16a34a;color:#fff;border-color:#16a34a">📤 Gönder</button>` : ''}
+          ${aktif ? `<button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" onclick="cloudProjeKilitle('${p.id}', ${!kilitli})">${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>` : ''}
+          ${aktif && !kilitli ? `<button class="ky-btn-delete" onclick="cloudProjeSil('${p.id}', '${isAdiSafe}', ${kilitli})">Sil</button>` : ''}
         </div>
       </div>`;
     };
