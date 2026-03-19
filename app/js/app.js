@@ -1317,6 +1317,18 @@ async function gonderiOnayla(projeId) {
   }
 }
 
+async function belgeyeGit(projeId) {
+  try {
+    const doc = await getProjeFromCloud(projeId);
+    proje = Object.assign(getDefaultProje(), doc.data);
+    currentCloudProjeId = projeId;
+    currentPage = 'onay-belgesi';
+    renderPage();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}
+
 async function onaylaClick(projeId, isAdi) {
   if (!confirm(`"${isAdi}" projesi onaylanacak.\n\nBu işlem geri alınamaz. Emin misiniz?`)) return;
   try {
@@ -1550,48 +1562,68 @@ async function renderGonderilenProjelerPage() {
   `;
   try {
     const projeler = await getUserProjeler();
-    // Görülen projeleri işaretle, badge sıfırla
-    if (projeler.length > 0) {
-      const ids = projeler.map(p => p.id);
+    const bekleyenler = projeler.filter(p => p.status === 'gonderildi');
+    const onaylananlar = projeler.filter(p => p.status === 'onaylandi');
+
+    // Yeni gönderilenleri işaretle, badge sıfırla
+    if (bekleyenler.length > 0) {
+      const ids = bekleyenler.map(p => p.id);
       db.collection('users').doc(currentDTMUser.uid).update({
         gorulenProjeler: firebase.firestore.FieldValue.arrayUnion(...ids)
       }).catch(() => {});
       const badge = document.getElementById('gonderilenBadge');
       if (badge) badge.style.display = 'none';
     }
-    if (projeler.length === 0) {
-      main.innerHTML = `
-        <div class="page-header"><h2>Projeler</h2><p>Kullanıcılar tarafından onayınıza gönderilen projeler.</p></div>
-        <div style="text-align:center;padding:60px;color:var(--gray-400)">
-          <div style="font-size:48px;margin-bottom:16px">📋</div>
-          <div style="font-size:14px">Henüz gönderilmiş proje yok.</div>
-        </div>`;
-      return;
-    }
+
+    const projeKart = (p, butonlar) => {
+      const tarih = p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') :
+                    p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
+      const isAdiSafe = (p.isAdi||'').replace(/'/g,'');
+      return `<div class="ky-proje-item">
+        <div class="ky-proje-info">
+          <div class="ky-proje-name"><span class="ky-proje-dot"></span>${p.isAdi || '(İsimsiz)'}</div>
+          <div class="ky-proje-meta">
+            <span class="ky-proje-user">👤 ${p.userDisplayName || '-'}</span>
+            <span class="ky-proje-date">📅 ${tarih}</span>
+            ${getStatusBadge(p.status)}
+          </div>
+        </div>
+        <div class="ky-proje-actions">${butonlar(p.id, isAdiSafe)}</div>
+      </div>`;
+    };
+
+    const bekleyenHTML = bekleyenler.length === 0
+      ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">Bekleyen proje yok.</div>`
+      : `<div class="ky-proje-grid">${bekleyenler.map(p => projeKart(p, (id, ad) => `
+          <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Aç</button>
+          <button class="ky-btn-delete" onclick="geriGonderClick('${id}', '${ad}')" style="background:#dc2626;color:#fff;border-color:#dc2626">↩ Geri Gönder</button>
+        `)).join('')}</div>`;
+
+    const onaylananHTML = onaylananlar.length === 0
+      ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">Henüz onaylanan proje yok.</div>`
+      : `<div class="ky-proje-grid">${onaylananlar.map(p => projeKart(p, (id, ad) => `
+          <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Aç</button>
+          <button class="ky-btn-open" onclick="belgeyeGit('${id}')" style="background:#16a34a;color:#fff;border-color:#16a34a">📄 Belge Oluştur</button>
+        `)).join('')}</div>`;
+
     main.innerHTML = `
-      <div class="page-header"><h2>Projeler</h2><p>Kullanıcılar tarafından onayınıza gönderilen projeler.</p></div>
-      <div class="ky-proje-grid">
-        ${projeler.map(p => {
-          const tarih = p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') : '-';
-          const isAdiSafe = (p.isAdi||'').replace(/'/g,'');
-          return `<div class="ky-proje-item">
-            <div class="ky-proje-info">
-              <div class="ky-proje-name"><span class="ky-proje-dot"></span>${p.isAdi || '(İsimsiz)'}</div>
-              <div class="ky-proje-meta">
-                <span class="ky-proje-user">👤 ${p.userDisplayName || '-'}</span>
-                <span class="ky-proje-date">📅 ${tarih}</span>
-                ${getStatusBadge(p.status || 'gonderildi')}
-              </div>
-            </div>
-            <div class="ky-proje-actions">
-              <button class="ky-btn-open" onclick="cloudProjeAc('${p.id}')">Aç</button>
-              <button class="ky-btn-delete" onclick="geriGonderClick('${p.id}', '${isAdiSafe}')" style="background:#dc2626;color:#fff;border-color:#dc2626">↩ Geri Gönder</button>
-            </div>
-          </div>`;
-        }).join('')}
+      <div class="page-header"><h2>Projeler</h2><p>Size iletilen projeler.</p></div>
+
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
+        <div style="padding:12px 16px;background:#fef9c3;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#854d0e">
+          ⏳ Onay Bekleyenler (${bekleyenler.length})
+        </div>
+        ${bekleyenHTML}
+      </div>
+
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+        <div style="padding:12px 16px;background:#f0fdf4;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#15803d">
+          ✅ Onaylananlar (${onaylananlar.length})
+        </div>
+        ${onaylananHTML}
       </div>`;
   } catch(e) {
-    main.innerHTML = `<div class="page-header"><h2>Gönderilen Projeler</h2></div><div style="color:red;padding:20px">Hata: ${e.message}</div>`;
+    main.innerHTML = `<div class="page-header"><h2>Projeler</h2></div><div style="color:red;padding:20px">Hata: ${e.message}</div>`;
   }
 }
 
