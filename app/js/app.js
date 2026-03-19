@@ -1090,7 +1090,7 @@ async function renderDashboardPage() {
       const tarih = p.onaylandiAt?.toDate
         ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR')
         : (p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-');
-      return `<tr onclick="cloudProjeAc('${p.id}')" style="cursor:pointer"
+      return `<tr onclick="dashboardProjeAc('${p.id}')" style="cursor:pointer"
         onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
         <td style="font-weight:500">${p.isAdi || '(İsimsiz)'}</td>
         <td>${tarih}</td>
@@ -1350,6 +1350,25 @@ async function cloudKaydet() {
       currentCloudProjeId = await saveProjeToCloud(proje);
       alert('✓ Proje buluta kaydedildi!');
     }
+    renderPage();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}
+
+async function dashboardProjeAc(projeId) {
+  try {
+    const doc = await getProjeFromCloud(projeId);
+    proje = Object.assign(getDefaultProje(), doc.data);
+    currentCloudProjeId = projeId;
+    currentProjeStatus = doc.status || 'taslak';
+    currentProjeKilitli = true;
+    currentProjeBaskaKullanici = false;
+    saveProje(proje);
+    projeAktif = true;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    currentPage = 'proje-ozet';
+    updateNavLock();
     renderPage();
   } catch(e) {
     alert('Hata: ' + e.message);
