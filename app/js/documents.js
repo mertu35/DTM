@@ -180,12 +180,9 @@ function renderTeklifTutanagi(proje, referans) {
       <td style="padding:6px 4px">${k.ad}</td>
       <td class="merkez">${miktar}</td>
       <td class="merkez">${k.birim}</td>
-      <td class="merkez">${bf1 > 0 ? formatCurrency(bf1) : ''}</td>
-      <td class="merkez" style="font-size:8pt">${bf1 > 0 ? '+KDV' : ''}</td>
-      <td class="merkez">${bf2 > 0 ? formatCurrency(bf2) : ''}</td>
-      <td class="merkez" style="font-size:8pt">${bf2 > 0 ? '+KDV' : ''}</td>
-      <td class="merkez">${bf3 > 0 ? formatCurrency(bf3) : ''}</td>
-      <td class="merkez" style="font-size:8pt">${bf3 > 0 ? '+KDV' : ''}</td>
+      <td class="merkez">${bf1 > 0 ? formatCurrency(bf1) + ' +KDV' : ''}</td>
+      <td class="merkez">${bf2 > 0 ? formatCurrency(bf2) + ' +KDV' : ''}</td>
+      <td class="merkez">${bf3 > 0 ? formatCurrency(bf3) + ' +KDV' : ''}</td>
     </tr>`;
   });
 
@@ -275,9 +272,9 @@ function renderTeklifTutanagi(proje, referans) {
           <col style="width:160px">
           <col style="width:38px">
           <col style="width:45px">
-          <col style="width:70px"><col style="width:40px">
-          <col style="width:70px"><col style="width:40px">
-          <col style="width:70px"><col style="width:40px">
+          <col style="width:110px">
+          <col style="width:110px">
+          <col style="width:110px">
         </colgroup>
         <thead>
           <tr>
@@ -285,20 +282,17 @@ function renderTeklifTutanagi(proje, referans) {
             <th rowspan="3" style="padding:8px 4px">MAL / HİZMET / YAPIM İŞİ</th>
             <th rowspan="3" style="padding:8px 4px">MİKTAR</th>
             <th rowspan="3" style="padding:8px 4px">BİRİM</th>
-            <th colspan="6">KİŞİ / FİRMA / FİRMALAR VE FİYAT TEKLİFLERİ</th>
+            <th colspan="3">KİŞİ / FİRMA / FİRMALAR VE FİYAT TEKLİFLERİ</th>
           </tr>
           <tr>
-            <th colspan="2" style="padding:12px 4px">1. FİRMA<br>${f1.ad || '-'}</th>
-            <th colspan="2" style="padding:12px 4px">2. FİRMA<br>${f2.ad || '-'}</th>
-            <th colspan="2" style="padding:12px 4px">3. FİRMA<br>${f3.ad || '-'}</th>
+            <th style="padding:6px 4px">1. (Kişi / Firma Adı)</th>
+            <th style="padding:6px 4px">2. (Kişi / Firma Adı)</th>
+            <th style="padding:6px 4px">3. (Kişi / Firma Adı)</th>
           </tr>
           <tr>
-            <th>FİYAT<br>TEKLİFİ<br>(TL)</th>
-            <th>KDV</th>
-            <th>FİYAT<br>TEKLİFİ<br>(TL)</th>
-            <th>KDV</th>
-            <th>FİYAT<br>TEKLİFİ<br>(TL)</th>
-            <th>KDV</th>
+            <th style="padding:6px 4px">${f1.ad || '-'}</th>
+            <th style="padding:6px 4px">${f2.ad || '-'}</th>
+            <th style="padding:6px 4px">${f3.ad || '-'}</th>
           </tr>
         </thead>
         <tbody>
