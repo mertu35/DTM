@@ -1469,7 +1469,43 @@ async function cloudProjeAc(projeId) {
   }
 }
 
+function projeValidasyon(p) {
+  const eksikler = [];
+  if (!p.isAdi?.trim())                                         eksikler.push('İş Adı');
+  if (!p.idareAdi?.trim())                                      eksikler.push('İdare Adı');
+  if (!p.mudurluk?.trim())                                      eksikler.push('Müdürlük');
+  if (!p.ymGorevliler?.slice(0, p.ymGorevliSayisi||1).some(g => g.ad?.trim()))
+                                                                 eksikler.push('Y.M. Görevlisi');
+  if (!p.dtGorevliler?.slice(0, p.dtGorevliSayisi||1).some(g => g.ad?.trim()))
+                                                                 eksikler.push('D.T. Görevlisi');
+  if (!p.onaylayanAmir?.ad?.trim())                             eksikler.push('Onaylayan Amir');
+  if (!p.isKalemleri?.some(k => k.ad?.trim()))                  eksikler.push('En az 1 İş Kalemi');
+  if (!p.ymFirmalar?.some(f => f.ad?.trim()))                   eksikler.push('En az 1 Y.M. Firması');
+  if (!p.teklifFirmalar?.some(f => f.ad?.trim()))               eksikler.push('En az 1 Teklif Firması');
+  if (!p.sozlesmeTarihi?.trim())                                 eksikler.push('Sözleşme Tarihi');
+  if (!p.isSuresi || parseInt(p.isSuresi) <= 0)                 eksikler.push('İş Süresi');
+  if (!p.ymOnayTarihi?.trim())                                   eksikler.push('Y.M. Onay Tarihi');
+  if (!p.ymOnayNo?.trim())                                       eksikler.push('Y.M. Onay Sayısı');
+  if (!p.dtOnayTarihi?.trim())                                   eksikler.push('D.T. Onay Tarihi');
+  if (!p.dtOnayNo?.trim())                                       eksikler.push('D.T. Onay Sayısı');
+  return eksikler;
+}
+
 async function gonderiClick(projeId, isAdi) {
+  // Validasyon: önce projeyi cloud'dan çek, kontrol et
+  let projeDoc;
+  try {
+    projeDoc = await getProjeFromCloud(projeId);
+  } catch(e) {
+    showToast('Proje yüklenemedi: ' + e.message, 'error'); return;
+  }
+  const projeData = Object.assign(getDefaultProje(), projeDoc.data);
+  const eksikler = projeValidasyon(projeData);
+  if (eksikler.length > 0) {
+    showToast('Eksik alanlar: ' + eksikler.join(', '), 'warning', 5000);
+    return;
+  }
+
   // Gerçekleştirmecileri yükle
   let gerceklestirmeciler;
   try {
