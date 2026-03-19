@@ -1183,19 +1183,8 @@ async function renderKaydetYuklePage() {
       <p>Onaylı projeleri indirin veya bilgisayarınızdan proje yükleyin.</p>
     </div>
 
-    <!-- DOSYA GETİR -->
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-header"><h3>📥 Dosya Getir</h3></div>
-      <div class="card-body">
-        <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Onaylanan projelerinizi JSON dosyası olarak bilgisayarınıza indirebilirsiniz.</p>
-        <div id="dosyaGetirList">
-          <div style="text-align:center;padding:30px;color:var(--gray-400)">Yükleniyor...</div>
-        </div>
-      </div>
-    </div>
-
     <!-- DOSYA GÖNDER -->
-    <div class="card">
+    <div class="card" style="margin-bottom:16px">
       <div class="card-header"><h3>📤 Dosya Gönder</h3></div>
       <div class="card-body">
         <p style="font-size:13px;color:#6b7280;margin-bottom:16px">
@@ -1211,6 +1200,17 @@ async function renderKaydetYuklePage() {
           </label>
         </div>
         <button class="btn btn-primary" onclick="yukleProjeCloud()">📤 Gönder</button>
+      </div>
+    </div>
+
+    <!-- DOSYA GETİR -->
+    <div class="card">
+      <div class="card-header"><h3>📥 Dosya Getir</h3></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Onaylanan projelerinizi JSON dosyası olarak bilgisayarınıza indirebilirsiniz.</p>
+        <div id="dosyaGetirList">
+          <div style="text-align:center;padding:30px;color:var(--gray-400)">Yükleniyor...</div>
+        </div>
       </div>
     </div>
   `;
