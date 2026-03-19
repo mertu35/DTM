@@ -816,7 +816,7 @@ async function renderBelgelerPage() {
               </div>
             </div>
             <div class="ky-proje-actions">
-              <button class="ky-btn-open" onclick="belgelerProjeAc('${p.id}')">Belgeyi Gör</button>
+              <button class="ky-btn-open" onclick="belgelerProjeAc('${p.id}')">Belge Oluştur</button>
             </div>
           </div>`;
         }).join('')}
