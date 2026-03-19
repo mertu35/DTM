@@ -1602,13 +1602,20 @@ function renderProjeOzetPage() {
   const ymGorevliler = p.ymGorevliler.slice(0, p.ymGorevliSayisi || 1).filter(g => g.ad).map(g => `<tr><td style="padding:6px 12px;font-size:13px">${g.ad}</td><td style="padding:6px 12px;font-size:13px;color:#6b7280">${g.unvan}</td></tr>`).join('');
   const dtGorevliler = p.dtGorevliler.slice(0, p.dtGorevliSayisi || 1).filter(g => g.ad).map(g => `<tr><td style="padding:6px 12px;font-size:13px">${g.ad}</td><td style="padding:6px 12px;font-size:13px;color:#6b7280">${g.unvan}</td></tr>`).join('');
 
+  const ymFirmalar = p.ymFirmalar.filter(f => f.ad);
+  const ymFirmaRows = ymFirmalar.map(f => {
+    const toplam = hesaplaYMFirmaToplam(f, kalemler);
+    return `<tr>
+      <td style="padding:7px 12px;font-size:13px">${f.ad}</td>
+      <td style="padding:7px 12px;font-size:13px;text-align:right">${formatCurrency(toplam)} TL</td>
+    </tr>`;
+  }).join('');
+
   const teklifFirmalar = p.teklifFirmalar.filter(f => f.ad);
   const firmaTeklifRows = teklifFirmalar.map((f, fi) => {
-    const toplam = f.fiyatlar.reduce((t, fiyat, i) => {
-      const miktar = parseFloat(kalemler[i]?.miktar) || 1;
-      return t + (parseFloat(fiyat) || 0) * miktar;
-    }, 0);
-    const kazanan = fi === p.kazananFirmaIndex;
+    const gercekIndex = p.teklifFirmalar.indexOf(f);
+    const toplam = hesaplaTeklifFirmaToplam(f, kalemler);
+    const kazanan = gercekIndex === p.kazananFirmaIndex;
     return `<tr style="${kazanan ? 'background:#f0fdf4;font-weight:600' : ''}">
       <td style="padding:7px 12px;font-size:13px">${kazanan ? '✓ ' : ''}${f.ad}</td>
       <td style="padding:7px 12px;font-size:13px;text-align:right">${formatCurrency(toplam)} TL</td>
@@ -1648,7 +1655,13 @@ function renderProjeOzetPage() {
         ${satir('Fiili Bitim Tarihi', formatDate(p.fiiliBitimTarihi))}
       </table>`)}
 
-      ${teklifFirmalar.length > 0 ? kart('🏢 Firma Teklifleri', `
+      ${ymFirmalar.length > 0 ? kart('📊 Yaklaşık Maliyete Esas Teklifler', `
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f3f4f6"><th style="padding:8px 12px;font-size:12px;text-align:left;color:#6b7280">Firma</th><th style="padding:8px 12px;font-size:12px;text-align:right;color:#6b7280">Teklif Tutarı</th></tr></thead>
+          <tbody>${ymFirmaRows}</tbody>
+        </table>`) : ''}
+
+      ${teklifFirmalar.length > 0 ? kart('🏢 Teklifler', `
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#f3f4f6"><th style="padding:8px 12px;font-size:12px;text-align:left;color:#6b7280">Firma</th><th style="padding:8px 12px;font-size:12px;text-align:right;color:#6b7280">Teklif Tutarı</th></tr></thead>
           <tbody>${firmaTeklifRows}</tbody>
