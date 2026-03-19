@@ -1479,7 +1479,8 @@ function projeValidasyon(p) {
   if (!p.dtGorevliler?.slice(0, p.dtGorevliSayisi||1).some(g => g.ad?.trim()))
                                                                  eksikler.push('D.T. Görevlisi');
   if (!p.onaylayanAmir?.ad?.trim())                             eksikler.push('Onaylayan Amir');
-  if (!p.isKalemleri?.some(k => k.ad?.trim()))                  eksikler.push('En az 1 İş Kalemi');
+  if (p.isTuru !== 'Yapım İşi' && !p.isKalemleri?.some(k => k.ad?.trim()))
+                                                                 eksikler.push('En az 1 İş Kalemi');
   if (!p.ymFirmalar?.some(f => f.ad?.trim()))                   eksikler.push('En az 1 Y.M. Firması');
   if (!p.teklifFirmalar?.some(f => f.ad?.trim()))               eksikler.push('En az 1 Teklif Firması');
   if (!p.sozlesmeTarihi?.trim())                                 eksikler.push('Sözleşme Tarihi');
