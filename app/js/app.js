@@ -1659,20 +1659,20 @@ function renderProjeOzetPage() {
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#f3f4f6"><th style="padding:8px 12px;font-size:12px;text-align:left;color:#6b7280">Firma</th><th style="padding:8px 12px;font-size:12px;text-align:right;color:#6b7280">Teklif Tutarı</th></tr></thead>
           <tbody>${ymFirmaRows}</tbody>
+          ${ymMaliyet > 0 ? `<tfoot><tr style="background:#f9fafb;border-top:2px solid #e5e7eb"><td style="padding:8px 12px;font-size:13px;font-weight:700">Yaklaşık Maliyet</td><td style="padding:8px 12px;font-size:13px;font-weight:700;text-align:right">${formatCurrency(ymMaliyet)} TL</td></tr></tfoot>` : ''}
         </table>`) : ''}
 
       ${teklifFirmalar.length > 0 ? kart('🏢 Teklifler', `
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#f3f4f6"><th style="padding:8px 12px;font-size:12px;text-align:left;color:#6b7280">Firma</th><th style="padding:8px 12px;font-size:12px;text-align:right;color:#6b7280">Teklif Tutarı</th></tr></thead>
           <tbody>${firmaTeklifRows}</tbody>
+          ${kazananFirma?.ad ? `<tfoot><tr style="background:#f0fdf4;border-top:2px solid #bbf7d0"><td style="padding:8px 12px;font-size:13px;font-weight:700;color:#15803d">✓ Kazanan Firma</td><td style="padding:8px 12px;font-size:13px;font-weight:700;color:#15803d;text-align:right">${kazananFirma.ad}</td></tr></tfoot>` : ''}
         </table>`) : ''}
 
       ${kart('💰 Mali Özet', `<table style="width:100%;border-collapse:collapse">
-        ${satir('Yaklaşık Maliyet', ymMaliyet > 0 ? formatCurrency(ymMaliyet) + ' TL' : '')}
         ${satir('Sözleşme Tutarı (KDV Hariç)', sozlesmeKdvsiz > 0 ? formatCurrency(sozlesmeKdvsiz) + ' TL' : '')}
         ${satir('KDV Tutarı (%' + p.kdvOrani + ')', kdvTutar > 0 ? formatCurrency(kdvTutar) + ' TL' : '')}
         ${satir('Sözleşme Tutarı (KDV Dahil)', sozlesmeToplamKdvli > 0 ? formatCurrency(sozlesmeToplamKdvli) + ' TL' : '')}
-        ${kazananFirma?.ad ? satir('Kazanan Firma', kazananFirma.ad) : ''}
       </table>`)}
     </div>`;
 }
