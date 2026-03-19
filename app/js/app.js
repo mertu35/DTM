@@ -536,7 +536,10 @@ function renderVeriGirisPage() {
           <div class="form-group">
             <label>İş Türü</label>
             <select id="isTuru" onchange="onFieldChange('isTuru', this.value); renderPage();">
-              ${referans.isTurleri.map(t => `<option value="${t}" ${proje.isTuru === t ? 'selected' : ''}>${t}</option>`).join('')}
+              ${referans.isTurleri.map(t => {
+                const aktif = t === 'Yapım İşi';
+                return `<option value="${t}" ${proje.isTuru === t ? 'selected' : ''} ${!aktif ? 'disabled style="color:#9ca3af"' : ''}>${t}${!aktif ? ' (yakında)' : ''}</option>`;
+              }).join('')}
             </select>
           </div>
           <div class="form-group">
