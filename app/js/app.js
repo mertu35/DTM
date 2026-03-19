@@ -1588,8 +1588,9 @@ function renderProjeOzetPage() {
   const p = proje;
   const kalemler = getKalemler(p);
   const ymMaliyet = hesaplaYaklasikMaliyet(p);
-  const kazananFirma = p.teklifFirmalar[p.kazananFirmaIndex];
-  const sozlesmeKdvsiz = kazananFirma ? p.teklifFirmalar[p.kazananFirmaIndex].fiyatlar.reduce((t, f, i) => {
+  const kazananIndex = p.kazananFirmaIndex >= 0 ? p.kazananFirmaIndex : hesaplaKazananFirma(p);
+  const kazananFirma = p.teklifFirmalar[kazananIndex];
+  const sozlesmeKdvsiz = kazananFirma ? kazananFirma.fiyatlar.reduce((t, f, i) => {
     const miktar = parseFloat(kalemler[i]?.miktar) || 1;
     return t + (parseFloat(f) || 0) * miktar;
   }, 0) : 0;
@@ -1615,7 +1616,7 @@ function renderProjeOzetPage() {
   const firmaTeklifRows = teklifFirmalar.map((f, fi) => {
     const gercekIndex = p.teklifFirmalar.indexOf(f);
     const toplam = hesaplaTeklifFirmaToplam(f, kalemler);
-    const kazanan = gercekIndex === p.kazananFirmaIndex;
+    const kazanan = gercekIndex === kazananIndex;
     return `<tr style="${kazanan ? 'background:#f0fdf4;font-weight:600' : ''}">
       <td style="padding:7px 12px;font-size:13px">${kazanan ? '✓ ' : ''}${f.ad}</td>
       <td style="padding:7px 12px;font-size:13px;text-align:right">${formatCurrency(toplam)} TL</td>
