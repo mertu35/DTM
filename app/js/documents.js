@@ -281,16 +281,21 @@ function renderTeklifTutanagi(proje, referans) {
         </colgroup>
         <thead>
           <tr>
-            <th rowspan="3" style="padding:8px 4px">SIRA<br>NO</th>
-            <th rowspan="3" style="padding:8px 4px">MAL / HİZMET / YAPIM İŞİ</th>
-            <th rowspan="3" style="padding:8px 4px">MİKTAR</th>
-            <th rowspan="3" style="padding:8px 4px">BİRİM</th>
+            <th rowspan="4" style="padding:8px 4px">SIRA<br>NO</th>
+            <th rowspan="4" style="padding:8px 4px">MAL / HİZMET / YAPIM İŞİ</th>
+            <th rowspan="4" style="padding:8px 4px">MİKTAR</th>
+            <th rowspan="4" style="padding:8px 4px">BİRİM</th>
             <th colspan="6">KİŞİ / FİRMA / FİRMALAR VE FİYAT TEKLİFLERİ</th>
           </tr>
           <tr>
-            <th colspan="2" style="padding:12px 4px">1. FİRMA<br>${f1.ad || '-'}</th>
-            <th colspan="2" style="padding:12px 4px">2. FİRMA<br>${f2.ad || '-'}</th>
-            <th colspan="2" style="padding:12px 4px">3. FİRMA<br>${f3.ad || '-'}</th>
+            <th colspan="2" style="padding:6px 4px">1. (Kişi / Firma Adı)</th>
+            <th colspan="2" style="padding:6px 4px">2. (Kişi / Firma Adı)</th>
+            <th colspan="2" style="padding:6px 4px">3. (Kişi / Firma Adı)</th>
+          </tr>
+          <tr>
+            <th colspan="2" style="padding:6px 4px">${f1.ad || '-'}</th>
+            <th colspan="2" style="padding:6px 4px">${f2.ad || '-'}</th>
+            <th colspan="2" style="padding:6px 4px">${f3.ad || '-'}</th>
           </tr>
           <tr>
             <th>FİYAT<br>TEKLİFİ<br>(TL)</th>
