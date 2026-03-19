@@ -14,6 +14,17 @@ function getRoleLabel(role) {
   return labels[role] || 'Kullanıcı';
 }
 
+function getStatusBadge(status) {
+  const map = {
+    taslak:          { label: 'Taslak',          bg: '#f3f4f6', color: '#6b7280' },
+    gonderildi:      { label: 'Gönderildi',       bg: '#dbeafe', color: '#1e40af' },
+    geri_gonderildi: { label: 'Geri Gönderildi',  bg: '#fee2e2', color: '#991b1b' },
+    onaylandi:       { label: 'Onaylandı',         bg: '#d1fae5', color: '#065f46' }
+  };
+  const s = map[status] || map.taslak;
+  return `<span style="font-size:11px;background:${s.bg};color:${s.color};padding:2px 7px;border-radius:4px;font-weight:600">${s.label}</span>`;
+}
+
 // ===== AUTH =====
 async function doLogin() {
   const username = document.getElementById('loginUsername').value.trim();
@@ -1089,7 +1100,14 @@ async function renderKaydetYuklePage() {
             const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
             const aktif = p.id === currentCloudProjeId;
             const kilitli = p.locked === true;
-            const baskaKullanici = currentDTMUser?.role === 'admin' && p.userId !== currentDTMUser.uid;
+            const status = p.status || 'taslak';
+            const gonderildi = status === 'gonderildi' || status === 'onaylandi';
+            const geriGonderildi = status === 'geri_gonderildi';
+            const baskaKullanici = ['admin', 'superadmin'].includes(currentDTMUser?.role) && p.userId !== currentDTMUser.uid;
+            const canGonder = !baskaKullanici && !gonderildi && !kilitli;
+            const canDelete = !baskaKullanici && !gonderildi && !kilitli;
+            const canLock = !baskaKullanici && !gonderildi;
+            const isAdiSafe = (p.isAdi||'').replace(/'/g,'');
             return `<div class="ky-proje-item ${aktif ? 'ky-proje-aktif' : ''} ${kilitli ? 'ky-proje-kilitli' : ''}">
               <div class="ky-proje-info">
                 <div class="ky-proje-name">
@@ -1099,17 +1117,20 @@ async function renderKaydetYuklePage() {
                   ${p.isAdi || '(İsimsiz)'}
                 </div>
                 <div class="ky-proje-meta">
-                  ${currentDTMUser?.role === 'admin' ? `<span class="ky-proje-user">👤 ${p.userDisplayName || '-'}</span>` : ''}
+                  ${['admin','superadmin'].includes(currentDTMUser?.role) ? `<span class="ky-proje-user">👤 ${p.userDisplayName || '-'}</span>` : ''}
                   <span class="ky-proje-date">📅 ${tarih}</span>
                   ${aktif ? '<span class="ky-aktif-badge">Aktif</span>' : ''}
                   ${kilitli ? '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:4px;font-weight:600">Kilitli</span>' : ''}
                   ${baskaKullanici ? '<span style="font-size:11px;background:#eff6ff;color:#1e40af;padding:2px 7px;border-radius:4px;font-weight:600">İzleme</span>' : ''}
+                  ${getStatusBadge(status)}
                 </div>
+                ${geriGonderildi && p.geriGonderNot ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:7px 10px;margin-top:6px;font-size:12px;color:#991b1b"><strong>Not:</strong> ${p.geriGonderNot}</div>` : ''}
               </div>
               <div class="ky-proje-actions">
                 <button class="ky-btn-open" onclick="cloudProjeAc('${p.id}')" title="Projeyi Aç">Aç</button>
-                ${!baskaKullanici ? `<button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" onclick="cloudProjeKilitle('${p.id}', ${!kilitli})" title="${kilitli ? 'Kilidi Aç' : 'Kilitle'}">${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>` : ''}
-                ${!baskaKullanici ? `<button class="ky-btn-delete" onclick="cloudProjeSil('${p.id}', '${(p.isAdi||'').replace(/'/g,'')}', ${kilitli})" title="Projeyi Sil">Sil</button>` : ''}
+                ${canGonder ? `<button class="ky-btn-lock" onclick="gonderiClick('${p.id}', '${isAdiSafe}')" title="Gerçekleştirmeciye Gönder" style="background:#16a34a;color:#fff;border-color:#16a34a">📤 Gönder</button>` : ''}
+                ${canLock ? `<button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" onclick="cloudProjeKilitle('${p.id}', ${!kilitli})" title="${kilitli ? 'Kilidi Aç' : 'Kilitle'}">${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>` : ''}
+                ${canDelete ? `<button class="ky-btn-delete" onclick="cloudProjeSil('${p.id}', '${isAdiSafe}', ${kilitli})" title="Projeyi Sil">Sil</button>` : ''}
               </div>
             </div>`;
           }).join('')}
@@ -1223,14 +1244,38 @@ async function cloudProjeAc(projeId) {
     const doc = await getProjeFromCloud(projeId);
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
-    currentProjeBaskaKullanici = currentDTMUser?.role === 'admin' && doc.userId !== currentDTMUser.uid;
-    currentProjeKilitli = doc.locked === true || currentProjeBaskaKullanici;
+    currentProjeBaskaKullanici = ['admin','superadmin'].includes(currentDTMUser?.role) && doc.userId !== currentDTMUser.uid;
+    const gonderildi = doc.status === 'gonderildi' || doc.status === 'onaylandi';
+    currentProjeKilitli = doc.locked === true || currentProjeBaskaKullanici || gonderildi;
     saveProje(proje);
     projeAktif = true;
     currentPage = 'veri-giris';
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.querySelector('[data-page="veri-giris"]').classList.add('active');
     updateNavLock();
+    renderPage();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}
+
+async function gonderiClick(projeId, isAdi) {
+  if (!confirm(`"${isAdi}" projesi gerçekleştirmeciye gönderilecek.\n\nBu işlem geri alınamaz, proje kilitlenecek.\n\nEmin misiniz?`)) return;
+  try {
+    await gonderiProje(projeId);
+    if (currentCloudProjeId === projeId) currentProjeKilitli = true;
+    renderPage();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}
+
+async function geriGonderClick(projeId, isAdi) {
+  const not = prompt(`"${isAdi}" projesini geri gönderiyorsunuz.\n\nGeri gönderme nedeninizi yazın:`);
+  if (not === null) return;
+  if (!not.trim()) { alert('Not boş olamaz.'); return; }
+  try {
+    await geriGonderProje(projeId, not.trim());
     renderPage();
   } catch(e) {
     alert('Hata: ' + e.message);
@@ -1442,12 +1487,44 @@ async function renderGonderilenProjelerPage() {
       <h2>Gönderilen Projeler</h2>
       <p>Kullanıcılar tarafından onayınıza gönderilen projeler.</p>
     </div>
-    <div style="text-align:center;padding:60px;color:var(--gray-400)">
-      <div style="font-size:48px;margin-bottom:16px">📋</div>
-      <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--gray-600)">Yakında</div>
-      <div style="font-size:13px">Bu özellik belge formatı tamamlandıktan sonra aktif olacak.</div>
-    </div>
+    <div style="text-align:center;padding:40px;color:var(--gray-400)">Yükleniyor...</div>
   `;
+  try {
+    const projeler = await getUserProjeler();
+    if (projeler.length === 0) {
+      main.innerHTML = `
+        <div class="page-header"><h2>Gönderilen Projeler</h2><p>Kullanıcılar tarafından onayınıza gönderilen projeler.</p></div>
+        <div style="text-align:center;padding:60px;color:var(--gray-400)">
+          <div style="font-size:48px;margin-bottom:16px">📋</div>
+          <div style="font-size:14px">Henüz gönderilmiş proje yok.</div>
+        </div>`;
+      return;
+    }
+    main.innerHTML = `
+      <div class="page-header"><h2>Gönderilen Projeler</h2><p>Kullanıcılar tarafından onayınıza gönderilen projeler.</p></div>
+      <div class="ky-proje-grid">
+        ${projeler.map(p => {
+          const tarih = p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') : '-';
+          const isAdiSafe = (p.isAdi||'').replace(/'/g,'');
+          return `<div class="ky-proje-item">
+            <div class="ky-proje-info">
+              <div class="ky-proje-name"><span class="ky-proje-dot"></span>${p.isAdi || '(İsimsiz)'}</div>
+              <div class="ky-proje-meta">
+                <span class="ky-proje-user">👤 ${p.userDisplayName || '-'}</span>
+                <span class="ky-proje-date">📅 ${tarih}</span>
+                ${getStatusBadge(p.status || 'gonderildi')}
+              </div>
+            </div>
+            <div class="ky-proje-actions">
+              <button class="ky-btn-open" onclick="cloudProjeAc('${p.id}')">Aç</button>
+              <button class="ky-btn-delete" onclick="geriGonderClick('${p.id}', '${isAdiSafe}')" style="background:#dc2626;color:#fff;border-color:#dc2626">↩ Geri Gönder</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } catch(e) {
+    main.innerHTML = `<div class="page-header"><h2>Gönderilen Projeler</h2></div><div style="color:red;padding:20px">Hata: ${e.message}</div>`;
+  }
 }
 
 // ===================== YÖNETİCİ ARŞİV SAYFASI =====================

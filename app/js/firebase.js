@@ -113,10 +113,30 @@ async function saveProjeToCloud(projeData) {
     userDisplayName: currentDTMUser?.displayName || '',
     isAdi: projeData.isAdi || '(İsimsiz)',
     data: projeData,
+    status: 'taslak',
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   });
   return ref.id;
+}
+
+// Projeyi gerçekleştirmeciye gönder
+async function gonderiProje(projeId) {
+  await db.collection('projeler').doc(projeId).update({
+    status: 'gonderildi',
+    gonderildiAt: firebase.firestore.FieldValue.serverTimestamp(),
+    gonderildiBy: currentDTMUser?.displayName || ''
+  });
+}
+
+// Projeyi geri gönder (gerçekleştirmeci)
+async function geriGonderProje(projeId, not) {
+  await db.collection('projeler').doc(projeId).update({
+    status: 'geri_gonderildi',
+    geriGonderNot: not,
+    geriGonderAt: firebase.firestore.FieldValue.serverTimestamp(),
+    geriGonderBy: currentDTMUser?.displayName || ''
+  });
 }
 
 // Mevcut projeyi güncelle
@@ -135,6 +155,8 @@ async function getUserProjeler() {
   let query;
   if (['admin', 'superadmin'].includes(currentDTMUser?.role)) {
     query = db.collection('projeler');
+  } else if (currentDTMUser?.role === 'gerceklestirmeci') {
+    query = db.collection('projeler').where('status', '==', 'gonderildi');
   } else {
     query = db.collection('projeler').where('userId', '==', user.uid);
   }

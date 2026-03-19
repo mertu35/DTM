@@ -8,22 +8,29 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // Duyurular - herkes okuyabilir, sadece admin yazabilir
+    // Duyurular - herkes okuyabilir, admin ve superadmin yazabilir
     match /duyurular/{duyuruId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
 
-    // Projeler - giriş yapmış kullanıcılar kendi projelerini görebilir
-    // Admin tüm projeleri görebilir
+    // Projeler
     match /projeler/{projeId} {
       allow read: if request.auth != null &&
         (resource.data.userId == request.auth.uid ||
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'gerceklestirmeci']);
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null &&
+      allow update: if request.auth != null &&
+        (resource.data.userId == request.auth.uid ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci');
+      allow delete: if request.auth != null &&
         resource.data.userId == request.auth.uid;
+    }
+
+    // Referans verileri
+    match /referans/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
