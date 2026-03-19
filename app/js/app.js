@@ -2154,7 +2154,7 @@ function renderProfilPage() {
       </div>
 
       <!-- Profil Kartı -->
-      <div style="background:linear-gradient(135deg,#1a40a3,#1a56db);border-radius:16px;padding:28px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden">
+      <div style="background:linear-gradient(135deg,#0f766e,#059669);border-radius:16px;padding:28px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden">
         <div style="position:absolute;top:-40px;right:-40px;width:150px;height:150px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
         <div style="display:flex;align-items:center;gap:20px">
           <div style="width:64px;height:64px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">&#128100;</div>
