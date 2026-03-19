@@ -95,6 +95,7 @@ async function onAuthReady(user) {
     init();
     checkDuyurular();
     if (currentDTMUser.role === 'gerceklestirmeci') checkGonderilenProjeler();
+    if (currentDTMUser.role === 'user') checkGeriGonderiend();
   } else {
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('appLayout').style.display = 'none';
@@ -174,6 +175,7 @@ function renderPage() {
     case 'kaydet-yukle': renderKaydetYuklePage(); break;
     case 'kullanici-yonetimi': renderKullaniciYonetimiPage(); break;
     case 'duyurular': renderDuyurularPage(); break;
+    case 'projelerim': renderProjelerimPage(); break;
     case 'gonderilen-projeler': renderGonderilenProjelerPage(); break;
     case 'onayli-belgeler': renderOnayliBelgelerPage(); break;
     case 'proje-ozet': renderProjeOzetPage(); break;
@@ -1573,6 +1575,71 @@ async function kullaniciSil(uid, ad) {
   }
 }
 
+// ===================== PROJELERİM SAYFASI (KULLANICI) =====================
+async function renderProjelerimPage() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `<div class="page-header"><h2>Projelerim</h2><p>Tüm projeleriniz ve durumları.</p></div>
+    <div style="text-align:center;padding:40px;color:var(--gray-400)">Yükleniyor...</div>`;
+  try {
+    const projeler = await getUserProjeler();
+
+    // Geri gönderildi badge sıfırla
+    const badge = document.getElementById('geriGonderBadge');
+    if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
+
+    const bolumler = [
+      { key: 'taslak',          baslik: '📝 Taslaklar',       renk: '#f9fafb', kenar: '#e5e7eb', yaziRenk: '#374151' },
+      { key: 'gonderildi',      baslik: '📤 Gönderildi',      renk: '#eff6ff', kenar: '#bfdbfe', yaziRenk: '#1e40af' },
+      { key: 'geri_gonderildi', baslik: '↩ Geri Gönderildi', renk: '#fef2f2', kenar: '#fecaca', yaziRenk: '#991b1b' },
+      { key: 'onaylandi',       baslik: '✅ Onaylandı',       renk: '#f0fdf4', kenar: '#bbf7d0', yaziRenk: '#15803d' }
+    ];
+
+    const projeKart = (p) => {
+      const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
+      const isAdiSafe = (p.isAdi||'').replace(/'/g,'');
+      const kilitli = p.locked === true;
+      const gonderildi = p.status === 'gonderildi' || p.status === 'onaylandi';
+      const canOpen = true;
+      return `<div class="ky-proje-item">
+        <div class="ky-proje-info">
+          <div class="ky-proje-name">
+            ${kilitli ? '<span style="margin-right:4px">🔒</span>' : ''}
+            ${p.isAdi || '(İsimsiz)'}
+          </div>
+          <div class="ky-proje-meta">
+            <span class="ky-proje-date">📅 ${tarih}</span>
+            ${p.atananGerceklestirmeciAd ? `<span class="ky-proje-user">👷 ${p.atananGerceklestirmeciAd}</span>` : ''}
+          </div>
+          ${p.status === 'geri_gonderildi' && p.geriGonderNot ? `
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:7px 10px;margin-top:6px;font-size:12px;color:#991b1b">
+              <strong>Not:</strong> ${p.geriGonderNot}
+            </div>` : ''}
+        </div>
+        <div class="ky-proje-actions">
+          <button class="ky-btn-open" onclick="cloudProjeAc('${p.id}')">Aç</button>
+          ${!gonderildi && !kilitli ? `<button class="ky-btn-delete" onclick="cloudProjeSil('${p.id}', '${isAdiSafe}', ${kilitli})">Sil</button>` : ''}
+        </div>
+      </div>`;
+    };
+
+    main.innerHTML = `
+      <div class="page-header"><h2>Projelerim</h2><p>Tüm projeleriniz ve durumları.</p></div>
+      ${bolumler.map(b => {
+        const grup = projeler.filter(p => (p.status || 'taslak') === b.key);
+        return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
+          <div style="padding:12px 16px;background:${b.renk};border-bottom:1px solid ${b.kenar};font-weight:700;font-size:13px;color:${b.yaziRenk}">
+            ${b.baslik} (${grup.length})
+          </div>
+          ${grup.length === 0
+            ? `<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">Bu kategoride proje yok.</div>`
+            : `<div class="ky-proje-grid">${grup.map(projeKart).join('')}</div>`}
+        </div>`;
+      }).join('')}`;
+  } catch(e) {
+    main.innerHTML = `<div class="page-header"><h2>Projelerim</h2></div><div style="color:red;padding:20px">Hata: ${e.message}</div>`;
+  }
+}
+
 // ===================== GERÇEKLEŞTİRMECİ SAYFASI =====================
 async function renderGonderilenProjelerPage() {
   const main = document.getElementById('mainContent');
@@ -1903,6 +1970,21 @@ async function sifreDegistir() {
 }
 
 // ===================== DUYURULAR =====================
+async function checkGeriGonderiend() {
+  try {
+    const user = auth.currentUser;
+    if (!user) return;
+    const snap = await db.collection('projeler')
+      .where('userId', '==', user.uid)
+      .where('status', '==', 'geri_gonderildi').get();
+    const badge = document.getElementById('geriGonderBadge');
+    if (badge) {
+      badge.textContent = snap.size;
+      badge.style.display = snap.size > 0 ? 'inline-flex' : 'none';
+    }
+  } catch(e) {}
+}
+
 async function checkGonderilenProjeler() {
   try {
     const snap = await db.collection('projeler').where('status', '==', 'gonderildi').get();
