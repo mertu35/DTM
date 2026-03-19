@@ -351,9 +351,9 @@ function yeniProjeOlustur() {
 }
 
 function projeAcSayfasinaGit() {
-  currentPage = 'kaydet-yukle';
+  currentPage = 'projelerim';
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.querySelector('[data-page="kaydet-yukle"]')?.classList.add('active');
+  document.querySelector('[data-page="projelerim"]')?.classList.add('active');
   renderPage();
 }
 
