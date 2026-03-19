@@ -27,6 +27,45 @@ function getStatusBadge(status) {
   return `<span style="font-size:11px;background:${s.bg};color:${s.color};padding:2px 7px;border-radius:4px;font-weight:600">${s.label}</span>`;
 }
 
+// ===== TOAST BİLDİRİM SİSTEMİ =====
+function showToast(mesaj, tip = 'success', sure = 3000) {
+  const renkler = {
+    success: { bg: '#065f46', border: '#059669', icon: '✓' },
+    error:   { bg: '#991b1b', border: '#dc2626', icon: '✕' },
+    warning: { bg: '#92400e', border: '#d97706', icon: '⚠' },
+    info:    { bg: '#1e3a5f', border: '#1a56db', icon: 'ℹ' }
+  };
+  const r = renkler[tip] || renkler.success;
+
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:8px;';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.style.cssText = `background:${r.bg};border:1px solid ${r.border};color:#fff;padding:12px 18px;border-radius:10px;
+    font-size:14px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px;
+    max-width:360px;animation:toastIn 0.25s ease;`;
+  toast.innerHTML = `<span style="font-size:16px;font-weight:700">${r.icon}</span><span>${mesaj}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'toastOut 0.25s ease forwards';
+    setTimeout(() => toast.remove(), 250);
+  }, sure);
+}
+
+if (!document.getElementById('toastStyle')) {
+  const s = document.createElement('style');
+  s.id = 'toastStyle';
+  s.textContent = `@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}`;
+  document.head.appendChild(s);
+}
+
 // ===== AUTH =====
 async function doLogin() {
   const username = document.getElementById('loginUsername').value.trim();
@@ -296,7 +335,7 @@ function yeniProjeBaslat() {
 
 function yeniProjeOlustur() {
   const isAdi = document.getElementById('yeniProjeAdi')?.value.trim();
-  if (!isAdi) { alert('Lütfen bir proje adı girin.'); return; }
+  if (!isAdi) { showToast('Lütfen bir proje adı girin.', 'warning'); return; }
   proje = getDefaultProje();
   proje.isAdi = isAdi;
   currentCloudProjeId = null;
@@ -890,7 +929,7 @@ async function belgelerProjeAc(projeId) {
     currentBelge = 'yaklasik-maliyet';
     renderPage();
   } catch(e) {
-    alert('Proje yüklenemedi: ' + e.message);
+    showToast('Proje yüklenemedi: ' + e.message, 'error');
   }
 }
 
@@ -1258,25 +1297,25 @@ async function dosyaGetir(projeId) {
     const projData = Object.assign(getDefaultProje(), doc.data);
     exportProjeJSON(projData);
   } catch(e) {
-    alert('İndirme hatası: ' + e.message);
+    showToast('İndirme hatası: ' + e.message, 'error');
   }
 }
 
 async function yukleProjeCloud() {
   const input = document.getElementById('fileInput');
-  if (!input?.files.length) return alert('Önce bir dosya seçin.');
+  if (!input?.files.length) { showToast('Önce bir dosya seçin.', 'warning'); return; }
   importProjeJSON(input.files[0], async (err, data) => {
-    if (err) return alert('Dosya okunamadı: ' + err.message);
+    if (err) showToast('Dosya okunamadı: ' + err.message, 'error'); return;
     try {
       const yeniProjeData = Object.assign(getDefaultProje(), data);
       const projeId = await saveProjeToCloud(yeniProjeData);
-      alert('✅ Proje başarıyla yüklendi! Projelerim sayfasında "Devam Edenler" altında görünür.');
+      showToast('Proje yüklendi! Projelerim sayfasında görünür.');
       currentPage = 'projelerim';
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       document.querySelector('[data-page="projelerim"]')?.classList.add('active');
       renderPage();
     } catch(e) {
-      alert('Kayıt hatası: ' + e.message);
+      showToast('Kayıt hatası: ' + e.message, 'error');
     }
   });
 }
@@ -1362,8 +1401,8 @@ function renderVeriMerkeziYedek() {
 function bindKaydetYukle() {}
 
 async function cloudKaydet() {
-  if (currentProjeBaskaKullanici) { alert('Bu proje başka bir kullanıcıya ait. Değişiklik yapamazsınız.'); return; }
-  if (currentProjeKilitli) { alert('Bu proje kilitli. Değişiklikler kaydedilemez.'); return; }
+  if (currentProjeBaskaKullanici) { showToast('Bu proje başka bir kullanıcıya ait.', 'warning'); return; }
+  if (currentProjeKilitli) { showToast('Bu proje kilitli. Değişiklikler kaydedilemez.', 'warning'); return; }
   try {
     if (currentCloudProjeId) {
       await updateProjeInCloud(currentCloudProjeId, proje);
@@ -1373,14 +1412,14 @@ async function cloudKaydet() {
         geriGonderAt: null,
         geriGonderBy: null
       }).catch(() => {});
-      alert('✓ Proje buluta güncellendi!');
+      showToast('Proje başarıyla kaydedildi!');
     } else {
       currentCloudProjeId = await saveProjeToCloud(proje);
-      alert('✓ Proje buluta kaydedildi!');
+      showToast('Proje başarıyla kaydedildi!');
     }
     renderPage();
   } catch(e) {
-    alert('Hata: ' + e.message);
+    showToast('Hata: ' + e.message, 'error');
   }
 }
 
@@ -1399,7 +1438,7 @@ async function dashboardProjeAc(projeId) {
     updateNavLock();
     renderPage();
   } catch(e) {
-    alert('Hata: ' + e.message);
+    showToast('Hata: ' + e.message, 'error');
   }
 }
 
@@ -1426,7 +1465,7 @@ async function cloudProjeAc(projeId) {
     updateNavLock();
     renderPage();
   } catch(e) {
-    alert('Hata: ' + e.message);
+    showToast('Hata: ' + e.message, 'error');
   }
 }
 
@@ -1436,10 +1475,10 @@ async function gonderiClick(projeId, isAdi) {
   try {
     gerceklestirmeciler = await getGerceklestirmeciler();
   } catch(e) {
-    alert('Gerçekleştirmeciler yüklenemedi: ' + e.message); return;
+    showToast('Gerçekleştirmeciler yüklenemedi.', 'error'); return;
   }
   if (gerceklestirmeciler.length === 0) {
-    alert('Sistemde kayıtlı gerçekleştirmeci bulunamadı.'); return;
+    showToast('Sistemde kayıtlı gerçekleştirmeci bulunamadı.', 'warning'); return;
   }
 
   // Modal oluştur
@@ -1468,14 +1507,14 @@ async function gonderiOnayla(projeId) {
   const select = document.getElementById('gerceklestirmeciSelect');
   const uid = select.value;
   const ad = select.options[select.selectedIndex]?.dataset?.ad || '';
-  if (!uid) { alert('Lütfen bir gerçekleştirmeci seçin.'); return; }
+  if (!uid) { showToast('Lütfen bir gerçekleştirmeci seçin.', 'warning'); return; }
   document.getElementById('gonderiModal').remove();
   try {
     await gonderiProje(projeId, uid, ad);
     if (currentCloudProjeId === projeId) currentProjeKilitli = true;
     renderPage();
   } catch(e) {
-    alert('Hata: ' + e.message);
+    showToast('Hata: ' + e.message, 'error');
   }
 }
 
@@ -1487,7 +1526,7 @@ async function belgeyeGit(projeId) {
     currentPage = 'onay-belgesi';
     renderPage();
   } catch(e) {
-    alert('Hata: ' + e.message);
+    showToast('Hata: ' + e.message, 'error');
   }
 }
 
@@ -1502,7 +1541,7 @@ async function onayiKaldirClick(projeId, isAdi) {
     currentProjeStatus = 'gonderildi';
     renderPage();
   } catch(e) {
-    alert('Hata: ' + e.message);
+    showToast('Hata: ' + e.message, 'error');
   }
 }
 
@@ -1514,31 +1553,31 @@ async function onaylaClick(projeId, isAdi) {
     currentPage = 'onay-belgesi';
     renderPage();
   } catch(e) {
-    alert('Hata: ' + e.message);
+    showToast('Hata: ' + e.message, 'error');
   }
 }
 
 async function geriGonderClick(projeId, isAdi) {
   const not = prompt(`"${isAdi}" projesini geri gönderiyorsunuz.\n\nGeri gönderme nedeninizi yazın:`);
   if (not === null) return;
-  if (!not.trim()) { alert('Not boş olamaz.'); return; }
+  if (!not.trim()) { showToast('Not boş olamaz.', 'warning'); return; }
   try {
     await geriGonderProje(projeId, not.trim());
     renderPage();
   } catch(e) {
-    alert('Hata: ' + e.message);
+    showToast('Hata: ' + e.message, 'error');
   }
 }
 
 async function cloudProjeSil(projeId, isAdi, kilitli) {
-  if (kilitli) { alert(`"${isAdi}" projesi kilitli. Silmek için önce kilidi açın.`); return; }
+  if (kilitli) { showToast(`"${isAdi}" projesi kilitli. Silmek için önce kilidi açın.`, 'warning'); return; }
   if (!confirm(`"${isAdi}" projesi silinecek. Emin misiniz?`)) return;
   try {
     await deleteProjeFromCloud(projeId);
     if (currentCloudProjeId === projeId) { currentCloudProjeId = null; currentProjeKilitli = false; }
     renderPage();
   } catch(e) {
-    alert('Hata: ' + e.message);
+    showToast('Hata: ' + e.message, 'error');
   }
 }
 
@@ -1548,7 +1587,7 @@ async function cloudProjeKilitle(projeId, kilitle) {
     if (currentCloudProjeId === projeId) currentProjeKilitli = kilitle;
     renderPage();
   } catch(e) {
-    alert('Hata: ' + e.message);
+    showToast('Hata: ' + e.message, 'error');
   }
 }
 
@@ -1564,12 +1603,12 @@ function yeniProje() {
 
 function yukleProje() {
   const input = document.getElementById('fileInput');
-  if (!input.files.length) return alert('Dosya seçin.');
+  if (!input.files.length) { showToast('Dosya seçin.', 'warning'); return; }
   importProjeJSON(input.files[0], (err, data) => {
-    if (err) return alert('Dosya okunamadı: ' + err.message);
+    if (err) showToast('Dosya okunamadı: ' + err.message, 'error'); return;
     proje = Object.assign(getDefaultProje(), data);
     saveProje(proje);
-    alert('Proje yüklendi!');
+    showToast('Proje yüklendi!');
     renderPage();
   });
 }
@@ -1586,16 +1625,16 @@ function exportRefJSON() {
 
 function yukleReferans() {
   const input = document.getElementById('refFileInput');
-  if (!input.files.length) return alert('Dosya seçin.');
+  if (!input.files.length) { showToast('Dosya seçin.', 'warning'); return; }
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
       referans = Object.assign(getDefaultReferans(), JSON.parse(e.target.result));
       saveReferans(referans);
-      alert('Referans verileri yüklendi!');
+      showToast('Referans verileri yüklendi!');
       renderPage();
     } catch(err) {
-      alert('Dosya okunamadı: ' + err.message);
+      showToast('Dosya okunamadı: ' + err.message, 'error');
     }
   };
   reader.readAsText(input.files[0]);
@@ -1713,7 +1752,7 @@ async function kullaniciRolDegistir(uid, yeniRol) {
     await changeUserRole(uid, yeniRol);
     renderKullaniciYonetimiPage();
   } catch(e) {
-    alert('Hata: ' + e.message);
+    showToast('Hata: ' + e.message, 'error');
   }
 }
 
@@ -1723,7 +1762,7 @@ async function kullaniciSil(uid, ad) {
     await db.collection('users').doc(uid).delete();
     renderKullaniciYonetimiPage();
   } catch(e) {
-    alert('Hata: ' + e.message);
+    showToast('Hata: ' + e.message, 'error');
   }
 }
 
@@ -2267,7 +2306,7 @@ async function duyuruOku(duyuruId) {
     okunmamiDuyuruSayisi = Math.max(0, okunmamiDuyuruSayisi - 1);
     updateDuyuruBadge();
     renderDuyurularPage();
-  } catch(e) { alert('Hata: ' + e.message); }
+  } catch(e) { showToast('Hata: ' + e.message, 'error'); }
 }
 
 async function duyuruSil(duyuruId) {
@@ -2275,5 +2314,5 @@ async function duyuruSil(duyuruId) {
   try {
     await deleteDuyuru(duyuruId);
     renderDuyurularPage();
-  } catch(e) { alert('Hata: ' + e.message); }
+  } catch(e) { showToast('Hata: ' + e.message, 'error'); }
 }
