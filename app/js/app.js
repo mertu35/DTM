@@ -1225,13 +1225,13 @@ async function renderKaydetYuklePage() {
       <p>Onaylı projeleri indirin veya bilgisayarınızdan proje yükleyin.</p>
     </div>
 
-    <!-- DOSYA GÖNDER -->
+    <!-- DOSYA GETİR (bilgisayardan sisteme) -->
     <div class="card" style="margin-bottom:16px">
-      <div class="card-header"><h3>📤 Dosya Gönder</h3></div>
+      <div class="card-header"><h3>📥 Dosya Getir</h3></div>
       <div class="card-body">
         <p style="font-size:13px;color:#6b7280;margin-bottom:16px">
-          Daha önce indirdiğiniz JSON proje dosyasını seçerek sisteme yükleyin.<br>
-          Yüklenen proje <strong>Projelerim → Devam Edenler</strong> listesinde taslak olarak görünür.
+          Bilgisayarınızdaki JSON proje dosyasını seçerek sisteme getirin.<br>
+          Getirilen proje <strong>Projelerim → Devam Edenler</strong> listesinde taslak olarak görünür.
         </p>
         <div class="ky-upload-area" style="margin-bottom:12px">
           <label class="ky-file-label" id="kyFileLabel">
@@ -1241,15 +1241,15 @@ async function renderKaydetYuklePage() {
               onchange="if(this.files[0]){document.getElementById('kyFileLabel').querySelector('.ky-file-text').textContent=this.files[0].name;document.getElementById('kyFileLabel').classList.add('ky-file-selected')}">
           </label>
         </div>
-        <button class="btn btn-primary" onclick="yukleProjeCloud()">📤 Gönder</button>
+        <button class="btn btn-primary" onclick="yukleProjeCloud()">📥 Getir</button>
       </div>
     </div>
 
-    <!-- DOSYA GETİR -->
+    <!-- DOSYA GÖNDER (sistemden bilgisayara) -->
     <div class="card">
-      <div class="card-header"><h3>📥 Dosya Getir</h3></div>
+      <div class="card-header"><h3>📤 Dosya Gönder</h3></div>
       <div class="card-body">
-        <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Onaylanan projelerinizi JSON dosyası olarak bilgisayarınıza indirebilirsiniz.</p>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Onaylanan projelerinizi bilgisayarınıza JSON dosyası olarak gönderin.</p>
         <div id="dosyaGetirList">
           <div style="text-align:center;padding:30px;color:var(--gray-400)">Yükleniyor...</div>
         </div>
@@ -1282,7 +1282,7 @@ async function renderKaydetYuklePage() {
               </div>
             </div>
             <div class="ky-proje-actions">
-              <button class="ky-btn-open" onclick="dosyaGetir('${p.id}')">📥 İndir</button>
+              <button class="ky-btn-open" onclick="dosyaGetir('${p.id}')">📤 Gönder</button>
             </div>
           </div>`;
         }).join('')}
