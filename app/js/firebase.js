@@ -133,7 +133,7 @@ async function getUserProjeler() {
   const user = auth.currentUser;
   if (!user) return [];
   let query;
-  if (currentDTMUser?.role === 'admin') {
+  if (['admin', 'superadmin'].includes(currentDTMUser?.role)) {
     query = db.collection('projeler');
   } else {
     query = db.collection('projeler').where('userId', '==', user.uid);
@@ -194,6 +194,11 @@ async function duyuruOkunduIsaretle(duyuruId) {
   await db.collection('users').doc(currentDTMUser.uid).update({
     okunanDuyurular: firebase.firestore.FieldValue.arrayUnion(duyuruId)
   });
+}
+
+// Kullanıcı rolünü değiştir (superadmin)
+async function changeUserRole(uid, newRole) {
+  await db.collection('users').doc(uid).update({ role: newRole });
 }
 
 // Proje kilit durumunu değiştir

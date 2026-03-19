@@ -8,6 +8,12 @@ let currentProjeKilitli = false;
 let currentProjeBaskaKullanici = false;
 let okunmamiDuyuruSayisi = 0;
 
+// ===== ROL YARDIMCISI =====
+function getRoleLabel(role) {
+  const labels = { superadmin: 'Sistem Yöneticisi', admin: 'Yönetici', gerceklestirmeci: 'Gerçekleştirme Görevlisi', user: 'Kullanıcı' };
+  return labels[role] || 'Kullanıcı';
+}
+
 // ===== AUTH =====
 async function doLogin() {
   const username = document.getElementById('loginUsername').value.trim();
@@ -54,13 +60,18 @@ async function onAuthReady(user) {
     } catch(e) {
       referans = loadReferans();
     }
-    // Admin menüyü göster
-    document.querySelectorAll('.admin-only').forEach(el => {
-      el.style.display = currentDTMUser.role === 'admin' ? '' : 'none';
+    // Rol bazlı menü görünürlüğü
+    const role = currentDTMUser.role;
+    document.querySelectorAll('[data-rol]').forEach(el => {
+      const roles = el.dataset.rol.split(',');
+      el.style.display = roles.includes(role) ? '' : 'none';
     });
+    // Duyurular nav item her zaman flex (badge için)
+    const duyuruNav = document.querySelector('[data-page="duyurular"]');
+    if (duyuruNav) duyuruNav.style.display = 'flex';
     // Kullanıcı bilgisi
     document.getElementById('sidebarUserName').textContent = currentDTMUser.displayName || currentDTMUser.username;
-    document.getElementById('sidebarUserRole').textContent = currentDTMUser.role === 'admin' ? 'Yönetici' : 'Kullanıcı';
+    document.getElementById('sidebarUserRole').textContent = getRoleLabel(currentDTMUser.role);
     // Ekranları göster/gizle
     // Her oturumda temiz başla
     proje = getDefaultProje();
@@ -150,6 +161,8 @@ function renderPage() {
     case 'kaydet-yukle': renderKaydetYuklePage(); break;
     case 'kullanici-yonetimi': renderKullaniciYonetimiPage(); break;
     case 'duyurular': renderDuyurularPage(); break;
+    case 'gonderilen-projeler': renderGonderilenProjelerPage(); break;
+    case 'onayli-belgeler': renderOnayliBelgelerPage(); break;
     case 'profil': main.innerHTML = renderProfilPage(); bindProfil(); break;
   }
 }
@@ -161,6 +174,14 @@ async function renderAnaSayfaPage() {
   const saat = new Date().getHours();
   const selamlama = saat < 12 ? 'Günaydın' : saat < 18 ? 'İyi Günler' : 'İyi Akşamlar';
 
+  const userRole = currentDTMUser?.role;
+  const roleInfoMap = {
+    gerceklestirmeci: { icon: '📋', mesaj: 'Sol menüden <strong>Gönderilen Projeler</strong> bölümüne giderek size iletilen projeleri görüntüleyebilirsiniz.' },
+    admin: { icon: '📁', mesaj: 'Sol menüden <strong>Onaylı Belgeler</strong> bölümüne giderek onaylanmış tüm belgeleri görüntüleyebilirsiniz.' },
+    superadmin: { icon: '⚙️', mesaj: 'Sol menüden <strong>Kullanıcı Yönetimi</strong> bölümüne giderek sistemi yönetebilirsiniz.' }
+  };
+  const roleInfo = roleInfoMap[userRole];
+
   main.innerHTML = `
     <div style="max-width:700px;margin:0 auto;padding:32px 16px">
       <div style="text-align:center;margin-bottom:40px">
@@ -169,6 +190,11 @@ async function renderAnaSayfaPage() {
         <p style="color:var(--gray-500);font-size:14px">Doğrudan Temin Modülü'ne Hoş Geldiniz.</p>
       </div>
 
+      ${roleInfo ? `
+      <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:12px;padding:28px 24px;text-align:center;margin-bottom:32px">
+        <div style="font-size:42px;margin-bottom:12px">${roleInfo.icon}</div>
+        <p style="color:var(--gray-700);font-size:14px;line-height:1.6">${roleInfo.mesaj}</p>
+      </div>` : `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
         <div onclick="yeniProjeBaslat()" style="background:var(--primary);color:#fff;border-radius:12px;padding:28px 24px;cursor:pointer;transition:opacity 0.15s;text-align:center" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
           <div style="font-size:36px;margin-bottom:10px">📋</div>
@@ -189,7 +215,7 @@ async function renderAnaSayfaPage() {
         <div id="sonProjelerList" style="padding:16px 20px;color:var(--gray-400);font-size:13px;text-align:center">
           Yükleniyor...
         </div>
-      </div>
+      </div>`}
     </div>
 
     <!-- Yeni Proje Modal -->
@@ -208,7 +234,8 @@ async function renderAnaSayfaPage() {
     </div>
   `;
 
-  // Son projeleri yükle
+  // Son projeleri sadece kullanıcı rolünde yükle
+  if (roleInfo) return;
   try {
     const projeler = await getUserProjeler();
     const listEl = document.getElementById('sonProjelerList');
@@ -1319,7 +1346,9 @@ async function renderKullaniciYonetimiPage() {
               <label>Rol</label>
               <select id="yeniRol">
                 <option value="user">Kullanıcı</option>
+                <option value="gerceklestirmeci">Gerçekleştirme Görevlisi</option>
                 <option value="admin">Yönetici</option>
+                <option value="superadmin">Sistem Yöneticisi</option>
               </select>
             </div>
           </div>
@@ -1338,7 +1367,14 @@ async function renderKullaniciYonetimiPage() {
                 <tr>
                   <td>${u.displayName || '-'}</td>
                   <td>${u.username || '-'}</td>
-                  <td><span class="badge ${u.role === 'admin' ? 'badge-admin' : 'badge-user'}">${u.role === 'admin' ? 'Yönetici' : 'Kullanıcı'}</span></td>
+                  <td>${u.uid !== currentDTMUser.uid ? `
+                    <select onchange="kullaniciRolDegistir('${u.uid}', this.value)" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer">
+                      <option value="user" ${u.role === 'user' ? 'selected' : ''}>Kullanıcı</option>
+                      <option value="gerceklestirmeci" ${u.role === 'gerceklestirmeci' ? 'selected' : ''}>Gerçekleştirme Görevlisi</option>
+                      <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Yönetici</option>
+                      <option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>Sistem Yöneticisi</option>
+                    </select>` : `<span class="badge badge-admin">${getRoleLabel(u.role)}</span>`}
+                  </td>
                   <td>
                     ${u.uid !== currentDTMUser.uid ? `<button class="btn btn-danger btn-sm" onclick="kullaniciSil('${u.uid}', '${u.displayName}')">Sil</button>` : '<span style="color:var(--gray-400);font-size:12px">(Aktif oturum)</span>'}
                   </td>
@@ -1379,6 +1415,15 @@ async function kullaniciEkle() {
   }
 }
 
+async function kullaniciRolDegistir(uid, yeniRol) {
+  try {
+    await changeUserRole(uid, yeniRol);
+    renderKullaniciYonetimiPage();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}
+
 async function kullaniciSil(uid, ad) {
   if (!confirm(`"${ad}" kullanıcısı silinecek. Emin misiniz?`)) return;
   try {
@@ -1387,6 +1432,38 @@ async function kullaniciSil(uid, ad) {
   } catch(e) {
     alert('Hata: ' + e.message);
   }
+}
+
+// ===================== GERÇEKLEŞTİRMECİ SAYFASI =====================
+async function renderGonderilenProjelerPage() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div class="page-header">
+      <h2>Gönderilen Projeler</h2>
+      <p>Kullanıcılar tarafından onayınıza gönderilen projeler.</p>
+    </div>
+    <div style="text-align:center;padding:60px;color:var(--gray-400)">
+      <div style="font-size:48px;margin-bottom:16px">📋</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--gray-600)">Yakında</div>
+      <div style="font-size:13px">Bu özellik belge formatı tamamlandıktan sonra aktif olacak.</div>
+    </div>
+  `;
+}
+
+// ===================== YÖNETİCİ ARŞİV SAYFASI =====================
+async function renderOnayliBelgelerPage() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div class="page-header">
+      <h2>Onaylı Belgeler</h2>
+      <p>Sisteme onaylanmış tüm belgeler.</p>
+    </div>
+    <div style="text-align:center;padding:60px;color:var(--gray-400)">
+      <div style="font-size:48px;margin-bottom:16px">📁</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--gray-600)">Yakında</div>
+      <div style="font-size:13px">Bu özellik belge formatı tamamlandıktan sonra aktif olacak.</div>
+    </div>
+  `;
 }
 
 // ===================== PROFİL SAYFASI =====================
@@ -1416,7 +1493,7 @@ function renderProfilPage() {
             <div style="font-size:14px;opacity:0.8;margin-top:4px">@${u.username || '-'}</div>
             <div style="margin-top:8px">
               <span style="background:rgba(255,255,255,0.2);font-size:11px;font-weight:600;padding:3px 12px;border-radius:20px">
-                ${u.role === 'admin' ? '⭐ Yönetici' : '👤 Kullanıcı'}
+                ${getRoleLabel(u.role)}
               </span>
             </div>
           </div>
@@ -1536,7 +1613,8 @@ async function renderDuyurularPage() {
     <div style="text-align:center;padding:40px;color:var(--gray-400)">Yükleniyor...</div>`;
   try {
     const [duyurular, okunanlar] = await Promise.all([getDuyurular(), getOkunanDuyurular()]);
-    const adminForm = currentDTMUser?.role === 'admin' ? `
+    const canManage = ['admin', 'superadmin'].includes(currentDTMUser?.role);
+    const adminForm = canManage ? `
       <div class="card" style="margin-bottom:20px">
         <div class="card-header"><h3>Yeni Duyuru Yayınla</h3></div>
         <div class="card-body">
@@ -1563,7 +1641,7 @@ async function renderDuyurularPage() {
               <div class="duyuru-mesaj">${d.mesaj}</div>
               <div class="duyuru-actions">
                 ${!okundu ? `<button class="btn btn-sm btn-outline" onclick="duyuruOku('${d.id}')">Okundu</button>` : '<span style="color:var(--gray-400);font-size:12px">Okundu</span>'}
-                ${currentDTMUser?.role === 'admin' ? `<button class="btn btn-sm btn-danger" onclick="duyuruSil('${d.id}')">Sil</button>` : ''}
+                ${['admin', 'superadmin'].includes(currentDTMUser?.role) ? `<button class="btn btn-sm btn-danger" onclick="duyuruSil('${d.id}')">Sil</button>` : ''}
               </div>
             </div>`;
         }).join('');
