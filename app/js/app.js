@@ -6,6 +6,7 @@ let saveTimeout = null;
 let projeAktif = false;
 let currentProjeKilitli = false;
 let currentProjeBaskaKullanici = false;
+let currentProjeStatus = 'taslak';
 let okunmamiDuyuruSayisi = 0;
 
 // ===== ROL YARDIMCISI =====
@@ -1248,6 +1249,7 @@ async function cloudProjeAc(projeId) {
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
     currentProjeBaskaKullanici = ['admin','superadmin'].includes(currentDTMUser?.role) && doc.userId !== currentDTMUser.uid;
+    currentProjeStatus = doc.status || 'taslak';
     const gonderildi = doc.status === 'gonderildi' || doc.status === 'onaylandi';
     currentProjeKilitli = doc.locked === true || currentProjeBaskaKullanici || gonderildi;
     saveProje(proje);
@@ -1323,6 +1325,21 @@ async function belgeyeGit(projeId) {
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
     currentPage = 'onay-belgesi';
+    renderPage();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}
+
+async function onayiKaldirClick(projeId, isAdi) {
+  if (!confirm(`"${isAdi}" projesinin onayı kaldırılacak.\n\nOluşturulan belgeler silinecek. Emin misiniz?`)) return;
+  try {
+    await db.collection('projeler').doc(projeId).update({
+      status: 'gonderildi',
+      onaylandiAt: null,
+      onaylandiBy: null
+    });
+    currentProjeStatus = 'gonderildi';
     renderPage();
   } catch(e) {
     alert('Hata: ' + e.message);
@@ -1722,6 +1739,11 @@ function renderProjeOzetPage() {
       </table>`)}
 
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;padding-bottom:32px">
+        ${currentProjeStatus === 'onaylandi' ? `
+        <button onclick="onayiKaldirClick('${currentCloudProjeId}', '${(p.isAdi||'').replace(/'/g,'')}')"
+          style="padding:10px 24px;background:#fff;border:1px solid #dc2626;color:#dc2626;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
+          ✕ Onayı Kaldır
+        </button>` : `
         <button onclick="geriGonderClick('${currentCloudProjeId}', '${(p.isAdi||'').replace(/'/g,'')}')"
           style="padding:10px 24px;background:#fff;border:1px solid #dc2626;color:#dc2626;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ↩ Geri Gönder
@@ -1729,7 +1751,7 @@ function renderProjeOzetPage() {
         <button onclick="onaylaClick('${currentCloudProjeId}', '${(p.isAdi||'').replace(/'/g,'')}')"
           style="padding:10px 24px;background:#16a34a;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ✓ Onayla
-        </button>
+        </button>`}
       </div>
     </div>`;
 }
