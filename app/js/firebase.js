@@ -147,6 +147,15 @@ async function geriGonderProje(projeId, not) {
   });
 }
 
+// Projeyi onayla (gerçekleştirmeci)
+async function onaylaProje(projeId) {
+  await db.collection('projeler').doc(projeId).update({
+    status: 'onaylandi',
+    onaylandiAt: firebase.firestore.FieldValue.serverTimestamp(),
+    onaylandiBy: currentDTMUser?.displayName || ''
+  });
+}
+
 // Mevcut projeyi güncelle
 async function updateProjeInCloud(projeId, projeData) {
   await db.collection('projeler').doc(projeId).update({

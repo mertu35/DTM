@@ -176,6 +176,7 @@ function renderPage() {
     case 'gonderilen-projeler': renderGonderilenProjelerPage(); break;
     case 'onayli-belgeler': renderOnayliBelgelerPage(); break;
     case 'proje-ozet': renderProjeOzetPage(); break;
+    case 'onay-belgesi': renderOnayBelgesiPage(); break;
     case 'profil': main.innerHTML = renderProfilPage(); bindProfil(); break;
   }
 }
@@ -1316,6 +1317,18 @@ async function gonderiOnayla(projeId) {
   }
 }
 
+async function onaylaClick(projeId, isAdi) {
+  if (!confirm(`"${isAdi}" projesi onaylanacak.\n\nBu işlem geri alınamaz. Emin misiniz?`)) return;
+  try {
+    await onaylaProje(projeId);
+    // Belge oluşturma sayfasına yönlendir
+    currentPage = 'onay-belgesi';
+    renderPage();
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  }
+}
+
 async function geriGonderClick(projeId, isAdi) {
   const not = prompt(`"${isAdi}" projesini geri gönderiyorsunuz.\n\nGeri gönderme nedeninizi yazın:`);
   if (not === null) return;
@@ -1675,6 +1688,38 @@ function renderProjeOzetPage() {
         ${satir('KDV Tutarı (%' + p.kdvOrani + ')', kdvTutar > 0 ? formatCurrency(kdvTutar) + ' TL' : '')}
         ${satir('Sözleşme Tutarı (KDV Dahil)', sozlesmeToplamKdvli > 0 ? formatCurrency(sozlesmeToplamKdvli) + ' TL' : '')}
       </table>`)}
+
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;padding-bottom:32px">
+        <button onclick="geriGonderClick('${currentCloudProjeId}', '${(p.isAdi||'').replace(/'/g,'')}')"
+          style="padding:10px 24px;background:#fff;border:1px solid #dc2626;color:#dc2626;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
+          ↩ Geri Gönder
+        </button>
+        <button onclick="onaylaClick('${currentCloudProjeId}', '${(p.isAdi||'').replace(/'/g,'')}')"
+          style="padding:10px 24px;background:#16a34a;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
+          ✓ Onayla
+        </button>
+      </div>
+    </div>`;
+}
+
+// ===================== ONAY BELGESİ SAYFASI (GERÇEKLEŞTİRMECİ) =====================
+function renderOnayBelgesiPage() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div style="max-width:800px;margin:0 auto;padding:24px 16px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+        <button onclick="currentPage='gonderilen-projeler';renderPage();" style="padding:7px 14px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">← Geri</button>
+        <div>
+          <h2 style="font-size:20px;font-weight:700;color:#111827;margin:0">Onay Belgesi Oluştur</h2>
+          <div style="font-size:12px;color:#6b7280;margin-top:2px">${proje.isAdi || '(İsimsiz Proje)'}</div>
+        </div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:32px;text-align:center">
+        <div style="font-size:48px;margin-bottom:16px">✅</div>
+        <div style="font-size:16px;font-weight:700;color:#15803d;margin-bottom:8px">Proje Onaylandı</div>
+        <div style="font-size:13px;color:#166534;margin-bottom:24px">Belge formatı tamamlandıktan sonra buradan Doğrudan Temin Onay Belgesi oluşturabileceksiniz.</div>
+        <button onclick="currentPage='gonderilen-projeler';renderPage();" style="padding:10px 24px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">Proje Listesine Dön</button>
+      </div>
     </div>`;
 }
 
