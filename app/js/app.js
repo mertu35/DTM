@@ -691,6 +691,16 @@ function renderVeriGirisPage() {
         </div>
       </div>
     </div>
+
+    ${!currentProjeKilitli ? `
+    <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid #e5e7eb;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:100;box-shadow:0 -2px 8px rgba(0,0,0,0.06)">
+      <span style="font-size:13px;color:#6b7280">
+        ${currentCloudProjeId ? '☁️ Değişiklikler kaydedilmedi.' : '💡 Proje henüz buluta kaydedilmedi.'}
+      </span>
+      <button class="btn btn-primary" onclick="cloudKaydet()" style="min-width:140px">
+        ${currentCloudProjeId ? '☁️ Güncelle' : '☁️ Buluta Kaydet'}
+      </button>
+    </div>` : ''}
   `;
 }
 
