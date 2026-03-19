@@ -1177,90 +1177,108 @@ let currentCloudProjeId = null; // Açık olan cloud proje ID'si
 
 async function renderKaydetYuklePage() {
   const main = document.getElementById('mainContent');
-  // İlk render - loading göster
   main.innerHTML = `
-    <div class="ky-page">
-      <div class="ky-page-header">
-        <div class="ky-page-header-icon">💾</div>
-        <div>
-          <h2>Kaydet / Yükle</h2>
-          <p>Projeleri buluta kaydedin veya yerel dosya olarak yönetin</p>
-        </div>
-      </div>
+    <div class="page-header">
+      <h2>📁 Dosya İşlemleri</h2>
+      <p>Onaylı projeleri indirin veya bilgisayarınızdan proje yükleyin.</p>
+    </div>
 
-      ${renderKaydetYukleStatic()}
-
-      <div class="ky-projeler-card">
-        <div class="ky-projeler-header">
-          <div class="ky-projeler-header-left">
-            <span class="ky-projeler-icon">☁️</span>
-            <h3>Projelerim</h3>
-            ${currentDTMUser?.role === 'admin' ? '<span class="ky-admin-badge">Tüm kullanıcılar</span>' : ''}
-          </div>
-        </div>
-        <div class="ky-projeler-body" id="projelerListBody">
-          <div class="ky-loading">
-            <div class="ky-loading-spinner"></div>
-            <span>Projeler yükleniyor...</span>
-          </div>
+    <!-- DOSYA GETİR -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><h3>📥 Dosya Getir</h3></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Onaylanan projelerinizi JSON dosyası olarak bilgisayarınıza indirebilirsiniz.</p>
+        <div id="dosyaGetirList">
+          <div style="text-align:center;padding:30px;color:var(--gray-400)">Yükleniyor...</div>
         </div>
       </div>
     </div>
+
+    <!-- DOSYA GÖNDER -->
+    <div class="card">
+      <div class="card-header"><h3>📤 Dosya Gönder</h3></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:#6b7280;margin-bottom:16px">
+          Daha önce indirdiğiniz JSON proje dosyasını seçerek sisteme yükleyin.<br>
+          Yüklenen proje <strong>Projelerim → Devam Edenler</strong> listesinde taslak olarak görünür.
+        </p>
+        <div class="ky-upload-area" style="margin-bottom:12px">
+          <label class="ky-file-label" id="kyFileLabel">
+            <span class="ky-file-icon">📄</span>
+            <span class="ky-file-text">Dosya seçmek için tıklayın</span>
+            <input type="file" id="fileInput" accept=".json"
+              onchange="if(this.files[0]){document.getElementById('kyFileLabel').querySelector('.ky-file-text').textContent=this.files[0].name;document.getElementById('kyFileLabel').classList.add('ky-file-selected')}">
+          </label>
+        </div>
+        <button class="btn btn-primary" onclick="yukleProjeCloud()">📤 Gönder</button>
+      </div>
+    </div>
   `;
-  // Projeleri yükle
+
+  // Onaylı projeleri yükle
   try {
     const projeler = await getUserProjeler();
-    const projeListHTML = projeler.length === 0
-      ? `<div class="ky-empty-state">
-           <div class="ky-empty-icon">📂</div>
-           <div class="ky-empty-title">Henüz buluta kayıtlı proje yok</div>
-           <div class="ky-empty-desc">Yukarıdaki "Kaydet" butonu ile ilk projenizi kaydedin.</div>
-         </div>`
-      : `<div class="ky-proje-grid">
-          ${projeler.map(p => {
-            const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
-            const aktif = p.id === currentCloudProjeId;
-            const kilitli = p.locked === true;
-            const status = p.status || 'taslak';
-            const gonderildi = status === 'gonderildi' || status === 'onaylandi';
-            const geriGonderildi = status === 'geri_gonderildi';
-            const baskaKullanici = ['admin', 'superadmin'].includes(currentDTMUser?.role) && p.userId !== currentDTMUser.uid;
-            const canGonder = !baskaKullanici && !gonderildi && !kilitli;
-            const canDelete = !baskaKullanici && !gonderildi && !kilitli;
-            const canLock = !baskaKullanici && !gonderildi;
-            const isAdiSafe = (p.isAdi||'').replace(/'/g,'');
-            return `<div class="ky-proje-item ${aktif ? 'ky-proje-aktif' : ''} ${kilitli ? 'ky-proje-kilitli' : ''}">
-              <div class="ky-proje-info">
-                <div class="ky-proje-name">
-                  ${aktif ? '<span class="ky-aktif-dot"></span>' : '<span class="ky-proje-dot"></span>'}
-                  ${kilitli ? '<span title="Kilitli" style="margin-right:4px">🔒</span>' : ''}
-                  ${baskaKullanici ? '<span title="İzleme Modu" style="margin-right:4px">👁️</span>' : ''}
-                  ${p.isAdi || '(İsimsiz)'}
-                </div>
-                <div class="ky-proje-meta">
-                  ${['admin','superadmin'].includes(currentDTMUser?.role) ? `<span class="ky-proje-user">👤 ${p.userDisplayName || '-'}</span>` : ''}
-                  <span class="ky-proje-date">📅 ${tarih}</span>
-                  ${aktif ? '<span class="ky-aktif-badge">Aktif</span>' : ''}
-                  ${kilitli ? '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:4px;font-weight:600">Kilitli</span>' : ''}
-                  ${baskaKullanici ? '<span style="font-size:11px;background:#eff6ff;color:#1e40af;padding:2px 7px;border-radius:4px;font-weight:600">İzleme</span>' : ''}
-                  ${getStatusBadge(status)}
-                </div>
-                ${geriGonderildi && p.geriGonderNot ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:7px 10px;margin-top:6px;font-size:12px;color:#991b1b"><strong>Not:</strong> ${p.geriGonderNot}</div>` : ''}
-              </div>
-              <div class="ky-proje-actions">
-                <button class="ky-btn-open" onclick="cloudProjeAc('${p.id}')" title="Projeyi Aç">Aç</button>
-                ${canGonder ? `<button class="ky-btn-lock" onclick="gonderiClick('${p.id}', '${isAdiSafe}')" title="Gerçekleştirmeciye Gönder" style="background:#16a34a;color:#fff;border-color:#16a34a">📤 Gönder</button>` : ''}
-                ${canLock ? `<button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" onclick="cloudProjeKilitle('${p.id}', ${!kilitli})" title="${kilitli ? 'Kilidi Aç' : 'Kilitle'}">${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>` : ''}
-                ${canDelete ? `<button class="ky-btn-delete" onclick="cloudProjeSil('${p.id}', '${isAdiSafe}', ${kilitli})" title="Projeyi Sil">Sil</button>` : ''}
-              </div>
-            </div>`;
-          }).join('')}
+    const onaylananlar = projeler.filter(p => p.status === 'onaylandi');
+    const listEl = document.getElementById('dosyaGetirList');
+    if (!listEl) return;
+    if (onaylananlar.length === 0) {
+      listEl.innerHTML = `
+        <div style="text-align:center;padding:30px;color:#9ca3af;font-size:13px">
+          Henüz onaylanmış proje yok.
         </div>`;
-    document.getElementById('projelerListBody').innerHTML = projeListHTML;
+    } else {
+      listEl.innerHTML = `<div class="ky-proje-grid">
+        ${onaylananlar.map(p => {
+          const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR')
+                      : (p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-');
+          return `<div class="ky-proje-item">
+            <div class="ky-proje-info">
+              <div class="ky-proje-name">${p.isAdi || '(İsimsiz)'}</div>
+              <div class="ky-proje-meta">
+                <span class="ky-proje-date">📅 ${tarih}</span>
+                ${getStatusBadge('onaylandi')}
+              </div>
+            </div>
+            <div class="ky-proje-actions">
+              <button class="ky-btn-open" onclick="dosyaGetir('${p.id}')">📥 İndir</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
   } catch(e) {
-    document.getElementById('projelerListBody').innerHTML =
-      `<div class="ky-error">Projeler yüklenemedi: ${e.message}</div>`;
+    const listEl = document.getElementById('dosyaGetirList');
+    if (listEl) listEl.innerHTML = `<div style="color:red;padding:12px">Projeler yüklenemedi: ${e.message}</div>`;
   }
+}
+
+async function dosyaGetir(projeId) {
+  try {
+    const doc = await getProjeFromCloud(projeId);
+    const projData = Object.assign(getDefaultProje(), doc.data);
+    exportProjeJSON(projData);
+  } catch(e) {
+    alert('İndirme hatası: ' + e.message);
+  }
+}
+
+async function yukleProjeCloud() {
+  const input = document.getElementById('fileInput');
+  if (!input?.files.length) return alert('Önce bir dosya seçin.');
+  importProjeJSON(input.files[0], async (err, data) => {
+    if (err) return alert('Dosya okunamadı: ' + err.message);
+    try {
+      const yeniProjeData = Object.assign(getDefaultProje(), data);
+      const projeId = await saveProjeToCloud(yeniProjeData);
+      alert('✅ Proje başarıyla yüklendi! Projelerim sayfasında "Devam Edenler" altında görünür.');
+      currentPage = 'projelerim';
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelector('[data-page="projelerim"]')?.classList.add('active');
+      renderPage();
+    } catch(e) {
+      alert('Kayıt hatası: ' + e.message);
+    }
+  });
 }
 
 function renderKaydetYukleStatic() {
