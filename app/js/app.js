@@ -785,7 +785,7 @@ async function renderBelgelerPage() {
   if (!currentBelgelerProjeId) {
     main.innerHTML = `
       <div class="page-header">
-        <h2>&#128196; Belge Önizleme</h2>
+        <h2>&#128196; Belgeler</h2>
         <p>Belge oluşturmak istediğiniz projeyi seçin.</p>
       </div>
       <div id="belgelerProjeList">
@@ -858,7 +858,7 @@ async function renderBelgelerPage() {
         &#8592; Proje Listesi
       </button>
       <div>
-        <h2>&#128196; Belge Önizleme</h2>
+        <h2>&#128196; Belgeler</h2>
         <p style="display:flex;align-items:center;gap:8px">${proje.isAdi || ''} ${getStatusBadge(currentProjeStatus)}</p>
       </div>
     </div>
