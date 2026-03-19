@@ -1508,7 +1508,7 @@ function renderProfilPage() {
             <tbody>
               <tr><td style="color:var(--gray-500);width:160px">Ad Soyad</td><td><strong>${u.displayName || '-'}</strong></td></tr>
               <tr><td style="color:var(--gray-500)">Kullanıcı Adı</td><td>${u.username || '-'}</td></tr>
-              <tr><td style="color:var(--gray-500)">Rol</td><td>${u.role === 'admin' ? '⭐ Yönetici' : '👤 Kullanıcı'}</td></tr>
+              <tr><td style="color:var(--gray-500)">Rol</td><td>${getRoleLabel(u.role)}</td></tr>
               <tr><td style="color:var(--gray-500)">Son Giriş</td><td>${lastLogin}</td></tr>
               <tr><td style="color:var(--gray-500)">Hesap Oluşturma</td><td>${createdAt}</td></tr>
             </tbody>
