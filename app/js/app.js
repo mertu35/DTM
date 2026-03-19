@@ -175,6 +175,7 @@ function renderPage() {
     case 'duyurular': renderDuyurularPage(); break;
     case 'gonderilen-projeler': renderGonderilenProjelerPage(); break;
     case 'onayli-belgeler': renderOnayliBelgelerPage(); break;
+    case 'proje-ozet': renderProjeOzetPage(); break;
     case 'profil': main.innerHTML = renderProfilPage(); bindProfil(); break;
   }
 }
@@ -1250,9 +1251,15 @@ async function cloudProjeAc(projeId) {
     currentProjeKilitli = doc.locked === true || currentProjeBaskaKullanici || gonderildi;
     saveProje(proje);
     projeAktif = true;
-    currentPage = 'veri-giris';
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.querySelector('[data-page="veri-giris"]').classList.add('active');
+    // Gerçekleştirmeci özet ekranına git, diğerleri veri girişe
+    if (currentDTMUser?.role === 'gerceklestirmeci') {
+      currentPage = 'proje-ozet';
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    } else {
+      currentPage = 'veri-giris';
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelector('[data-page="veri-giris"]')?.classList.add('active');
+    }
     updateNavLock();
     renderPage();
   } catch(e) {
@@ -1573,6 +1580,88 @@ async function renderGonderilenProjelerPage() {
   } catch(e) {
     main.innerHTML = `<div class="page-header"><h2>Gönderilen Projeler</h2></div><div style="color:red;padding:20px">Hata: ${e.message}</div>`;
   }
+}
+
+// ===================== PROJE ÖZET SAYFASI (GERÇEKLEŞTİRMECİ) =====================
+function renderProjeOzetPage() {
+  const main = document.getElementById('mainContent');
+  const p = proje;
+  const kalemler = getKalemler(p);
+  const ymMaliyet = hesaplaYaklasikMaliyet(p);
+  const kazananFirma = p.teklifFirmalar[p.kazananFirmaIndex];
+  const sozlesmeKdvsiz = kazananFirma ? p.teklifFirmalar[p.kazananFirmaIndex].fiyatlar.reduce((t, f, i) => {
+    const miktar = parseFloat(kalemler[i]?.miktar) || 1;
+    return t + (parseFloat(f) || 0) * miktar;
+  }, 0) : 0;
+  const kdvTutar = sozlesmeKdvsiz * (p.kdvOrani / 100);
+  const sozlesmeToplamKdvli = sozlesmeKdvsiz + kdvTutar;
+
+  const satir = (label, value) => value ? `<tr><td style="color:#6b7280;padding:8px 12px;font-size:13px;width:45%">${label}</td><td style="padding:8px 12px;font-size:13px;font-weight:500">${value}</td></tr>` : '';
+  const kart = (baslik, icerik) => `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden"><div style="padding:12px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#374151">${baslik}</div>${icerik}</div>`;
+
+  const ymGorevliler = p.ymGorevliler.slice(0, p.ymGorevliSayisi || 1).filter(g => g.ad).map(g => `<tr><td style="padding:6px 12px;font-size:13px">${g.ad}</td><td style="padding:6px 12px;font-size:13px;color:#6b7280">${g.unvan}</td></tr>`).join('');
+  const dtGorevliler = p.dtGorevliler.slice(0, p.dtGorevliSayisi || 1).filter(g => g.ad).map(g => `<tr><td style="padding:6px 12px;font-size:13px">${g.ad}</td><td style="padding:6px 12px;font-size:13px;color:#6b7280">${g.unvan}</td></tr>`).join('');
+
+  const teklifFirmalar = p.teklifFirmalar.filter(f => f.ad);
+  const firmaTeklifRows = teklifFirmalar.map((f, fi) => {
+    const toplam = f.fiyatlar.reduce((t, fiyat, i) => {
+      const miktar = parseFloat(kalemler[i]?.miktar) || 1;
+      return t + (parseFloat(fiyat) || 0) * miktar;
+    }, 0);
+    const kazanan = fi === p.kazananFirmaIndex;
+    return `<tr style="${kazanan ? 'background:#f0fdf4;font-weight:600' : ''}">
+      <td style="padding:7px 12px;font-size:13px">${kazanan ? '✓ ' : ''}${f.ad}</td>
+      <td style="padding:7px 12px;font-size:13px;text-align:right">${formatCurrency(toplam)} TL</td>
+    </tr>`;
+  }).join('');
+
+  main.innerHTML = `
+    <div style="max-width:800px;margin:0 auto;padding:24px 16px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+        <button onclick="currentPage='gonderilen-projeler';renderPage();" style="padding:7px 14px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">← Geri</button>
+        <div>
+          <h2 style="font-size:20px;font-weight:700;color:#111827;margin:0">${p.isAdi || '(İsimsiz Proje)'}</h2>
+          <div style="font-size:12px;color:#6b7280;margin-top:2px">${getStatusBadge('gonderildi')} Proje Özeti</div>
+        </div>
+      </div>
+
+      ${kart('📋 Proje Bilgileri', `<table style="width:100%;border-collapse:collapse">
+        ${satir('İdare', p.idareAdi)}
+        ${satir('Müdürlük', p.mudurluk)}
+        ${satir('İş / Hizmet Adı', p.isAdi)}
+        ${satir('İş Türü', p.isTuru)}
+        ${satir('KDV Oranı', '%' + p.kdvOrani)}
+        ${satir('Şehir / İlçe', [p.sehir, p.ilce].filter(Boolean).join(' / '))}
+      </table>`)}
+
+      ${kart('👷 Y.M. Görevlileri', `<table style="width:100%;border-collapse:collapse">${ymGorevliler || '<tr><td style="padding:10px 12px;color:#9ca3af;font-size:13px">Bilgi girilmemiş</td></tr>'}</table>`) }
+      ${kart('👷 D.T. Görevlileri', `<table style="width:100%;border-collapse:collapse">${dtGorevliler || '<tr><td style="padding:10px 12px;color:#9ca3af;font-size:13px">Bilgi girilmemiş</td></tr>'}</table>`)}
+
+      ${kart('📅 Onay ve Sözleşme Bilgileri', `<table style="width:100%;border-collapse:collapse">
+        ${satir('Y.M. Onay Tarihi', formatDate(p.ymOnayTarihi))}
+        ${satir('Y.M. Onay Sayısı', p.ymOnayNo)}
+        ${satir('D.T. Onay Tarihi', formatDate(p.dtOnayTarihi))}
+        ${satir('D.T. Onay Sayısı', p.dtOnayNo)}
+        ${satir('Onaylayan Amir', p.onaylayanAmir?.ad ? p.onaylayanAmir.ad + ' / ' + p.onaylayanAmir.unvan : '')}
+        ${satir('Sözleşme Tarihi', formatDate(p.sozlesmeTarihi))}
+        ${satir('İş Süresi', p.isSuresi ? p.isSuresi + ' Takvim Günü' : '')}
+        ${satir('Fiili Bitim Tarihi', formatDate(p.fiiliBitimTarihi))}
+      </table>`)}
+
+      ${teklifFirmalar.length > 0 ? kart('🏢 Firma Teklifleri', `
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f3f4f6"><th style="padding:8px 12px;font-size:12px;text-align:left;color:#6b7280">Firma</th><th style="padding:8px 12px;font-size:12px;text-align:right;color:#6b7280">Teklif Tutarı</th></tr></thead>
+          <tbody>${firmaTeklifRows}</tbody>
+        </table>`) : ''}
+
+      ${kart('💰 Mali Özet', `<table style="width:100%;border-collapse:collapse">
+        ${satir('Yaklaşık Maliyet', ymMaliyet > 0 ? formatCurrency(ymMaliyet) + ' TL' : '')}
+        ${satir('Sözleşme Tutarı (KDV Hariç)', sozlesmeKdvsiz > 0 ? formatCurrency(sozlesmeKdvsiz) + ' TL' : '')}
+        ${satir('KDV Tutarı (%' + p.kdvOrani + ')', kdvTutar > 0 ? formatCurrency(kdvTutar) + ' TL' : '')}
+        ${satir('Sözleşme Tutarı (KDV Dahil)', sozlesmeToplamKdvli > 0 ? formatCurrency(sozlesmeToplamKdvli) + ' TL' : '')}
+        ${kazananFirma?.ad ? satir('Kazanan Firma', kazananFirma.ad) : ''}
+      </table>`)}
+    </div>`;
 }
 
 // ===================== YÖNETİCİ ARŞİV SAYFASI =====================
