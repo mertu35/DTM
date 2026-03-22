@@ -2,44 +2,44 @@
   <!-- Arka plan -->
   <circle cx="50" cy="50" r="50" fill="#dc2626"/>
 
-  <!-- Ceket -->
-  <ellipse cx="50" cy="98" rx="40" ry="30" fill="#1e293b"/>
+  <!-- Ceket (geniş omuzlar) -->
+  <ellipse cx="50" cy="98" rx="42" ry="30" fill="#1e293b"/>
   <!-- Beyaz gömlek -->
   <polygon points="50,64 44,78 56,78" fill="#f8fafc"/>
   <!-- Sol yaka -->
-  <polygon points="43,63 33,84 50,80" fill="#1e293b"/>
+  <polygon points="43,63 31,86 50,80" fill="#1e293b"/>
   <!-- Sağ yaka -->
-  <polygon points="57,63 67,84 50,80" fill="#0f172a"/>
+  <polygon points="57,63 69,86 50,80" fill="#0f172a"/>
   <!-- Kravat -->
   <polygon points="50,65 47.5,70 50,88 52.5,70" fill="#dc2626"/>
   <!-- Kravat düğüm -->
   <ellipse cx="50" cy="67" rx="3" ry="2" fill="#b91c1c"/>
 
-  <!-- Boyun -->
-  <path d="M44,57 L44,64 Q50,67 56,64 L56,57" fill="#e8b888"/>
+  <!-- Boyun (kalın, erkek) -->
+  <path d="M43,57 L43,64 Q50,67 57,64 L57,57" fill="#e8b888"/>
 
-  <!-- Yüz -->
-  <ellipse cx="50" cy="42" rx="17" ry="19" fill="#f0c8a0"/>
-  <!-- Yüz gölge -->
-  <ellipse cx="50" cy="52" rx="12" ry="6" fill="#e8b888" opacity="0.5"/>
+  <!-- Yüz (geniş, erkek, köşeli çene) -->
+  <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f0c8a0"/>
+  <!-- Çene gölge (belirgin kare çene) -->
+  <ellipse cx="50" cy="53" rx="14" ry="5" fill="#e0ad80" opacity="0.45"/>
 
   <!-- Kulaklar -->
-  <ellipse cx="33" cy="43" rx="3.5" ry="5" fill="#e8b888"/>
-  <ellipse cx="33" cy="43" rx="2" ry="3" fill="#d4a574" opacity="0.4"/>
-  <ellipse cx="67" cy="43" rx="3.5" ry="5" fill="#e8b888"/>
-  <ellipse cx="67" cy="43" rx="2" ry="3" fill="#d4a574" opacity="0.4"/>
+  <ellipse cx="32" cy="43" rx="3.5" ry="5" fill="#e8b888"/>
+  <ellipse cx="32" cy="43" rx="2" ry="3" fill="#d4a574" opacity="0.4"/>
+  <ellipse cx="68" cy="43" rx="3.5" ry="5" fill="#e8b888"/>
+  <ellipse cx="68" cy="43" rx="2" ry="3" fill="#d4a574" opacity="0.4"/>
 
-  <!-- Saç (koyu, yana taralı) -->
-  <path d="M33,42 C33,21 67,21 67,42 C67,33 60,25 50,25 C40,25 33,33 33,42Z" fill="#2d1b0e"/>
-  <!-- Saç ayrımı (sol taraf) -->
-  <path d="M40,26 Q42,31 41,37" stroke="#1a0f06" stroke-width="1.2" fill="none" opacity="0.5"/>
-  <!-- Saç yan -->
-  <path d="M33,38 C33,36 34,33 36,31" stroke="#2d1b0e" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <path d="M67,38 C67,36 66,33 64,31" stroke="#2d1b0e" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Saç (kısa erkek, yana taralı, kenarlar kısa) -->
+  <path d="M32,40 C32,20 68,20 68,40 L68,35 C68,28 60,22 50,22 C40,22 32,28 32,35 Z" fill="#2d1b0e"/>
+  <!-- Saç ayrımı (sol) -->
+  <path d="M40,23 Q42,28 41,34" stroke="#1a0f06" stroke-width="1" fill="none" opacity="0.4"/>
+  <!-- Saç alt kenar temiz -->
+  <path d="M32,38 L34,38" stroke="#2d1b0e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M66,38 L68,38" stroke="#2d1b0e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
 
-  <!-- Kaşlar -->
-  <path d="M39,37 Q42,34.5 46,36.5" stroke="#2d1b0e" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-  <path d="M54,36.5 Q58,34.5 61,37" stroke="#2d1b0e" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <!-- Kaşlar (kalın, erkek) -->
+  <path d="M38,36.5 Q42,33.5 47,36" stroke="#2d1b0e" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <path d="M53,36 Q58,33.5 62,36.5" stroke="#2d1b0e" stroke-width="2.2" fill="none" stroke-linecap="round"/>
 
   <!-- Gözler -->
   <ellipse cx="43" cy="41" rx="3" ry="3.2" fill="#fff"/>
@@ -58,9 +58,9 @@
   <path d="M48,44 Q50,48.5 52,44" stroke="#c89468" stroke-width="1.3" fill="none" stroke-linecap="round"/>
 
   <!-- Ağız -->
-  <path d="M44,50.5 Q50,54.5 56,50.5" stroke="#a0604a" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  <path d="M44,50.5 Q50,54.5 56,50.5" stroke="#a0604a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
   <path d="M45,51 Q50,54 55,51" fill="#c47a60" opacity="0.3"/>
-  <path d="M45.5,50.5 Q50,49 54.5,50.5" stroke="#b06850" stroke-width="0.7" fill="none"/>
+  <path d="M45.5,50.5 Q50,49 54.5,50.5" stroke="#b06850" stroke-width="0.8" fill="none"/>
 
   <!-- Gülümseme çukurları -->
   <path d="M41,49 Q42,51 42.5,50" stroke="#c89468" stroke-width="0.7" fill="none" opacity="0.5"/>
