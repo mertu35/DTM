@@ -1,5 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <circle cx="50" cy="50" r="50" fill="#f97316"/>
-  <circle cx="50" cy="38" r="16" fill="#fff" opacity="0.95"/>
-  <ellipse cx="50" cy="85" rx="24" ry="18" fill="#fff" opacity="0.95"/>
+  <!-- Erkek Yönetici 2 - Koyu gri, gri takım, mavi kravat -->
+  <circle cx="50" cy="50" r="50" fill="#374151"/>
+  <!-- Ceket -->
+  <ellipse cx="50" cy="96" rx="36" ry="26" fill="#1f2937"/>
+  <!-- Beyaz gömlek -->
+  <polygon points="50,63 45,80 55,80" fill="#f9fafb"/>
+  <!-- Sol yaka -->
+  <polygon points="46,61 34,82 50,80" fill="#1f2937"/>
+  <!-- Sağ yaka -->
+  <polygon points="54,61 66,82 50,80" fill="#111827"/>
+  <!-- Mavi kravat -->
+  <polygon points="50,63 47.5,68 50,82 52.5,68" fill="#1d4ed8"/>
+  <!-- Boyun -->
+  <rect x="46" y="55" width="8" height="10" rx="2" fill="#fcd9b0"/>
+  <!-- Yüz -->
+  <circle cx="50" cy="41" r="16" fill="#fcd9b0"/>
+  <!-- Gri saç - kıdemli -->
+  <path d="M34,41 C34,24 66,24 66,41 C63,32 56,26 50,26 C44,26 37,32 34,41Z" fill="#6b7280"/>
+  <!-- Gözler -->
+  <circle cx="44" cy="40" r="2.2" fill="#1a0a00"/>
+  <circle cx="56" cy="40" r="2.2" fill="#1a0a00"/>
+  <circle cx="44.8" cy="39.3" r="0.7" fill="#fff"/>
+  <circle cx="56.8" cy="39.3" r="0.7" fill="#fff"/>
+  <!-- Gri kaşlar -->
+  <path d="M40,36 Q44,34 48,36" stroke="#6b7280" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M52,36 Q56,34 60,36" stroke="#6b7280" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Ağız -->
+  <path d="M44,49 Q50,53 56,49" stroke="#b07050" stroke-width="1.8" fill="none" stroke-linecap="round"/>
 </svg>
