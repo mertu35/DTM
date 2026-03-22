@@ -1272,11 +1272,11 @@ async function renderKaydetYuklePage() {
       </div>
     </div>
 
-    <!-- DOSYA GÖNDER (sistemden bilgisayara) -->
+    <!-- DOSYA İNDİR (sistemden bilgisayara) -->
     <div class="card">
-      <div class="card-header"><h3>📤 Dosya Gönder</h3></div>
+      <div class="card-header"><h3>📥 Dosya İndir</h3></div>
       <div class="card-body">
-        <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Onaylanan projelerinizi bilgisayarınıza JSON dosyası olarak gönderin.</p>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Onaylanan projelerinizi bilgisayarınıza JSON dosyası olarak indirin.</p>
         <div id="dosyaGetirList">
           <div style="text-align:center;padding:30px;color:var(--gray-400)">Yükleniyor...</div>
         </div>
@@ -1309,7 +1309,7 @@ async function renderKaydetYuklePage() {
               </div>
             </div>
             <div class="ky-proje-actions">
-              <button class="ky-btn-open" onclick="dosyaGetir('${p.id}')">📤 Gönder</button>
+              <button class="ky-btn-open" onclick="dosyaGetir('${p.id}')">📥 İndir</button>
             </div>
           </div>`;
         }).join('')}
