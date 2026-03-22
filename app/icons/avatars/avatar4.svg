@@ -1,36 +1,68 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Kadın Yönetici - Koyu teal, blazer, topuz saç -->
-  <circle cx="50" cy="50" r="50" fill="#0f766e"/>
-  <!-- Blazer -->
-  <ellipse cx="50" cy="96" rx="36" ry="26" fill="#064e46"/>
-  <!-- Bluz -->
-  <polygon points="50,63 45,80 55,80" fill="#ccfbf1"/>
-  <!-- Sol yaka -->
-  <polygon points="46,61 34,82 50,80" fill="#064e46"/>
-  <!-- Sağ yaka -->
-  <polygon points="54,61 66,82 50,80" fill="#0a6258"/>
+  <!-- Arka plan -->
+  <circle cx="50" cy="50" r="50" fill="#059669"/>
+
+  <!-- Uzun saç (arkada, omuzlara inen) -->
+  <ellipse cx="35" cy="62" rx="10" ry="22" fill="#5c3317"/>
+  <ellipse cx="65" cy="62" rx="10" ry="22" fill="#5c3317"/>
+
+  <!-- Gövde / bluz -->
+  <ellipse cx="50" cy="98" rx="38" ry="28" fill="#d1fae5"/>
+  <!-- Bluz V yaka -->
+  <path d="M43,64 L50,74 L57,64" stroke="#a7f3d0" stroke-width="1.5" fill="none"/>
+
   <!-- Boyun -->
-  <rect x="46" y="55" width="8" height="10" rx="2" fill="#fcd9b0"/>
+  <path d="M44,57 L44,64 Q50,67 56,64 L56,57" fill="#e8b888"/>
+
   <!-- Yüz -->
-  <circle cx="50" cy="41" r="16" fill="#fcd9b0"/>
-  <!-- Saç arkaya çekilmiş -->
-  <path d="M34,41 C34,24 66,24 66,41 C63,32 56,26 50,26 C44,26 37,32 34,41Z" fill="#2d1b0e"/>
-  <!-- Topuz -->
-  <circle cx="50" cy="21" r="8" fill="#2d1b0e"/>
-  <ellipse cx="50" cy="25" rx="8" ry="5" fill="#3d2b1f"/>
-  <!-- Topuz tokası -->
-  <ellipse cx="50" cy="21" rx="4" ry="2" fill="#4b3a2a" opacity="0.6"/>
+  <ellipse cx="50" cy="42" rx="16" ry="18.5" fill="#f0c8a0"/>
+  <!-- Yüz gölge -->
+  <ellipse cx="50" cy="52" rx="11" ry="5.5" fill="#e8b888" opacity="0.5"/>
+
+  <!-- Kulaklar -->
+  <ellipse cx="34" cy="43" rx="3" ry="4.5" fill="#e8b888"/>
+  <ellipse cx="34" cy="43" rx="1.8" ry="2.8" fill="#d4a574" opacity="0.4"/>
+  <ellipse cx="66" cy="43" rx="3" ry="4.5" fill="#e8b888"/>
+  <ellipse cx="66" cy="43" rx="1.8" ry="2.8" fill="#d4a574" opacity="0.4"/>
   <!-- Küpeler -->
-  <circle cx="34" cy="44" r="2.2" fill="#99f6e4"/>
-  <circle cx="66" cy="44" r="2.2" fill="#99f6e4"/>
+  <circle cx="33.5" cy="48" r="1.5" fill="#34d399"/>
+  <circle cx="66.5" cy="48" r="1.5" fill="#34d399"/>
+
+  <!-- Saç üst (kahverengi bob) -->
+  <path d="M34,43 C34,22 66,22 66,43 C66,34 60,25 50,25 C40,25 34,34 34,43Z" fill="#5c3317"/>
+  <!-- Saç kakül -->
+  <path d="M38,35 Q42,29 47,32 Q44,27 50,26 Q47,29 49,33" fill="#6b3a1a" opacity="0.5"/>
+  <!-- Saç yan -->
+  <path d="M34,38 C33,44 33,52 35,60" stroke="#5c3317" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <path d="M66,38 C67,44 67,52 65,60" stroke="#5c3317" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Kaşlar (ince, kadın) -->
+  <path d="M39,37.5 Q42,35.5 46,37" stroke="#3d2010" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <path d="M54,37 Q58,35.5 61,37.5" stroke="#3d2010" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+
   <!-- Gözler -->
-  <circle cx="44" cy="40" r="2.2" fill="#1a0a00"/>
-  <circle cx="56" cy="40" r="2.2" fill="#1a0a00"/>
-  <circle cx="44.8" cy="39.3" r="0.7" fill="#fff"/>
-  <circle cx="56.8" cy="39.3" r="0.7" fill="#fff"/>
-  <!-- İnce kaşlar -->
-  <path d="M41,36 Q44,34.5 47,36" stroke="#2d1b0e" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-  <path d="M53,36 Q56,34.5 59,36" stroke="#2d1b0e" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  <ellipse cx="43" cy="41" rx="3" ry="3.2" fill="#fff"/>
+  <ellipse cx="57" cy="41" rx="3" ry="3.2" fill="#fff"/>
+  <!-- Kirpikler -->
+  <path d="M40,38.5 Q41,37.5 42,38" stroke="#3d2010" stroke-width="0.8" fill="none"/>
+  <path d="M44,38 Q45,37 46,38" stroke="#3d2010" stroke-width="0.8" fill="none"/>
+  <path d="M54,38 Q55,37 56,38" stroke="#3d2010" stroke-width="0.8" fill="none"/>
+  <path d="M58,38 Q59,37.5 60,38.5" stroke="#3d2010" stroke-width="0.8" fill="none"/>
+  <!-- İris -->
+  <circle cx="43.5" cy="41.2" r="2" fill="#3d2010"/>
+  <circle cx="57.5" cy="41.2" r="2" fill="#3d2010"/>
+  <!-- Göz bebeği -->
+  <circle cx="43.5" cy="41.2" r="1" fill="#1a0a05"/>
+  <circle cx="57.5" cy="41.2" r="1" fill="#1a0a05"/>
+  <!-- Göz parlaması -->
+  <circle cx="44.3" cy="40.3" r="0.7" fill="#fff"/>
+  <circle cx="58.3" cy="40.3" r="0.7" fill="#fff"/>
+
+  <!-- Burun -->
+  <path d="M48,44 Q50,48 52,44" stroke="#c89468" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+
   <!-- Ağız -->
-  <path d="M45,49 Q50,53 55,49" stroke="#b07050" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <path d="M43.5,50.5 Q50,55 56.5,50.5" stroke="#b06050" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  <path d="M44.5,51 Q50,54.5 55.5,51" fill="#c47a60" opacity="0.3"/>
+  <path d="M45,50.5 Q50,49 55,50.5" stroke="#b06850" stroke-width="0.7" fill="none"/>
 </svg>

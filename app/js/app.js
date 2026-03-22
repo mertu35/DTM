@@ -93,8 +93,7 @@ function showConfirm(mesaj, onayBtn = 'Evet', iptalBtn = 'İptal') {
 }
 
 const AVATARS = [
-  'avatar1','avatar2','avatar3','avatar4','avatar5','avatar6',
-  'avatar7','avatar8','avatar9','avatar10','avatar11','avatar12'
+  'avatar1','avatar2','avatar3','avatar4','avatar5','avatar6'
 ];
 
 function avatarSrc(name) {
