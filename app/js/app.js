@@ -92,6 +92,17 @@ function showConfirm(mesaj, onayBtn = 'Evet', iptalBtn = 'İptal') {
   });
 }
 
+function updateSidebarAvatar() {
+  const el = document.getElementById('sidebarUserAvatar');
+  if (!el) return;
+  const photoURL = currentDTMUser?.photoURL;
+  if (photoURL) {
+    el.innerHTML = `<img src="${photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`;
+  } else {
+    el.innerHTML = '&#128100;';
+  }
+}
+
 // ===== AUTH =====
 async function doLogin() {
   const username = document.getElementById('loginUsername').value.trim();
@@ -150,6 +161,7 @@ async function onAuthReady(user) {
     // Kullanıcı bilgisi
     document.getElementById('sidebarUserName').textContent = currentDTMUser.displayName || currentDTMUser.username;
     document.getElementById('sidebarUserRole').textContent = getRoleLabel(currentDTMUser.role);
+    updateSidebarAvatar();
     // Ekranları göster/gizle
     // Her oturumda temiz başla
     proje = getDefaultProje();
@@ -2162,7 +2174,17 @@ function renderProfilPage() {
       <div style="background:linear-gradient(135deg,#0f766e,#059669);border-radius:16px;padding:28px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden">
         <div style="position:absolute;top:-40px;right:-40px;width:150px;height:150px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
         <div style="display:flex;align-items:center;gap:20px">
-          <div style="width:64px;height:64px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">&#128100;</div>
+          <div style="position:relative;flex-shrink:0">
+            <div id="profilAvatarCircle" style="width:72px;height:72px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;border:2px solid rgba(255,255,255,0.3)">
+              ${u.photoURL
+                ? `<img src="${u.photoURL}" style="width:100%;height:100%;object-fit:cover" />`
+                : '&#128100;'}
+            </div>
+            <label for="avatarInput" title="Fotoğraf değiştir" style="position:absolute;bottom:0;right:0;width:22px;height:22px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.25)">
+              <span style="font-size:12px">✏️</span>
+            </label>
+            <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="avatarYukle(this)">
+          </div>
           <div>
             <div style="font-size:22px;font-weight:700">${u.displayName || '-'}</div>
             <div style="font-size:14px;opacity:0.8;margin-top:4px">@${u.username || '-'}</div>
@@ -2216,6 +2238,27 @@ function renderProfilPage() {
 }
 
 function bindProfil() {}
+
+async function avatarYukle(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    showToast('Dosya boyutu 2 MB\'dan küçük olmalıdır.', 'error');
+    return;
+  }
+  try {
+    showToast('Fotoğraf yükleniyor...', 'info');
+    const photoURL = await uploadAvatar(file);
+    // Profil kartı önizlemesi güncelle
+    const circle = document.getElementById('profilAvatarCircle');
+    if (circle) circle.innerHTML = `<img src="${photoURL}" style="width:100%;height:100%;object-fit:cover" />`;
+    // Sidebar avatar güncelle
+    updateSidebarAvatar();
+    showToast('Profil fotoğrafı güncellendi.', 'success');
+  } catch (e) {
+    showToast('Yükleme başarısız: ' + e.message, 'error');
+  }
+}
 
 async function sifreDegistir() {
   const mevcut = document.getElementById('mevcutSifre').value;

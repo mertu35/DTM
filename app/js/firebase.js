@@ -3,6 +3,7 @@
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+const storage = firebase.storage();
 
 let currentDTMUser = null; // { uid, username, displayName, role }
 
@@ -238,6 +239,18 @@ async function duyuruOkunduIsaretle(duyuruId) {
 // Kullanıcı rolünü değiştir (superadmin)
 async function changeUserRole(uid, newRole) {
   await db.collection('users').doc(uid).update({ role: newRole });
+}
+
+// Avatar yükle ve Firestore'a kaydet
+async function uploadAvatar(file) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Giriş yapılmamış');
+  const ref = storage.ref(`avatars/${user.uid}`);
+  await ref.put(file);
+  const photoURL = await ref.getDownloadURL();
+  await db.collection('users').doc(user.uid).update({ photoURL });
+  if (currentDTMUser) currentDTMUser.photoURL = photoURL;
+  return photoURL;
 }
 
 // Proje kilit durumunu değiştir
