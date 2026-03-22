@@ -3,7 +3,6 @@
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const storage = firebase.storage();
 
 let currentDTMUser = null; // { uid, username, displayName, role }
 
@@ -241,16 +240,12 @@ async function changeUserRole(uid, newRole) {
   await db.collection('users').doc(uid).update({ role: newRole });
 }
 
-// Avatar yükle ve Firestore'a kaydet
-async function uploadAvatar(file) {
+// Avatar seç ve Firestore'a kaydet (hazır avatarlardan biri)
+async function setAvatar(avatarName) {
   const user = auth.currentUser;
   if (!user) throw new Error('Giriş yapılmamış');
-  const ref = storage.ref(`avatars/${user.uid}`);
-  await ref.put(file);
-  const photoURL = await ref.getDownloadURL();
-  await db.collection('users').doc(user.uid).update({ photoURL });
-  if (currentDTMUser) currentDTMUser.photoURL = photoURL;
-  return photoURL;
+  await db.collection('users').doc(user.uid).update({ avatar: avatarName });
+  if (currentDTMUser) currentDTMUser.avatar = avatarName;
 }
 
 // Proje kilit durumunu değiştir
