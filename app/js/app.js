@@ -154,6 +154,7 @@ async function onAuthReady(user) {
     // Her oturumda temiz başla
     proje = getDefaultProje();
     currentCloudProjeId = null;
+    currentPage = 'anasayfa';
     localStorage.removeItem(STORAGE_KEY);
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('appLayout').style.display = '';
@@ -1709,6 +1710,10 @@ function yukleReferans() {
 // ===================== KULLANICI YÖNETİMİ (ADMIN) =====================
 async function renderKullaniciYonetimiPage() {
   const main = document.getElementById('mainContent');
+  if (!['admin', 'superadmin'].includes(currentDTMUser?.role)) {
+    main.innerHTML = `<div style="text-align:center;padding:60px;color:var(--gray-400)">Bu sayfaya erişim yetkiniz bulunmamaktadır.</div>`;
+    return;
+  }
   main.innerHTML = `
     <div class="page-header">
       <h2>Kullanıcı Yönetimi</h2>
