@@ -2183,10 +2183,19 @@ function renderProfilPage() {
       <div style="background:linear-gradient(135deg,#0f766e,#059669);border-radius:16px;padding:28px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden">
         <div style="position:absolute;top:-40px;right:-40px;width:150px;height:150px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
         <div style="display:flex;align-items:center;gap:20px">
-          <div id="profilAvatarCircle" style="width:72px;height:72px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;border:2px solid rgba(255,255,255,0.3);flex-shrink:0">
-            ${u.avatar
-              ? `<img src="icons/avatars/${u.avatar}.svg" style="width:100%;height:100%;object-fit:cover" />`
-              : '&#128100;'}
+          <!-- Avatar - hover ile düzenle -->
+          <div onclick="openAvatarPicker()" title="Profil resmini değiştir"
+               onmouseover="document.getElementById('avatarEditOverlay').style.opacity='1'"
+               onmouseout="document.getElementById('avatarEditOverlay').style.opacity='0'"
+               style="position:relative;width:72px;height:72px;cursor:pointer;flex-shrink:0">
+            <div id="profilAvatarCircle" style="width:72px;height:72px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;border:2px solid rgba(255,255,255,0.3)">
+              ${u.avatar
+                ? `<img src="icons/avatars/${u.avatar}.svg" style="width:100%;height:100%;object-fit:cover" />`
+                : '&#128100;'}
+            </div>
+            <div id="avatarEditOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;pointer-events:none">
+              <span style="font-size:20px">&#9998;</span>
+            </div>
           </div>
           <div>
             <div style="font-size:22px;font-weight:700">${u.displayName || '-'}</div>
@@ -2200,13 +2209,16 @@ function renderProfilPage() {
         </div>
       </div>
 
-      <!-- Avatar Seçici -->
-      <div class="card" style="margin-bottom:20px">
-        <div class="card-header"><h3>&#128247; Profil Resmi Seç</h3></div>
-        <div class="card-body">
+      <!-- Avatar Seçici Modal -->
+      <div id="avatarPickerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center">
+        <div style="background:#fff;border-radius:14px;padding:24px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 style="font-size:15px;font-weight:700;color:#1f2937">&#128247; Profil Resmi Seç</h3>
+            <button onclick="closeAvatarPicker()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;padding:0 4px">&times;</button>
+          </div>
           <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px">
             ${AVATARS.map(a => `
-              <div onclick="avatarSec('${a}')" style="cursor:pointer;border-radius:50%;overflow:hidden;width:52px;height:52px;border:3px solid ${u.avatar===a ? '#0f766e' : 'transparent'};transition:border-color .15s;margin:auto" id="avatarOpt_${a}">
+              <div onclick="avatarSec('${a}')" style="cursor:pointer;border-radius:50%;overflow:hidden;width:48px;height:48px;border:3px solid ${u.avatar===a ? '#0f766e' : 'transparent'};transition:border-color .15s;margin:auto" id="avatarOpt_${a}">
                 <img src="icons/avatars/${a}.svg" style="width:100%;height:100%" />
               </div>
             `).join('')}
@@ -2256,18 +2268,27 @@ function renderProfilPage() {
 
 function bindProfil() {}
 
+function openAvatarPicker() {
+  const modal = document.getElementById('avatarPickerModal');
+  if (modal) { modal.style.display = 'flex'; }
+}
+
+function closeAvatarPicker() {
+  const modal = document.getElementById('avatarPickerModal');
+  if (modal) { modal.style.display = 'none'; }
+}
+
 async function avatarSec(avatarName) {
   if (!AVATARS.includes(avatarName)) return;
   try {
     await setAvatar(avatarName);
-    // Profil kartı önizlemesi güncelle
     const circle = document.getElementById('profilAvatarCircle');
     if (circle) circle.innerHTML = `<img src="icons/avatars/${avatarName}.svg" style="width:100%;height:100%;object-fit:cover" />`;
-    // Seçili border güncelle
     AVATARS.forEach(a => {
       const el = document.getElementById('avatarOpt_' + a);
       if (el) el.style.borderColor = a === avatarName ? '#0f766e' : 'transparent';
     });
+    closeAvatarPicker();
     updateSidebarAvatar();
     showToast('Profil resmi güncellendi.', 'success');
   } catch (e) {
