@@ -3,10 +3,14 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Kullanıcılar - sadece giriş yapmış kullanıcılar okuyabilir, yazma sadece admin/superadmin
+    // İstisna: kullanıcı kendi profilinde sadece photoURL alanını güncelleyebilir
     match /users/{userId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+      allow update: if request.auth != null &&
+        request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photoURL']);
     }
 
     // Duyurular - herkes okuyabilir, admin ve superadmin yazabilir
