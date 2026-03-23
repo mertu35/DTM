@@ -9,6 +9,9 @@ let currentProjeBaskaKullanici = false;
 let currentProjeStatus = 'taslak';
 let okunmamiDuyuruSayisi = 0;
 let currentBelgelerProjeId = null;
+let currentGerceklestirmeciBelgelerProjeId = null;
+let currentGerceklestirmeciBelge = 'yaklasik-maliyet';
+let currentGerceklestirmeciTab = 'projeler';
 
 // ===== ROL YARDIMCISI =====
 function getRoleLabel(role) {
@@ -1610,7 +1613,11 @@ async function belgeyeGit(projeId) {
     const doc = await getProjeFromCloud(projeId);
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
-    currentPage = 'onay-belgesi';
+    currentProjeStatus = doc.status || 'onaylandi';
+    currentGerceklestirmeciTab = 'belgeler';
+    currentGerceklestirmeciBelgelerProjeId = projeId;
+    currentGerceklestirmeciBelge = 'yaklasik-maliyet';
+    currentPage = 'gonderilen-projeler';
     renderPage();
   } catch(e) {
     showToast('Hata: ' + e.message, 'error');
@@ -1938,11 +1945,15 @@ async function renderProjelerimPage() {
 // ===================== GERÇEKLEŞTİRMECİ SAYFASI =====================
 async function renderGonderilenProjelerPage() {
   const main = document.getElementById('mainContent');
+
+  // BELGELER TABI - PROJE SEÇİLİ: doğrudan belge görünümünü göster
+  if (currentGerceklestirmeciTab === 'belgeler' && currentGerceklestirmeciBelgelerProjeId) {
+    renderGerceklestirmeciBelgelerView(main);
+    return;
+  }
+
   main.innerHTML = `
-    <div class="page-header">
-      <h2>Gönderilen Projeler</h2>
-      <p>Kullanıcılar tarafından onayınıza gönderilen projeler.</p>
-    </div>
+    <div class="page-header"><h2>Projeler</h2><p>Size iletilen projeler.</p></div>
     <div style="text-align:center;padding:40px;color:var(--gray-400)">Yükleniyor...</div>
   `;
   try {
@@ -1950,7 +1961,6 @@ async function renderGonderilenProjelerPage() {
     const bekleyenler = projeler.filter(p => p.status === 'gonderildi');
     const onaylananlar = projeler.filter(p => p.status === 'onaylandi');
 
-    // Yeni gönderilenleri işaretle, badge sıfırla
     if (bekleyenler.length > 0) {
       const ids = bekleyenler.map(p => p.id);
       db.collection('users').doc(currentDTMUser.uid).update({
@@ -1960,6 +1970,59 @@ async function renderGonderilenProjelerPage() {
       if (badge) badge.style.display = 'none';
     }
 
+    const tabHeaderHTML = `
+      <div style="display:flex;border-bottom:2px solid #e5e7eb;margin-bottom:20px">
+        <div onclick="currentGerceklestirmeciTab='projeler';renderPage();"
+          style="padding:10px 20px;cursor:pointer;font-weight:600;font-size:14px;
+                 border-bottom:3px solid ${currentGerceklestirmeciTab==='projeler'?'#2563eb':'transparent'};
+                 color:${currentGerceklestirmeciTab==='projeler'?'#2563eb':'#6b7280'};margin-bottom:-2px">
+          📋 Projeler
+        </div>
+        <div onclick="currentGerceklestirmeciTab='belgeler';currentGerceklestirmeciBelgelerProjeId=null;renderPage();"
+          style="padding:10px 20px;cursor:pointer;font-weight:600;font-size:14px;
+                 border-bottom:3px solid ${currentGerceklestirmeciTab==='belgeler'?'#2563eb':'transparent'};
+                 color:${currentGerceklestirmeciTab==='belgeler'?'#2563eb':'#6b7280'};margin-bottom:-2px">
+          📄 Belgeler
+        </div>
+      </div>`;
+
+    if (currentGerceklestirmeciTab === 'belgeler') {
+      const belgeListHTML = onaylananlar.length === 0
+        ? `<div style="text-align:center;padding:60px 20px;color:var(--gray-400)">
+             <div style="font-size:48px;margin-bottom:16px">📄</div>
+             <div style="font-size:15px;font-weight:600;margin-bottom:8px">Henüz onaylanan proje yok</div>
+             <div style="font-size:13px">Belgeler oluşturmak için proje onaylanmalıdır.</div>
+           </div>`
+        : `<div class="ky-proje-grid">${onaylananlar.map(p => {
+            const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
+            return `<div class="ky-proje-item">
+              <div class="ky-proje-info">
+                <div class="ky-proje-name"><span class="ky-proje-dot" style="background:#16a34a"></span>${p.isAdi || '(İsimsiz)'}</div>
+                <div class="ky-proje-meta">
+                  <span class="ky-proje-user">👤 ${p.userDisplayName || '-'}</span>
+                  <span class="ky-proje-date">📅 ${tarih}</span>
+                  ${getStatusBadge(p.status)}
+                </div>
+              </div>
+              <div class="ky-proje-actions">
+                <button class="ky-btn-open" style="background:#16a34a;color:#fff;border-color:#16a34a" onclick="gerceklestirmeciBelgelerProjeAc('${p.id}')">📄 Belge Oluştur</button>
+              </div>
+            </div>`;
+          }).join('')}</div>`;
+
+      main.innerHTML = `
+        <div class="page-header"><h2>Projeler</h2><p>Size iletilen projeler.</p></div>
+        ${tabHeaderHTML}
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+          <div style="padding:12px 16px;background:#f0fdf4;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#15803d">
+            ✅ Onaylanan Projeler — Belge Oluştur (${onaylananlar.length})
+          </div>
+          ${belgeListHTML}
+        </div>`;
+      return;
+    }
+
+    // Projeler tab
     const projeKart = (p, butonlar) => {
       const tarih = p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') :
                     p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
@@ -1993,14 +2056,13 @@ async function renderGonderilenProjelerPage() {
 
     main.innerHTML = `
       <div class="page-header"><h2>Projeler</h2><p>Size iletilen projeler.</p></div>
-
+      ${tabHeaderHTML}
       <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
         <div style="padding:12px 16px;background:#fef9c3;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#854d0e">
           ⏳ Onay Bekleyenler (${bekleyenler.length})
         </div>
         ${bekleyenHTML}
       </div>
-
       <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
         <div style="padding:12px 16px;background:#f0fdf4;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#15803d">
           ✅ Onaylananlar (${onaylananlar.length})
@@ -2010,6 +2072,76 @@ async function renderGonderilenProjelerPage() {
   } catch(e) {
     main.innerHTML = `<div class="page-header"><h2>Projeler</h2></div><div style="color:red;padding:20px">Hata: ${e.message}</div>`;
   }
+}
+
+function renderGerceklestirmeciBelgelerView(main) {
+  const belgeler = [
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
+    { id: 'sozlesme', ad: 'Sözleşme' },
+    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı' },
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
+  ];
+
+  const tabs = belgeler.map(b =>
+    `<div class="belge-tab ${currentGerceklestirmeciBelge === b.id ? 'active' : ''}"
+      onclick="currentGerceklestirmeciBelge='${b.id}';renderPage();">${b.ad}</div>`
+  ).join('');
+
+  let belgeHTML = '';
+  switch (currentGerceklestirmeciBelge) {
+    case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
+    case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
+    case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
+    case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
+    case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
+  }
+
+  main.innerHTML = `
+    <div class="page-header" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <button onclick="currentGerceklestirmeciBelgelerProjeId=null;renderPage();"
+        style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:6px 12px;
+               cursor:pointer;font-size:13px;color:var(--gray-600);white-space:nowrap;margin-top:4px">
+        ← Proje Listesi
+      </button>
+      <div>
+        <h2>📄 Belgeler</h2>
+        <p style="display:flex;align-items:center;gap:8px">${proje.isAdi || ''} ${getStatusBadge('onaylandi')}</p>
+      </div>
+    </div>
+    <div class="belge-tabs">${tabs}</div>
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="gerceklestirmeciBelgeYazdir()">🖨️ Yazdır</button>
+    </div>
+    <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
+  `;
+}
+
+async function gerceklestirmeciBelgelerProjeAc(projeId) {
+  try {
+    const doc = await getProjeFromCloud(projeId);
+    proje = Object.assign(getDefaultProje(), doc.data);
+    currentCloudProjeId = projeId;
+    currentProjeStatus = doc.status || 'onaylandi';
+    currentGerceklestirmeciBelgelerProjeId = projeId;
+    currentGerceklestirmeciBelge = 'yaklasik-maliyet';
+    renderPage();
+  } catch(e) {
+    showToast('Proje yüklenemedi: ' + e.message, 'error');
+  }
+}
+
+function gerceklestirmeciBelgeYazdir() {
+  let html = '';
+  let landscape = false;
+  switch (currentGerceklestirmeciBelge) {
+    case 'yaklasik-maliyet': html = renderYaklasikMaliyet(proje, referans); landscape = true; break;
+    case 'teklif-tutanagi': html = renderTeklifTutanagi(proje, referans); landscape = true; break;
+    case 'sozlesme': html = renderSozlesme(proje, referans); belgeYazdir(html, false, true); return;
+    case 'bitti-tutanagi': html = renderBittiTutanagi(proje, referans); break;
+    case 'hakedis-raporu': html = renderHakedisRaporu(proje, referans); break;
+  }
+  belgeYazdir(html, landscape);
 }
 
 // ===================== PROJE ÖZET SAYFASI (GERÇEKLEŞTİRMECİ) =====================
