@@ -293,7 +293,7 @@ async function renderAnaSayfaPage() {
   main.innerHTML = `
     <div style="max-width:700px;margin:0 auto;padding:32px 16px">
       <div style="text-align:center;margin-bottom:40px">
-        <div style="font-size:48px;margin-bottom:12px">🏛️</div>
+        <img src="icons/Birim Arması.png" style="width:80px;display:block;margin:0 auto 12px" alt="Birim Arması">
         <h1 style="font-size:26px;font-weight:700;color:var(--gray-800);margin-bottom:6px">${selamlama}, ${ad}!</h1>
         <p style="color:var(--gray-500);font-size:14px">Doğrudan Temin Modülü'ne Hoş Geldiniz.</p>
       </div>
