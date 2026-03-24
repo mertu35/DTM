@@ -2708,15 +2708,106 @@ async function renderOnayliBelgelerPage() {
   const main = document.getElementById('mainContent');
   main.innerHTML = `
     <div class="page-header">
-      <h2>Onaylı Belgeler</h2>
-      <p>Sisteme onaylanmış tüm belgeler.</p>
+      <h2>&#9989; Onaylı Belgeler</h2>
+      <p>Gerçekleştirme görevlilerinin onayladığı tüm projeler ve belgeleri.</p>
     </div>
-    <div style="text-align:center;padding:60px;color:var(--gray-400)">
-      <div style="font-size:48px;margin-bottom:16px">📁</div>
-      <div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--gray-600)">Yakında</div>
-      <div style="font-size:13px">Bu özellik belge formatı tamamlandıktan sonra aktif olacak.</div>
+    <div id="onayliBelgelerContent">
+      <div style="text-align:center;padding:40px;color:var(--gray-400)">Yükleniyor...</div>
     </div>
   `;
+
+  try {
+    const tumProjeler = await getUserProjeler();
+    const onaylananlar = tumProjeler.filter(p => p.status === 'onaylandi');
+    const el = document.getElementById('onayliBelgelerContent');
+    if (!el) return;
+
+    // İstatistik
+    const buAy = new Date();
+    buAy.setDate(1); buAy.setHours(0,0,0,0);
+    const buAyCount = onaylananlar.filter(p => {
+      const t = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate() : null;
+      return t && t >= buAy;
+    }).length;
+
+    const renderListe = (aramaMetni) => {
+      const ara = aramaMetni.trim().toLocaleLowerCase('tr');
+      const liste = ara
+        ? onaylananlar.filter(p =>
+            (p.isAdi||'').toLocaleLowerCase('tr').includes(ara) ||
+            (p.userDisplayName||'').toLocaleLowerCase('tr').includes(ara) ||
+            (p.atananGerceklestirmeciAd||'').toLocaleLowerCase('tr').includes(ara))
+        : onaylananlar;
+
+      if (liste.length === 0) {
+        el.querySelector('#onayliListe').innerHTML = `
+          <div style="text-align:center;padding:48px 20px;color:var(--gray-400)">
+            <div style="font-size:40px;margin-bottom:12px">&#128196;</div>
+            <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--gray-500)">${ara ? 'Arama ile eşleşen proje bulunamadı.' : 'Henüz onaylanan proje yok.'}</div>
+          </div>`;
+        return;
+      }
+
+      el.querySelector('#onayliListe').innerHTML = `<div class="ky-proje-grid">
+        ${liste.map(p => {
+          const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
+          const isAdiSafe = (p.isAdi||'').replace(/'/g,'\\\'');
+          const adAdiSafe = (p.isAdi||'(İsimsiz)').replace(/'/g,'\\\'');
+          return `<div class="ky-proje-item">
+            <div class="ky-proje-info">
+              <div class="ky-proje-name"><span class="ky-proje-dot" style="background:#16a34a"></span>${p.isAdi || '(İsimsiz)'}</div>
+              <div class="ky-proje-meta">
+                <span class="ky-proje-user">&#128100; ${p.userDisplayName || '-'}</span>
+                <span class="ky-proje-user" style="color:#0f766e">&#9989; ${p.atananGerceklestirmeciAd || p.onaylandiBy || '-'}</span>
+                <span class="ky-proje-date">&#128197; ${tarih}</span>
+                ${getStatusBadge(p.status)}
+              </div>
+            </div>
+            <div class="ky-proje-actions">
+              <button class="ky-btn-open" onclick="cloudProjeAc('${p.id}')">&#128065; Görüntüle</button>
+              <button class="ky-btn-open" onclick="belgeyeGit('${p.id}')" style="background:#0f766e;color:#fff;border-color:#0f766e">&#128196; Belgeler</button>
+              <button class="ky-btn-delete" onclick="onayiKaldirClick('${p.id}','${adAdiSafe}')" style="background:#dc2626;color:#fff;border-color:#dc2626">&#10005; Onayı Kaldır</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    };
+
+    el.innerHTML = `
+      <!-- İstatistik Kartlar -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:#16a34a">${onaylananlar.length}</div>
+          <div style="font-size:12px;color:#15803d;font-weight:600;margin-top:2px">Toplam Onaylı Proje</div>
+        </div>
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:#2563eb">${buAyCount}</div>
+          <div style="font-size:12px;color:#1d4ed8;font-weight:600;margin-top:2px">Bu Ay Onaylanan</div>
+        </div>
+      </div>
+
+      <!-- Arama -->
+      <div style="margin-bottom:14px">
+        <input type="text" id="onayliArama" placeholder="&#128269; Proje adı, kullanıcı veya gerçekleştirmeci ara..."
+          oninput="(function(){document.getElementById('onayliBelgelerContent').querySelector&&(window._onayliRenderListe&&window._onayliRenderListe(this.value));}).call(this)"
+          style="width:100%;box-sizing:border-box;padding:9px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+      </div>
+
+      <!-- Liste -->
+      <div id="onayliListe"></div>
+    `;
+
+    window._onayliRenderListe = renderListe;
+    renderListe('');
+
+    // Arama input event
+    const aramaEl = el.querySelector('#onayliArama');
+    if (aramaEl) aramaEl.oninput = function() { renderListe(this.value); };
+
+  } catch(e) {
+    const el = document.getElementById('onayliBelgelerContent');
+    if (el) el.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${e.message}</div>`;
+  }
 }
 
 // ===================== PROFİL SAYFASI =====================
