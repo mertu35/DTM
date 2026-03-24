@@ -1,4 +1,4 @@
-// ===================== APP.JS =====================
+﻿// ===================== APP.JS =====================
 let proje = getDefaultProje();
 let referans = loadReferans();
 let currentPage = 'anasayfa';
@@ -3058,100 +3058,88 @@ function acBelgeIndirModal(isGerceklestirmeci = false) {
 }
 
 async function pdfIndirBaslat() {
-  if (typeof html2pdf === 'undefined') {
-    showToast('PDF kütüphanesi yüklenemedi. Lütfen internet bağlantınızı kontrol edin.', 'error');
-    return;
-  }
-
   const cbs = document.querySelectorAll('.pdf-doc-cb:checked');
-  if (cbs.length === 0) {
-    showToast('Lütfen indirilecek en az bir belge seçin.', 'warning');
+  if (cbs.length === 0) { showToast('Lutfen en az bir belge secin.', 'warning'); return; }
+  const btn = document.getElementById('pdfIndirBtn');
+  btn.innerHTML = 'Hazirlaniyor...'; btn.disabled = true;
+
+  const selectedIds = Array.from(cbs).map(cb => cb.value);
+  const parts = [];
+  for (const id of selectedIds) {
+    let html = '', landscape = false;
+    switch(id) {
+      case 'dt-onay-belgesi':  html = renderDogrudanTeminOnayBelgesi(proje); break;
+      case 'yaklasik-maliyet': html = renderYaklasikMaliyet(proje, referans); landscape = true; break;
+      case 'teklif-tutanagi':  html = renderTeklifTutanagi(proje, referans); landscape = true; break;
+      case 'sozlesme':         html = renderSozlesme(proje, referans); break;
+      case 'bitti-tutanagi':   html = renderBittiTutanagi(proje, referans); break;
+      case 'hakedis-raporu':   html = renderHakedisRaporu(proje, referans); break;
+    }
+    if (html) parts.push({html, landscape});
+  }
+
+  const win = window.open('', '_blank');
+  if (!win) {
+    showToast('Acilir pencere engellendi. Tarayici ayarlarindan izin verin.', 'error');
+    btn.innerHTML = 'PDF Indir'; btn.disabled = false;
     return;
   }
 
-  const btn = document.getElementById('pdfIndirBtn');
-  btn.innerHTML = '⏳ Hazırlanıyor...';
-  btn.disabled = true;
-  btn.style.opacity = '0.7';
+  const sections = parts.map((b, i) => {
+    const cls = b.landscape ? 'pg-yatay' : 'pg-dikey';
+    return '<div class="belge-bolum ' + cls + '">' + b.html + '</div>';
+  }).join('');
 
-  // Seçili belge ID'leri
-  const selectedDocs = Array.from(cbs).map(cb => ({
-    id: cb.value,
-    ad: cb.nextElementSibling.innerText
-  }));
+  const css = [
+    '* { margin:0; padding:0; box-sizing:border-box; }',
+    /* Ekranda okunabilir olsun diye hafif padding */
+    'body { font-family: Times New Roman, serif; font-size:9.5pt; color:#000; background:#fff; }',
+    '.belge-bolum { padding:15mm 20mm; }',
+    '.pg-yatay { padding:10mm 15mm; }',
+    /* Belge icerigi */
+    '.belge { width:100%; }',
+    '.belge-ust { text-align:center; margin-bottom:15px; }',
+    '.belge-baslik { text-align:center; font-size:13.5pt; margin:10px 0; font-weight:bold; }',
+    '.bilgi-tablo { width:100%; border-collapse:collapse; margin-bottom:10px; }',
+    '.bilgi-tablo td { padding:2px 6px; vertical-align:top; }',
+    '.bilgi-tablo .etiket { font-weight:bold; }',
+    '.veri-tablo { width:100%; border-collapse:collapse; margin-bottom:10px; border:0.5mm solid #000; }',
+    '.veri-tablo th, .veri-tablo td { border:0.5mm solid #000; padding:2px 4px; text-align:left; font-size:9.5pt; }',
+    '.veri-tablo th { background:#f0f0f0; text-align:center; font-weight:bold; }',
+    '.rakam { text-align:right !important; } .merkez { text-align:center !important; } .bold { font-weight:bold; }',
+    '.toplam-satir td { font-weight:bold; background:#f9f9f9; }',
+    '.aciklama-metin { margin:15px 0; line-height:1.6; text-align:justify; }',
+    '.imzalar-yan { display:flex; justify-content:space-around; gap:30px; }',
+    '.imza-kutu, .imza-kutu-inline { text-align:center; min-width:150px; }',
+    '.imza-ad { font-weight:bold; margin-top:40px; } .imza-unvan { font-size:9.5pt; }',
+    '.madde { margin-bottom:12px; line-height:1.5; page-break-inside:avoid; break-inside:avoid; }',
+    '.madde p { margin-top:5px; text-align:justify; }',
+    '.sozlesme .madde p, .sozlesme .madde { font-size:12pt; }',
+    '.sozlesme .madde { margin-bottom:7px; line-height:1.35; }',
+    '.sozlesme-imza { margin-top:20px; }',
+    '.hakedis-tablo td:first-child { width:30px; text-align:center; font-weight:bold; }',
+    'small { font-size:8.5pt; }',
+    '.sozlesme-sayfa-tablo { width:100%; border-collapse:collapse; }',
+    '.sozlesme-sayfa-tablo > tbody > tr > td { padding:0; }',
+    '.sozlesme-sayfa-header { display:block; text-align:center; font-weight:bold; font-size:10pt; line-height:1.5; padding:4px 0 6px; margin-bottom:6px; }',
+    /* Sayfa yonu named pages */
+    '@page dikey  { size: A4 portrait;  margin: 15mm 20mm; }',
+    '@page yatay  { size: A4 landscape; margin: 10mm 15mm; }',
+    '@media print {',
+    /* Yazdirildiginda padding kaldirilir - margin @page den geliyor */
+    '  .belge-bolum { padding:0 !important; }',
+    '  .pg-dikey { page: dikey; break-before: page; }',
+    '  .pg-yatay { page: yatay; break-before: page; }',
+    '  .pg-dikey:first-child, .pg-yatay:first-child { break-before: avoid; }',
+    '  .sozlesme-sayfa-tablo thead { display:table-header-group; }',
+    '  .sozlesme-sayfa-tablo tbody { display:table-row-group; }',
+    '}'
+  ].join(' ');
 
-  try {
-    const isAdi = (proje.isAdi || 'Proje').substring(0, 30).replace(/[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ ]/g, "").trim();
-
-    for (let i = 0; i < selectedDocs.length; i++) {
-      const b = selectedDocs[i];
-      let bHtml = '';
-      let landscape = false;
-      let sozlesme = false;
-
-      switch (b.id) {
-        case 'dt-onay-belgesi': bHtml = renderDogrudanTeminOnayBelgesi(proje); break;
-        case 'yaklasik-maliyet': bHtml = renderYaklasikMaliyet(proje, referans); landscape = true; break;
-        case 'teklif-tutanagi': bHtml = renderTeklifTutanagi(proje, referans); landscape = true; break;
-        case 'sozlesme': bHtml = renderSozlesme(proje, referans); sozlesme = true; break;
-        case 'bitti-tutanagi': bHtml = renderBittiTutanagi(proje, referans); break;
-        case 'hakedis-raporu': bHtml = renderHakedisRaporu(proje, referans); break;
-      }
-
-      // PDF oluşturma için temiz bir geçici alan ekleyelim
-      const container = document.createElement('div');
-      container.style.padding = '15mm 20mm';
-      if (landscape) container.style.padding = '10mm 15mm';
-      if (sozlesme) container.style.padding = '10mm 15mm';
-      
-      container.style.width = landscape ? '277mm' : '210mm';
-      container.style.color = '#000';
-      container.style.fontSize = '9.5pt';
-      container.style.fontFamily = "'Times New Roman', serif";
-      container.style.backgroundColor = '#fff';
-      container.className = 'belge';
-      container.innerHTML = bHtml;
-
-      // Container'ı gizli şekilde body'ye ekle
-      const wrapper = document.createElement('div');
-      wrapper.style.position = 'absolute';
-      wrapper.style.left = '-9999px';
-      wrapper.style.top = '-9999px';
-      wrapper.appendChild(container);
-      document.body.appendChild(wrapper);
-
-      const margin = landscape ? [10, 15] : (sozlesme ? [10, 15] : [15, 20]);
-      
-      const opt = {
-        margin:       margin,
-        filename:     `${isAdi}_${b.ad}.pdf`.replace(/ /g, '_'),
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' }
-      };
-
-      // Tarayıcı kilitlenmesin diye ufak bir bekleme
-      await new Promise(res => setTimeout(res, 200));
-      
-      // Her belgeyi sırasıyla tek tek indir
-      await html2pdf().set(opt).from(container).save();
-      
-      wrapper.remove();
-    }
-    
-    document.getElementById('pdfIndirModal').remove();
-    showToast('Belgeler başarıyla indirildi!', 'success');
-    
-  } catch (error) {
-    console.error("PDF oluşturma hatası:", error);
-    showToast('PDF oluşturulurken bir hata oluştu.', 'error');
-  } finally {
-    if (document.getElementById('pdfIndirBtn')) {
-      const b = document.getElementById('pdfIndirBtn');
-      b.innerHTML = '📥 İndirmeyi Başlat';
-      b.disabled = false;
-      b.style.opacity = '1';
-    }
-  }
+  win.document.write('<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Belgeler</title><style>' + css + '</style></head><body>' + sections + '</body></html>');
+  win.document.close();
+  document.getElementById('pdfIndirModal').remove();
+  showToast('Yazdir ekrani acildi. PDF olarak kaydet secenegini kullanin.', 'success', 4000);
+  setTimeout(() => win.print(), 600);
 }
 
