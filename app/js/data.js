@@ -126,7 +126,14 @@ function loadReferans() {
   const saved = localStorage.getItem(REF_STORAGE_KEY);
   if (saved) {
     const parsed = JSON.parse(saved);
-    return Object.assign(getDefaultReferans(), parsed);
+    const ref = Object.assign(getDefaultReferans(), parsed);
+    // Eski string formatını {no, aciklama} objesine migrate et
+    if (ref.butceTertibiList) {
+      ref.butceTertibiList = ref.butceTertibiList.map(bt =>
+        typeof bt === 'string' ? { no: bt, aciklama: '' } : bt
+      );
+    }
+    return ref;
   }
   const def = getDefaultReferans();
   saveReferans(def);
