@@ -657,7 +657,7 @@ function renderVeriGirisPage() {
       </div>
     </div>
 
-    <div class="card">
+    ${currentDTMUser?.role === 'gerceklestirmeci' ? `<div class="card">
       <div class="card-header" onclick="toggleCard(this)">
         <h3>Onay Belgesi Bilgileri</h3>
         <span class="toggle-icon">&#9660;</span>
@@ -725,7 +725,7 @@ function renderVeriGirisPage() {
           </div>
         </div>
       </div>
-    </div>
+    </div>` : ''}
 
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
@@ -2218,6 +2218,80 @@ function renderGerceklestirmeciBelgelerView(main) {
     case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
   }
 
+  const isMiktariReadonly = proje.isTuru === 'Yapım İşi';
+  const onayBilgiFormu = currentGerceklestirmeciBelge === 'dt-onay-belgesi' ? `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h3>Onay Belgesi Bilgileri</h3>
+        <span class="toggle-icon">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Kullanılabilir Ödenek Tutarı (TL)</label>
+            <input type="number" id="gc_odenek" value="${proje.odenek||''}" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label>Yatırım Proje Numarası</label>
+            <input type="text" id="gc_yatirimProjeNo" value="${proje.yatirimProjeNo||''}">
+          </div>
+          <div class="form-group">
+            <label>Bütçe Tertibi</label>
+            <input type="text" id="gc_butceTertibi" value="${proje.butceTertibi||''}">
+          </div>
+          <div class="form-group">
+            <label>İşin Miktarı</label>
+            <input type="text" id="gc_isMiktari" value="${isMiktariReadonly ? '1 Adet' : (proje.isMiktari||'')}" ${isMiktariReadonly ? 'readonly' : ''}>
+          </div>
+          <div class="form-group">
+            <label>Avans Verilecek mi</label>
+            <select id="gc_avansVar">
+              <option value="Hayır" ${(proje.avansVar||'Hayır')==='Hayır'?'selected':''}>Hayır</option>
+              <option value="Evet" ${proje.avansVar==='Evet'?'selected':''}>Evet</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fiyat Farkı Uygulanacak mı</label>
+            <select id="gc_fiyatFarkiVar">
+              <option value="Hayır" ${(proje.fiyatFarkiVar||'Hayır')==='Hayır'?'selected':''}>Hayır</option>
+              <option value="Evet" ${proje.fiyatFarkiVar==='Evet'?'selected':''}>Evet</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Şartname Düzenlenecek mi</label>
+            <select id="gc_sartnameVar">
+              <option value="Düzenlenecek" ${(proje.sartnameVar||'Düzenlenecek')==='Düzenlenecek'?'selected':''}>Düzenlenecek</option>
+              <option value="Düzenlenmeyecek" ${proje.sartnameVar==='Düzenlenmeyecek'?'selected':''}>Düzenlenmeyecek</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Sözleşme Düzenlenecek mi</label>
+            <select id="gc_sozlesmeVar">
+              <option value="Düzenlenecek" ${(proje.sozlesmeVar||'Düzenlenecek')==='Düzenlenecek'?'selected':''}>Düzenlenecek</option>
+              <option value="Düzenlenmeyecek" ${proje.sozlesmeVar==='Düzenlenmeyecek'?'selected':''}>Düzenlenmeyecek</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200)">
+          <strong style="font-size:13px">Gerçekleştirme Görevlisi</strong>
+          <div class="form-grid" style="margin-top:8px">
+            <div class="form-group">
+              <label>Adı Soyadı</label>
+              <input type="text" id="gc_gerceklestirmeAd" value="${proje.gerceklestirmeGorevlisi?.ad||''}">
+            </div>
+            <div class="form-group">
+              <label>Ünvanı</label>
+              <input type="text" id="gc_gerceklestirmeUnvan" value="${proje.gerceklestirmeGorevlisi?.unvan||'Gerçekleştirme Görevlisi'}">
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <button class="btn btn-primary" onclick="gcOnayBilgiKaydet()">Kaydet</button>
+        </div>
+      </div>
+    </div>
+  ` : '';
+
   main.innerHTML = `
     <div class="page-header" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <button onclick="currentGerceklestirmeciBelgelerProjeId=null;currentPage='gerceklestirmeci-belgeler';renderPage();"
@@ -2231,11 +2305,34 @@ function renderGerceklestirmeciBelgelerView(main) {
       </div>
     </div>
     <div class="belge-tabs">${tabs}</div>
+    ${onayBilgiFormu}
     <div class="action-bar">
       <button class="btn btn-primary" onclick="gerceklestirmeciBelgeYazdir()">🖨️ Yazdır</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
+}
+
+async function gcOnayBilgiKaydet() {
+  proje.odenek = document.getElementById('gc_odenek')?.value || '';
+  proje.yatirimProjeNo = document.getElementById('gc_yatirimProjeNo')?.value || '';
+  proje.butceTertibi = document.getElementById('gc_butceTertibi')?.value || '';
+  proje.isMiktari = document.getElementById('gc_isMiktari')?.value || '';
+  proje.avansVar = document.getElementById('gc_avansVar')?.value || 'Hayır';
+  proje.fiyatFarkiVar = document.getElementById('gc_fiyatFarkiVar')?.value || 'Hayır';
+  proje.sartnameVar = document.getElementById('gc_sartnameVar')?.value || 'Düzenlenecek';
+  proje.sozlesmeVar = document.getElementById('gc_sozlesmeVar')?.value || 'Düzenlenecek';
+  proje.gerceklestirmeGorevlisi = {
+    ad: document.getElementById('gc_gerceklestirmeAd')?.value || '',
+    unvan: document.getElementById('gc_gerceklestirmeUnvan')?.value || 'Gerçekleştirme Görevlisi'
+  };
+  try {
+    await saveProje(proje);
+    showToast('Kaydedildi', 'success');
+    renderPage();
+  } catch(e) {
+    showToast('Kayıt hatası: ' + e.message, 'error');
+  }
 }
 
 async function gerceklestirmeciBelgelerProjeAc(projeId) {
@@ -2257,6 +2354,7 @@ function gerceklestirmeciBelgeYazdir() {
   let html = '';
   let landscape = false;
   switch (currentGerceklestirmeciBelge) {
+    case 'dt-onay-belgesi': html = renderDogrudanTeminOnayBelgesi(proje); break;
     case 'yaklasik-maliyet': html = renderYaklasikMaliyet(proje, referans); landscape = true; break;
     case 'teklif-tutanagi': html = renderTeklifTutanagi(proje, referans); landscape = true; break;
     case 'sozlesme': html = renderSozlesme(proje, referans); belgeYazdir(html, false, true); return;
