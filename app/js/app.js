@@ -2158,11 +2158,14 @@ async function renderGonderilenProjelerPage() {
 
 // ===================== GERÇEKLEŞTİRMECİ BELGELER SAYFASI =====================
 function renderGerceklestirmeciVeriMerkeziPage() {
-  const liste = referans.butceTertibiList || [];
+  const liste = (referans.butceTertibiList || []).map(bt =>
+    typeof bt === 'string' ? { no: bt, aciklama: '' } : bt
+  );
   const rows = liste.map((bt, i) => `
     <tr>
-      <td><input type="text" value="${bt}" onchange="onRefChange('butceTertibiList', ${i}, null, this.value)" style="width:100%"></td>
-      <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('butceTertibiList', ${i})">Sil</button></td>
+      <td style="width:40%"><input type="text" value="${bt.no || ''}" onchange="btGuncelle(${i},'no',this.value)" style="width:100%"></td>
+      <td><input type="text" value="${bt.aciklama || ''}" onchange="btGuncelle(${i},'aciklama',this.value)" style="width:100%" placeholder="Açıklama (ör: Yapım İşleri)"></td>
+      <td style="width:60px;text-align:center"><button class="btn btn-danger btn-sm" onclick="onRefDelete('butceTertibiList', ${i})">Sil</button></td>
     </tr>`).join('');
 
   return `
@@ -2176,16 +2179,29 @@ function renderGerceklestirmeciVeriMerkeziPage() {
       </div>
       <div class="card-body">
         <table class="ref-table">
-          <thead><tr><th>Bütçe Tertibi</th><th></th></tr></thead>
+          <thead><tr><th style="width:40%">Bütçe Tertibi No</th><th>Açıklama</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
         <div style="margin-top:8px;display:flex;gap:6px">
-          <input type="text" id="yeniBtTertibi" placeholder="Örn: 46 01 03 05 01-03" style="padding:6px 10px;border:1px solid var(--gray-300);border-radius:6px;flex:1;font-size:14px">
-          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniBtTertibi').value.trim();if(v){if(!referans.butceTertibiList)referans.butceTertibiList=[];referans.butceTertibiList.push(v);saveReferans(referans);renderPage();}">+ Ekle</button>
+          <input type="text" id="yeniBtNo" placeholder="Örn: 09.1.2.00.000/05/03.8" style="padding:6px 10px;border:1px solid var(--gray-300);border-radius:6px;flex:1;font-size:14px">
+          <input type="text" id="yeniBtAciklama" placeholder="Açıklama" style="padding:6px 10px;border:1px solid var(--gray-300);border-radius:6px;flex:1;font-size:14px">
+          <button class="btn btn-outline btn-sm" onclick="
+            const no=document.getElementById('yeniBtNo').value.trim();
+            const ac=document.getElementById('yeniBtAciklama').value.trim();
+            if(no){if(!referans.butceTertibiList)referans.butceTertibiList=[];referans.butceTertibiList.push({no,aciklama:ac});saveReferans(referans);renderPage();}
+          ">+ Ekle</button>
         </div>
       </div>
     </div>
   `;
+}
+
+function btGuncelle(i, alan, deger) {
+  if (!referans.butceTertibiList) return;
+  const bt = referans.butceTertibiList[i];
+  if (typeof bt === 'string') referans.butceTertibiList[i] = { no: bt, aciklama: '' };
+  referans.butceTertibiList[i][alan] = deger;
+  saveReferans(referans);
 }
 
 async function renderGerceklestirmeciBelgelerPage() {
@@ -2317,7 +2333,7 @@ function renderGerceklestirmeciProjeDetay(main) {
             <label>Bütçe Tertibi</label>
             <select id="gc_butceTertibi">
               <option value="">-- Seçin --</option>
-              ${(referans.butceTertibiList || []).map(bt => `<option value="${bt}" ${proje.butceTertibi === bt ? 'selected' : ''}>${bt}</option>`).join('')}
+              ${(referans.butceTertibiList || []).map(bt => { const no = typeof bt === 'string' ? bt : bt.no; const ac = typeof bt === 'string' ? '' : bt.aciklama; return `<option value="${no}" ${proje.butceTertibi === no ? 'selected' : ''}>${no}${ac ? ' — ' + ac : ''}</option>`; }).join('')}
             </select>
           </div>
           <div class="form-group">
@@ -2590,7 +2606,7 @@ function renderProjeOzetPage() {
               <label>Bütçe Tertibi</label>
               <select id="gc_butceTertibi" ${dis}>
                 <option value="">-- Seçin --</option>
-                ${(referans.butceTertibiList || []).map(bt => `<option value="${bt}" ${p.butceTertibi === bt ? 'selected' : ''}>${bt}</option>`).join('')}
+                ${(referans.butceTertibiList || []).map(bt => { const no = typeof bt === 'string' ? bt : bt.no; const ac = typeof bt === 'string' ? '' : bt.aciklama; return `<option value="${no}" ${p.butceTertibi === no ? 'selected' : ''}>${no}${ac ? ' — ' + ac : ''}</option>`; }).join('')}
               </select>
             </div>
             <div class="form-group">
