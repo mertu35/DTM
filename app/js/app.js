@@ -1430,7 +1430,7 @@ async function yukleProjeCloud() {
   const input = document.getElementById('fileInput');
   if (!input?.files.length) { showToast('Önce bir dosya seçin.', 'warning'); return; }
   importProjeJSON(input.files[0], async (err, data) => {
-    if (err) showToast('Dosya okunamadı: ' + err.message, 'error'); return;
+    if (err) { showToast('Dosya okunamadı: ' + err.message, 'error'); return; }
     try {
       const yeniProjeData = Object.assign(getDefaultProje(), data);
       const projeId = await saveProjeToCloud(yeniProjeData);
@@ -1791,7 +1791,7 @@ function yukleProje() {
   const input = document.getElementById('fileInput');
   if (!input.files.length) { showToast('Dosya seçin.', 'warning'); return; }
   importProjeJSON(input.files[0], (err, data) => {
-    if (err) showToast('Dosya okunamadı: ' + err.message, 'error'); return;
+    if (err) { showToast('Dosya okunamadı: ' + err.message, 'error'); return; }
     proje = Object.assign(getDefaultProje(), data);
     saveProje(proje);
     showToast('Proje yüklendi!');
