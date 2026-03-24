@@ -657,7 +657,7 @@ function renderVeriGirisPage() {
       </div>
     </div>
 
-    <div class="card">
+    ${currentDTMUser?.role === 'gerceklestirmeci' ? `<div class="card">
       <div class="card-header" onclick="toggleCard(this)">
         <h3>Onay Belgesi Bilgileri</h3>
         <span class="toggle-icon">&#9660;</span>
@@ -725,7 +725,7 @@ function renderVeriGirisPage() {
           </div>
         </div>
       </div>
-    </div>
+    </div>` : ''}
 
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
