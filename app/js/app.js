@@ -268,6 +268,7 @@ function renderPage() {
     case 'projelerim': renderProjelerimPage(); break;
     case 'gonderilen-projeler': renderGonderilenProjelerPage(); break;
     case 'gerceklestirmeci-belgeler': renderGerceklestirmeciBelgelerPage(); break;
+    case 'gerceklestirmeci-veri-merkezi': main.innerHTML = renderGerceklestirmeciVeriMerkeziPage(); break;
     case 'onayli-belgeler': renderOnayliBelgelerPage(); break;
     case 'proje-ozet': renderProjeOzetPage(); break;
     case 'onay-belgesi': renderOnayBelgesiPage(); break;
@@ -2134,6 +2135,37 @@ async function renderGonderilenProjelerPage() {
 }
 
 // ===================== GERÇEKLEŞTİRMECİ BELGELER SAYFASI =====================
+function renderGerceklestirmeciVeriMerkeziPage() {
+  const liste = referans.butceTertibiList || [];
+  const rows = liste.map((bt, i) => `
+    <tr>
+      <td><input type="text" value="${bt}" onchange="onRefChange('butceTertibiList', ${i}, null, this.value)" style="width:100%"></td>
+      <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('butceTertibiList', ${i})">Sil</button></td>
+    </tr>`).join('');
+
+  return `
+    <div class="page-header">
+      <h2>Veri Merkezi</h2>
+      <p>Bütçe tertiplerini yönetin.</p>
+    </div>
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h3>Bütçe Tertibi Listesi</h3><span class="toggle-icon">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <table class="ref-table">
+          <thead><tr><th>Bütçe Tertibi</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <input type="text" id="yeniBtTertibi" placeholder="Örn: 46 01 03 05 01-03" style="padding:6px 10px;border:1px solid var(--gray-300);border-radius:6px;flex:1;font-size:14px">
+          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniBtTertibi').value.trim();if(v){if(!referans.butceTertibiList)referans.butceTertibiList=[];referans.butceTertibiList.push(v);saveReferans(referans);renderPage();}">+ Ekle</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 async function renderGerceklestirmeciBelgelerPage() {
   const main = document.getElementById('mainContent');
 
@@ -2237,7 +2269,10 @@ function renderGerceklestirmeciBelgelerView(main) {
           </div>
           <div class="form-group">
             <label>Bütçe Tertibi</label>
-            <input type="text" id="gc_butceTertibi" value="${proje.butceTertibi||''}">
+            <select id="gc_butceTertibi">
+              <option value="">-- Seçin --</option>
+              ${(referans.butceTertibiList||[]).map(bt => `<option value="${bt}" ${proje.butceTertibi===bt?'selected':''}>${bt}</option>`).join('')}
+            </select>
           </div>
           <div class="form-group">
             <label>İşin Miktarı</label>
@@ -2270,19 +2305,6 @@ function renderGerceklestirmeciBelgelerView(main) {
               <option value="Düzenlenecek" ${(proje.sozlesmeVar||'Düzenlenecek')==='Düzenlenecek'?'selected':''}>Düzenlenecek</option>
               <option value="Düzenlenmeyecek" ${proje.sozlesmeVar==='Düzenlenmeyecek'?'selected':''}>Düzenlenmeyecek</option>
             </select>
-          </div>
-        </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200)">
-          <strong style="font-size:13px">Gerçekleştirme Görevlisi</strong>
-          <div class="form-grid" style="margin-top:8px">
-            <div class="form-group">
-              <label>Adı Soyadı</label>
-              <input type="text" id="gc_gerceklestirmeAd" value="${proje.gerceklestirmeGorevlisi?.ad||''}">
-            </div>
-            <div class="form-group">
-              <label>Ünvanı</label>
-              <input type="text" id="gc_gerceklestirmeUnvan" value="${proje.gerceklestirmeGorevlisi?.unvan||'Gerçekleştirme Görevlisi'}">
-            </div>
           </div>
         </div>
         <div style="margin-top:12px">
@@ -2323,8 +2345,8 @@ async function gcOnayBilgiKaydet() {
   proje.sartnameVar = document.getElementById('gc_sartnameVar')?.value || 'Düzenlenecek';
   proje.sozlesmeVar = document.getElementById('gc_sozlesmeVar')?.value || 'Düzenlenecek';
   proje.gerceklestirmeGorevlisi = {
-    ad: document.getElementById('gc_gerceklestirmeAd')?.value || '',
-    unvan: document.getElementById('gc_gerceklestirmeUnvan')?.value || 'Gerçekleştirme Görevlisi'
+    ad: currentDTMUser?.displayName || currentDTMUser?.username || '',
+    unvan: currentDTMUser?.unvan || 'Gerçekleştirme Görevlisi'
   };
   try {
     await saveProje(proje);
