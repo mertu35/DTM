@@ -806,28 +806,22 @@ function renderHakedisRaporu(proje, referans) {
         </tbody>
       </table>
 
-      <div style="margin-top:40px">
-        <table style="width:100%;border-collapse:collapse">
-          <tr>
-            <td style="border:none;text-align:center;font-weight:bold;padding-bottom:6px;width:30%">YÜKLENİCİ</td>
-            <td style="border:none;text-align:center;font-weight:bold;padding-bottom:6px;width:150px">${dtGorevliler.length === 1 ? 'DÜZENLEYEN' : 'DÜZENLEYENLER'}</td>
-          </tr>
-          <tr style="height:50px;vertical-align:bottom">
-            <td style="border:none;text-align:center"></td>
-            <td style="border:none;width:150px">
-              <table style="width:100%;border-collapse:collapse">
-                <tr>
-                  ${dtGorevliler.map(g =>
-                    `<td style="border:none;text-align:center;vertical-align:bottom">
-                      <strong>${g.ad}</strong><br>
-                      <span style="font-size:9.5pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
-                    </td>`
-                  ).join('')}
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
+      <div style="margin-top:40px;display:flex;justify-content:space-between;align-items:flex-end">
+        <div style="text-align:center;width:30%">
+          <div style="font-weight:bold;padding-bottom:6px">YÜKLENİCİ</div>
+          <div style="height:50px"></div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-weight:bold;padding-bottom:6px">${dtGorevliler.length === 1 ? 'DÜZENLEYEN' : 'DÜZENLEYENLER'}</div>
+          <div style="display:flex;gap:20px">
+            ${dtGorevliler.map(g =>
+              `<div style="text-align:center">
+                <strong>${g.ad}</strong><br>
+                <span style="font-size:9.5pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
+              </div>`
+            ).join('')}
+          </div>
+        </div>
       </div>
 
       <div style="text-align:center;margin-top:40px">
