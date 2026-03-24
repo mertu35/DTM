@@ -100,7 +100,7 @@ const AVATARS = [
 ];
 
 function avatarSrc(name) {
-  return name ? `icons/avatars/${name}.svg` : null;
+  return name ? `icons/avatars/${name}.png` : null;
 }
 
 function updateSidebarAvatar() {
@@ -2327,7 +2327,7 @@ function renderProfilPage() {
                style="position:relative;width:72px;height:72px;cursor:pointer;flex-shrink:0">
             <div id="profilAvatarCircle" style="width:72px;height:72px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;border:2px solid rgba(255,255,255,0.3)">
               ${u.avatar
-                ? `<img src="icons/avatars/${u.avatar}.svg" style="width:100%;height:100%;object-fit:cover" />`
+                ? `<img src="icons/avatars/${u.avatar}.png" style="width:100%;height:100%;object-fit:cover" />`
                 : '&#128100;'}
             </div>
             <div id="avatarEditOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;pointer-events:none">
@@ -2356,7 +2356,7 @@ function renderProfilPage() {
           <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px">
             ${AVATARS.map(a => `
               <div onclick="avatarSec('${a}')" style="cursor:pointer;border-radius:50%;overflow:hidden;width:48px;height:48px;border:3px solid ${u.avatar===a ? '#0f766e' : 'transparent'};transition:border-color .15s;margin:auto" id="avatarOpt_${a}">
-                <img src="icons/avatars/${a}.svg" style="width:100%;height:100%" />
+                <img src="icons/avatars/${a}.png" style="width:100%;height:100%" />
               </div>
             `).join('')}
           </div>
@@ -2420,7 +2420,7 @@ async function avatarSec(avatarName) {
   try {
     await setAvatar(avatarName);
     const circle = document.getElementById('profilAvatarCircle');
-    if (circle) circle.innerHTML = `<img src="icons/avatars/${avatarName}.svg" style="width:100%;height:100%;object-fit:cover" />`;
+    if (circle) circle.innerHTML = `<img src="icons/avatars/${avatarName}.png" style="width:100%;height:100%;object-fit:cover" />`;
     AVATARS.forEach(a => {
       const el = document.getElementById('avatarOpt_' + a);
       if (el) el.style.borderColor = a === avatarName ? '#0f766e' : 'transparent';
