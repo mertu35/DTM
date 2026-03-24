@@ -12,6 +12,8 @@ let currentBelgelerProjeId = null;
 let currentGerceklestirmeciBelgelerProjeId = null;
 let currentGerceklestirmeciBelge = 'dt-onay-belgesi'; // varsayılan: D.T. Onay Belgesi
 let currentGerceklestirmeciTab = 'projeler';
+let currentOnayliBelgelerProjeId = null;
+let currentOnayliBelge = 'dt-onay-belgesi';
 
 // ===== ROL YARDIMCISI =====
 function getRoleLabel(role) {
@@ -238,6 +240,7 @@ function init() {
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       item.classList.add('active');
       currentPage = item.dataset.page;
+      currentOnayliBelgelerProjeId = null;
       renderPage();
       updateNavLock();
     });
@@ -2706,6 +2709,14 @@ function renderOnayBelgesiPage() {
 // ===================== YÖNETİCİ ARŞİV SAYFASI =====================
 async function renderOnayliBelgelerPage() {
   const main = document.getElementById('mainContent');
+
+  // Proje seçiliyse belge görünümüne geç
+  if (currentOnayliBelgelerProjeId) {
+    renderOnayliBelgelerView(main);
+    return;
+  }
+
+  // Proje listesi
   main.innerHTML = `
     <div class="page-header">
       <h2>&#9989; Onaylı Belgeler</h2>
@@ -2722,9 +2733,7 @@ async function renderOnayliBelgelerPage() {
     const el = document.getElementById('onayliBelgelerContent');
     if (!el) return;
 
-    // İstatistik
-    const buAy = new Date();
-    buAy.setDate(1); buAy.setHours(0,0,0,0);
+    const buAy = new Date(); buAy.setDate(1); buAy.setHours(0,0,0,0);
     const buAyCount = onaylananlar.filter(p => {
       const t = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate() : null;
       return t && t >= buAy;
@@ -2739,8 +2748,11 @@ async function renderOnayliBelgelerPage() {
             (p.atananGerceklestirmeciAd||'').toLocaleLowerCase('tr').includes(ara))
         : onaylananlar;
 
+      const listeEl = el.querySelector('#onayliListe');
+      if (!listeEl) return;
+
       if (liste.length === 0) {
-        el.querySelector('#onayliListe').innerHTML = `
+        listeEl.innerHTML = `
           <div style="text-align:center;padding:48px 20px;color:var(--gray-400)">
             <div style="font-size:40px;margin-bottom:12px">&#128196;</div>
             <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--gray-500)">${ara ? 'Arama ile eşleşen proje bulunamadı.' : 'Henüz onaylanan proje yok.'}</div>
@@ -2748,12 +2760,11 @@ async function renderOnayliBelgelerPage() {
         return;
       }
 
-      el.querySelector('#onayliListe').innerHTML = `<div class="ky-proje-grid">
+      listeEl.innerHTML = `<div class="ky-proje-grid">
         ${liste.map(p => {
           const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
-          const isAdiSafe = (p.isAdi||'').replace(/'/g,'\\\'');
           const adAdiSafe = (p.isAdi||'(İsimsiz)').replace(/'/g,'\\\'');
-          return `<div class="ky-proje-item">
+          return `<div class="ky-proje-item" style="cursor:pointer" onclick="onayliBelgelerProjeAc('${p.id}')">
             <div class="ky-proje-info">
               <div class="ky-proje-name"><span class="ky-proje-dot" style="background:#16a34a"></span>${p.isAdi || '(İsimsiz)'}</div>
               <div class="ky-proje-meta">
@@ -2764,9 +2775,8 @@ async function renderOnayliBelgelerPage() {
               </div>
             </div>
             <div class="ky-proje-actions">
-              <button class="ky-btn-open" onclick="cloudProjeAc('${p.id}')">&#128065; Görüntüle</button>
-              <button class="ky-btn-open" onclick="belgeyeGit('${p.id}')" style="background:#0f766e;color:#fff;border-color:#0f766e">&#128196; Belgeler</button>
-              <button class="ky-btn-delete" onclick="onayiKaldirClick('${p.id}','${adAdiSafe}')" style="background:#dc2626;color:#fff;border-color:#dc2626">&#10005; Onayı Kaldır</button>
+              <button class="ky-btn-open" onclick="event.stopPropagation();onayliBelgelerProjeAc('${p.id}')">&#128196; Belgeleri Gör</button>
+              <button class="ky-btn-delete" onclick="event.stopPropagation();onayiKaldirClick('${p.id}','${adAdiSafe}')" style="background:#dc2626;color:#fff;border-color:#dc2626">&#10005; Onayı Kaldır</button>
             </div>
           </div>`;
         }).join('')}
@@ -2774,7 +2784,6 @@ async function renderOnayliBelgelerPage() {
     };
 
     el.innerHTML = `
-      <!-- İstatistik Kartlar -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">
         <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;text-align:center">
           <div style="font-size:28px;font-weight:700;color:#16a34a">${onaylananlar.length}</div>
@@ -2785,22 +2794,14 @@ async function renderOnayliBelgelerPage() {
           <div style="font-size:12px;color:#1d4ed8;font-weight:600;margin-top:2px">Bu Ay Onaylanan</div>
         </div>
       </div>
-
-      <!-- Arama -->
       <div style="margin-bottom:14px">
         <input type="text" id="onayliArama" placeholder="&#128269; Proje adı, kullanıcı veya gerçekleştirmeci ara..."
-          oninput="(function(){document.getElementById('onayliBelgelerContent').querySelector&&(window._onayliRenderListe&&window._onayliRenderListe(this.value));}).call(this)"
           style="width:100%;box-sizing:border-box;padding:9px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
       </div>
-
-      <!-- Liste -->
       <div id="onayliListe"></div>
     `;
 
-    window._onayliRenderListe = renderListe;
     renderListe('');
-
-    // Arama input event
     const aramaEl = el.querySelector('#onayliArama');
     if (aramaEl) aramaEl.oninput = function() { renderListe(this.value); };
 
@@ -2808,6 +2809,78 @@ async function renderOnayliBelgelerPage() {
     const el = document.getElementById('onayliBelgelerContent');
     if (el) el.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${e.message}</div>`;
   }
+}
+
+function renderOnayliBelgelerView(main) {
+  const belgeler = [
+    { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi' },
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
+    { id: 'sozlesme', ad: 'Sözleşme' },
+    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı' },
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
+  ];
+
+  const tabs = belgeler.map(b =>
+    `<div class="belge-tab ${currentOnayliBelge === b.id ? 'active' : ''}"
+      onclick="currentOnayliBelge='${b.id}';renderPage();">${b.ad}</div>`
+  ).join('');
+
+  let belgeHTML = '';
+  switch (currentOnayliBelge) {
+    case 'dt-onay-belgesi': belgeHTML = renderDogrudanTeminOnayBelgesi(proje); break;
+    case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
+    case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
+    case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
+    case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
+    case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
+  }
+
+  main.innerHTML = `
+    <div class="page-header" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <button onclick="currentOnayliBelgelerProjeId=null;renderPage();"
+        style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:6px 12px;
+               cursor:pointer;font-size:13px;color:var(--gray-600);white-space:nowrap;margin-top:4px">
+        ← Proje Listesi
+      </button>
+      <div>
+        <h2>&#128196; Belgeler</h2>
+        <p style="display:flex;align-items:center;gap:8px">${proje.isAdi || ''} ${getStatusBadge('onaylandi')}</p>
+      </div>
+    </div>
+    <div class="belge-tabs">${tabs}</div>
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="onayliBelgeYazdir()">&#128424; Yazdır</button>
+    </div>
+    <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentOnayliBelge) ? ' landscape' : ''}">${belgeHTML}</div>
+  `;
+}
+
+async function onayliBelgelerProjeAc(projeId) {
+  try {
+    const doc = await getProjeFromCloud(projeId);
+    proje = Object.assign(getDefaultProje(), doc.data);
+    currentCloudProjeId = projeId;
+    currentProjeStatus = doc.status || 'onaylandi';
+    currentOnayliBelgelerProjeId = projeId;
+    currentOnayliBelge = 'dt-onay-belgesi';
+    renderPage();
+  } catch(e) {
+    showToast('Proje yüklenemedi: ' + e.message, 'error');
+  }
+}
+
+function onayliBelgeYazdir() {
+  let html = '', landscape = false;
+  switch (currentOnayliBelge) {
+    case 'dt-onay-belgesi': html = renderDogrudanTeminOnayBelgesi(proje); break;
+    case 'yaklasik-maliyet': html = renderYaklasikMaliyet(proje, referans); landscape = true; break;
+    case 'teklif-tutanagi': html = renderTeklifTutanagi(proje, referans); landscape = true; break;
+    case 'sozlesme': html = renderSozlesme(proje, referans); belgeYazdir(html, false, true); return;
+    case 'bitti-tutanagi': html = renderBittiTutanagi(proje, referans); break;
+    case 'hakedis-raporu': html = renderHakedisRaporu(proje, referans); break;
+  }
+  belgeYazdir(html, landscape);
 }
 
 // ===================== PROFİL SAYFASI =====================
