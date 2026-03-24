@@ -1964,7 +1964,14 @@ async function renderProjelerimPage() {
   try {
     const projeler = await getUserProjeler();
 
-    // Geri gönderildi badge sıfırla
+    // Geri gönderildi badge sıfırla ve görüldü olarak işaretle
+    const geriGonderilenler = projeler.filter(p => p.status === 'geri_gonderildi');
+    if (geriGonderilenler.length > 0) {
+      const ids = geriGonderilenler.map(p => p.id);
+      db.collection('users').doc(currentDTMUser.uid).update({
+        gorulenGeriGonderilenler: firebase.firestore.FieldValue.arrayUnion(...ids)
+      }).catch(() => {});
+    }
     const badge = document.getElementById('geriGonderBadge');
     if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
 
@@ -2873,13 +2880,16 @@ async function checkGeriGonderiend() {
   try {
     const user = auth.currentUser;
     if (!user) return;
-    const snap = await db.collection('projeler')
-      .where('userId', '==', user.uid)
-      .where('status', '==', 'geri_gonderildi').get();
+    const [snap, userData] = await Promise.all([
+      db.collection('projeler').where('userId', '==', user.uid).where('status', '==', 'geri_gonderildi').get(),
+      db.collection('users').doc(currentDTMUser.uid).get()
+    ]);
+    const gorulenler = userData.data()?.gorulenGeriGonderilenler || [];
+    const yeniSayi = snap.docs.filter(d => !gorulenler.includes(d.id)).length;
     const badge = document.getElementById('geriGonderBadge');
     if (badge) {
-      badge.textContent = snap.size;
-      badge.style.display = snap.size > 0 ? 'inline-flex' : 'none';
+      badge.textContent = yeniSayi;
+      badge.style.display = yeniSayi > 0 ? 'inline-flex' : 'none';
     }
   } catch(e) {}
 }
