@@ -671,6 +671,83 @@ function renderBittiTutanagi(proje, referans) {
   `;
 }
 
+function renderDogrudanTeminOnayBelgesi(proje) {
+  const yaklasikMaliyet = hesaplaYaklasikMaliyet(proje);
+  const dtGorevliler = getAktifGorevliler(proje.dtGorevliler);
+  const isMiktari = proje.isTuru === 'Yapım İşi' ? '1 Adet' : (proje.isMiktari || '-');
+  const odenek = proje.odenek ? formatCurrency(parseFloat(proje.odenek)) + ' -TL' : '-';
+  const gcAd = proje.gerceklestirmeGorevlisi?.ad || '';
+  const gcUnvan = proje.gerceklestirmeGorevlisi?.unvan || 'Gerçekleştirme Görevlisi';
+
+  const satir = (etiket, deger, colspan) => `
+    <tr>
+      <td style="border:1px solid #000;padding:5px 8px;font-weight:600;width:42%;background:#f9f9f9">${etiket}</td>
+      <td style="border:1px solid #000;padding:5px 8px;${colspan?'':''}width:58%">${deger || '-'}</td>
+    </tr>`;
+
+  const gorevliMetni = dtGorevliler.map(g => `${g.ad}${g.unvan ? ' ' + g.unvan : ''}`).join(', ');
+
+  return `
+    <div class="belge">
+      <div style="text-align:center;margin-bottom:6px">
+        <div style="font-size:11pt;font-weight:bold">T.C.</div>
+        <div style="font-size:11pt;font-weight:bold">${proje.idareAdi}</div>
+        <div style="font-size:10pt;font-weight:bold">${proje.mudurluk}</div>
+      </div>
+
+      <h2 class="belge-baslik" style="margin:10px 0 4px">DOĞRUDAN TEMİN ONAY BELGESİ</h2>
+      <div style="text-align:center;font-size:9.5pt;margin-bottom:14px">(4734 sayılı Kanunun 22. maddesi (d) bendi gereğince)</div>
+
+      <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
+        ${satir('ALIMI YAPAN İDARENİN ADI', `${proje.idareAdi} (${proje.mudurluk})`)}
+        ${satir('BELGE TARİH VE SAYISI', `${proje.dtOnayNo || '-'} &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}`)}
+      </table>
+
+      <div style="border:1px solid #000;padding:5px 8px;font-weight:700;font-size:10pt;margin-top:10px;background:#f0f0f0">
+        DOĞRUDAN TEMİN İLE İLGİLİ BİLGİLER
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        ${satir('İŞİN TANIMI', proje.isAdi)}
+        ${satir('İŞİN NİTELİĞİ', proje.isTuru)}
+        ${satir('İŞİN MİKTARI', isMiktari)}
+        ${satir('Yaklaşık Maliyet', formatCurrency(yaklasikMaliyet) + ' -TL')}
+        ${satir('Kullanılabilir Ödenek Tutarı', odenek)}
+        ${satir('Yatırım Proje Numarası (varsa)', proje.yatirimProjeNo || '-')}
+        ${satir('Bütçe Tertibi (varsa)', proje.butceTertibi || '-')}
+        ${satir('Temin Şekli', '4734 sayılı Kanunun 22. maddesinin (d) bendi gereğince doğrudan temin.')}
+        ${satir('Avans Verilecek mi', proje.avansVar || 'Hayır')}
+        ${satir('Fiyat Farkı Uygulanacak mı', proje.fiyatFarkiVar || 'Hayır')}
+        ${satir('Şartname Düzenlenip Düzenlenmeyeceği', proje.sartnameVar || 'Düzenlenecek')}
+        ${satir('Sözleşme Düzenlenip Düzenlenmeyeceği', proje.sozlesmeVar || 'Düzenlenecek')}
+      </table>
+
+      <div style="border:1px solid #000;padding:5px 8px;font-weight:700;font-size:10pt;margin-top:10px;background:#f0f0f0">
+        TEMİN İLE İLGİLİ DİĞER AÇIKLAMALAR
+      </div>
+      <div style="border:1px solid #000;border-top:none;padding:8px 10px;min-height:50px;font-size:10pt;line-height:1.6">
+        <strong>Görevli Personeller :</strong> ${gorevliMetni || '-'}
+      </div>
+
+      <div style="border:1px solid #000;border-top:none;padding:10px 14px;font-size:10pt;line-height:1.7">
+        <p style="text-align:justify">Yukarıda isimleri yazılı personelin, belirtilen yapımın/malın/hizmetin doğrudan temini için gerekli fiyat araştırmasını ve diğer işlemleri yapmak üzere görevlendirilmesi hususunu onaylarınıza arz ederim. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</p>
+
+        <div style="display:flex;justify-content:space-between;margin-top:24px;gap:20px">
+          <div style="text-align:center;flex:1">
+            <div><strong>Adı SOYADI :</strong> ${gcAd}</div>
+            <div><strong>Unvanı :</strong> ${gcUnvan}</div>
+            <div style="margin-top:30px"><strong>İmzası :</strong></div>
+          </div>
+          <div style="text-align:center;flex:1">
+            <div style="font-weight:bold">Uygundur. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</div>
+            <div style="margin-top:30px"><strong>${proje.onaylayanAmir.ad}</strong></div>
+            <div style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderHakedisRaporu(proje, referans) {
   const hak = hesaplaHakedis(proje);
   if (!hak) return '<div class="belge"><p>Kazanan firma belirlenemedi.</p></div>';

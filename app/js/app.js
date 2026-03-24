@@ -10,7 +10,7 @@ let currentProjeStatus = 'taslak';
 let okunmamiDuyuruSayisi = 0;
 let currentBelgelerProjeId = null;
 let currentGerceklestirmeciBelgelerProjeId = null;
-let currentGerceklestirmeciBelge = 'yaklasik-maliyet';
+let currentGerceklestirmeciBelge = 'dt-onay-belgesi'; // varsayılan: D.T. Onay Belgesi
 let currentGerceklestirmeciTab = 'projeler';
 
 // ===== ROL YARDIMCISI =====
@@ -652,6 +652,76 @@ function renderVeriGirisPage() {
           <div class="form-group">
             <label>Onay Sayısı</label>
             <input type="text" id="dtOnayNo" value="${proje.dtOnayNo}" onchange="onFieldChange('dtOnayNo', this.value)">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h3>Onay Belgesi Bilgileri</h3>
+        <span class="toggle-icon">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Kullanılabilir Ödenek Tutarı (TL)</label>
+            <input type="number" id="odenek" value="${proje.odenek}" oninput="onFieldChange('odenek', this.value)" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label>Yatırım Proje Numarası</label>
+            <input type="text" id="yatirimProjeNo" value="${proje.yatirimProjeNo}" oninput="onFieldChange('yatirimProjeNo', this.value)" placeholder="Varsa giriniz">
+          </div>
+          <div class="form-group">
+            <label>Bütçe Tertibi</label>
+            <input type="text" id="butceTertibi" value="${proje.butceTertibi}" oninput="onFieldChange('butceTertibi', this.value)" placeholder="Örn: 09.1.2.00.000/05/03.8">
+          </div>
+          <div class="form-group">
+            <label>İşin Miktarı</label>
+            <input type="text" id="isMiktari" value="${proje.isTuru === 'Yapım İşi' ? '1 Adet' : (proje.isMiktari || '')}"
+              ${proje.isTuru === 'Yapım İşi' ? 'readonly style="background:#f3f4f6"' : ''}
+              oninput="onFieldChange('isMiktari', this.value)" placeholder="Örn: 5 Adet">
+          </div>
+          <div class="form-group">
+            <label>Avans Verilecek mi</label>
+            <select id="avansVar" onchange="onFieldChange('avansVar', this.value)">
+              <option value="Hayır" ${(proje.avansVar||'Hayır')==='Hayır'?'selected':''}>Hayır</option>
+              <option value="Evet" ${proje.avansVar==='Evet'?'selected':''}>Evet</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fiyat Farkı Uygulanacak mı</label>
+            <select id="fiyatFarkiVar" onchange="onFieldChange('fiyatFarkiVar', this.value)">
+              <option value="Hayır" ${(proje.fiyatFarkiVar||'Hayır')==='Hayır'?'selected':''}>Hayır</option>
+              <option value="Evet" ${proje.fiyatFarkiVar==='Evet'?'selected':''}>Evet</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Şartname Düzenlenecek mi</label>
+            <select id="sartnameVar" onchange="onFieldChange('sartnameVar', this.value)">
+              <option value="Düzenlenecek" ${(proje.sartnameVar||'Düzenlenecek')==='Düzenlenecek'?'selected':''}>Düzenlenecek</option>
+              <option value="Düzenlenmeyecek" ${proje.sartnameVar==='Düzenlenmeyecek'?'selected':''}>Düzenlenmeyecek</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Sözleşme Düzenlenecek mi</label>
+            <select id="sozlesmeVar" onchange="onFieldChange('sozlesmeVar', this.value)">
+              <option value="Düzenlenecek" ${(proje.sozlesmeVar||'Düzenlenecek')==='Düzenlenecek'?'selected':''}>Düzenlenecek</option>
+              <option value="Düzenlenmeyecek" ${proje.sozlesmeVar==='Düzenlenmeyecek'?'selected':''}>Düzenlenmeyecek</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:12px;font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">Gerçekleştirme Görevlisi</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Adı Soyadı</label>
+            <input type="text" id="gerceklestirmeAd" value="${proje.gerceklestirmeGorevlisi?.ad||''}"
+              oninput="onFieldChange('gerceklestirmeGorevlisi', {ad:this.value,unvan:document.getElementById('gerceklestirmeUnvan').value})">
+          </div>
+          <div class="form-group">
+            <label>Ünvanı</label>
+            <input type="text" id="gerceklestirmeUnvan" value="${proje.gerceklestirmeGorevlisi?.unvan||'Gerçekleştirme Görevlisi'}"
+              oninput="onFieldChange('gerceklestirmeGorevlisi', {ad:document.getElementById('gerceklestirmeAd').value,unvan:this.value})">
           </div>
         </div>
       </div>
@@ -1616,7 +1686,7 @@ async function belgeyeGit(projeId) {
     currentCloudProjeId = projeId;
     currentProjeStatus = doc.status || 'onaylandi';
     currentGerceklestirmeciBelgelerProjeId = projeId;
-    currentGerceklestirmeciBelge = 'yaklasik-maliyet';
+    currentGerceklestirmeciBelge = 'dt-onay-belgesi';
     currentPage = 'gerceklestirmeci-belgeler';
     renderPage();
   } catch(e) {
@@ -2125,6 +2195,7 @@ async function renderGerceklestirmeciBelgelerPage() {
 
 function renderGerceklestirmeciBelgelerView(main) {
   const belgeler = [
+    { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi' },
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
     { id: 'sozlesme', ad: 'Sözleşme' },
@@ -2139,6 +2210,7 @@ function renderGerceklestirmeciBelgelerView(main) {
 
   let belgeHTML = '';
   switch (currentGerceklestirmeciBelge) {
+    case 'dt-onay-belgesi': belgeHTML = renderDogrudanTeminOnayBelgesi(proje); break;
     case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
     case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
     case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
@@ -2173,7 +2245,7 @@ async function gerceklestirmeciBelgelerProjeAc(projeId) {
     currentCloudProjeId = projeId;
     currentProjeStatus = doc.status || 'onaylandi';
     currentGerceklestirmeciBelgelerProjeId = projeId;
-    currentGerceklestirmeciBelge = 'yaklasik-maliyet';
+    currentGerceklestirmeciBelge = 'dt-onay-belgesi';
     currentPage = 'gerceklestirmeci-belgeler';
     renderPage();
   } catch(e) {
