@@ -2567,22 +2567,28 @@ function renderProjeOzetPage() {
         ${satir('Sözleşme Tutarı (KDV Dahil)', sozlesmeToplamKdvli > 0 ? formatCurrency(sozlesmeToplamKdvli) + ' TL' : '')}
       </table>`)}
 
-      ${currentDTMUser?.role === 'gerceklestirmeci' ? `
-      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
-        <div style="padding:12px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#374151">📝 Onay Belgesi Bilgileri</div>
+      ${currentDTMUser?.role === 'gerceklestirmeci' ? (() => {
+        const ro = currentProjeStatus === 'onaylandi';
+        const dis = ro ? 'disabled style="background:#f3f4f6;color:#6b7280;cursor:not-allowed"' : '';
+        const roInp = ro ? 'readonly style="background:#f3f4f6;color:#6b7280"' : '';
+        return `
+      <div style="background:#fff;border:1px solid ${ro ? '#d1fae5' : '#e5e7eb'};border-radius:12px;margin-bottom:16px;overflow:hidden">
+        <div style="padding:12px 16px;background:${ro ? '#f0fdf4' : '#f9fafb'};border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:${ro ? '#15803d' : '#374151'};display:flex;align-items:center;gap:8px">
+          📝 Onay Belgesi Bilgileri ${ro ? '<span style="font-size:11px;font-weight:500;background:#bbf7d0;color:#166534;padding:2px 8px;border-radius:10px">✓ Onaylandı — Salt Okunur</span>' : ''}
+        </div>
         <div style="padding:16px">
           <div class="form-grid">
             <div class="form-group">
               <label>Kullanılabilir Ödenek Tutarı (TL)</label>
-              <input type="number" id="gc_odenek" value="${p.odenek || ''}" placeholder="0.00">
+              <input type="number" id="gc_odenek" value="${p.odenek || ''}" placeholder="0.00" ${roInp}>
             </div>
             <div class="form-group">
               <label>Yatırım Proje Numarası</label>
-              <input type="text" id="gc_yatirimProjeNo" value="${p.yatirimProjeNo || ''}" placeholder="Varsa giriniz">
+              <input type="text" id="gc_yatirimProjeNo" value="${p.yatirimProjeNo || ''}" placeholder="Varsa giriniz" ${roInp}>
             </div>
             <div class="form-group">
               <label>Bütçe Tertibi</label>
-              <select id="gc_butceTertibi">
+              <select id="gc_butceTertibi" ${dis}>
                 <option value="">-- Seçin --</option>
                 ${(referans.butceTertibiList || []).map(bt => `<option value="${bt}" ${p.butceTertibi === bt ? 'selected' : ''}>${bt}</option>`).join('')}
               </select>
@@ -2591,43 +2597,42 @@ function renderProjeOzetPage() {
               <label>İşin Miktarı</label>
               <input type="text" id="gc_isMiktari"
                 value="${p.isTuru === 'Yapım İşi' ? '1 Adet' : (p.isMiktari || '')}"
-                ${p.isTuru === 'Yapım İşi' ? 'readonly style="background:#f3f4f6"' : ''}
+                ${ro || p.isTuru === 'Yapım İşi' ? 'readonly style="background:#f3f4f6;color:#6b7280"' : ''}
                 placeholder="Örn: 5 Adet">
             </div>
             <div class="form-group">
               <label>Avans Verilecek mi</label>
-              <select id="gc_avansVar">
+              <select id="gc_avansVar" ${dis}>
                 <option value="Hayır" ${(p.avansVar || 'Hayır') === 'Hayır' ? 'selected' : ''}>Hayır</option>
                 <option value="Evet" ${p.avansVar === 'Evet' ? 'selected' : ''}>Evet</option>
               </select>
             </div>
             <div class="form-group">
               <label>Fiyat Farkı Uygulanacak mı</label>
-              <select id="gc_fiyatFarkiVar">
+              <select id="gc_fiyatFarkiVar" ${dis}>
                 <option value="Hayır" ${(p.fiyatFarkiVar || 'Hayır') === 'Hayır' ? 'selected' : ''}>Hayır</option>
                 <option value="Evet" ${p.fiyatFarkiVar === 'Evet' ? 'selected' : ''}>Evet</option>
               </select>
             </div>
             <div class="form-group">
               <label>Şartname Düzenlenecek mi</label>
-              <select id="gc_sartnameVar">
+              <select id="gc_sartnameVar" ${dis}>
                 <option value="Düzenlenecek" ${(p.sartnameVar || 'Düzenlenecek') === 'Düzenlenecek' ? 'selected' : ''}>Düzenlenecek</option>
                 <option value="Düzenlenmeyecek" ${p.sartnameVar === 'Düzenlenmeyecek' ? 'selected' : ''}>Düzenlenmeyecek</option>
               </select>
             </div>
             <div class="form-group">
               <label>Sözleşme Düzenlenecek mi</label>
-              <select id="gc_sozlesmeVar">
+              <select id="gc_sozlesmeVar" ${dis}>
                 <option value="Düzenlenecek" ${(p.sozlesmeVar || 'Düzenlenecek') === 'Düzenlenecek' ? 'selected' : ''}>Düzenlenecek</option>
                 <option value="Düzenlenmeyecek" ${p.sozlesmeVar === 'Düzenlenmeyecek' ? 'selected' : ''}>Düzenlenmeyecek</option>
               </select>
             </div>
           </div>
-          <div style="margin-top:14px">
-            <button class="btn btn-primary" onclick="gcOnayBilgiKaydet()">💾 Kaydet</button>
-          </div>
+          ${!ro ? `<div style="margin-top:14px"><button class="btn btn-primary" onclick="gcOnayBilgiKaydet()">💾 Kaydet</button></div>` : ''}
         </div>
-      </div>` : ''}
+      </div>`;
+      })() : ''}
 
       ${currentDTMUser?.role !== 'gerceklestirmeci' ? `
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;padding-bottom:32px">
