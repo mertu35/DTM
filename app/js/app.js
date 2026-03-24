@@ -2169,13 +2169,9 @@ function renderGerceklestirmeciVeriMerkeziPage() {
 async function renderGerceklestirmeciBelgelerPage() {
   const main = document.getElementById('mainContent');
 
-  // Proje seçiliyse: proje-detay veya belgeler görünümü
+  // Proje seçiliyse direkt belge görünümüne git
   if (currentGerceklestirmeciBelgelerProjeId) {
-    if (currentGerceklestirmeciTab === 'belgeler') {
-      renderGerceklestirmeciBelgelerView(main);
-    } else {
-      renderGerceklestirmeciProjeDetay(main);
-    }
+    renderGerceklestirmeciBelgelerView(main);
     return;
   }
 
@@ -2434,7 +2430,6 @@ async function gerceklestirmeciBelgelerProjeAc(projeId) {
     currentProjeStatus = doc.status || 'onaylandi';
     currentGerceklestirmeciBelgelerProjeId = projeId;
     currentGerceklestirmeciBelge = 'dt-onay-belgesi';
-    currentGerceklestirmeciTab = 'proje-detay';
     currentPage = 'gerceklestirmeci-belgeler';
     renderPage();
   } catch(e) {
