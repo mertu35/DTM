@@ -1710,6 +1710,22 @@ async function onayiKaldirClick(projeId, isAdi) {
   }
 }
 
+async function gonderilenOnaylaClick(projeId, isAdi) {
+  try {
+    const doc = await getProjeFromCloud(projeId);
+    const data = Object.assign(getDefaultProje(), doc.data);
+    if (!data.odenek || !data.butceTertibi) {
+      showToast('Onay belgesi bilgileri eksik! Gerçekleştirme görevlisi önce ödenek ve bütçe tertibi bilgilerini girmelidir.', 'warning');
+      return;
+    }
+    if (!await showConfirm(`"${isAdi}" projesi onaylanacak.<br><br>Bu işlem geri alınamaz. Emin misiniz?`, 'Onayla')) return;
+    await onaylaProje(projeId);
+    renderPage();
+  } catch(e) {
+    showToast('Hata: ' + e.message, 'error');
+  }
+}
+
 async function onaylaClick(projeId, isAdi) {
   // Onay belgesi bilgileri doldurulmuş mu kontrol et
   if (!proje.odenek || !proje.butceTertibi) {
@@ -2097,6 +2113,7 @@ async function renderGonderilenProjelerPage() {
         ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Bekleyen proje yok.'}</div>`
         : `<div class="ky-proje-grid">${bek.map(p => projeKart(p, (id, ad) => `
             <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Aç</button>
+            <button class="ky-btn-open" onclick="gonderilenOnaylaClick('${id}', '${ad}')" style="background:#16a34a;color:#fff;border-color:#16a34a">✓ Onayla</button>
             <button class="ky-btn-delete" onclick="geriGonderClick('${id}', '${ad}')" style="background:#dc2626;color:#fff;border-color:#dc2626">↩ Geri Gönder</button>
           `)).join('')}</div>`;
 
