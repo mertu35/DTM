@@ -2122,6 +2122,7 @@ async function renderGonderilenProjelerPage() {
         : `<div class="ky-proje-grid">${ona.map(p => projeKart(p, (id, ad) => `
             <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Aç</button>
             <button class="ky-btn-open" onclick="belgeyeGit('${id}')" style="background:#16a34a;color:#fff;border-color:#16a34a">📄 Belge Oluştur</button>
+            <button class="ky-btn-delete" onclick="onayiKaldirClick('${id}','${ad}')" style="background:#dc2626;color:#fff;border-color:#dc2626">✕ Onayı Kaldır</button>
           `)).join('')}</div>`;
 
       return `
