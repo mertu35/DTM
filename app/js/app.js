@@ -1039,6 +1039,7 @@ async function renderBelgelerPage() {
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar">
       <button class="btn btn-primary" onclick="yazdirBelge()">&#128424; Yazdır</button>
+      <button class="btn btn-success" style="background:#10b981;border:none" onclick="acBelgeIndirModal()">&#128190; PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
@@ -2429,6 +2430,7 @@ function renderGerceklestirmeciBelgelerView(main) {
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar">
       <button class="btn btn-primary" onclick="gerceklestirmeciBelgeYazdir()">🖨️ Yazdır</button>
+      <button class="btn btn-success" style="background:#10b981;border:none" onclick="acBelgeIndirModal(true)">&#128190; PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
@@ -3011,3 +3013,145 @@ async function duyuruSil(duyuruId) {
     renderDuyurularPage();
   } catch(e) { showToast('Hata: ' + e.message, 'error'); }
 }
+
+// ===================== PDF İNDİRME İŞLEMLERİ =====================
+function acBelgeIndirModal(isGerceklestirmeci = false) {
+  let availableDocs = [
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
+    { id: 'sozlesme', ad: 'Sözleşme' },
+    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı' },
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
+  ];
+  
+  // Gerçekleştirme görevlisi ekranındaysak D.T. Onay Belgesini de ekle
+  if (isGerceklestirmeci || currentGerceklestirmeciBelgelerProjeId) {
+     availableDocs.unshift({ id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi' });
+  }
+
+  const existing = document.getElementById('pdfIndirModal');
+  if (existing) existing.remove();
+
+  const checkboxes = availableDocs.map(d => `
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;background:#f9fafb;padding:10px 14px;border-radius:6px;border:1px solid #e5e7eb">
+      <input type="checkbox" value="${d.id}" class="pdf-doc-cb" style="width:16px;height:16px" checked>
+      <span style="font-weight:500;font-size:14px">${d.ad}</span>
+    </label>
+  `).join('');
+
+  const modalHtml = `
+    <div id="pdfIndirModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:12px;padding:24px;width:360px;max-width:90%;box-shadow:0 10px 25px rgba(0,0,0,0.2)">
+        <h3 style="margin-bottom:16px;font-size:16px;font-weight:700;color:#111827">📄 İndirilecek Belgeleri Seçin</h3>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Seçtiğiniz belgeler sırasıyla ayrı PDF dosyaları olarak indirilecektir.</p>
+        <div style="margin-bottom:20px;max-height:300px;overflow-y:auto">
+          ${checkboxes}
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button onclick="document.getElementById('pdfIndirModal').remove()" style="padding:8px 16px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500">İptal</button>
+          <button id="pdfIndirBtn" onclick="pdfIndirBaslat()" style="padding:8px 16px;background:#10b981;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">📥 İndirmeyi Başlat</button>
+        </div>
+      </div>
+    </div>`;
+    
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+async function pdfIndirBaslat() {
+  if (typeof html2pdf === 'undefined') {
+    showToast('PDF kütüphanesi yüklenemedi. Lütfen internet bağlantınızı kontrol edin.', 'error');
+    return;
+  }
+
+  const cbs = document.querySelectorAll('.pdf-doc-cb:checked');
+  if (cbs.length === 0) {
+    showToast('Lütfen indirilecek en az bir belge seçin.', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('pdfIndirBtn');
+  btn.innerHTML = '⏳ Hazırlanıyor...';
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+
+  // Seçili belge ID'leri
+  const selectedDocs = Array.from(cbs).map(cb => ({
+    id: cb.value,
+    ad: cb.nextElementSibling.innerText
+  }));
+
+  try {
+    const isAdi = (proje.isAdi || 'Proje').substring(0, 30).replace(/[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ ]/g, "").trim();
+
+    for (let i = 0; i < selectedDocs.length; i++) {
+      const b = selectedDocs[i];
+      let bHtml = '';
+      let landscape = false;
+      let sozlesme = false;
+
+      switch (b.id) {
+        case 'dt-onay-belgesi': bHtml = renderDogrudanTeminOnayBelgesi(proje); break;
+        case 'yaklasik-maliyet': bHtml = renderYaklasikMaliyet(proje, referans); landscape = true; break;
+        case 'teklif-tutanagi': bHtml = renderTeklifTutanagi(proje, referans); landscape = true; break;
+        case 'sozlesme': bHtml = renderSozlesme(proje, referans); sozlesme = true; break;
+        case 'bitti-tutanagi': bHtml = renderBittiTutanagi(proje, referans); break;
+        case 'hakedis-raporu': bHtml = renderHakedisRaporu(proje, referans); break;
+      }
+
+      // PDF oluşturma için temiz bir geçici alan ekleyelim
+      const container = document.createElement('div');
+      container.style.padding = '15mm 20mm';
+      if (landscape) container.style.padding = '10mm 15mm';
+      if (sozlesme) container.style.padding = '10mm 15mm';
+      
+      container.style.width = landscape ? '277mm' : '210mm';
+      container.style.color = '#000';
+      container.style.fontSize = '9.5pt';
+      container.style.fontFamily = "'Times New Roman', serif";
+      container.style.backgroundColor = '#fff';
+      container.className = 'belge';
+      container.innerHTML = bHtml;
+
+      // Container'ı gizli şekilde body'ye ekle
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '-9999px';
+      wrapper.style.top = '-9999px';
+      wrapper.appendChild(container);
+      document.body.appendChild(wrapper);
+
+      const margin = landscape ? [10, 15] : (sozlesme ? [10, 15] : [15, 20]);
+      
+      const opt = {
+        margin:       margin,
+        filename:     `${isAdi}_${b.ad}.pdf`.replace(/ /g, '_'),
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' }
+      };
+
+      // Tarayıcı kilitlenmesin diye ufak bir bekleme
+      await new Promise(res => setTimeout(res, 200));
+      
+      // Her belgeyi sırasıyla tek tek indir
+      await html2pdf().set(opt).from(container).save();
+      
+      wrapper.remove();
+    }
+    
+    document.getElementById('pdfIndirModal').remove();
+    showToast('Belgeler başarıyla indirildi!', 'success');
+    
+  } catch (error) {
+    console.error("PDF oluşturma hatası:", error);
+    showToast('PDF oluşturulurken bir hata oluştu.', 'error');
+  } finally {
+    if (document.getElementById('pdfIndirBtn')) {
+      const b = document.getElementById('pdfIndirBtn');
+      b.innerHTML = '📥 İndirmeyi Başlat';
+      b.disabled = false;
+      b.style.opacity = '1';
+    }
+  }
+}
+
