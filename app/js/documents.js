@@ -632,8 +632,9 @@ function renderBittiTutanagi(proje, referans) {
   const bitisT = proje.fiiliBitimTarihi || calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi);
   const dtGorevliler = getAktifGorevliler(proje.dtGorevliler);
 
+  const tekGorevli = dtGorevliler.length === 1;
   const gorevliImzalar = dtGorevliler.map(g =>
-    `<td style="border:none;text-align:center;padding-top:40px">
+    `<td style="border:none;text-align:${tekGorevli ? 'left' : 'center'};padding-top:40px">
       <strong>${g.ad}</strong><br>
       <span style="font-size:9.5pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
     </td>`
@@ -662,7 +663,7 @@ function renderBittiTutanagi(proje, referans) {
       </div>
 
       <div style="margin-top:50px">
-        <p style="text-align:center;font-weight:bold;margin-bottom:10px">KONTROL GÖREVLİLERİ</p>
+        <p style="${dtGorevliler.length === 1 ? 'text-align:left' : 'text-align:center'};font-weight:bold;margin-bottom:10px">${dtGorevliler.length === 1 ? 'KONTROL GÖREVLİSİ' : 'KONTROL GÖREVLİLERİ'}</p>
         <table style="width:100%;border-collapse:collapse">
           <tr>${gorevliImzalar}</tr>
         </table>
