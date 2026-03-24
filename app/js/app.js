@@ -13,7 +13,6 @@ let currentGerceklestirmeciBelgelerProjeId = null;
 let currentGerceklestirmeciBelge = 'dt-onay-belgesi'; // varsayılan: D.T. Onay Belgesi
 let currentGerceklestirmeciTab = 'projeler';
 let currentOnayliBelgelerProjeId = null;
-let currentOnayliBelge = 'dt-onay-belgesi';
 
 // ===== ROL YARDIMCISI =====
 function getRoleLabel(role) {
@@ -2547,10 +2546,10 @@ function renderProjeOzetPage() {
   main.innerHTML = `
     <div style="max-width:800px;margin:0 auto;padding:24px 16px">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-        <button onclick="currentPage='gonderilen-projeler';renderPage();" style="padding:7px 14px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">← Geri</button>
+        <button onclick="${currentOnayliBelgelerProjeId ? 'currentOnayliBelgelerProjeId=null' : "currentPage='gonderilen-projeler'"};renderPage();" style="padding:7px 14px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">← Geri</button>
         <div>
           <h2 style="font-size:20px;font-weight:700;color:#111827;margin:0">${p.isAdi || '(İsimsiz Proje)'}</h2>
-          <div style="font-size:12px;color:#6b7280;margin-top:2px">${getStatusBadge('gonderildi')} Proje Özeti</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:2px">${getStatusBadge(currentProjeStatus || 'gonderildi')} Proje Özeti</div>
         </div>
       </div>
 
@@ -2664,6 +2663,20 @@ function renderProjeOzetPage() {
       </div>`;
       })() : ''}
 
+      ${currentDTMUser?.role === 'admin' || currentDTMUser?.role === 'superadmin' ? (() => {
+        const bt = (referans.butceTertibiList || []).find(b => (typeof b === 'string' ? b : b.no) === p.butceTertibi);
+        const btLabel = bt ? (typeof bt === 'string' ? bt : bt.no + (bt.aciklama ? ' — ' + bt.aciklama : '')) : (p.butceTertibi || '-');
+        const odenek = p.odenek ? Number(p.odenek).toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' TL' : '-';
+        return kart('💳 Ödenek ve Bütçe Bilgileri', `<table style="width:100%;border-collapse:collapse">
+          ${satir('Kullanılabilir Ödenek', odenek)}
+          ${satir('Bütçe Tertibi', btLabel)}
+          ${satir('Yatırım Proje No', p.yatirimProjeNo || '')}
+          ${satir('İşin Miktarı', p.isMiktari || '')}
+          ${satir('Avans', p.avansVar || '')}
+          ${satir('Fiyat Farkı', p.fiyatFarkiVar || '')}
+        </table>`);
+      })() : ''}
+
       ${currentDTMUser?.role !== 'gerceklestirmeci' ? `
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;padding-bottom:32px">
         ${currentProjeStatus === 'onaylandi' ? `
@@ -2708,9 +2721,9 @@ function renderOnayBelgesiPage() {
 async function renderOnayliBelgelerPage() {
   const main = document.getElementById('mainContent');
 
-  // Proje seçiliyse belge görünümüne geç
+  // Proje seçiliyse proje özeti görünümüne geç
   if (currentOnayliBelgelerProjeId) {
-    renderOnayliBelgelerView(main);
+    renderProjeOzetPage();
     return;
   }
 
@@ -2809,51 +2822,6 @@ async function renderOnayliBelgelerPage() {
   }
 }
 
-function renderOnayliBelgelerView(main) {
-  const belgeler = [
-    { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi' },
-    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
-    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
-    { id: 'sozlesme', ad: 'Sözleşme' },
-    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı' },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
-  ];
-
-  const tabs = belgeler.map(b =>
-    `<div class="belge-tab ${currentOnayliBelge === b.id ? 'active' : ''}"
-      onclick="currentOnayliBelge='${b.id}';renderPage();">${b.ad}</div>`
-  ).join('');
-
-  let belgeHTML = '';
-  switch (currentOnayliBelge) {
-    case 'dt-onay-belgesi': belgeHTML = renderDogrudanTeminOnayBelgesi(proje); break;
-    case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
-    case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
-    case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
-    case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
-    case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
-  }
-
-  main.innerHTML = `
-    <div class="page-header" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-      <button onclick="currentOnayliBelgelerProjeId=null;renderPage();"
-        style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:6px 12px;
-               cursor:pointer;font-size:13px;color:var(--gray-600);white-space:nowrap;margin-top:4px">
-        ← Proje Listesi
-      </button>
-      <div>
-        <h2>&#128196; Belgeler</h2>
-        <p style="display:flex;align-items:center;gap:8px">${proje.isAdi || ''} ${getStatusBadge('onaylandi')}</p>
-      </div>
-    </div>
-    <div class="belge-tabs">${tabs}</div>
-    <div class="action-bar">
-      <button class="btn btn-primary" onclick="onayliBelgeYazdir()">&#128424; Yazdır</button>
-    </div>
-    <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentOnayliBelge) ? ' landscape' : ''}">${belgeHTML}</div>
-  `;
-}
-
 async function onayliBelgelerProjeAc(projeId) {
   try {
     const doc = await getProjeFromCloud(projeId);
@@ -2861,24 +2829,10 @@ async function onayliBelgelerProjeAc(projeId) {
     currentCloudProjeId = projeId;
     currentProjeStatus = doc.status || 'onaylandi';
     currentOnayliBelgelerProjeId = projeId;
-    currentOnayliBelge = 'dt-onay-belgesi';
     renderPage();
   } catch(e) {
     showToast('Proje yüklenemedi: ' + e.message, 'error');
   }
-}
-
-function onayliBelgeYazdir() {
-  let html = '', landscape = false;
-  switch (currentOnayliBelge) {
-    case 'dt-onay-belgesi': html = renderDogrudanTeminOnayBelgesi(proje); break;
-    case 'yaklasik-maliyet': html = renderYaklasikMaliyet(proje, referans); landscape = true; break;
-    case 'teklif-tutanagi': html = renderTeklifTutanagi(proje, referans); landscape = true; break;
-    case 'sozlesme': html = renderSozlesme(proje, referans); belgeYazdir(html, false, true); return;
-    case 'bitti-tutanagi': html = renderBittiTutanagi(proje, referans); break;
-    case 'hakedis-raporu': html = renderHakedisRaporu(proje, referans); break;
-  }
-  belgeYazdir(html, landscape);
 }
 
 // ===================== PROFİL SAYFASI =====================
