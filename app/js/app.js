@@ -585,31 +585,33 @@ function renderVeriGirisPage() {
             <label>Yapılan İş / Hizmet Adı</label>
             <input type="text" id="isAdi" value="${proje.isAdi}" onchange="onFieldChange('isAdi', this.value)">
           </div>
-          <div class="form-group">
-            <label>İş Türü</label>
-            <select id="isTuru" onchange="onFieldChange('isTuru', this.value); renderPage();">
-              ${referans.isTurleri.map(t => {
-                const aktif = t === 'Yapım İşi';
-                return `<option value="${t}" ${proje.isTuru === t ? 'selected' : ''} ${!aktif ? 'disabled style="color:#9ca3af"' : ''}>${t}${!aktif ? ' (yakında)' : ''}</option>`;
-              }).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label>KDV Oranı (%)</label>
-            <select id="kdvOrani" onchange="onFieldChange('kdvOrani', parseFloat(this.value))">
-              ${referans.kdvOranlari.map(k => `<option value="${k}" ${proje.kdvOrani == k ? 'selected' : ''}>${k}</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Şehir</label>
-            <input type="text" id="sehir" value="${proje.sehir}" onchange="onFieldChange('sehir', this.value)">
-          </div>
-          <div class="form-group">
-            <label>İlçe</label>
-            <select id="ilce" onchange="onFieldChange('ilce', this.value)">
-              <option value="">-- Seçin --</option>
-              ${referans.ilceler.map(i => `<option value="${i}" ${proje.ilce === i ? 'selected' : ''}>${i}</option>`).join('')}
-            </select>
+          <div class="form-group full-width" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:16px">
+            <div class="form-group">
+              <label>İş Türü</label>
+              <select id="isTuru" onchange="onFieldChange('isTuru', this.value); renderPage();">
+                ${referans.isTurleri.map(t => {
+                  const aktif = t === 'Yapım İşi';
+                  return `<option value="${t}" ${proje.isTuru === t ? 'selected' : ''} ${!aktif ? 'disabled style="color:#9ca3af"' : ''}>${t}${!aktif ? ' (yakında)' : ''}</option>`;
+                }).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>KDV Oranı (%)</label>
+              <select id="kdvOrani" onchange="onFieldChange('kdvOrani', parseFloat(this.value))">
+                ${referans.kdvOranlari.map(k => `<option value="${k}" ${proje.kdvOrani == k ? 'selected' : ''}>${k}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Şehir</label>
+              <input type="text" id="sehir" value="${proje.sehir}" onchange="onFieldChange('sehir', this.value)">
+            </div>
+            <div class="form-group">
+              <label>İlçe</label>
+              <select id="ilce" onchange="onFieldChange('ilce', this.value)">
+                <option value="">-- Seçin --</option>
+                ${referans.ilceler.map(i => `<option value="${i}" ${proje.ilce === i ? 'selected' : ''}>${i}</option>`).join('')}
+              </select>
+            </div>
           </div>
         </div>
       </div>
