@@ -1532,12 +1532,13 @@ async function cloudKaydet() {
   try {
     if (currentCloudProjeId) {
       await updateProjeInCloud(currentCloudProjeId, proje);
-      // Geri gönderme notunu temizle
-      await db.collection('projeler').doc(currentCloudProjeId).update({
-        geriGonderNot: null,
-        geriGonderAt: null,
-        geriGonderBy: null
-      }).catch(() => {});
+      // Geri gönderildi ise taslağa al ve notu temizle
+      const extraUpdate = { geriGonderNot: null, geriGonderAt: null, geriGonderBy: null };
+      if (currentProjeStatus === 'geri_gonderildi') {
+        extraUpdate.status = 'taslak';
+        currentProjeStatus = 'taslak';
+      }
+      await db.collection('projeler').doc(currentCloudProjeId).update(extraUpdate).catch(() => {});
       showToast('Proje başarıyla kaydedildi!');
     } else {
       currentCloudProjeId = await saveProjeToCloud(proje);
