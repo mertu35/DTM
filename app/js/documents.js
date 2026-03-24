@@ -737,13 +737,10 @@ function renderDogrudanTeminOnayBelgesi(proje) {
             <div style="display:flex;margin-top:16px"><span style="min-width:110px"><strong>İmzası</strong></span><span><strong>:</strong></span></div>
           </div>
         </div>
-        <div style="flex:1;padding:10px 14px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
-          <div></div>
-          <div>
-            <div style="font-weight:bold">Uygundur. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</div>
-            <div style="margin-top:16px"><strong>${proje.onaylayanAmir.ad}</strong></div>
-            <div style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</div>
-          </div>
+        <div style="flex:1;padding:10px 14px;text-align:center">
+          <div style="font-weight:bold">Uygundur. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</div>
+          <div style="margin-top:16px"><strong>${proje.onaylayanAmir.ad}</strong></div>
+          <div style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</div>
         </div>
       </div>
     </div>
