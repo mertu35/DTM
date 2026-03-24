@@ -810,12 +810,10 @@ function renderHakedisRaporu(proje, referans) {
         <table style="width:100%;border-collapse:collapse">
           <tr>
             <td style="border:none;text-align:center;font-weight:bold;padding-bottom:6px;width:30%">YÜKLENİCİ</td>
-            <td style="border:none;text-align:center;font-weight:bold;padding-bottom:6px;width:70%">DÜZENLEYENLER</td>
+            <td style="border:none;text-align:center;font-weight:bold;padding-bottom:6px;width:70%">${dtGorevliler.length === 1 ? 'DÜZENLEYEN' : 'DÜZENLEYENLER'}</td>
           </tr>
           <tr style="height:50px;vertical-align:bottom">
-            <td style="border:none;text-align:center">
-              <strong>${proje.teklifFirmalar[kazananIdx]?.ad || ''}</strong>
-            </td>
+            <td style="border:none;text-align:center"></td>
             <td style="border:none">
               <table style="width:100%;border-collapse:collapse">
                 <tr>
