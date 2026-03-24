@@ -37,7 +37,8 @@ function getDefaultReferans() {
     ],
     idareList: [
       'KARAMAN İL ÖZEL İDARESİ'
-    ]
+    ],
+    butceTertibiList: []
   };
 }
 
