@@ -700,7 +700,7 @@ function renderDogrudanTeminOnayBelgesi(proje) {
 
       <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
         ${satir('ALIMI YAPAN İDARENİN ADI', `${proje.idareAdi} (${proje.mudurluk})`)}
-        ${satir('BELGE TARİH VE SAYISI', `${proje.dtOnayNo || '-'} &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}`)}
+        ${satir('BELGE TARİH VE SAYISI', `${formatDate(proje.dtOnayTarihi)} / ${proje.dtOnayNo ? Number(proje.dtOnayNo).toLocaleString('tr-TR') : '-'}`)}
       </table>
 
       <div style="border:1px solid #000;padding:5px 8px;font-weight:700;font-size:10pt;margin-top:10px;background:#f0f0f0">
@@ -731,13 +731,14 @@ function renderDogrudanTeminOnayBelgesi(proje) {
       <div style="border:1px solid #000;border-top:none;padding:10px 14px;font-size:10pt;line-height:1.7">
         <p style="text-align:justify">Yukarıda isimleri yazılı personelin, belirtilen yapımın/malın/hizmetin doğrudan temini için gerekli fiyat araştırmasını ve diğer işlemleri yapmak üzere görevlendirilmesi hususunu onaylarınıza arz ederim. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</p>
 
-        <div style="display:flex;justify-content:space-between;margin-top:24px;gap:20px">
-          <div style="text-align:center;flex:1">
+        <div style="display:flex;margin-top:24px">
+          <div style="flex:1;text-align:center;padding-right:20px">
             <div><strong>Adı SOYADI :</strong> ${gcAd}</div>
             <div><strong>Unvanı :</strong> ${gcUnvan}</div>
             <div style="margin-top:30px"><strong>İmzası :</strong></div>
           </div>
-          <div style="text-align:center;flex:1">
+          <div style="width:1px;background:#000;margin:0 4px"></div>
+          <div style="flex:1;text-align:center;padding-left:20px">
             <div style="font-weight:bold">Uygundur. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</div>
             <div style="margin-top:30px"><strong>${proje.onaylayanAmir.ad}</strong></div>
             <div style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</div>
