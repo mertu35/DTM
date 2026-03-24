@@ -1921,22 +1921,46 @@ async function renderProjelerimPage() {
       </div>`;
     };
 
-    main.innerHTML = `
-      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-        <div><h2>Projelerim</h2><p>Tüm projeleriniz ve durumları.</p></div>
-        <button class="btn btn-primary" onclick="yeniProjeBaslat()">&#43; Yeni Proje</button>
-      </div>
-      ${bolumler.map(b => {
-        const grup = projeler.filter(p => b.keys.includes(p.status || 'taslak'));
+    const renderProjelerimListe = (aramaMetni, durumFiltre) => {
+      const ara = aramaMetni.trim().toLocaleLowerCase('tr');
+      return bolumler.map(b => {
+        if (durumFiltre !== 'hepsi' && !b.keys.includes(durumFiltre)) return '';
+        let grup = projeler.filter(p => b.keys.includes(p.status || 'taslak'));
+        if (ara) grup = grup.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara));
         return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
           <div style="padding:12px 16px;background:${b.renk};border-bottom:1px solid ${b.kenar};font-weight:700;font-size:13px;color:${b.yaziRenk}">
             ${b.baslik} (${grup.length})
           </div>
           ${grup.length === 0
-            ? `<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">Bu kategoride proje yok.</div>`
+            ? `<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Bu kategoride proje yok.'}</div>`
             : `<div class="ky-proje-grid">${grup.map(projeKart).join('')}</div>`}
         </div>`;
-      }).join('')}`;
+      }).join('');
+    };
+
+    main.innerHTML = `
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div><h2>Projelerim</h2><p>Tüm projeleriniz ve durumları.</p></div>
+        <button class="btn btn-primary" onclick="yeniProjeBaslat()">&#43; Yeni Proje</button>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <input id="projelerimArama" type="text" placeholder="🔍 Proje adına göre ara..." oninput="projelerimFiltrele()"
+          style="flex:1;min-width:200px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
+        <select id="projelerimDurum" onchange="projelerimFiltrele()"
+          style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
+          <option value="hepsi">Tüm Durumlar</option>
+          <option value="taslak">Devam Edenler</option>
+          <option value="geri_gonderildi">İşlem Bekleyenler</option>
+          <option value="gonderildi">Onaylananlar</option>
+        </select>
+      </div>
+      <div id="projelerimListe">${renderProjelerimListe('', 'hepsi')}</div>`;
+
+    window.projelerimFiltrele = () => {
+      const ara = document.getElementById('projelerimArama').value;
+      const durum = document.getElementById('projelerimDurum').value;
+      document.getElementById('projelerimListe').innerHTML = renderProjelerimListe(ara, durum);
+    };
   } catch(e) {
     main.innerHTML = `<div class="page-header"><h2>Projelerim</h2></div><div style="color:red;padding:20px">Hata: ${e.message}</div>`;
   }
@@ -1984,36 +2008,56 @@ async function renderGonderilenProjelerPage() {
       </div>`;
     };
 
-    const bekleyenHTML = bekleyenler.length === 0
-      ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">Bekleyen proje yok.</div>`
-      : `<div class="ky-proje-grid">${bekleyenler.map(p => projeKart(p, (id, ad) => `
-          <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Aç</button>
-          <button class="ky-btn-delete" onclick="geriGonderClick('${id}', '${ad}')" style="background:#dc2626;color:#fff;border-color:#dc2626">↩ Geri Gönder</button>
-        `)).join('')}</div>`;
+    const renderGonderilenListe = (aramaMetni) => {
+      const ara = aramaMetni.trim().toLocaleLowerCase('tr');
+      const filtrele = (liste) => ara
+        ? liste.filter(p => (p.isAdi||'').toLocaleLowerCase('tr').includes(ara) || (p.userDisplayName||'').toLocaleLowerCase('tr').includes(ara))
+        : liste;
 
-    const onaylananHTML = onaylananlar.length === 0
-      ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">Henüz onaylanan proje yok.</div>`
-      : `<div class="ky-proje-grid">${onaylananlar.map(p => projeKart(p, (id, ad) => `
-          <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Aç</button>
-          <button class="ky-btn-open" onclick="belgeyeGit('${id}')" style="background:#16a34a;color:#fff;border-color:#16a34a">📄 Belge Oluştur</button>
-        `)).join('')}</div>`;
+      const bek = filtrele(bekleyenler);
+      const ona = filtrele(onaylananlar);
+
+      const bHTML = bek.length === 0
+        ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Bekleyen proje yok.'}</div>`
+        : `<div class="ky-proje-grid">${bek.map(p => projeKart(p, (id, ad) => `
+            <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Aç</button>
+            <button class="ky-btn-delete" onclick="geriGonderClick('${id}', '${ad}')" style="background:#dc2626;color:#fff;border-color:#dc2626">↩ Geri Gönder</button>
+          `)).join('')}</div>`;
+
+      const oHTML = ona.length === 0
+        ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Henüz onaylanan proje yok.'}</div>`
+        : `<div class="ky-proje-grid">${ona.map(p => projeKart(p, (id, ad) => `
+            <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Aç</button>
+            <button class="ky-btn-open" onclick="belgeyeGit('${id}')" style="background:#16a34a;color:#fff;border-color:#16a34a">📄 Belge Oluştur</button>
+          `)).join('')}</div>`;
+
+      return `
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
+          <div style="padding:12px 16px;background:#fef9c3;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#854d0e">
+            ⏳ Onay Bekleyenler (${bek.length})
+          </div>
+          ${bHTML}
+        </div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+          <div style="padding:12px 16px;background:#f0fdf4;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#15803d">
+            ✅ Onaylananlar (${ona.length})
+          </div>
+          ${oHTML}
+        </div>`;
+    };
 
     main.innerHTML = `
       <div class="page-header"><h2>Projeler</h2><p>Size iletilen projeler.</p></div>
-
-      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
-        <div style="padding:12px 16px;background:#fef9c3;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#854d0e">
-          ⏳ Onay Bekleyenler (${bekleyenler.length})
-        </div>
-        ${bekleyenHTML}
+      <div style="margin-bottom:16px">
+        <input id="gonderilenArama" type="text" placeholder="🔍 Proje adı veya kullanıcıya göre ara..." oninput="gonderilenFiltrele()"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
       </div>
+      <div id="gonderilenListe">${renderGonderilenListe('')}</div>`;
 
-      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
-        <div style="padding:12px 16px;background:#f0fdf4;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#15803d">
-          ✅ Onaylananlar (${onaylananlar.length})
-        </div>
-        ${onaylananHTML}
-      </div>`;
+    window.gonderilenFiltrele = () => {
+      const ara = document.getElementById('gonderilenArama').value;
+      document.getElementById('gonderilenListe').innerHTML = renderGonderilenListe(ara);
+    };
   } catch(e) {
     main.innerHTML = `<div class="page-header"><h2>Projeler</h2></div><div style="color:red;padding:20px">Hata: ${e.message}</div>`;
   }
