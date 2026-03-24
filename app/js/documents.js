@@ -246,7 +246,7 @@ function renderTeklifTutanagi(proje, referans) {
   return `
     <div class="belge">
       <div style="text-align:center;margin-bottom:25px;line-height:1.8">
-        <p>T.C.<br><strong>${proje.idareAdi}</strong><br>${proje.mudurluk.toUpperCase()}</p>
+        <p>T.C.<br><strong>${proje.idareAdi}</strong><br>${proje.mudurluk.toLocaleUpperCase('tr-TR')}</p>
       </div>
 
       <h2 class="belge-baslik" style="margin-bottom:20px">TEKLİF TUTANAĞI</h2>
@@ -354,7 +354,7 @@ function renderSozlesme(proje, referans) {
       <thead><tr><td class="sozlesme-sayfa-header">
         T.C.<br>
         <strong>${proje.idareAdi}</strong><br>
-        ${proje.mudurluk.toUpperCase()}
+        ${proje.mudurluk.toLocaleUpperCase('tr-TR')}
       </td></tr></thead>
       <tbody><tr><td>
     <div class="belge">
@@ -363,14 +363,14 @@ function renderSozlesme(proje, referans) {
       <table style="width:100%;border-collapse:collapse;margin:10px 0">
         <tr>
           <td style="border:1px solid #000;text-align:center;padding:10px;font-weight:bold;color:#365F91;font-size:11pt;letter-spacing:0.5px">
-            ${proje.isAdi.toUpperCase()}
+            ${proje.isAdi.toLocaleUpperCase('tr-TR')}
           </td>
         </tr>
       </table>
 
       <div class="madde">
         <p><strong>Madde 1- Sözleşmenin Tarafları</strong></p>
-        <p>Bu sözleşme bir tarafta <strong>${proje.idareAdi}</strong> <strong>${proje.mudurluk.toUpperCase()}</strong> (Bundan böyle idare diye anılacaktır) ile diğer tarafta <strong>${kazanan.ad}</strong> (bundan böyle yüklenici olarak anılacaktır) arasında aşağıda yazılı şartlar dahilinde akdedilmiştir.</p>
+        <p>Bu sözleşme bir tarafta <strong>${proje.idareAdi}</strong> <strong>${proje.mudurluk.toLocaleUpperCase('tr-TR')}</strong> (Bundan böyle idare diye anılacaktır) ile diğer tarafta <strong>${kazanan.ad}</strong> (bundan böyle yüklenici olarak anılacaktır) arasında aşağıda yazılı şartlar dahilinde akdedilmiştir.</p>
       </div>
 
       <div class="madde">
@@ -443,7 +443,7 @@ function renderSozlesme(proje, referans) {
             <td style="width:38px;font-weight:bold">4.1.</td>
             <td style="width:190px">İşin Adı</td>
             <td style="width:12px">:</td>
-            <td>${proje.isAdi.toUpperCase()}</td>
+            <td>${proje.isAdi.toLocaleUpperCase('tr-TR')}</td>
           </tr>
           <tr>
             <td style="font-weight:bold">4.2.</td>
@@ -643,14 +643,14 @@ function renderBittiTutanagi(proje, referans) {
   return `
     <div class="belge">
       <div style="text-align:center;margin-bottom:25px;line-height:1.8">
-        <p>T.C.<br><strong>${proje.idareAdi}</strong><br>${proje.mudurluk.toUpperCase()}</p>
+        <p>T.C.<br><strong>${proje.idareAdi}</strong><br>${proje.mudurluk.toLocaleUpperCase('tr-TR')}</p>
       </div>
 
       <h2 class="belge-baslik">İŞ BİTİRME TUTANAĞI</h2>
 
       <table class="bilgi-tablo" style="margin:20px 0">
         <tr><td class="etiket" style="width:35%">İdarenin Adı</td><td>: ${proje.idareAdi}</td></tr>
-        <tr><td class="etiket">Yapılan İş / Hizmetin Adı</td><td>: ${proje.isAdi.toUpperCase()}</td></tr>
+        <tr><td class="etiket">Yapılan İş / Hizmetin Adı</td><td>: ${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
         <tr><td class="etiket">Sözleşme Tarihi</td><td>: ${formatDate(proje.sozlesmeTarihi)}</td></tr>
         <tr><td class="etiket">Sözleşme Bedeli</td><td>: ${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
         <tr><td class="etiket">İş Süresi</td><td>: ${proje.isSuresi} Takvim Günü</td></tr>
@@ -760,7 +760,7 @@ function renderHakedisRaporu(proje, referans) {
     <div class="belge">
       <h2 class="belge-baslik">HAKEDİŞ RAPORU</h2>
       <table style="width:100%;margin-bottom:15px"><tr>
-        <td><strong>${proje.isAdi.toUpperCase()}</strong></td>
+        <td><strong>${proje.isAdi.toLocaleUpperCase('tr-TR')}</strong></td>
         <td style="text-align:right"><strong>HAKEDİŞ NO: 1</strong></td>
       </tr></table>
 
