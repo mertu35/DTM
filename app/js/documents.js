@@ -848,9 +848,11 @@ function belgeYazdir(html, landscape = false, sozlesme = false) {
 <head>
   <meta charset="UTF-8">
   <title>Belge Yazdır</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Times New Roman', serif; font-size: 9.5pt; color: #000; padding: ${bodyPadding}; }
+    body { font-family: 'Noto Serif', 'Times New Roman', serif; font-size: 9.5pt; color: #000; padding: ${bodyPadding}; }
     .belge { max-width: ${maxWidth}; margin: 0 auto; }
     .belge-ust { text-align: center; margin-bottom: 15px; }
     .belge-baslik { text-align: center; font-size: 13.5pt; margin: 10px 0; font-weight: bold; }
@@ -899,5 +901,5 @@ function belgeYazdir(html, landscape = false, sozlesme = false) {
 <body>${html}</body>
 </html>`);
   win.document.close();
-  setTimeout(() => win.print(), 500);
+  setTimeout(() => win.print(), 1500);
 }
