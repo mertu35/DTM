@@ -728,17 +728,22 @@ function renderDogrudanTeminOnayBelgesi(proje) {
         <strong>Görevli Personeller :</strong> ${gorevliMetni || '-'}
       </div>
 
-      <div style="border:1px solid #000;border-top:none;font-size:10pt;line-height:1.7;display:flex">
-        <div style="flex:1;padding:10px 14px;border-right:1px solid #000">
-          <p style="text-align:justify;margin:0 0 20px 0">Yukarıda isimleri yazılı personelin, belirtilen yapımın/malın/hizmetin doğrudan temini için gerekli fiyat araştırmasını ve diğer işlemleri yapmak üzere görevlendirilmesi hususunu onaylarınıza arz ederim. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</p>
-          <div><strong>Adı SOYADI :</strong> ${gcAd}</div>
-          <div><strong>Unvanı :</strong> ${gcUnvan}</div>
-          <div style="margin-top:30px"><strong>İmzası :</strong></div>
+      <div style="border:1px solid #000;border-top:none;font-size:10pt;line-height:1.7;display:flex;min-height:130px">
+        <div style="flex:1;padding:10px 14px;border-right:1px solid #000;display:flex;flex-direction:column;justify-content:space-between">
+          <p style="text-align:justify;margin:0">Yukarıda isimleri yazılı personelin, belirtilen yapımın/malın/hizmetin doğrudan temini için gerekli fiyat araştırmasını ve diğer işlemleri yapmak üzere görevlendirilmesi hususunu onaylarınıza arz ederim. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</p>
+          <div>
+            <div style="display:flex"><span style="min-width:110px"><strong>Adı SOYADI</strong></span><span><strong>:</strong> ${gcAd}</span></div>
+            <div style="display:flex"><span style="min-width:110px"><strong>Unvanı</strong></span><span><strong>:</strong> ${gcUnvan}</span></div>
+            <div style="display:flex;margin-top:16px"><span style="min-width:110px"><strong>İmzası</strong></span><span><strong>:</strong></span></div>
+          </div>
         </div>
-        <div style="flex:1;padding:10px 14px;text-align:center">
-          <div style="font-weight:bold">Uygundur. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</div>
-          <div style="margin-top:30px"><strong>${proje.onaylayanAmir.ad}</strong></div>
-          <div style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</div>
+        <div style="flex:1;padding:10px 14px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
+          <div></div>
+          <div>
+            <div style="font-weight:bold">Uygundur. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</div>
+            <div style="margin-top:16px"><strong>${proje.onaylayanAmir.ad}</strong></div>
+            <div style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</div>
+          </div>
         </div>
       </div>
     </div>
