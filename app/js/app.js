@@ -1711,6 +1711,11 @@ async function onayiKaldirClick(projeId, isAdi) {
 }
 
 async function onaylaClick(projeId, isAdi) {
+  // Onay belgesi bilgileri doldurulmuş mu kontrol et
+  if (!proje.odenek || !proje.butceTertibi) {
+    showToast('Onay belgesi bilgileri eksik! Lütfen gerçekleştirme görevlisinin önce ödenek ve bütçe tertibi bilgilerini girmesini bekleyin.', 'warning');
+    return;
+  }
   if (!await showConfirm(`"${isAdi}" projesi onaylanacak.<br><br>Bu işlem geri alınamaz. Emin misiniz?`, 'Onayla')) return;
   try {
     await onaylaProje(projeId);
@@ -2607,6 +2612,7 @@ function renderProjeOzetPage() {
         </div>
       </div>` : ''}
 
+      ${currentDTMUser?.role !== 'gerceklestirmeci' ? `
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;padding-bottom:32px">
         ${currentProjeStatus === 'onaylandi' ? `
         <button onclick="onayiKaldirClick('${currentCloudProjeId}', '${(p.isAdi||'').replace(/'/g,'')}')"
@@ -2621,7 +2627,7 @@ function renderProjeOzetPage() {
           style="padding:10px 24px;background:#16a34a;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ✓ Onayla
         </button>`}
-      </div>
+      </div>` : '<div style="padding-bottom:32px"></div>'}
     </div>`;
 }
 
