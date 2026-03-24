@@ -288,7 +288,7 @@ async function renderAnaSayfaPage() {
   const userRole = currentDTMUser?.role;
   const roleInfoMap = {
     gerceklestirmeci: { icon: '📋', mesaj: 'Sol menüden <strong>Gönderilen Projeler</strong> bölümüne giderek size iletilen projeleri görüntüleyebilirsiniz.' },
-    admin: { icon: '📁', mesaj: 'Sol menüden <strong>Onaylı Belgeler</strong> bölümüne giderek onaylanmış tüm belgeleri görüntüleyebilirsiniz.' },
+    admin: { icon: '📁', mesaj: 'Sol menüden <strong>Proje Arşivi</strong> bölümüne giderek onaylanmış tüm projeleri görüntüleyebilirsiniz.' },
     superadmin: { icon: '⚙️', mesaj: 'Sol menüden <strong>Kullanıcı Yönetimi</strong> bölümüne giderek sistemi yönetebilirsiniz.' }
   };
   const roleInfo = roleInfoMap[userRole];
@@ -2730,8 +2730,8 @@ async function renderOnayliBelgelerPage() {
   // Proje listesi
   main.innerHTML = `
     <div class="page-header">
-      <h2>&#9989; Onaylı Belgeler</h2>
-      <p>Gerçekleştirme görevlilerinin onayladığı tüm projeler ve belgeleri.</p>
+      <h2>&#128193; Proje Arşivi</h2>
+      <p>Gerçekleştirme görevlilerinin onayladığı tüm projeler.</p>
     </div>
     <div id="onayliBelgelerContent">
       <div style="text-align:center;padding:40px;color:var(--gray-400)">Yükleniyor...</div>
