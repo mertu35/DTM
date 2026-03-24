@@ -809,7 +809,7 @@ function renderHakedisRaporu(proje, referans) {
       <div style="margin-top:40px">
         <table style="width:100%;border-collapse:collapse">
           <tr>
-            <td style="border:none;text-align:center;font-weight:bold;padding-bottom:6px">YÜKLENİCİ</td>
+            <td style="border:none;text-align:center;font-weight:bold;padding-bottom:6px;width:30%">YÜKLENİCİ</td>
             <td style="border:none;text-align:center;font-weight:bold;padding-bottom:6px;width:150px">${dtGorevliler.length === 1 ? 'DÜZENLEYEN' : 'DÜZENLEYENLER'}</td>
           </tr>
           <tr style="height:50px;vertical-align:bottom">
