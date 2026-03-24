@@ -2226,6 +2226,14 @@ async function renderGerceklestirmeciBelgelerPage() {
 }
 
 function renderGerceklestirmeciBelgelerView(main) {
+  // Gerçekleştirme görevlisini oturum açan kullanıcıdan otomatik doldur
+  if (!proje.gerceklestirmeGorevlisi?.ad) {
+    proje.gerceklestirmeGorevlisi = {
+      ad: currentDTMUser?.displayName || currentDTMUser?.username || '',
+      unvan: currentDTMUser?.unvan || 'Gerçekleştirme Görevlisi'
+    };
+  }
+
   const belgeler = [
     { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi' },
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
