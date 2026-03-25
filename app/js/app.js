@@ -1139,7 +1139,7 @@ function pdfIndirBelge() {
 
 // ===================== VERİ MERKEZİ SAYFASI =====================
 function renderVeriMerkeziPage() {
-  const isSuperAdmin = ['superadmin', 'admin'].includes(currentDTMUser?.role);
+  const isSuperAdmin = currentDTMUser?.role === 'superadmin';
 
   const muhendisRows = referans.muhendisList.map((m, i) => `
     <tr>
