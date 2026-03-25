@@ -3140,16 +3140,32 @@ async function renderOnayliBelgelerPage() {
       return t && t >= buAy;
     }).length;
 
-    const renderListe = (aramaMetni) => {
+    const renderListe = (aramaMetni, tarihFiltre, kullaniciFiltre, siralama) => {
       const ara = aramaMetni.trim().toLocaleLowerCase('tr');
-      const liste = ara
-        ? onaylananlar.filter(p =>
-            (p.isAdi||'').toLocaleLowerCase('tr').includes(ara) ||
-            (p.userDisplayName||'').toLocaleLowerCase('tr').includes(ara) ||
-            (p.atananGerceklestirmeciAd||'').toLocaleLowerCase('tr').includes(ara))
-        : onaylananlar;
+      const simdi = new Date();
+      let liste = onaylananlar.filter(p => {
+        if (ara && !(
+          (p.isAdi||'').toLocaleLowerCase('tr').includes(ara) ||
+          (p.userDisplayName||'').toLocaleLowerCase('tr').includes(ara) ||
+          (p.atananGerceklestirmeciAd||'').toLocaleLowerCase('tr').includes(ara)
+        )) return false;
+        if (kullaniciFiltre && kullaniciFiltre !== 'hepsi' && p.userDisplayName !== kullaniciFiltre) return false;
+        if (tarihFiltre === 'bu-ay') {
+          const t = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate() : null;
+          if (!t || t.getMonth() !== simdi.getMonth() || t.getFullYear() !== simdi.getFullYear()) return false;
+        } else if (tarihFiltre === 'bu-yil') {
+          const t = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate() : null;
+          if (!t || t.getFullYear() !== simdi.getFullYear()) return false;
+        }
+        return true;
+      });
+      if (siralama === 'az') liste = [...liste].sort((a,b) => (a.isAdi||'').localeCompare(b.isAdi||'','tr'));
+      else if (siralama === 'za') liste = [...liste].sort((a,b) => (b.isAdi||'').localeCompare(a.isAdi||'','tr'));
+      else if (siralama === 'eski') liste = [...liste].sort((a,b) => (a.onaylandiAt?.toMillis?.()??0)-(b.onaylandiAt?.toMillis?.()??0));
 
       const listeEl = el.querySelector('#onayliListe');
+      const sonucEl = el.querySelector('#onayliSonucBilgi');
+      if (sonucEl) sonucEl.textContent = `${liste.length} proje listeleniyor`;
       if (!listeEl) return;
 
       if (liste.length === 0) {
@@ -3195,16 +3211,44 @@ async function renderOnayliBelgelerPage() {
           <div style="font-size:12px;color:#1d4ed8;font-weight:600;margin-top:2px">Bu Ay Onaylanan</div>
         </div>
       </div>
-      <div style="margin-bottom:14px">
-        <input type="text" id="onayliArama" placeholder="&#128269; Proje adı, kullanıcı veya gerçekleştirmeci ara..."
-          style="width:100%;box-sizing:border-box;padding:9px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center">
+        <input type="text" id="onayliArama" placeholder="🔍 Proje adı, kullanıcı veya gerçekleştirmeci ara..."
+          style="flex:1;min-width:220px;box-sizing:border-box;padding:9px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+        <select id="onayliTarih" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
+          <option value="hepsi">📅 Tüm Tarihler</option>
+          <option value="bu-ay">Bu Ay</option>
+          <option value="bu-yil">Bu Yıl</option>
+        </select>
+        <select id="onayliKullanici" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
+          <option value="hepsi">👤 Tüm Kullanıcılar</option>
+          ${[...new Set(onaylananlar.map(p => p.userDisplayName).filter(Boolean))].sort().map(u => `<option value="${escAttr(u)}">${escHtml(u)}</option>`).join('')}
+        </select>
+        <select id="onayliSiralama" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
+          <option value="yeni">↓ En Yeni</option>
+          <option value="eski">↑ En Eski</option>
+          <option value="az">A → Z</option>
+          <option value="za">Z → A</option>
+        </select>
       </div>
+      <div id="onayliSonucBilgi" style="font-size:12px;color:#6b7280;margin-bottom:8px"></div>
       <div id="onayliListe"></div>
     `;
 
-    renderListe('');
-    const aramaEl = el.querySelector('#onayliArama');
-    if (aramaEl) aramaEl.oninput = function() { renderListe(this.value); };
+    const getFiltreler = () => ({
+      ara: el.querySelector('#onayliArama')?.value || '',
+      tarih: el.querySelector('#onayliTarih')?.value || 'hepsi',
+      kullanici: el.querySelector('#onayliKullanici')?.value || 'hepsi',
+      siralama: el.querySelector('#onayliSiralama')?.value || 'yeni'
+    });
+
+    renderListe('', 'hepsi', 'hepsi', 'yeni');
+    ['#onayliArama','#onayliTarih','#onayliKullanici','#onayliSiralama'].forEach(sel => {
+      const elem = el.querySelector(sel);
+      if (elem) elem.addEventListener('input', () => {
+        const f = getFiltreler();
+        renderListe(f.ara, f.tarih, f.kullanici, f.siralama);
+      });
+    });
 
   } catch(e) {
     const el = document.getElementById('onayliBelgelerContent');
