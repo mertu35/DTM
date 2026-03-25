@@ -2467,7 +2467,7 @@ async function renderGonderilenProjelerPage() {
   try {
     const projeler = await getUserProjeler();
     const bekleyenler = projeler.filter(p => p.status === 'gonderildi');
-    const onaylananlar = projeler.filter(p => p.status === 'onaylandi');
+    const onaylananlar = projeler.filter(p => ['onaylandi', 'arsivlendi'].includes(p.status));
 
     // Yeni gönderilenleri işaretle, badge sıfırla
     if (bekleyenler.length > 0) {
@@ -2516,8 +2516,7 @@ async function renderGonderilenProjelerPage() {
       const oHTML = ona.length === 0
         ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Henüz onaylanan proje yok.'}</div>`
         : `<div class="ky-proje-grid">${ona.map(p => projeKart(p, (id, ad) => `
-            <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Aç</button>
-            <button class="ky-btn-delete" onclick="onayiKaldirClick('${id}','${ad}')" style="background:#dc2626;color:#fff;border-color:#dc2626">✕ Onayı Kaldır</button>
+            <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Görüntüle</button>
           `)).join('')}</div>`;
 
       return `
