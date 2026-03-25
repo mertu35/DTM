@@ -254,15 +254,18 @@ function renderTeklifTutanagi(proje, referans) {
       <table class="bilgi-tablo" style="margin-bottom:8px">
         <tr>
           <td class="etiket" style="width:45%">İdarenin Adı</td>
-          <td>: ${proje.idareAdi}</td>
+          <td style="width:14px;vertical-align:top">:</td>
+          <td>${proje.idareAdi}</td>
         </tr>
         <tr>
           <td class="etiket">Yapılan İş / Mal / Hizmetin Adı, Niteliği</td>
-          <td>: ${proje.isAdi}</td>
+          <td style="width:14px;vertical-align:top">:</td>
+          <td>${proje.isAdi}</td>
         </tr>
         <tr>
           <td class="etiket">Alım ve Yetkilendirilen Görevlilere İlişkin Onay Belgesi /<br>Görevlendirme Onayı Tarih ve No.su</td>
-          <td>: ${formatDate(proje.dtOnayTarihi)} Tarih ve ${proje.dtOnayNo} Sayılı Olur</td>
+          <td style="width:14px;vertical-align:top">:</td>
+          <td>${formatDate(proje.dtOnayTarihi)} Tarih ve ${proje.dtOnayNo} Sayılı Olur</td>
         </tr>
       </table>
 
@@ -649,13 +652,13 @@ function renderBittiTutanagi(proje, referans) {
       <h2 class="belge-baslik">İŞ BİTİRME TUTANAĞI</h2>
 
       <table class="bilgi-tablo" style="margin:20px 0">
-        <tr><td class="etiket" style="width:35%">İdarenin Adı</td><td>: ${proje.idareAdi}</td></tr>
-        <tr><td class="etiket">Yapılan İş / Hizmetin Adı</td><td>: ${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
-        <tr><td class="etiket">Sözleşme Tarihi</td><td>: ${formatDate(proje.sozlesmeTarihi)}</td></tr>
-        <tr><td class="etiket">Sözleşme Bedeli</td><td>: ${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
-        <tr><td class="etiket">İş Süresi</td><td>: ${proje.isSuresi} Takvim Günü</td></tr>
-        <tr><td class="etiket">İşe Başlama Tarihi</td><td>: ${formatDate(proje.sozlesmeTarihi)}</td></tr>
-        <tr><td class="etiket">İşin Bitim Tarihi</td><td>: ${formatDate(bitisT)}</td></tr>
+        <tr><td class="etiket" style="width:35%">İdarenin Adı</td><td style="width:14px;vertical-align:top">:</td><td>${proje.idareAdi}</td></tr>
+        <tr><td class="etiket">Yapılan İş / Hizmetin Adı</td><td style="width:14px;vertical-align:top">:</td><td>${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
+        <tr><td class="etiket">Sözleşme Tarihi</td><td style="width:14px;vertical-align:top">:</td><td>${formatDate(proje.sozlesmeTarihi)}</td></tr>
+        <tr><td class="etiket">Sözleşme Bedeli</td><td style="width:14px;vertical-align:top">:</td><td>${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
+        <tr><td class="etiket">İş Süresi</td><td style="width:14px;vertical-align:top">:</td><td>${proje.isSuresi} Takvim Günü</td></tr>
+        <tr><td class="etiket">İşe Başlama Tarihi</td><td style="width:14px;vertical-align:top">:</td><td>${formatDate(proje.sozlesmeTarihi)}</td></tr>
+        <tr><td class="etiket">İşin Bitim Tarihi</td><td style="width:14px;vertical-align:top">:</td><td>${formatDate(bitisT)}</td></tr>
       </table>
 
       <div style="margin:40px 0;text-align:justify;line-height:1.8">
