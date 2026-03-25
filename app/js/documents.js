@@ -129,7 +129,7 @@ function renderYaklasikMaliyet(proje, referans) {
             ).join('')}
           </div>
           <!-- OLUR: 3. Firma sütununun altında (140px) -->
-          <div style="width:140px;text-align:center;padding-top:65px">
+          <div style="width:190px;text-align:center;padding-top:65px">
             <p style="font-weight:bold">OLUR</p>
             <p>${formatDate(proje.ymOnayTarihi)}</p>
             <p style="margin-top:10px"><strong>${proje.onaylayanAmir.ad}</strong></p>
