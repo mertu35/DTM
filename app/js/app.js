@@ -197,30 +197,71 @@ async function cokluBelgeIndir(secilen) {
 
   const belgeMap = {
     'yaklasik-maliyet': { render: () => renderYaklasikMaliyet(proje, referans), landscape: true },
-    'teklif-tutanagi': { render: () => renderTeklifTutanagi(proje, referans), landscape: true },
+    'teklif-tutanagi':  { render: () => renderTeklifTutanagi(proje, referans), landscape: true },
     'sozlesme':         { render: () => renderSozlesme(proje, referans), landscape: false, sozlesme: true },
     'bitti-tutanagi':   { render: () => renderBittiTutanagi(proje, referans), landscape: false },
     'hakedis-raporu':   { render: () => renderHakedisRaporu(proje, referans), landscape: false }
   };
 
-  const adlar = {
-    'yaklasik-maliyet': 'Yaklaşık Maliyet',
-    'teklif-tutanagi':  'Teklif Tutanağı',
-    'sozlesme':         'Sözleşme',
-    'bitti-tutanagi':   'Bitti Tutanağı',
-    'hakedis-raporu':   'Hakediş Raporu'
-  };
-
-  showToast(`${secilen.length} belge indiriliyor...`, 'info');
-
+  const parts = [];
   for (const belgeId of secilen) {
     const b = belgeMap[belgeId];
     if (!b) continue;
-    const dosyaAdi = `${proje.isAdi || 'Belge'} - ${adlar[belgeId]}`;
-    await belgePdfIndir(b.render(), b.landscape || false, b.sozlesme || false, dosyaAdi);
+    parts.push({ html: b.render(), landscape: b.landscape || false });
   }
+  if (!parts.length) return;
 
-  showToast('Belgeler indirildi!', 'success');
+  const win = window.open('', '_blank');
+  if (!win) { showToast('Açılır pencere engellendi. Tarayıcı ayarlarından izin verin.', 'error'); return; }
+
+  const sections = parts.map(b =>
+    `<div class="belge-bolum ${b.landscape ? 'pg-yatay' : 'pg-dikey'}">${b.html}</div>`
+  ).join('');
+
+  const css = `
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: "Times New Roman", serif; font-size:9.5pt; color:#000; background:#fff; }
+    .belge-bolum { padding:15mm 20mm; }
+    .pg-yatay { padding:10mm 15mm; }
+    .belge { width:100%; }
+    .belge-ust { text-align:center; margin-bottom:15px; }
+    .belge-baslik { text-align:center; font-size:13.5pt; margin:10px 0; font-weight:bold; }
+    .bilgi-tablo { width:100%; border-collapse:collapse; margin-bottom:10px; }
+    .bilgi-tablo td { padding:2px 6px; vertical-align:top; }
+    .bilgi-tablo .etiket { font-weight:bold; }
+    .veri-tablo { width:100%; border-collapse:collapse; margin-bottom:10px; border:0.5mm solid #000; }
+    .veri-tablo th, .veri-tablo td { border:0.5mm solid #000; padding:2px 4px; text-align:left; font-size:9.5pt; }
+    .veri-tablo th { background:#f0f0f0; text-align:center; font-weight:bold; }
+    .rakam { text-align:right !important; } .merkez { text-align:center !important; } .bold { font-weight:bold; }
+    .toplam-satir td { font-weight:bold; background:#f9f9f9; }
+    .aciklama-metin { margin:15px 0; line-height:1.6; text-align:justify; }
+    .imzalar-yan { display:flex; justify-content:space-around; gap:30px; }
+    .imza-kutu, .imza-kutu-inline { text-align:center; min-width:150px; }
+    .imza-ad { font-weight:bold; margin-top:40px; } .imza-unvan { font-size:9.5pt; }
+    .madde { margin-bottom:12px; line-height:1.5; page-break-inside:avoid; break-inside:avoid; }
+    .madde p { margin-top:5px; text-align:justify; }
+    .sozlesme .madde p, .sozlesme .madde { font-size:12pt; }
+    .sozlesme .madde { margin-bottom:7px; line-height:1.35; }
+    .sozlesme-imza { margin-top:20px; }
+    .hakedis-tablo td:first-child { width:30px; text-align:center; font-weight:bold; }
+    small { font-size:8.5pt; }
+    .sozlesme-sayfa-tablo { width:100%; border-collapse:collapse; }
+    .sozlesme-sayfa-tablo > tbody > tr > td { padding:0; }
+    .sozlesme-sayfa-header { display:block; text-align:center; font-weight:bold; font-size:10pt; line-height:1.5; padding:4px 0 6px; margin-bottom:6px; }
+    @page dikey  { size: A4 portrait;  margin: 15mm 20mm; }
+    @page yatay  { size: A4 landscape; margin: 10mm 15mm; }
+    @media print {
+      .belge-bolum { padding:0 !important; }
+      .pg-dikey { page: dikey; break-before: page; }
+      .pg-yatay { page: yatay; break-before: page; }
+      .pg-dikey:first-child, .pg-yatay:first-child { break-before: avoid; }
+      .sozlesme-sayfa-tablo thead { display:table-header-group; }
+      .sozlesme-sayfa-tablo tbody { display:table-row-group; }
+    }`;
+
+  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${proje.isAdi || 'Belgeler'}</title><style>${css}</style></head><body>${sections}</body></html>`);
+  win.document.close();
+  setTimeout(() => win.print(), 800);
 }
 
 const AVATARS = [
