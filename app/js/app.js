@@ -2241,7 +2241,8 @@ async function renderGerceklestirmeciBelgelerPage() {
     </div>`;
 
   try {
-    const projeler = await getUserProjeler();
+    const tumProjeler = await getUserProjeler();
+    const projeler = tumProjeler.filter(p => ['gonderildi', 'onaylandi', 'geri_gonderildi'].includes(p.status));
     const listEl = document.getElementById('gerceklestirmeciBelgeList');
     if (!listEl) return;
 
@@ -2249,15 +2250,15 @@ async function renderGerceklestirmeciBelgelerPage() {
       listEl.innerHTML = `
         <div style="text-align:center;padding:60px 20px;color:var(--gray-400)">
           <div style="font-size:48px;margin-bottom:16px">&#128196;</div>
-          <div style="font-size:15px;font-weight:600;margin-bottom:8px">Henüz proje yok</div>
-          <div style="font-size:13px">Belgeler oluşturmak için önce proje oluşturulmalıdır.</div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:8px">Henüz gönderilen proje yok</div>
+          <div style="font-size:13px">Belgeler oluşturmak için size gönderilmiş bir proje bulunmalıdır.</div>
         </div>`;
       return;
     }
 
     listEl.innerHTML = `<div class="ky-proje-grid">
       ${projeler.map(p => {
-        const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : (p.olusturulduAt?.toDate ? p.olusturulduAt.toDate().toLocaleDateString('tr-TR') : '-');
+        const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : (p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') : '-');
         return `<div class="ky-proje-item">
           <div class="ky-proje-info">
             <div class="ky-proje-name">${p.isAdi || '(İsimsiz)'}</div>
