@@ -1074,7 +1074,7 @@ async function renderBelgelerPage() {
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar">
       <button class="btn btn-primary" onclick="yazdirBelge()">&#128424; Yazdır</button>
-      <button class="btn btn-success" style="background:#10b981;border:none" onclick="acBelgeIndirModal()">&#128190; PDF İndir</button>
+      <button class="btn btn-success" onclick="pdfIndirBelge()" style="background:#16a34a;border-color:#16a34a">&#128196; PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
@@ -1113,6 +1113,28 @@ function yazdirBelge() {
     case 'hakedis-raporu': html = renderHakedisRaporu(proje, referans); break;
   }
   belgeYazdir(html, landscape);
+}
+
+function pdfIndirBelge() {
+  const belgeAdlari = {
+    'yaklasik-maliyet': 'Yaklaşık Maliyet Tutanağı',
+    'teklif-tutanagi': 'Teklif Tutanağı',
+    'sozlesme': 'Sözleşme',
+    'bitti-tutanagi': 'Bitti Tutanağı',
+    'hakedis-raporu': 'Hakediş Raporu'
+  };
+  let html = '';
+  let landscape = false;
+  let sozlesme = false;
+  switch (currentBelge) {
+    case 'yaklasik-maliyet': html = renderYaklasikMaliyet(proje, referans); landscape = true; break;
+    case 'teklif-tutanagi':  html = renderTeklifTutanagi(proje, referans);  landscape = true; break;
+    case 'sozlesme':         html = renderSozlesme(proje, referans);        sozlesme = true;  break;
+    case 'bitti-tutanagi':   html = renderBittiTutanagi(proje, referans);   break;
+    case 'hakedis-raporu':   html = renderHakedisRaporu(proje, referans);   break;
+  }
+  const dosyaAdi = `${proje.isAdi || 'Belge'} - ${belgeAdlari[currentBelge] || currentBelge}`;
+  belgePdfIndir(html, landscape, sozlesme, dosyaAdi);
 }
 
 // ===================== VERİ MERKEZİ SAYFASI =====================
@@ -2479,7 +2501,7 @@ function renderGerceklestirmeciBelgelerView(main) {
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar">
       <button class="btn btn-primary" onclick="gerceklestirmeciBelgeYazdir()">🖨️ Yazdır</button>
-      <button class="btn btn-success" style="background:#10b981;border:none" onclick="acBelgeIndirModal(true)">&#128190; PDF İndir</button>
+      <button class="btn btn-success" onclick="gerceklestirmeciBelgePdfIndir()" style="background:#16a34a;border-color:#16a34a">&#128196; PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
@@ -2543,6 +2565,30 @@ function gerceklestirmeciBelgeYazdir() {
     case 'hakedis-raporu': html = renderHakedisRaporu(proje, referans); break;
   }
   belgeYazdir(html, landscape);
+}
+
+function gerceklestirmeciBelgePdfIndir() {
+  const belgeAdlari = {
+    'dt-onay-belgesi': 'DT Onay Belgesi',
+    'yaklasik-maliyet': 'Yaklaşık Maliyet Tutanağı',
+    'teklif-tutanagi': 'Teklif Tutanağı',
+    'sozlesme': 'Sözleşme',
+    'bitti-tutanagi': 'Bitti Tutanağı',
+    'hakedis-raporu': 'Hakediş Raporu'
+  };
+  let html = '';
+  let landscape = false;
+  let sozlesme = false;
+  switch (currentGerceklestirmeciBelge) {
+    case 'dt-onay-belgesi':  html = renderDogrudanTeminOnayBelgesi(proje);  break;
+    case 'yaklasik-maliyet': html = renderYaklasikMaliyet(proje, referans); landscape = true; break;
+    case 'teklif-tutanagi':  html = renderTeklifTutanagi(proje, referans);  landscape = true; break;
+    case 'sozlesme':         html = renderSozlesme(proje, referans);        sozlesme = true;  break;
+    case 'bitti-tutanagi':   html = renderBittiTutanagi(proje, referans);   break;
+    case 'hakedis-raporu':   html = renderHakedisRaporu(proje, referans);   break;
+  }
+  const dosyaAdi = `${proje.isAdi || 'Belge'} - ${belgeAdlari[currentGerceklestirmeciBelge] || currentGerceklestirmeciBelge}`;
+  belgePdfIndir(html, landscape, sozlesme, dosyaAdi);
 }
 
 // ===================== PROJE ÖZET SAYFASI (GERÇEKLEŞTİRMECİ) =====================
