@@ -3140,7 +3140,7 @@ async function renderOnayliBelgelerPage() {
       return t && t >= buAy;
     }).length;
 
-    const renderListe = (aramaMetni, tarihFiltre, kullaniciFiltre, siralama) => {
+    const renderListe = (aramaMetni, tarihFiltre, kullaniciFiltre, siralama, bas, bit) => {
       const ara = aramaMetni.trim().toLocaleLowerCase('tr');
       const simdi = new Date();
       let liste = onaylananlar.filter(p => {
@@ -3150,12 +3150,15 @@ async function renderOnayliBelgelerPage() {
           (p.atananGerceklestirmeciAd||'').toLocaleLowerCase('tr').includes(ara)
         )) return false;
         if (kullaniciFiltre && kullaniciFiltre !== 'hepsi' && p.userDisplayName !== kullaniciFiltre) return false;
+        const t = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate() : null;
         if (tarihFiltre === 'bu-ay') {
-          const t = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate() : null;
           if (!t || t.getMonth() !== simdi.getMonth() || t.getFullYear() !== simdi.getFullYear()) return false;
         } else if (tarihFiltre === 'bu-yil') {
-          const t = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate() : null;
           if (!t || t.getFullYear() !== simdi.getFullYear()) return false;
+        } else if (tarihFiltre === 'aralik') {
+          if (!t) return false;
+          if (bas && t < new Date(bas)) return false;
+          if (bit && t > new Date(bit + 'T23:59:59')) return false;
         }
         return true;
       });
@@ -3218,6 +3221,7 @@ async function renderOnayliBelgelerPage() {
           <option value="hepsi">📅 Tüm Tarihler</option>
           <option value="bu-ay">Bu Ay</option>
           <option value="bu-yil">Bu Yıl</option>
+          <option value="aralik">📆 Tarih Aralığı...</option>
         </select>
         <select id="onayliKullanici" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
           <option value="hepsi">👤 Tüm Kullanıcılar</option>
@@ -3230,6 +3234,14 @@ async function renderOnayliBelgelerPage() {
           <option value="za">Z → A</option>
         </select>
       </div>
+      <div id="onayliAralikWrap" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center">
+        <span style="font-size:13px;color:#374151;font-weight:500">Başlangıç:</span>
+        <input type="date" id="onayliBaslangic" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff">
+        <span style="font-size:13px;color:#374151;font-weight:500">Bitiş:</span>
+        <input type="date" id="onayliBitis" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff">
+        <button onclick="document.getElementById('onayliTarih').value='hepsi';document.getElementById('onayliAralikWrap').style.display='none';yenile()"
+          style="padding:7px 12px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:7px;font-size:12px;cursor:pointer;color:#374151">✕ Temizle</button>
+      </div>
       <div id="onayliSonucBilgi" style="font-size:12px;color:#6b7280;margin-bottom:8px"></div>
       <div id="onayliListe"></div>
     `;
@@ -3237,17 +3249,28 @@ async function renderOnayliBelgelerPage() {
     const getFiltreler = () => ({
       ara: el.querySelector('#onayliArama')?.value || '',
       tarih: el.querySelector('#onayliTarih')?.value || 'hepsi',
+      bas: el.querySelector('#onayliBaslangic')?.value || '',
+      bit: el.querySelector('#onayliBitis')?.value || '',
       kullanici: el.querySelector('#onayliKullanici')?.value || 'hepsi',
       siralama: el.querySelector('#onayliSiralama')?.value || 'yeni'
     });
 
-    renderListe('', 'hepsi', 'hepsi', 'yeni');
-    ['#onayliArama','#onayliTarih','#onayliKullanici','#onayliSiralama'].forEach(sel => {
+    const yenile = () => {
+      const f = getFiltreler();
+      renderListe(f.ara, f.tarih, f.kullanici, f.siralama, f.bas, f.bit);
+    };
+
+    renderListe('', 'hepsi', 'hepsi', 'yeni', '', '');
+
+    el.querySelector('#onayliTarih').addEventListener('change', () => {
+      const aralikWrap = el.querySelector('#onayliAralikWrap');
+      aralikWrap.style.display = el.querySelector('#onayliTarih').value === 'aralik' ? 'flex' : 'none';
+      yenile();
+    });
+
+    ['#onayliArama','#onayliKullanici','#onayliSiralama','#onayliBaslangic','#onayliBitis'].forEach(sel => {
       const elem = el.querySelector(sel);
-      if (elem) elem.addEventListener('input', () => {
-        const f = getFiltreler();
-        renderListe(f.ara, f.tarih, f.kullanici, f.siralama);
-      });
+      if (elem) elem.addEventListener('input', yenile);
     });
 
   } catch(e) {
