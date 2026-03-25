@@ -1074,7 +1074,7 @@ async function renderBelgelerPage() {
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar">
       <button class="btn btn-primary" onclick="yazdirBelge()">&#128424; Yazdır</button>
-      <button class="btn btn-success" onclick="pdfIndirBelge()" style="background:#16a34a;border-color:#16a34a">&#128196; PDF İndir</button>
+      <button class="btn btn-success" onclick="pdfIndirBelge()" style="background:#16a34a;border-color:#16a34a;display:none">&#128196; PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
@@ -2501,7 +2501,7 @@ function renderGerceklestirmeciBelgelerView(main) {
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar">
       <button class="btn btn-primary" onclick="gerceklestirmeciBelgeYazdir()">🖨️ Yazdır</button>
-      <button class="btn btn-success" onclick="gerceklestirmeciBelgePdfIndir()" style="background:#16a34a;border-color:#16a34a">&#128196; PDF İndir</button>
+      <button class="btn btn-success" onclick="gerceklestirmeciBelgePdfIndir()" style="background:#16a34a;border-color:#16a34a;display:none">&#128196; PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
