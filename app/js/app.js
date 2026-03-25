@@ -2134,7 +2134,6 @@ async function renderGonderilenProjelerPage() {
         ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Henüz onaylanan proje yok.'}</div>`
         : `<div class="ky-proje-grid">${ona.map(p => projeKart(p, (id, ad) => `
             <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Aç</button>
-            <button class="ky-btn-open" onclick="belgeyeGit('${id}')" style="background:#16a34a;color:#fff;border-color:#16a34a">📄 Belge Oluştur</button>
             <button class="ky-btn-delete" onclick="onayiKaldirClick('${id}','${ad}')" style="background:#dc2626;color:#fff;border-color:#dc2626">✕ Onayı Kaldır</button>
           `)).join('')}</div>`;
 
@@ -2433,10 +2432,10 @@ function renderGerceklestirmeciBelgelerView(main) {
 
   main.innerHTML = `
     <div class="page-header" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-      <button onclick="currentGerceklestirmeciTab='proje-detay';renderPage();"
+      <button onclick="currentGerceklestirmeciBelgelerProjeId=null;renderPage();"
         style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:6px 12px;
                cursor:pointer;font-size:13px;color:var(--gray-600);white-space:nowrap;margin-top:4px">
-        ← Proje Detayı
+        ← Proje Listesi
       </button>
       <div>
         <h2>📄 Belgeler</h2>
@@ -2487,7 +2486,7 @@ async function gerceklestirmeciBelgelerProjeAc(projeId) {
     currentProjeStatus = doc.status || 'onaylandi';
     currentGerceklestirmeciBelgelerProjeId = projeId;
     currentGerceklestirmeciBelge = 'dt-onay-belgesi';
-    currentGerceklestirmeciTab = 'proje-detay';
+    currentGerceklestirmeciTab = 'belgeler';
     currentPage = 'gerceklestirmeci-belgeler';
     renderPage();
   } catch(e) {
