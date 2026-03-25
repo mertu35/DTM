@@ -903,3 +903,28 @@ function belgeYazdir(html, landscape = false, sozlesme = false) {
   win.document.close();
   setTimeout(() => win.print(), 1500);
 }
+
+function belgePdfIndir(html, landscape = false, sozlesme = false, dosyaAdi = 'belge') {
+  const maxWidth = landscape ? '277mm' : '210mm';
+  const bodyPadding = landscape ? '10mm 15mm' : sozlesme ? '10mm 15mm' : '15mm 20mm';
+
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;left:-9999px;top:0;';
+  container.innerHTML = `
+    <div style="font-family:Times New Roman,serif;font-size:9.5pt;color:#000;padding:${bodyPadding};max-width:${maxWidth};">
+      ${html}
+    </div>`;
+  document.body.appendChild(container);
+
+  const opts = {
+    margin: 0,
+    filename: dosyaAdi + '.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' }
+  };
+
+  html2pdf().set(opts).from(container.firstElementChild).save().then(() => {
+    document.body.removeChild(container);
+  });
+}
