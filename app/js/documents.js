@@ -328,7 +328,7 @@ function renderTeklifTutanagi(proje, referans) {
             </table>
           </div>
           <!-- UYGUNDUR sağda -->
-          <div style="width:160px;text-align:center;padding-top:20px">
+          <div style="width:190px;text-align:center;padding-top:20px">
             <p style="font-weight:bold">UYGUNDUR</p>
             <p style="margin-top:30px"><strong>${proje.onaylayanAmir.ad}</strong></p>
             <p style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</p>
