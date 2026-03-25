@@ -1139,6 +1139,8 @@ function pdfIndirBelge() {
 
 // ===================== VERİ MERKEZİ SAYFASI =====================
 function renderVeriMerkeziPage() {
+  const isSuperAdmin = currentDTMUser?.role === 'superadmin';
+
   const muhendisRows = referans.muhendisList.map((m, i) => `
     <tr>
       <td><input type="text" value="${m.ad}" onchange="onRefChange('muhendisList', ${i}, 'ad', this.value)"></td>
@@ -1193,19 +1195,6 @@ function renderVeriMerkeziPage() {
 
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
-        <h3>Onaylayan Amir Listesi</h3><span class="toggle-icon">&#9660;</span>
-      </div>
-      <div class="card-body">
-        <table class="ref-table">
-          <thead><tr><th>Ad Soyad</th><th>Ünvan</th><th></th></tr></thead>
-          <tbody>${onaylayanRows}</tbody>
-        </table>
-        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('onaylayanList', {ad:'', unvan:''})">+ Ekle</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
         <h3>Firma Listesi</h3><span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
@@ -1214,6 +1203,20 @@ function renderVeriMerkeziPage() {
           <tbody>${firmaRows}</tbody>
         </table>
         <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('firmaList', {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:''})">+ Ekle</button>
+      </div>
+    </div>
+
+    ${isSuperAdmin ? `
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h3>Onaylayan Amir Listesi</h3><span class="toggle-icon">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <table class="ref-table">
+          <thead><tr><th>Ad Soyad</th><th>Ünvan</th><th></th></tr></thead>
+          <tbody>${onaylayanRows}</tbody>
+        </table>
+        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('onaylayanList', {ad:'', unvan:''})">+ Ekle</button>
       </div>
     </div>
 
@@ -1261,6 +1264,7 @@ function renderVeriMerkeziPage() {
         </div>
       </div>
     </div>
+    ` : ''}
   `;
 }
 
