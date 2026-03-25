@@ -25,7 +25,8 @@ function getStatusBadge(status) {
     taslak:          { label: 'Taslak',          bg: '#f3f4f6', color: '#6b7280' },
     gonderildi:      { label: 'Gönderildi',       bg: '#dbeafe', color: '#1e40af' },
     geri_gonderildi: { label: 'Geri Gönderildi',  bg: '#fee2e2', color: '#991b1b' },
-    onaylandi:       { label: 'Onaylandı',         bg: '#d1fae5', color: '#065f46' }
+    onaylandi:       { label: 'Onaylandı',         bg: '#d1fae5', color: '#065f46' },
+    arsivlendi:      { label: 'Arşivlendi',        bg: '#f3f4f6', color: '#374151' }
   };
   const s = map[status] || map.taslak;
   return `<span style="font-size:11px;background:${s.bg};color:${s.color};padding:2px 7px;border-radius:4px;font-weight:600">${s.label}</span>`;
@@ -2047,6 +2048,41 @@ async function belgeyeGit(projeId) {
   }
 }
 
+async function arsivleClick(projeId, isAdi) {
+  if (!await showConfirm(`"${isAdi}" projesi arşive kaldırılacak.`, 'Arşivle')) return;
+  try {
+    await db.collection('projeler').doc(projeId).update({ status: 'arsivlendi', arsivlendiAt: firebase.firestore.FieldValue.serverTimestamp() });
+    showToast('Proje arşive kaldırıldı.', 'success');
+    renderPage();
+  } catch(e) { showToast('Hata: ' + e.message, 'error'); }
+}
+
+async function arsivdenCikarClick(projeId, isAdi) {
+  if (!await showConfirm(`"${isAdi}" projesi arşivden çıkarılacak ve işlem bekleyenlere alınacak.`, 'Arşivden Çıkar')) return;
+  try {
+    await db.collection('projeler').doc(projeId).update({ status: 'onaylandi', arsivlendiAt: null });
+    showToast('Proje arşivden çıkarıldı.', 'success');
+    renderPage();
+  } catch(e) { showToast('Hata: ' + e.message, 'error'); }
+}
+
+async function adminGeriGonderClick(projeId, isAdi) {
+  const not = await showPrompt(`"${isAdi}" projesi kullanıcıya geri gönderilecek.<br>Geri gönderme nedeninizi yazın:`, 'Nedeninizi buraya yazın...');
+  if (not === null) return;
+  if (!not.trim()) { showToast('Lütfen bir not ekleyin.', 'warning'); return; }
+  try {
+    await db.collection('projeler').doc(projeId).update({
+      status: 'geri_gonderildi',
+      geriGondermeNotu: not.trim(),
+      geriGonderenAd: currentDTMUser?.displayName || 'Yönetici',
+      onaylandiAt: null,
+      onaylandiBy: null
+    });
+    showToast('Proje kullanıcıya geri gönderildi.', 'success');
+    renderPage();
+  } catch(e) { showToast('Hata: ' + e.message, 'error'); }
+}
+
 async function onayiKaldirClick(projeId, isAdi) {
   if (!await showConfirm(`"${isAdi}" projesinin onayı kaldırılacak.<br><br>Oluşturulan belgeler silinecek. Emin misiniz?`, 'Onayı Kaldır')) return;
   try {
@@ -3130,41 +3166,48 @@ async function renderOnayliBelgelerPage() {
 
   try {
     const tumProjeler = await getUserProjeler();
-    const onaylananlar = tumProjeler.filter(p => p.status === 'onaylandi');
+    const bekleyenler  = tumProjeler.filter(p => p.status === 'onaylandi');
+    const arsivdekiler = tumProjeler.filter(p => p.status === 'arsivlendi');
     const el = document.getElementById('onayliBelgelerContent');
     if (!el) return;
 
-    const buAy = new Date(); buAy.setDate(1); buAy.setHours(0,0,0,0);
-    const buAyCount = onaylananlar.filter(p => {
-      const t = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate() : null;
-      return t && t >= buAy;
-    }).length;
+    let aktifSekme = 'bekleyenler'; // 'bekleyenler' | 'arsiv'
 
-    const renderListe = (aramaMetni, tarihFiltre, kullaniciFiltre, siralama, bas, bit) => {
-      const ara = aramaMetni.trim().toLocaleLowerCase('tr');
+    const filtrele = (kaynak, ara, tarih, kullanici, siralama, bas, bit) => {
       const simdi = new Date();
-      let liste = onaylananlar.filter(p => {
+      let liste = kaynak.filter(p => {
         if (ara && !(
           (p.isAdi||'').toLocaleLowerCase('tr').includes(ara) ||
           (p.userDisplayName||'').toLocaleLowerCase('tr').includes(ara) ||
           (p.atananGerceklestirmeciAd||'').toLocaleLowerCase('tr').includes(ara)
         )) return false;
-        if (kullaniciFiltre && kullaniciFiltre !== 'hepsi' && p.userDisplayName !== kullaniciFiltre) return false;
+        if (kullanici !== 'hepsi' && p.userDisplayName !== kullanici) return false;
         const t = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate() : null;
-        if (tarihFiltre === 'bu-ay') {
-          if (!t || t.getMonth() !== simdi.getMonth() || t.getFullYear() !== simdi.getFullYear()) return false;
-        } else if (tarihFiltre === 'bu-yil') {
-          if (!t || t.getFullYear() !== simdi.getFullYear()) return false;
-        } else if (tarihFiltre === 'aralik') {
+        if (tarih === 'bu-ay') { if (!t || t.getMonth()!==simdi.getMonth()||t.getFullYear()!==simdi.getFullYear()) return false; }
+        else if (tarih === 'bu-yil') { if (!t||t.getFullYear()!==simdi.getFullYear()) return false; }
+        else if (tarih === 'aralik') {
           if (!t) return false;
           if (bas && t < new Date(bas)) return false;
-          if (bit && t > new Date(bit + 'T23:59:59')) return false;
+          if (bit && t > new Date(bit+'T23:59:59')) return false;
         }
         return true;
       });
-      if (siralama === 'az') liste = [...liste].sort((a,b) => (a.isAdi||'').localeCompare(b.isAdi||'','tr'));
-      else if (siralama === 'za') liste = [...liste].sort((a,b) => (b.isAdi||'').localeCompare(a.isAdi||'','tr'));
-      else if (siralama === 'eski') liste = [...liste].sort((a,b) => (a.onaylandiAt?.toMillis?.()??0)-(b.onaylandiAt?.toMillis?.()??0));
+      if (siralama === 'az') liste = [...liste].sort((a,b)=>(a.isAdi||'').localeCompare(b.isAdi||'','tr'));
+      else if (siralama === 'za') liste = [...liste].sort((a,b)=>(b.isAdi||'').localeCompare(a.isAdi||'','tr'));
+      else if (siralama === 'eski') liste = [...liste].sort((a,b)=>(a.onaylandiAt?.toMillis?.()??0)-(b.onaylandiAt?.toMillis?.()??0));
+      return liste;
+    };
+
+    const renderListe = () => {
+      const ara      = (el.querySelector('#onayliArama')?.value||'').trim().toLocaleLowerCase('tr');
+      const tarih    = el.querySelector('#onayliTarih')?.value||'hepsi';
+      const kullanici= el.querySelector('#onayliKullanici')?.value||'hepsi';
+      const siralama = el.querySelector('#onayliSiralama')?.value||'yeni';
+      const bas      = el.querySelector('#onayliBaslangic')?.value||'';
+      const bit      = el.querySelector('#onayliBitis')?.value||'';
+
+      const kaynak = aktifSekme === 'arsiv' ? arsivdekiler : bekleyenler;
+      const liste  = filtrele(kaynak, ara, tarih, kullanici, siralama, bas, bit);
 
       const listeEl = el.querySelector('#onayliListe');
       const sonucEl = el.querySelector('#onayliSonucBilgi');
@@ -3172,49 +3215,76 @@ async function renderOnayliBelgelerPage() {
       if (!listeEl) return;
 
       if (liste.length === 0) {
-        listeEl.innerHTML = `
-          <div style="text-align:center;padding:48px 20px;color:var(--gray-400)">
-            <div style="font-size:40px;margin-bottom:12px">&#128196;</div>
-            <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--gray-500)">${ara ? 'Arama ile eşleşen proje bulunamadı.' : 'Henüz onaylanan proje yok.'}</div>
-          </div>`;
+        listeEl.innerHTML = `<div style="text-align:center;padding:48px 20px;color:var(--gray-400)">
+          <div style="font-size:40px;margin-bottom:12px">${aktifSekme==='arsiv'?'🗃️':'📥'}</div>
+          <div style="font-size:14px;font-weight:600;color:var(--gray-500)">${ara?'Arama ile eşleşen proje bulunamadı.':aktifSekme==='arsiv'?'Arşivde proje yok.':'İşlem bekleyen proje yok.'}</div>
+        </div>`;
         return;
       }
 
-      listeEl.innerHTML = `<div class="ky-proje-grid">
-        ${liste.map(p => {
-          const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
-          const adAdiSafe = escAttr(p.isAdi || '(İsimsiz)');
-          return `<div class="ky-proje-item" style="cursor:pointer" onclick="onayliBelgelerProjeAc('${p.id}')">
-            <div class="ky-proje-info">
-              <div class="ky-proje-name"><span class="ky-proje-dot" style="background:#16a34a"></span>${p.isAdi || '(İsimsiz)'}</div>
-              <div class="ky-proje-meta">
-                <span class="ky-proje-user">&#128100; ${p.userDisplayName || '-'}</span>
-                <span class="ky-proje-user" style="color:#0f766e">&#9989; ${p.atananGerceklestirmeciAd || p.onaylandiBy || '-'}</span>
-                <span class="ky-proje-date">&#128197; ${tarih}</span>
-                ${getStatusBadge(p.status)}
-              </div>
+      listeEl.innerHTML = `<div class="ky-proje-grid">${liste.map(p => {
+        const tarihStr = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
+        const adSafe   = escAttr(p.isAdi||'(İsimsiz)');
+        const aksiyonlar = aktifSekme === 'arsiv' ? `
+          <button class="ky-btn-open" onclick="event.stopPropagation();onayliBelgelerProjeAc('${p.id}')">&#128196; Belgeleri Gör</button>
+          <button class="ky-btn" onclick="event.stopPropagation();arsivdenCikarClick('${p.id}','${adSafe}')"
+            style="background:#f59e0b;color:#fff;border-color:#f59e0b;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid">
+            ↩ Arşivden Çıkar
+          </button>` : `
+          <button class="ky-btn-open" onclick="event.stopPropagation();onayliBelgelerProjeAc('${p.id}')">&#128196; Belgeleri Gör</button>
+          <button class="ky-btn" onclick="event.stopPropagation();adminGeriGonderClick('${p.id}','${adSafe}')"
+            style="background:#f59e0b;color:#fff;border-color:#f59e0b;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid">
+            ↩ Geri Gönder
+          </button>
+          <button class="ky-btn" onclick="event.stopPropagation();arsivleClick('${p.id}','${adSafe}')"
+            style="background:#6b7280;color:#fff;border-color:#6b7280;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid">
+            🗃️ Arşivle
+          </button>`;
+        return `<div class="ky-proje-item" style="cursor:pointer" onclick="onayliBelgelerProjeAc('${p.id}')">
+          <div class="ky-proje-info">
+            <div class="ky-proje-name"><span class="ky-proje-dot" style="background:${aktifSekme==='arsiv'?'#9ca3af':'#16a34a'}"></span>${escHtml(p.isAdi||'(İsimsiz)')}</div>
+            <div class="ky-proje-meta">
+              <span class="ky-proje-user">&#128100; ${escHtml(p.userDisplayName||'-')}</span>
+              <span class="ky-proje-user" style="color:#0f766e">&#9989; ${escHtml(p.atananGerceklestirmeciAd||p.onaylandiBy||'-')}</span>
+              <span class="ky-proje-date">&#128197; ${tarihStr}</span>
+              ${getStatusBadge(p.status)}
             </div>
-            <div class="ky-proje-actions">
-              <button class="ky-btn-open" onclick="event.stopPropagation();onayliBelgelerProjeAc('${p.id}')">&#128196; Belgeleri Gör</button>
-              <button class="ky-btn-delete" onclick="event.stopPropagation();onayiKaldirClick('${p.id}','${adAdiSafe}')" style="background:#dc2626;color:#fff;border-color:#dc2626">&#10005; Onayı Kaldır</button>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>`;
+          </div>
+          <div class="ky-proje-actions">${aksiyonlar}</div>
+        </div>`;
+      }).join('')}</div>`;
     };
 
+    const tumKullanicilar = [...new Set([...bekleyenler,...arsivdekiler].map(p=>p.userDisplayName).filter(Boolean))].sort();
+
     el.innerHTML = `
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">
+        <div style="background:#fef9c3;border:1px solid #fde68a;border-radius:10px;padding:16px;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:#b45309">${bekleyenler.length}</div>
+          <div style="font-size:12px;color:#92400e;font-weight:600;margin-top:2px">İşlem Bekleyen</div>
+        </div>
         <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;text-align:center">
-          <div style="font-size:28px;font-weight:700;color:#16a34a">${onaylananlar.length}</div>
-          <div style="font-size:12px;color:#15803d;font-weight:600;margin-top:2px">Toplam Onaylı Proje</div>
+          <div style="font-size:28px;font-weight:700;color:#16a34a">${arsivdekiler.length}</div>
+          <div style="font-size:12px;color:#15803d;font-weight:600;margin-top:2px">Arşivlenen</div>
         </div>
         <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px;text-align:center">
-          <div style="font-size:28px;font-weight:700;color:#2563eb">${buAyCount}</div>
-          <div style="font-size:12px;color:#1d4ed8;font-weight:600;margin-top:2px">Bu Ay Onaylanan</div>
+          <div style="font-size:28px;font-weight:700;color:#2563eb">${bekleyenler.length+arsivdekiler.length}</div>
+          <div style="font-size:12px;color:#1d4ed8;font-weight:600;margin-top:2px">Toplam Proje</div>
         </div>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center">
+
+      <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #e5e7eb">
+        <button id="sekmeBekleyen" onclick="switchSekme('bekleyenler')"
+          style="padding:10px 20px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid #f59e0b;color:#b45309;margin-bottom:-2px">
+          📥 İşlem Bekleyenler <span style="background:#fef3c7;color:#92400e;font-size:11px;padding:2px 7px;border-radius:10px;margin-left:4px">${bekleyenler.length}</span>
+        </button>
+        <button id="sekmeArsiv" onclick="switchSekme('arsiv')"
+          style="padding:10px 20px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;color:#6b7280;margin-bottom:-2px">
+          🗃️ Arşiv <span style="background:#f3f4f6;color:#374151;font-size:11px;padding:2px 7px;border-radius:10px;margin-left:4px">${arsivdekiler.length}</span>
+        </button>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center">
         <input type="text" id="onayliArama" placeholder="🔍 Proje adı, kullanıcı veya gerçekleştirmeci ara..."
           style="flex:1;min-width:220px;box-sizing:border-box;padding:9px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
         <select id="onayliTarih" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
@@ -3225,7 +3295,7 @@ async function renderOnayliBelgelerPage() {
         </select>
         <select id="onayliKullanici" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
           <option value="hepsi">👤 Tüm Kullanıcılar</option>
-          ${[...new Set(onaylananlar.map(p => p.userDisplayName).filter(Boolean))].sort().map(u => `<option value="${escAttr(u)}">${escHtml(u)}</option>`).join('')}
+          ${tumKullanicilar.map(u=>`<option value="${escAttr(u)}">${escHtml(u)}</option>`).join('')}
         </select>
         <select id="onayliSiralama" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
           <option value="yeni">↓ En Yeni</option>
@@ -3239,39 +3309,30 @@ async function renderOnayliBelgelerPage() {
         <input type="date" id="onayliBaslangic" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff">
         <span style="font-size:13px;color:#374151;font-weight:500">Bitiş:</span>
         <input type="date" id="onayliBitis" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff">
-        <button onclick="document.getElementById('onayliTarih').value='hepsi';document.getElementById('onayliAralikWrap').style.display='none';yenile()"
+        <button onclick="el.querySelector('#onayliTarih').value='hepsi';el.querySelector('#onayliAralikWrap').style.display='none';renderListe()"
           style="padding:7px 12px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:7px;font-size:12px;cursor:pointer;color:#374151">✕ Temizle</button>
       </div>
       <div id="onayliSonucBilgi" style="font-size:12px;color:#6b7280;margin-bottom:8px"></div>
       <div id="onayliListe"></div>
     `;
 
-    const getFiltreler = () => ({
-      ara: el.querySelector('#onayliArama')?.value || '',
-      tarih: el.querySelector('#onayliTarih')?.value || 'hepsi',
-      bas: el.querySelector('#onayliBaslangic')?.value || '',
-      bit: el.querySelector('#onayliBitis')?.value || '',
-      kullanici: el.querySelector('#onayliKullanici')?.value || 'hepsi',
-      siralama: el.querySelector('#onayliSiralama')?.value || 'yeni'
-    });
-
-    const yenile = () => {
-      const f = getFiltreler();
-      renderListe(f.ara, f.tarih, f.kullanici, f.siralama, f.bas, f.bit);
+    window.switchSekme = (sekme) => {
+      aktifSekme = sekme;
+      el.querySelector('#sekmeBekleyen').style.cssText = `padding:10px 20px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;margin-bottom:-2px;${sekme==='bekleyenler'?'border-bottom:3px solid #f59e0b;color:#b45309;':'color:#6b7280;border-bottom:none'}`;
+      el.querySelector('#sekmeArsiv').style.cssText = `padding:10px 20px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;margin-bottom:-2px;${sekme==='arsiv'?'border-bottom:3px solid #6b7280;color:#374151;':'color:#6b7280;border-bottom:none'}`;
+      renderListe();
     };
 
-    renderListe('', 'hepsi', 'hepsi', 'yeni', '', '');
-
     el.querySelector('#onayliTarih').addEventListener('change', () => {
-      const aralikWrap = el.querySelector('#onayliAralikWrap');
-      aralikWrap.style.display = el.querySelector('#onayliTarih').value === 'aralik' ? 'flex' : 'none';
-      yenile();
+      el.querySelector('#onayliAralikWrap').style.display = el.querySelector('#onayliTarih').value==='aralik'?'flex':'none';
+      renderListe();
     });
-
     ['#onayliArama','#onayliKullanici','#onayliSiralama','#onayliBaslangic','#onayliBitis'].forEach(sel => {
       const elem = el.querySelector(sel);
-      if (elem) elem.addEventListener('input', yenile);
+      if (elem) elem.addEventListener('input', renderListe);
     });
+
+    renderListe();
 
   } catch(e) {
     const el = document.getElementById('onayliBelgelerContent');
