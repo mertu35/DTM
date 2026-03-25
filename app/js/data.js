@@ -115,10 +115,25 @@ function loadProje() {
   return getDefaultProje();
 }
 
+const GLOBAL_REF_FIELDS = ['onaylayanList', 'idareList', 'mudurlukler', 'ilceler'];
+const GLOBAL_REF_KEY = 'dtm_global_referans';
+
 function saveReferans(ref) {
-  localStorage.setItem(REF_STORAGE_KEY, JSON.stringify(ref));
+  // Kullanıcıya özel alanları kaydet (global alanları hariç tut)
+  const userRef = Object.assign({}, ref);
+  GLOBAL_REF_FIELDS.forEach(f => delete userRef[f]);
+  localStorage.setItem(REF_STORAGE_KEY, JSON.stringify(userRef));
   if (typeof saveReferansToCloud === 'function') {
-    saveReferansToCloud(ref).catch(() => {});
+    saveReferansToCloud(userRef).catch(() => {});
+  }
+}
+
+function saveGlobalReferans(ref) {
+  const globalData = {};
+  GLOBAL_REF_FIELDS.forEach(f => { if (ref[f] !== undefined) globalData[f] = ref[f]; });
+  localStorage.setItem(GLOBAL_REF_KEY, JSON.stringify(globalData));
+  if (typeof saveGlobalReferansToCloud === 'function') {
+    saveGlobalReferansToCloud(globalData).catch(() => {});
   }
 }
 

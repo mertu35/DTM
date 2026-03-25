@@ -101,6 +101,20 @@ async function saveReferansToCloud(referansData) {
   });
 }
 
+// Global referans verisini Firestore'dan yükle (idare, müdürlük, amir, ilçe)
+async function loadGlobalReferansFromCloud() {
+  const snap = await db.collection('globalReferans').doc('default').get();
+  return snap.exists ? snap.data() : null;
+}
+
+// Global referans verisini Firestore'a kaydet (sadece superadmin)
+async function saveGlobalReferansToCloud(data) {
+  await db.collection('globalReferans').doc('default').set({
+    ...data,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
 // ===== PROJE FIRESTORE FONKSİYONLARI =====
 
 // Projeyi buluta kaydet (yeni)
