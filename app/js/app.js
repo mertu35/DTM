@@ -197,30 +197,204 @@ async function cokluBelgeIndir(secilen) {
 
   const belgeMap = {
     'yaklasik-maliyet': { render: () => renderYaklasikMaliyet(proje, referans), landscape: true },
-    'teklif-tutanagi': { render: () => renderTeklifTutanagi(proje, referans), landscape: true },
+    'teklif-tutanagi':  { render: () => renderTeklifTutanagi(proje, referans), landscape: true },
     'sozlesme':         { render: () => renderSozlesme(proje, referans), landscape: false, sozlesme: true },
     'bitti-tutanagi':   { render: () => renderBittiTutanagi(proje, referans), landscape: false },
     'hakedis-raporu':   { render: () => renderHakedisRaporu(proje, referans), landscape: false }
   };
 
-  const adlar = {
-    'yaklasik-maliyet': 'Yaklaşık Maliyet',
-    'teklif-tutanagi':  'Teklif Tutanağı',
-    'sozlesme':         'Sözleşme',
-    'bitti-tutanagi':   'Bitti Tutanağı',
-    'hakedis-raporu':   'Hakediş Raporu'
-  };
-
-  showToast(`${secilen.length} belge indiriliyor...`, 'info');
-
+  const parts = [];
   for (const belgeId of secilen) {
     const b = belgeMap[belgeId];
     if (!b) continue;
-    const dosyaAdi = `${proje.isAdi || 'Belge'} - ${adlar[belgeId]}`;
-    await belgePdfIndir(b.render(), b.landscape || false, b.sozlesme || false, dosyaAdi);
+    parts.push({ html: b.render(), landscape: b.landscape || false });
   }
+  if (!parts.length) return;
 
-  showToast('Belgeler indirildi!', 'success');
+  const win = window.open('', '_blank');
+  if (!win) { showToast('Açılır pencere engellendi. Tarayıcı ayarlarından izin verin.', 'error'); return; }
+
+  const sections = parts.map(b =>
+    `<div class="belge-bolum ${b.landscape ? 'pg-yatay' : 'pg-dikey'}">${b.html}</div>`
+  ).join('');
+
+  const css = `
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: "Times New Roman", serif; font-size:9.5pt; color:#000; background:#fff; }
+    .belge-bolum { padding:15mm 20mm; }
+    .pg-yatay { padding:10mm 15mm; }
+    .belge { width:100%; }
+    .belge-ust { text-align:center; margin-bottom:15px; }
+    .belge-baslik { text-align:center; font-size:13.5pt; margin:10px 0; font-weight:bold; }
+    .bilgi-tablo { width:100%; border-collapse:collapse; margin-bottom:10px; }
+    .bilgi-tablo td { padding:2px 6px; vertical-align:top; }
+    .bilgi-tablo .etiket { font-weight:bold; }
+    .veri-tablo { width:100%; border-collapse:collapse; margin-bottom:10px; border:0.5mm solid #000; }
+    .veri-tablo th, .veri-tablo td { border:0.5mm solid #000; padding:2px 4px; text-align:left; font-size:9.5pt; }
+    .veri-tablo th { background:#f0f0f0; text-align:center; font-weight:bold; }
+    .rakam { text-align:right !important; } .merkez { text-align:center !important; } .bold { font-weight:bold; }
+    .toplam-satir td { font-weight:bold; background:#f9f9f9; }
+    .aciklama-metin { margin:15px 0; line-height:1.6; text-align:justify; }
+    .imzalar-yan { display:flex; justify-content:space-around; gap:30px; }
+    .imza-kutu, .imza-kutu-inline { text-align:center; min-width:150px; }
+    .imza-ad { font-weight:bold; margin-top:40px; } .imza-unvan { font-size:9.5pt; }
+    .madde { margin-bottom:12px; line-height:1.5; page-break-inside:avoid; break-inside:avoid; }
+    .madde p { margin-top:5px; text-align:justify; }
+    .sozlesme .madde p, .sozlesme .madde { font-size:12pt; }
+    .sozlesme .madde { margin-bottom:7px; line-height:1.35; }
+    .sozlesme-imza { margin-top:20px; }
+    .hakedis-tablo td:first-child { width:30px; text-align:center; font-weight:bold; }
+    small { font-size:8.5pt; }
+    .sozlesme-sayfa-tablo { width:100%; border-collapse:collapse; }
+    .sozlesme-sayfa-tablo > tbody > tr > td { padding:0; }
+    .sozlesme-sayfa-header { display:block; text-align:center; font-weight:bold; font-size:10pt; line-height:1.5; padding:4px 0 6px; margin-bottom:6px; }
+    @page dikey  { size: A4 portrait;  margin: 15mm 20mm; }
+    @page yatay  { size: A4 landscape; margin: 10mm 15mm; }
+    @media print {
+      .belge-bolum { padding:0 !important; }
+      .pg-dikey { page: dikey; break-before: page; }
+      .pg-yatay { page: yatay; break-before: page; }
+      .pg-dikey:first-child, .pg-yatay:first-child { break-before: avoid; }
+      .sozlesme-sayfa-tablo thead { display:table-header-group; }
+      .sozlesme-sayfa-tablo tbody { display:table-row-group; }
+    }`;
+
+  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${proje.isAdi || 'Belgeler'}</title><style>${css}</style></head><body>${sections}</body></html>`);
+  win.document.close();
+  setTimeout(() => win.print(), 800);
+}
+
+function acGerceklestirmeciIndirModal() {
+  if (!proje || !currentGerceklestirmeciBelgelerProjeId) return;
+
+  const mevcut = document.getElementById('dtmBelgeIndirModal');
+  if (mevcut) mevcut.remove();
+
+  const belgeler = [
+    { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi' },
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
+    { id: 'sozlesme', ad: 'Sözleşme' },
+    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı' },
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
+  ];
+
+  const checkboxler = belgeler.map(b => `
+    <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px solid #f3f4f6;">
+      <input type="checkbox" class="belge-indir-cb" value="${b.id}" checked
+        style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb">
+      <span style="font-size:14px;color:#1f2937">${b.ad}</span>
+    </label>`).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'dtmBelgeIndirModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+      <h3 style="margin:0 0 4px;font-size:16px;color:#1f2937">&#128196; Belge İndir</h3>
+      <p style="margin:0 0 14px;font-size:13px;color:#6b7280">İndirilecek belgeleri işaretleyin</p>
+      <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:2px solid #e5e7eb;margin-bottom:2px;font-weight:600;">
+        <input type="checkbox" id="hepsiniSecCb2" checked style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb">
+        <span style="font-size:14px;color:#374151">Tümünü Seç</span>
+      </label>
+      ${checkboxler}
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+        <button id="gcIndirIptal" style="background:#f3f4f6;color:#374151;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">İptal</button>
+        <button id="gcIndirOnay" style="background:#2563eb;color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">&#128196; İndir</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const hepsiniCb = document.getElementById('hepsiniSecCb2');
+  const cbList = overlay.querySelectorAll('.belge-indir-cb');
+  hepsiniCb.addEventListener('change', () => cbList.forEach(cb => cb.checked = hepsiniCb.checked));
+  cbList.forEach(cb => cb.addEventListener('change', () => {
+    hepsiniCb.checked = [...cbList].every(c => c.checked);
+    hepsiniCb.indeterminate = !hepsiniCb.checked && [...cbList].some(c => c.checked);
+  }));
+
+  document.getElementById('gcIndirIptal').onclick = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  document.getElementById('gcIndirOnay').onclick = () => {
+    const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')].map(cb => cb.value);
+    if (!secilen.length) { showToast('En az bir belge seçin', 'warning'); return; }
+    overlay.remove();
+    cokluGerceklestirmeciBelgeIndir(secilen);
+  };
+}
+
+function cokluGerceklestirmeciBelgeIndir(secilen) {
+  if (!proje || !currentGerceklestirmeciBelgelerProjeId) return;
+
+  const belgeMap = {
+    'dt-onay-belgesi':  { render: () => renderDogrudanTeminOnayBelgesi(proje), landscape: false },
+    'yaklasik-maliyet': { render: () => renderYaklasikMaliyet(proje, referans), landscape: true },
+    'teklif-tutanagi':  { render: () => renderTeklifTutanagi(proje, referans), landscape: true },
+    'sozlesme':         { render: () => renderSozlesme(proje, referans), landscape: false },
+    'bitti-tutanagi':   { render: () => renderBittiTutanagi(proje, referans), landscape: false },
+    'hakedis-raporu':   { render: () => renderHakedisRaporu(proje, referans), landscape: false }
+  };
+
+  const parts = [];
+  for (const belgeId of secilen) {
+    const b = belgeMap[belgeId];
+    if (!b) continue;
+    parts.push({ html: b.render(), landscape: b.landscape });
+  }
+  if (!parts.length) return;
+
+  const win = window.open('', '_blank');
+  if (!win) { showToast('Açılır pencere engellendi. Tarayıcı ayarlarından izin verin.', 'error'); return; }
+
+  const sections = parts.map(b =>
+    `<div class="belge-bolum ${b.landscape ? 'pg-yatay' : 'pg-dikey'}">${b.html}</div>`
+  ).join('');
+
+  const css = `
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: "Times New Roman", serif; font-size:9.5pt; color:#000; background:#fff; }
+    .belge-bolum { padding:15mm 20mm; }
+    .pg-yatay { padding:10mm 15mm; }
+    .belge { width:100%; }
+    .belge-ust { text-align:center; margin-bottom:15px; }
+    .belge-baslik { text-align:center; font-size:13.5pt; margin:10px 0; font-weight:bold; }
+    .bilgi-tablo { width:100%; border-collapse:collapse; margin-bottom:10px; }
+    .bilgi-tablo td { padding:2px 6px; vertical-align:top; }
+    .bilgi-tablo .etiket { font-weight:bold; }
+    .veri-tablo { width:100%; border-collapse:collapse; margin-bottom:10px; border:0.5mm solid #000; }
+    .veri-tablo th, .veri-tablo td { border:0.5mm solid #000; padding:2px 4px; text-align:left; font-size:9.5pt; }
+    .veri-tablo th { background:#f0f0f0; text-align:center; font-weight:bold; }
+    .rakam { text-align:right !important; } .merkez { text-align:center !important; } .bold { font-weight:bold; }
+    .toplam-satir td { font-weight:bold; background:#f9f9f9; }
+    .aciklama-metin { margin:15px 0; line-height:1.6; text-align:justify; }
+    .imzalar-yan { display:flex; justify-content:space-around; gap:30px; }
+    .imza-kutu, .imza-kutu-inline { text-align:center; min-width:150px; }
+    .imza-ad { font-weight:bold; margin-top:40px; } .imza-unvan { font-size:9.5pt; }
+    .madde { margin-bottom:12px; line-height:1.5; page-break-inside:avoid; break-inside:avoid; }
+    .madde p { margin-top:5px; text-align:justify; }
+    .sozlesme .madde p, .sozlesme .madde { font-size:12pt; }
+    .sozlesme .madde { margin-bottom:7px; line-height:1.35; }
+    .sozlesme-imza { margin-top:20px; }
+    .hakedis-tablo td:first-child { width:30px; text-align:center; font-weight:bold; }
+    small { font-size:8.5pt; }
+    .sozlesme-sayfa-tablo { width:100%; border-collapse:collapse; }
+    .sozlesme-sayfa-tablo > tbody > tr > td { padding:0; }
+    .sozlesme-sayfa-header { display:block; text-align:center; font-weight:bold; font-size:10pt; line-height:1.5; padding:4px 0 6px; margin-bottom:6px; }
+    @page dikey  { size: A4 portrait;  margin: 15mm 20mm; }
+    @page yatay  { size: A4 landscape; margin: 10mm 15mm; }
+    @media print {
+      .belge-bolum { padding:0 !important; }
+      .pg-dikey { page: dikey; break-before: page; }
+      .pg-yatay { page: yatay; break-before: page; }
+      .pg-dikey:first-child, .pg-yatay:first-child { break-before: avoid; }
+      .sozlesme-sayfa-tablo thead { display:table-header-group; }
+      .sozlesme-sayfa-tablo tbody { display:table-row-group; }
+    }`;
+
+  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${proje.isAdi || 'Belgeler'}</title><style>${css}</style></head><body>${sections}</body></html>`);
+  win.document.close();
+  setTimeout(() => win.print(), 800);
 }
 
 const AVATARS = [
@@ -2607,6 +2781,7 @@ function renderGerceklestirmeciBelgelerView(main) {
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar">
       <button class="btn btn-primary" onclick="gerceklestirmeciBelgeYazdir()">🖨️ Yazdır</button>
+      <button class="btn btn-success" onclick="acGerceklestirmeciIndirModal()" style="background:#2563eb;border-color:#2563eb">&#128196; İndir</button>
       <button class="btn btn-success" onclick="gerceklestirmeciBelgePdfIndir()" style="background:#16a34a;border-color:#16a34a;display:none">&#128196; PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
