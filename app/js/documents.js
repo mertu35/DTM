@@ -908,13 +908,14 @@ function belgeYazdir(html, landscape = false, sozlesme = false) {
 }
 
 function belgePdfIndir(html, landscape = false, sozlesme = false, dosyaAdi = 'belge') {
-  const maxWidth = landscape ? '277mm' : '210mm';
-  const bodyPadding = landscape ? '10mm 15mm' : sozlesme ? '10mm 15mm' : '15mm 20mm';
+  // A4 @96dpi: portrait=794px(210mm), landscape=1123px(297mm)
+  const pageW = landscape ? 1123 : 794;
+  const bodyPadding = landscape ? '38px 57px' : sozlesme ? '38px 57px' : '57px 76px';
 
   const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;left:-9999px;top:0;';
+  container.style.cssText = `position:fixed;left:-9999px;top:0;width:${pageW}px;`;
   container.innerHTML = `
-    <div style="font-family:Times New Roman,serif;font-size:9.5pt;color:#000;padding:${bodyPadding};max-width:${maxWidth};">
+    <div style="font-family:Times New Roman,serif;font-size:9.5pt;color:#000;padding:${bodyPadding};width:${pageW}px;box-sizing:border-box;">
       ${html}
     </div>`;
   document.body.appendChild(container);
