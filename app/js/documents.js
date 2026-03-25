@@ -927,7 +927,26 @@ function belgePdfIndir(html, landscape = false, sozlesme = false, dosyaAdi = 'be
     jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' }
   };
 
-  return html2pdf().set(opts).from(container.firstElementChild).save().then(() => {
-    document.body.removeChild(container);
-  });
+  return html2pdf()
+    .set(opts)
+    .from(container.firstElementChild)
+    .toPdf()
+    .output('blob')
+    .then(blob => {
+      document.body.removeChild(container);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (dosyaAdi || 'belge') + '.pdf';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    })
+    .catch(err => {
+      if (document.body.contains(container)) document.body.removeChild(container);
+      console.error('PDF hatası:', err);
+      showToast('PDF oluşturulamadı: ' + (err.message || err), 'error');
+    });
 }
