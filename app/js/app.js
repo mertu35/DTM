@@ -71,6 +71,37 @@ if (!document.getElementById('toastStyle')) {
 }
 
 // ===== ÖZEL ONAY MODAL =====
+function showPrompt(baslik, placeholder = '') {
+  return new Promise(resolve => {
+    const mevcut = document.getElementById('dtmPromptModal');
+    if (mevcut) mevcut.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'dtmPromptModal';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <p style="font-size:15px;color:#1f2937;line-height:1.6;margin:0 0 14px">${baslik}</p>
+        <textarea id="dtmPromptInput" placeholder="${placeholder}" rows="4"
+          style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:8px;padding:10px;font-size:14px;resize:vertical;font-family:inherit"></textarea>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+          <button id="dtmPromptIptal" style="background:#f3f4f6;color:#374151;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">İptal</button>
+          <button id="dtmPromptOnay" style="background:#dc2626;color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">Geri Gönder</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    function kapat(sonuc) { overlay.remove(); resolve(sonuc); }
+    document.getElementById('dtmPromptOnay').onclick = () => {
+      const val = document.getElementById('dtmPromptInput').value.trim();
+      kapat(val || null);
+    };
+    document.getElementById('dtmPromptIptal').onclick = () => kapat(null);
+    overlay.addEventListener('click', e => { if (e.target === overlay) kapat(null); });
+    setTimeout(() => document.getElementById('dtmPromptInput')?.focus(), 50);
+  });
+}
+
 function showConfirm(mesaj, onayBtn = 'Evet', iptalBtn = 'İptal') {
   return new Promise(resolve => {
     const mevcut = document.getElementById('dtmConfirmModal');
@@ -1752,7 +1783,7 @@ async function onaylaClick(projeId, isAdi) {
 }
 
 async function geriGonderClick(projeId, isAdi) {
-  const not = prompt(`"${isAdi}" projesini geri gönderiyorsunuz.\n\nGeri gönderme nedeninizi yazın:`);
+  const not = await showPrompt(`"${isAdi}" projesini geri gönderiyorsunuz.<br>Geri gönderme nedeninizi yazın:`, 'Nedeninizi buraya yazın...');
   if (not === null) return;
   if (!not.trim()) { showToast('Not boş olamaz.', 'warning'); return; }
   try {
@@ -3106,7 +3137,7 @@ async function renderDuyurularPage() {
                 </div>
                 <div class="duyuru-meta">${d.createdBy} &middot; ${tarih}</div>
               </div>
-              <div class="duyuru-mesaj">${d.mesaj}</div>
+              <div class="duyuru-mesaj">${escHtml(d.mesaj)}</div>
               <div class="duyuru-actions">
                 ${!okundu ? `<button class="btn btn-sm btn-outline" onclick="duyuruOku('${d.id}')">Okundu</button>` : '<span style="color:var(--gray-400);font-size:12px">Okundu</span>'}
                 ${['admin', 'superadmin'].includes(currentDTMUser?.role) ? `<button class="btn btn-sm btn-danger" onclick="duyuruSil('${d.id}')">Sil</button>` : ''}

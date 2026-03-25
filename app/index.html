@@ -158,14 +158,5 @@
   <script src="js/calculations.js?v=20260323"></script>
   <script src="js/documents.js?v=20260323"></script>
   <script src="js/app.js?v=20260323"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(() => console.log('DTM: Service Worker aktif'))
-          .catch(err => console.warn('DTM: Service Worker hatası', err));
-      });
-    }
-  </script>
 </body>
 </html>
