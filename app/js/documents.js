@@ -175,7 +175,7 @@ function renderTeklifTutanagi(proje, referans) {
     const bf1 = f1.fiyatlar[i] || 0;
     const bf2 = f2.fiyatlar[i] || 0;
     const bf3 = f3.fiyatlar[i] || 0;
-    teklifRows += `<tr style="height:36px">
+    teklifRows += `<tr style="height:26px">
       <td class="merkez">${i + 1}</td>
       <td style="padding:6px 4px">${k.ad}</td>
       <td class="merkez">${miktar}</td>
@@ -194,7 +194,7 @@ function renderTeklifTutanagi(proje, referans) {
       const miktar = parseFloat(k.miktar) || 0;
       const bf = kazananFirmaFiyatlar[i] || 0;
       const toplam = bf * miktar;
-      kazananRows += `<tr style="height:36px">
+      kazananRows += `<tr style="height:26px">
         <td class="merkez">${i + 1}</td>
         <td style="padding:6px 4px">${k.ad}</td>
         <td class="merkez">${miktar}</td>
@@ -245,13 +245,13 @@ function renderTeklifTutanagi(proje, referans) {
 
   return `
     <div class="belge">
-      <div style="text-align:center;margin-bottom:25px;line-height:1.8">
+      <div style="text-align:center;margin-bottom:8px;line-height:1.6">
         <p>T.C.<br><strong>${proje.idareAdi}</strong><br>${proje.mudurluk.toLocaleUpperCase('tr-TR')}</p>
       </div>
 
-      <h2 class="belge-baslik" style="margin-bottom:20px">TEKLİF TUTANAĞI</h2>
+      <h2 class="belge-baslik" style="margin-bottom:10px">TEKLİF TUTANAĞI</h2>
 
-      <table class="bilgi-tablo" style="margin-bottom:15px">
+      <table class="bilgi-tablo" style="margin-bottom:8px">
         <tr>
           <td class="etiket" style="width:45%">İdarenin Adı</td>
           <td>: ${proje.idareAdi}</td>
@@ -278,10 +278,10 @@ function renderTeklifTutanagi(proje, referans) {
         </colgroup>
         <thead>
           <tr>
-            <th rowspan="3" style="padding:8px 4px">SIRA<br>NO</th>
-            <th rowspan="3" style="padding:8px 4px">MAL / HİZMET / YAPIM İŞİ</th>
-            <th rowspan="3" style="padding:8px 4px">MİKTAR</th>
-            <th rowspan="3" style="padding:8px 4px">BİRİM</th>
+            <th rowspan="3" style="padding:4px">SIRA<br>NO</th>
+            <th rowspan="3" style="padding:4px">MAL / HİZMET / YAPIM İŞİ</th>
+            <th rowspan="3" style="padding:4px">MİKTAR</th>
+            <th rowspan="3" style="padding:4px">BİRİM</th>
             <th colspan="3">KİŞİ / FİRMA / FİRMALAR VE FİYAT TEKLİFLERİ</th>
           </tr>
           <tr>
@@ -302,10 +302,10 @@ function renderTeklifTutanagi(proje, referans) {
 
       ${kazananHTML}
 
-      <div style="margin:12px 0;border:0.5mm solid #000;padding:10px 14px;page-break-inside:avoid">
+      <div style="margin:6px 0;border:0.5mm solid #000;padding:7px 14px;page-break-inside:avoid">
         <p style="text-align:justify;line-height:1.4">4734 sayılı Kamu İhale Kanunu'nun 22 nci Maddesi uyarınca <strong>doğrudan temin usulüyle</strong> yapılacak alımlara ilişkin yapılan piyasa araştırmasında ${teklifVerenMetni} teklif edilen fiyatlar ${tarafMetni} değerlendirilerek yukarıda adı ve adresleri belirtilen ${kazananKisiMetni} alım yapılması uygun görülmüştür. ${formatDate(proje.dtOnayTarihi)}</p>
 
-        <div style="display:flex;align-items:flex-start;margin-top:14px;gap:0">
+        <div style="display:flex;align-items:flex-start;margin-top:8px;gap:0">
           <!-- Görevliler sol tarafta -->
           <div style="flex:1">
             <p style="font-weight:bold;text-align:center;margin-bottom:6px">Piyasa Fiyat Araştırması ${dtGorevliler.length > 1 ? 'Görevlileri' : 'Görevlisi'}</p>
