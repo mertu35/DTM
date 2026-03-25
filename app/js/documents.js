@@ -927,7 +927,7 @@ function belgePdfIndir(html, landscape = false, sozlesme = false, dosyaAdi = 'be
     jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' }
   };
 
-  html2pdf().set(opts).from(container.firstElementChild).save().then(() => {
+  return html2pdf().set(opts).from(container.firstElementChild).save().then(() => {
     document.body.removeChild(container);
   });
 }

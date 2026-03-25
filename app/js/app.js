@@ -127,6 +127,104 @@ function showConfirm(mesaj, onayBtn = 'Evet', iptalBtn = 'İptal') {
   });
 }
 
+function acBelgeIndirModal() {
+  const proje = tumProjeler.find(p => p.id === currentBelgelerProjeId);
+  if (!proje) return;
+
+  const mevcut = document.getElementById('dtmBelgeIndirModal');
+  if (mevcut) mevcut.remove();
+
+  const belgeler = [
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
+    { id: 'sozlesme', ad: 'Sözleşme' },
+    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı' },
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
+  ];
+
+  const checkboxler = belgeler.map(b => `
+    <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px solid #f3f4f6;">
+      <input type="checkbox" class="belge-indir-cb" value="${b.id}" checked
+        style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb">
+      <span style="font-size:14px;color:#1f2937">${b.ad}</span>
+    </label>`).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'dtmBelgeIndirModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+      <h3 style="margin:0 0 4px;font-size:16px;color:#1f2937">&#128196; Belge İndir</h3>
+      <p style="margin:0 0 14px;font-size:13px;color:#6b7280">İndirilecek belgeleri işaretleyin</p>
+      <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:2px solid #e5e7eb;margin-bottom:2px;font-weight:600;">
+        <input type="checkbox" id="hepsiniSecCb" checked
+          style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb">
+        <span style="font-size:14px;color:#374151">Tümünü Seç</span>
+      </label>
+      ${checkboxler}
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+        <button id="dtmBelgeIndirIptal" style="background:#f3f4f6;color:#374151;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">İptal</button>
+        <button id="dtmBelgeIndirOnay" style="background:#2563eb;color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">&#128196; İndir</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const hepsiniCb = document.getElementById('hepsiniSecCb');
+  const cbList = overlay.querySelectorAll('.belge-indir-cb');
+
+  hepsiniCb.addEventListener('change', () => {
+    cbList.forEach(cb => cb.checked = hepsiniCb.checked);
+  });
+  cbList.forEach(cb => cb.addEventListener('change', () => {
+    const hepsi = [...cbList].every(c => c.checked);
+    const hicbiri = [...cbList].every(c => !c.checked);
+    hepsiniCb.checked = hepsi;
+    hepsiniCb.indeterminate = !hepsi && !hicbiri;
+  }));
+
+  document.getElementById('dtmBelgeIndirIptal').onclick = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  document.getElementById('dtmBelgeIndirOnay').onclick = async () => {
+    const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')].map(cb => cb.value);
+    if (!secilen.length) { showToast('En az bir belge seçin', 'warning'); return; }
+    overlay.remove();
+    await cokluBelgeIndir(secilen);
+  };
+}
+
+async function cokluBelgeIndir(secilen) {
+  const proje = tumProjeler.find(p => p.id === currentBelgelerProjeId);
+  if (!proje) return;
+
+  const belgeMap = {
+    'yaklasik-maliyet': { render: () => renderYaklasikMaliyet(proje, referans), landscape: true },
+    'teklif-tutanagi': { render: () => renderTeklifTutanagi(proje, referans), landscape: true },
+    'sozlesme':         { render: () => renderSozlesme(proje, referans), landscape: false, sozlesme: true },
+    'bitti-tutanagi':   { render: () => renderBittiTutanagi(proje, referans), landscape: false },
+    'hakedis-raporu':   { render: () => renderHakedisRaporu(proje, referans), landscape: false }
+  };
+
+  const adlar = {
+    'yaklasik-maliyet': 'Yaklaşık Maliyet',
+    'teklif-tutanagi':  'Teklif Tutanağı',
+    'sozlesme':         'Sözleşme',
+    'bitti-tutanagi':   'Bitti Tutanağı',
+    'hakedis-raporu':   'Hakediş Raporu'
+  };
+
+  showToast(`${secilen.length} belge indiriliyor...`, 'info');
+
+  for (const belgeId of secilen) {
+    const b = belgeMap[belgeId];
+    if (!b) continue;
+    const dosyaAdi = `${proje.isAdi || 'Belge'} - ${adlar[belgeId]}`;
+    await belgePdfIndir(b.render(), b.landscape || false, b.sozlesme || false, dosyaAdi);
+  }
+
+  showToast('Belgeler indirildi!', 'success');
+}
+
 const AVATARS = [
   'avatar1','avatar2','avatar3','avatar4','avatar5','avatar6'
 ];
@@ -1077,6 +1175,7 @@ async function renderBelgelerPage() {
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar">
       <button class="btn btn-primary" onclick="yazdirBelge()">&#128424; Yazdır</button>
+      <button class="btn btn-success" onclick="acBelgeIndirModal()" style="background:#2563eb;border-color:#2563eb">&#128196; İndir</button>
       <button class="btn btn-success" onclick="pdfIndirBelge()" style="background:#16a34a;border-color:#16a34a;display:none">&#128196; PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
