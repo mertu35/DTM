@@ -1,6 +1,11 @@
 // ===================== UTILS.JS =====================
 // Tarih, para, sayıdan yazıya çevirme yardımcıları
 
+// HTML attribute içinde güvenli kullanım için escape (XSS önlemi)
+function escAttr(str) {
+  return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);

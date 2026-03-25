@@ -1689,6 +1689,9 @@ async function gonderiOnayla(projeId) {
 async function belgeyeGit(projeId) {
   try {
     const doc = await getProjeFromCloud(projeId);
+    if (currentDTMUser?.role === 'gerceklestirmeci' && doc.atananGerceklestirmeciUid !== auth.currentUser?.uid) {
+      showToast('Bu projeye erişim yetkiniz yok.', 'error'); return;
+    }
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
     currentProjeStatus = doc.status || 'onaylandi';
@@ -1989,7 +1992,7 @@ async function renderProjelerimPage() {
 
     const projeKart = (p) => {
       const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
-      const isAdiSafe = (p.isAdi||'').replace(/'/g,'');
+      const isAdiSafe = escAttr(p.isAdi);
       const kilitli = p.locked === true;
       const gonderildi = p.status === 'gonderildi' || p.status === 'onaylandi';
 
@@ -2099,7 +2102,7 @@ async function renderGonderilenProjelerPage() {
     const projeKart = (p, butonlar) => {
       const tarih = p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') :
                     p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
-      const isAdiSafe = (p.isAdi||'').replace(/'/g,'');
+      const isAdiSafe = escAttr(p.isAdi);
       return `<div class="ky-proje-item">
         <div class="ky-proje-info">
           <div class="ky-proje-name"><span class="ky-proje-dot"></span>${p.isAdi || '(İsimsiz)'}</div>
@@ -2481,6 +2484,9 @@ async function gcOnayBilgiKaydet() {
 async function gerceklestirmeciBelgelerProjeAc(projeId) {
   try {
     const doc = await getProjeFromCloud(projeId);
+    if (doc.atananGerceklestirmeciUid !== auth.currentUser?.uid) {
+      showToast('Bu projeye erişim yetkiniz yok.', 'error'); return;
+    }
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
     currentProjeStatus = doc.status || 'onaylandi';
@@ -2686,15 +2692,15 @@ function renderProjeOzetPage() {
       ${currentDTMUser?.role !== 'gerceklestirmeci' ? `
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;padding-bottom:32px">
         ${currentProjeStatus === 'onaylandi' ? `
-        <button onclick="onayiKaldirClick('${currentCloudProjeId}', '${(p.isAdi||'').replace(/'/g,'')}')"
+        <button onclick="onayiKaldirClick('${currentCloudProjeId}', '${escAttr(p.isAdi)}')"
           style="padding:10px 24px;background:#fff;border:1px solid #dc2626;color:#dc2626;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ✕ Onayı Kaldır
         </button>` : `
-        <button onclick="geriGonderClick('${currentCloudProjeId}', '${(p.isAdi||'').replace(/'/g,'')}')"
+        <button onclick="geriGonderClick('${currentCloudProjeId}', '${escAttr(p.isAdi)}')"
           style="padding:10px 24px;background:#fff;border:1px solid #dc2626;color:#dc2626;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ↩ Geri Gönder
         </button>
-        <button onclick="onaylaClick('${currentCloudProjeId}', '${(p.isAdi||'').replace(/'/g,'')}')"
+        <button onclick="onaylaClick('${currentCloudProjeId}', '${escAttr(p.isAdi)}')"
           style="padding:10px 24px;background:#16a34a;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ✓ Onayla
         </button>`}
@@ -2780,7 +2786,7 @@ async function renderOnayliBelgelerPage() {
       listeEl.innerHTML = `<div class="ky-proje-grid">
         ${liste.map(p => {
           const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
-          const adAdiSafe = (p.isAdi||'(İsimsiz)').replace(/'/g,'\\\'');
+          const adAdiSafe = escAttr(p.isAdi || '(İsimsiz)');
           return `<div class="ky-proje-item" style="cursor:pointer" onclick="onayliBelgelerProjeAc('${p.id}')">
             <div class="ky-proje-info">
               <div class="ky-proje-name"><span class="ky-proje-dot" style="background:#16a34a"></span>${p.isAdi || '(İsimsiz)'}</div>
