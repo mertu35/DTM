@@ -919,6 +919,15 @@ function belgePdfIndir(html, landscape = false, sozlesme = false, dosyaAdi = 'be
     </div>`;
   document.body.appendChild(container);
 
+  // html2canvas border-collapse fix: inline border stillerini zorla uygula
+  container.querySelectorAll('table').forEach(t => {
+    t.style.borderCollapse = 'collapse';
+    t.style.border = '1px solid #000';
+    t.querySelectorAll('th, td').forEach(cell => {
+      cell.style.border = '1px solid #000';
+    });
+  });
+
   const opts = {
     margin: 0,
     filename: dosyaAdi + '.pdf',
