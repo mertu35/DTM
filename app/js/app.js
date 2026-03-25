@@ -2242,7 +2242,7 @@ async function renderGerceklestirmeciBelgelerPage() {
 
   try {
     const tumProjeler = await getUserProjeler();
-    const projeler = tumProjeler.filter(p => ['gonderildi', 'onaylandi', 'geri_gonderildi'].includes(p.status));
+    const projeler = tumProjeler.filter(p => ['gonderildi', 'onaylandi'].includes(p.status));
     const listEl = document.getElementById('gerceklestirmeciBelgeList');
     if (!listEl) return;
 
