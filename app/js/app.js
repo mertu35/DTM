@@ -1346,9 +1346,19 @@ async function renderBelgelerPage() {
     </div>
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar">
-      <button class="btn btn-primary" onclick="yazdirBelge()">&#128424; Yazdır</button>
-      <button class="btn btn-success" onclick="acBelgeIndirModal()" style="background:#2563eb;border-color:#2563eb">&#128196; İndir</button>
-      <button class="btn btn-success" onclick="pdfIndirBelge()" style="background:#16a34a;border-color:#16a34a;display:none">&#128196; PDF İndir</button>
+      <button onclick="yazdirBelge()"
+        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
+        onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+        Yazdır
+      </button>
+      <button onclick="acBelgeIndirModal()"
+        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,0.35)"
+        onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        İndir
+      </button>
+      <button onclick="pdfIndirBelge()" style="display:none">PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
@@ -2780,9 +2790,19 @@ function renderGerceklestirmeciBelgelerView(main) {
     </div>
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar">
-      <button class="btn btn-primary" onclick="gerceklestirmeciBelgeYazdir()">🖨️ Yazdır</button>
-      <button class="btn btn-success" onclick="acGerceklestirmeciIndirModal()" style="background:#2563eb;border-color:#2563eb">&#128196; İndir</button>
-      <button class="btn btn-success" onclick="gerceklestirmeciBelgePdfIndir()" style="background:#16a34a;border-color:#16a34a;display:none">&#128196; PDF İndir</button>
+      <button onclick="gerceklestirmeciBelgeYazdir()"
+        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
+        onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+        Yazdır
+      </button>
+      <button onclick="acGerceklestirmeciIndirModal()"
+        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,0.35)"
+        onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        İndir
+      </button>
+      <button onclick="gerceklestirmeciBelgePdfIndir()" style="display:none">PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
