@@ -94,7 +94,7 @@ function showPrompt(baslik, placeholder = '') {
     function kapat(sonuc) { overlay.remove(); resolve(sonuc); }
     document.getElementById('dtmPromptOnay').onclick = () => {
       const val = document.getElementById('dtmPromptInput').value.trim();
-      kapat(val || null);
+      kapat(val);
     };
     document.getElementById('dtmPromptIptal').onclick = () => kapat(null);
     overlay.addEventListener('click', e => { if (e.target === overlay) kapat(null); });
