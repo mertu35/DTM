@@ -2431,10 +2431,10 @@ function renderGerceklestirmeciBelgelerView(main) {
 
   main.innerHTML = `
     <div class="page-header" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-      <button onclick="currentGerceklestirmeciTab='proje-detay';renderPage();"
+      <button onclick="currentGerceklestirmeciBelgelerProjeId=null;renderPage();"
         style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:6px 12px;
                cursor:pointer;font-size:13px;color:var(--gray-600);white-space:nowrap;margin-top:4px">
-        ← Proje Detayı
+        ← Proje Listesi
       </button>
       <div>
         <h2>📄 Belgeler</h2>
@@ -2484,7 +2484,7 @@ async function gerceklestirmeciBelgelerProjeAc(projeId) {
     currentProjeStatus = doc.status || 'onaylandi';
     currentGerceklestirmeciBelgelerProjeId = projeId;
     currentGerceklestirmeciBelge = 'dt-onay-belgesi';
-    currentGerceklestirmeciTab = 'proje-detay';
+    currentGerceklestirmeciTab = 'belgeler';
     currentPage = 'gerceklestirmeci-belgeler';
     renderPage();
   } catch(e) {
