@@ -128,8 +128,7 @@ function showConfirm(mesaj, onayBtn = 'Evet', iptalBtn = 'İptal') {
 }
 
 function acBelgeIndirModal() {
-  const proje = tumProjeler.find(p => p.id === currentBelgelerProjeId);
-  if (!proje) return;
+  if (!proje || !currentBelgelerProjeId) return;
 
   const mevcut = document.getElementById('dtmBelgeIndirModal');
   if (mevcut) mevcut.remove();
@@ -194,8 +193,7 @@ function acBelgeIndirModal() {
 }
 
 async function cokluBelgeIndir(secilen) {
-  const proje = tumProjeler.find(p => p.id === currentBelgelerProjeId);
-  if (!proje) return;
+  if (!proje || !currentBelgelerProjeId) { showToast('Proje bulunamadı', 'error'); return; }
 
   const belgeMap = {
     'yaklasik-maliyet': { render: () => renderYaklasikMaliyet(proje, referans), landscape: true },
