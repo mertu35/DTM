@@ -180,14 +180,17 @@ async function onAuthReady(user) {
   const lo = document.getElementById('loadingOverlay');
   if (lo) lo.style.display = 'none';
   if (user && currentDTMUser) {
-    // Referansı buluttan yükle
+    // Referansı buluttan yükle (kullanıcı + global)
     try {
-      const cloudRef = await loadReferansFromCloud();
-      if (cloudRef) {
-        referans = Object.assign(getDefaultReferans(), cloudRef);
-      } else {
-        referans = loadReferans();
-        await saveReferansToCloud(referans);
+      const [cloudRef, globalRef] = await Promise.all([
+        loadReferansFromCloud(),
+        loadGlobalReferansFromCloud().catch(() => null)
+      ]);
+      referans = Object.assign(getDefaultReferans(), cloudRef || {});
+      if (!cloudRef) await saveReferansToCloud(referans);
+      // Global alanları birleştir (globalReferans varsa üzerine yaz)
+      if (globalRef) {
+        GLOBAL_REF_FIELDS.forEach(f => { if (globalRef[f]) referans[f] = globalRef[f]; });
       }
     } catch(e) {
       referans = loadReferans();
@@ -1231,7 +1234,7 @@ function renderVeriMerkeziPage() {
           </span>`).join('')}
         <div style="margin-top:8px;display:flex;gap:6px">
           <input type="text" id="yeniIdare" placeholder="Yeni idare adı" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px;flex:1">
-          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniIdare').value;if(v){referans.idareList.push(v);saveReferans(referans);renderPage();}">Ekle</button>
+          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniIdare').value;if(v){referans.idareList.push(v);saveGlobalReferans(referans);renderPage();}">Ekle</button>
         </div>
       </div>
     </div>
@@ -1247,7 +1250,7 @@ function renderVeriMerkeziPage() {
           </span>`).join('')}
         <div style="margin-top:8px;display:flex;gap:6px">
           <input type="text" id="yeniMudurluk" placeholder="Yeni müdürlük adı" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px;flex:1">
-          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniMudurluk').value;if(v){referans.mudurlukler.push(v);saveReferans(referans);renderPage();}">Ekle</button>
+          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniMudurluk').value;if(v){referans.mudurlukler.push(v);saveGlobalReferans(referans);renderPage();}">Ekle</button>
         </div>
       </div>
     </div>
@@ -1260,7 +1263,7 @@ function renderVeriMerkeziPage() {
         ${ilceRows}
         <div style="margin-top:8px;display:flex;gap:6px">
           <input type="text" id="yeniIlce" placeholder="Yeni ilçe adı" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px">
-          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniIlce').value;if(v){referans.ilceler.push(v);saveReferans(referans);renderPage();}">Ekle</button>
+          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniIlce').value;if(v){referans.ilceler.push(v);saveGlobalReferans(referans);renderPage();}">Ekle</button>
         </div>
       </div>
     </div>
@@ -1276,18 +1279,18 @@ function onRefChange(list, index, field, value) {
   } else {
     referans[list][index] = value;
   }
-  saveReferans(referans);
+  GLOBAL_REF_FIELDS.includes(list) ? saveGlobalReferans(referans) : saveReferans(referans);
 }
 
 function onRefDelete(list, index) {
   referans[list].splice(index, 1);
-  saveReferans(referans);
+  GLOBAL_REF_FIELDS.includes(list) ? saveGlobalReferans(referans) : saveReferans(referans);
   renderPage();
 }
 
 function onRefAdd(list, item) {
   referans[list].push(item);
-  saveReferans(referans);
+  GLOBAL_REF_FIELDS.includes(list) ? saveGlobalReferans(referans) : saveReferans(referans);
   renderPage();
 }
 
