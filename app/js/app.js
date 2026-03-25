@@ -12,6 +12,7 @@ let currentBelgelerProjeId = null;
 let currentGerceklestirmeciBelgelerProjeId = null;
 let currentGerceklestirmeciBelge = 'dt-onay-belgesi'; // varsayılan: D.T. Onay Belgesi
 let currentGerceklestirmeciTab = 'projeler';
+let currentGerceklestirmeciReadOnly = false;
 let currentOnayliBelgelerProjeId = null;
 
 // ===== ROL YARDIMCISI =====
@@ -2624,11 +2625,30 @@ async function renderGerceklestirmeciBelgelerPage() {
 
   try {
     const tumProjeler = await getUserProjeler();
-    const projeler = tumProjeler.filter(p => ['gonderildi', 'onaylandi'].includes(p.status));
+    const aktif = tumProjeler.filter(p => p.status === 'gonderildi');
+    const onaylananlar = tumProjeler.filter(p => ['onaylandi', 'arsivlendi'].includes(p.status));
     const listEl = document.getElementById('gerceklestirmeciBelgeList');
     if (!listEl) return;
 
-    if (projeler.length === 0) {
+    const projeKarti = (p, readOnly) => {
+      const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : (p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') : '-');
+      const btn = readOnly
+        ? `<button class="ky-btn-open" style="background:#6b7280" onclick="gerceklestirmeciBelgelerProjeAc('${p.id}',true)">Belgeleri Gör</button>`
+        : `<button class="ky-btn-open" onclick="gerceklestirmeciBelgelerProjeAc('${p.id}')">Belge Oluştur</button>`;
+      return `<div class="ky-proje-item">
+        <div class="ky-proje-info">
+          <div class="ky-proje-name">${p.isAdi || '(İsimsiz)'}</div>
+          <div class="ky-proje-meta">
+            <span class="ky-proje-user">&#128100; ${p.userDisplayName || '-'}</span>
+            <span class="ky-proje-date">&#128197; ${tarih}</span>
+            ${getStatusBadge(p.status)}
+          </div>
+        </div>
+        <div class="ky-proje-actions">${btn}</div>
+      </div>`;
+    };
+
+    if (aktif.length === 0 && onaylananlar.length === 0) {
       listEl.innerHTML = `
         <div style="text-align:center;padding:60px 20px;color:var(--gray-400)">
           <div style="font-size:48px;margin-bottom:16px">&#128196;</div>
@@ -2638,24 +2658,16 @@ async function renderGerceklestirmeciBelgelerPage() {
       return;
     }
 
-    listEl.innerHTML = `<div class="ky-proje-grid">
-      ${projeler.map(p => {
-        const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : (p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') : '-');
-        return `<div class="ky-proje-item">
-          <div class="ky-proje-info">
-            <div class="ky-proje-name">${p.isAdi || '(İsimsiz)'}</div>
-            <div class="ky-proje-meta">
-              <span class="ky-proje-user">&#128100; ${p.userDisplayName || '-'}</span>
-              <span class="ky-proje-date">&#128197; ${tarih}</span>
-              ${getStatusBadge(p.status)}
-            </div>
-          </div>
-          <div class="ky-proje-actions">
-            <button class="ky-btn-open" onclick="gerceklestirmeciBelgelerProjeAc('${p.id}')">Belge Oluştur</button>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
+    let html = '';
+    if (aktif.length > 0) {
+      html += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Aktif Projeler</h3>
+        <div class="ky-proje-grid" style="margin-bottom:28px">${aktif.map(p => projeKarti(p, false)).join('')}</div>`;
+    }
+    if (onaylananlar.length > 0) {
+      html += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Onayladıklarım</h3>
+        <div class="ky-proje-grid">${onaylananlar.map(p => projeKarti(p, true)).join('')}</div>`;
+    }
+    listEl.innerHTML = html;
   } catch(e) {
     const listEl = document.getElementById('gerceklestirmeciBelgeList');
     if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${e.message}</div>`;
@@ -2814,14 +2826,14 @@ function renderGerceklestirmeciBelgelerView(main) {
 
   main.innerHTML = `
     <div class="page-header" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-      <button onclick="currentGerceklestirmeciBelgelerProjeId=null;renderPage();"
+      <button onclick="currentGerceklestirmeciBelgelerProjeId=null;currentGerceklestirmeciReadOnly=false;renderPage();"
         style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:6px 12px;
                cursor:pointer;font-size:13px;color:var(--gray-600);white-space:nowrap;margin-top:4px">
         ← Proje Listesi
       </button>
       <div>
-        <h2>📄 Belgeler</h2>
-        <p style="display:flex;align-items:center;gap:8px">${proje.isAdi || ''} ${getStatusBadge('onaylandi')}</p>
+        <h2>📄 Belgeler${currentGerceklestirmeciReadOnly ? ' <span style="font-size:12px;font-weight:600;color:#6b7280;background:#f3f4f6;padding:3px 8px;border-radius:6px;vertical-align:middle">Salt Okunur</span>' : ''}</h2>
+        <p style="display:flex;align-items:center;gap:8px">${proje.isAdi || ''} ${getStatusBadge(currentProjeStatus || 'onaylandi')}</p>
       </div>
     </div>
     <div class="belge-tabs">${tabs}</div>
@@ -2871,7 +2883,7 @@ async function gcOnayBilgiKaydet() {
   }
 }
 
-async function gerceklestirmeciBelgelerProjeAc(projeId) {
+async function gerceklestirmeciBelgelerProjeAc(projeId, readOnly = false) {
   try {
     const doc = await getProjeFromCloud(projeId);
     if (doc.atananGerceklestirmeciUid !== auth.currentUser?.uid) {
@@ -2882,7 +2894,8 @@ async function gerceklestirmeciBelgelerProjeAc(projeId) {
     currentProjeStatus = doc.status || 'onaylandi';
     currentGerceklestirmeciBelgelerProjeId = projeId;
     currentGerceklestirmeciBelge = 'dt-onay-belgesi';
-    currentGerceklestirmeciTab = 'belgeler';
+    currentGerceklestirmeciReadOnly = readOnly;
+    currentGerceklestirmeciTab = readOnly ? 'belgeler' : 'projeler';
     currentPage = 'gerceklestirmeci-belgeler';
     renderPage();
   } catch(e) {
