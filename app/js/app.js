@@ -2241,23 +2241,22 @@ async function renderGerceklestirmeciBelgelerPage() {
 
   try {
     const projeler = await getUserProjeler();
-    const onaylananlar = projeler.filter(p => p.status === 'onaylandi');
     const listEl = document.getElementById('gerceklestirmeciBelgeList');
     if (!listEl) return;
 
-    if (onaylananlar.length === 0) {
+    if (projeler.length === 0) {
       listEl.innerHTML = `
         <div style="text-align:center;padding:60px 20px;color:var(--gray-400)">
           <div style="font-size:48px;margin-bottom:16px">&#128196;</div>
-          <div style="font-size:15px;font-weight:600;margin-bottom:8px">Henüz onaylanan proje yok</div>
-          <div style="font-size:13px">Belgeler oluşturmak için proje onaylanmalıdır.</div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:8px">Henüz proje yok</div>
+          <div style="font-size:13px">Belgeler oluşturmak için önce proje oluşturulmalıdır.</div>
         </div>`;
       return;
     }
 
     listEl.innerHTML = `<div class="ky-proje-grid">
-      ${onaylananlar.map(p => {
-        const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
+      ${projeler.map(p => {
+        const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : (p.olusturulduAt?.toDate ? p.olusturulduAt.toDate().toLocaleDateString('tr-TR') : '-');
         return `<div class="ky-proje-item">
           <div class="ky-proje-info">
             <div class="ky-proje-name">${p.isAdi || '(İsimsiz)'}</div>
@@ -2299,7 +2298,7 @@ function renderGerceklestirmeciProjeDetay(main) {
       </button>
       <div>
         <h2>📋 Proje Detayı</h2>
-        <p style="display:flex;align-items:center;gap:8px">${proje.isAdi || ''} ${getStatusBadge('onaylandi')}</p>
+        <p style="display:flex;align-items:center;gap:8px">${proje.isAdi || ''} ${getStatusBadge(proje.status)}</p>
       </div>
     </div>
 
