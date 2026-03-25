@@ -809,7 +809,7 @@ function renderHakedisRaporu(proje, referans) {
         </tbody>
       </table>
 
-      <div style="margin-top:40px;display:flex;justify-content:space-between;align-items:flex-end">
+      <div style="margin-top:40px;display:flex;justify-content:space-between;align-items:flex-start">
         <div style="text-align:center;width:30%">
           <div style="font-weight:bold;padding-bottom:6px">YÜKLENİCİ</div>
           <div style="height:50px"></div>
@@ -829,7 +829,7 @@ function renderHakedisRaporu(proje, referans) {
 
       <div style="text-align:center;margin-top:40px">
         <p style="font-weight:bold;letter-spacing:2px">ONAYLAYAN</p>
-        <p style="margin-top:40px"><strong>${proje.onaylayanAmir.ad}</strong></p>
+        <p style="margin-top:20px"><strong>${proje.onaylayanAmir.ad}</strong></p>
         <p style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</p>
       </div>
     </div>
