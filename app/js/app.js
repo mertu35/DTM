@@ -2111,18 +2111,50 @@ async function arsivdenCikarClick(projeId, isAdi) {
 }
 
 async function adminGeriGonderClick(projeId, isAdi) {
-  const not = await showPrompt(`"${isAdi}" projesi kullanıcıya geri gönderilecek.<br>Geri gönderme nedeninizi yazın:`, 'Nedeninizi buraya yazın...');
-  if (not === null) return;
-  if (!not.trim()) { showToast('Lütfen bir not ekleyin.', 'warning'); return; }
   try {
-    await db.collection('projeler').doc(projeId).update({
-      status: 'geri_gonderildi',
-      geriGondermeNotu: not.trim(),
-      geriGonderenAd: currentDTMUser?.displayName || 'Yönetici',
-      onaylandiAt: null,
-      onaylandiBy: null
+    const doc = await db.collection('projeler').doc(projeId).get();
+    const data = doc.data();
+    const sahipAd = data.userDisplayName || 'Proje Sahibi';
+    const gcAd = data.atananGerceklestirmeciAd || null;
+
+    // Kime gönderileceğini sor
+    const hedef = await new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999';
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:16px;padding:28px 32px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+          <h3 style="margin:0 0 8px;font-size:17px;color:#111">Geri Gönder</h3>
+          <p style="margin:0 0 20px;font-size:13px;color:#6b7280">Proje kime gönderilsin?</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button id="ggHedefSahip" style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px">
+              <div style="font-weight:600;color:#111">👤 ${sahipAd}</div>
+              <div style="font-size:12px;color:#6b7280;margin-top:2px">Proje sahibine geri gönder</div>
+            </button>
+            ${gcAd ? `<button id="ggHedefGc" style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px">
+              <div style="font-weight:600;color:#111">👷 ${gcAd}</div>
+              <div style="font-size:12px;color:#6b7280;margin-top:2px">Gerçekleştirmeciye geri gönder</div>
+            </button>` : ''}
+          </div>
+          <button id="ggHedefIptal" style="margin-top:16px;width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb;cursor:pointer;font-size:13px;color:#6b7280">İptal</button>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector('#ggHedefSahip').onclick = () => { document.body.removeChild(overlay); resolve('sahip'); };
+      if (gcAd) overlay.querySelector('#ggHedefGc').onclick = () => { document.body.removeChild(overlay); resolve('gerceklestirmeci'); };
+      overlay.querySelector('#ggHedefIptal').onclick = () => { document.body.removeChild(overlay); resolve(null); };
     });
-    showToast('Proje kullanıcıya geri gönderildi.', 'success');
+
+    if (!hedef) return;
+
+    const not = await showPrompt(`Geri gönderme nedeninizi yazın:`, 'Nedeninizi buraya yazın...');
+    if (not === null) return;
+    if (!not.trim()) { showToast('Lütfen bir not ekleyin.', 'warning'); return; }
+
+    const guncelleme = hedef === 'sahip'
+      ? { status: 'geri_gonderildi', geriGonderNotu: not.trim(), geriGonderenAd: currentDTMUser?.displayName || 'Yönetici', onaylandiAt: null, onaylandiBy: null }
+      : { status: 'gonderildi', geriGonderNotu: not.trim(), geriGonderenAd: currentDTMUser?.displayName || 'Yönetici', onaylandiAt: null, onaylandiBy: null };
+
+    await db.collection('projeler').doc(projeId).update(guncelleme);
+    showToast('Proje geri gönderildi.', 'success');
     renderPage();
   } catch(e) { showToast('Hata: ' + e.message, 'error'); }
 }
