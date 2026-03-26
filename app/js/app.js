@@ -493,7 +493,11 @@ async function onAuthReady(user) {
     checkDuyurular();
     if (currentDTMUser.role === 'gerceklestirmeci') {
       checkGonderilenProjeler();
-      setInterval(checkGonderilenProjeler, 30000); // 30 saniyede bir kontrol
+      setInterval(checkGonderilenProjeler, 30000);
+    }
+    if (['admin', 'superadmin'].includes(currentDTMUser.role)) {
+      checkOnayliProjeler();
+      setInterval(checkOnayliProjeler, 30000);
     }
     if (currentDTMUser.role === 'user') checkGeriGonderiend();
   } else {
@@ -2062,9 +2066,45 @@ async function arsivleClick(projeId, isAdi) {
 }
 
 async function arsivdenCikarClick(projeId, isAdi) {
-  if (!await showConfirm(`"${isAdi}" projesi arşivden çıkarılacak ve işlem bekleyenlere alınacak.`, 'Arşivden Çıkar')) return;
   try {
-    await db.collection('projeler').doc(projeId).update({ status: 'onaylandi', arsivlendiAt: null });
+    const doc = await db.collection('projeler').doc(projeId).get();
+    const data = doc.data();
+    const sahipAd = data.userDisplayName || 'Proje Sahibi';
+    const gcAd = data.atananGerceklestirmeciAd || null;
+
+    // Kime gönderileceğini soran modal
+    const hedef = await new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999';
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:16px;padding:28px 32px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+          <h3 style="margin:0 0 8px;font-size:17px;color:#111">Arşivden Çıkar</h3>
+          <p style="margin:0 0 20px;font-size:13px;color:#6b7280">Proje kime gönderilsin?</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button id="arsivHedefSahip" style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px;transition:border-color 0.15s">
+              <div style="font-weight:600;color:#111">👤 ${sahipAd}</div>
+              <div style="font-size:12px;color:#6b7280;margin-top:2px">Proje sahibine geri gönder (geri_gonderildi)</div>
+            </button>
+            ${gcAd ? `<button id="arsivHedefGc" style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px;transition:border-color 0.15s">
+              <div style="font-weight:600;color:#111">👷 ${gcAd}</div>
+              <div style="font-size:12px;color:#6b7280;margin-top:2px">Gerçekleştirmeciye geri gönder (gonderildi)</div>
+            </button>` : ''}
+          </div>
+          <button id="arsivHedefIptal" style="margin-top:16px;width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb;cursor:pointer;font-size:13px;color:#6b7280">İptal</button>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector('#arsivHedefSahip').onclick = () => { document.body.removeChild(overlay); resolve('sahip'); };
+      if (gcAd) overlay.querySelector('#arsivHedefGc').onclick = () => { document.body.removeChild(overlay); resolve('gerceklestirmeci'); };
+      overlay.querySelector('#arsivHedefIptal').onclick = () => { document.body.removeChild(overlay); resolve(null); };
+    });
+
+    if (!hedef) return;
+
+    const guncelleme = hedef === 'sahip'
+      ? { status: 'geri_gonderildi', arsivlendiAt: null, geriGonderNotu: 'Arşivden çıkarıldı.', geriGonderenAd: currentDTMUser?.displayName || 'Yönetici' }
+      : { status: 'gonderildi', arsivlendiAt: null };
+
+    await db.collection('projeler').doc(projeId).update(guncelleme);
     showToast('Proje arşivden çıkarıldı.', 'success');
     renderPage();
   } catch(e) { showToast('Hata: ' + e.message, 'error'); }
@@ -3122,11 +3162,7 @@ function renderProjeOzetPage() {
 
       ${currentDTMUser?.role !== 'gerceklestirmeci' ? `
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;padding-bottom:32px">
-        ${currentProjeStatus === 'onaylandi' ? `
-        <button onclick="onayiKaldirClick('${currentCloudProjeId}', '${escAttr(p.isAdi)}')"
-          style="padding:10px 24px;background:#fff;border:1px solid #dc2626;color:#dc2626;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
-          ✕ Onayı Kaldır
-        </button>` : `
+        ${currentProjeStatus !== 'onaylandi' ? `
         <button onclick="geriGonderClick('${currentCloudProjeId}', '${escAttr(p.isAdi)}')"
           style="padding:10px 24px;background:#fff;border:1px solid #dc2626;color:#dc2626;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ↩ Geri Gönder
@@ -3134,7 +3170,7 @@ function renderProjeOzetPage() {
         <button onclick="onaylaClick('${currentCloudProjeId}', '${escAttr(p.isAdi)}')"
           style="padding:10px 24px;background:#16a34a;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ✓ Onayla
-        </button>`}
+        </button>` : ''}
       </div>` : '<div style="padding-bottom:32px"></div>'}
     </div>`;
 }
@@ -3168,6 +3204,15 @@ async function renderOnayliBelgelerPage() {
   if (currentOnayliBelgelerProjeId) {
     renderProjeOzetPage();
     return;
+  }
+
+  // Ziyaret zamanını kaydet, badge sıfırla
+  if (currentDTMUser?.uid) {
+    db.collection('users').doc(currentDTMUser.uid).update({
+      lastOnayliVisit: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(() => {});
+    const badge = document.getElementById('onayliBadge');
+    if (badge) badge.style.display = 'none';
   }
 
   // Proje listesi
@@ -3566,6 +3611,27 @@ async function checkGonderilenProjeler() {
       return gonderildiAt > lastVisit;
     }).length;
     const badge = document.getElementById('gonderilenBadge');
+    if (badge) {
+      badge.textContent = yeniSayi;
+      badge.style.display = yeniSayi > 0 ? 'inline-flex' : 'none';
+    }
+  } catch(e) {}
+}
+
+async function checkOnayliProjeler() {
+  try {
+    const uid = currentDTMUser?.uid;
+    if (!uid) return;
+    const [snap, userSnap] = await Promise.all([
+      db.collection('projeler').where('status', '==', 'onaylandi').get(),
+      db.collection('users').doc(uid).get()
+    ]);
+    const lastVisit = userSnap.data()?.lastOnayliVisit?.toMillis?.() || 0;
+    const yeniSayi = snap.docs.filter(d => {
+      const onaylandiAt = d.data().onaylandiAt?.toMillis?.() || 0;
+      return onaylandiAt > lastVisit;
+    }).length;
+    const badge = document.getElementById('onayliBadge');
     if (badge) {
       badge.textContent = yeniSayi;
       badge.style.display = yeniSayi > 0 ? 'inline-flex' : 'none';
