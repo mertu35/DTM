@@ -2604,6 +2604,10 @@ async function renderGerceklestirmeciBelgelerPage() {
 
   // Proje seçiliyse tab'a göre görünümü belirle
   if (currentGerceklestirmeciBelgelerProjeId) {
+    // Onaylı/arşivlenmiş projeler için her zaman belgeler görünümü
+    if (['onaylandi', 'arsivlendi'].includes(currentProjeStatus)) {
+      currentGerceklestirmeciTab = 'belgeler';
+    }
     if (currentGerceklestirmeciTab === 'belgeler') {
       renderGerceklestirmeciBelgelerView(main);
     } else {
@@ -3035,7 +3039,7 @@ function renderProjeOzetPage() {
       </table>`)}
 
       ${currentDTMUser?.role === 'gerceklestirmeci' ? (() => {
-        const ro = currentProjeStatus === 'onaylandi';
+        const ro = currentProjeStatus !== 'gonderildi';
         const dis = ro ? 'disabled style="background:#f3f4f6;color:#6b7280;cursor:not-allowed"' : '';
         const roInp = ro ? 'readonly style="background:#f3f4f6;color:#6b7280"' : '';
         return `
