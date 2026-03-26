@@ -3160,9 +3160,8 @@ function renderProjeOzetPage() {
         </table>`);
       })() : ''}
 
-      ${currentDTMUser?.role !== 'gerceklestirmeci' ? `
+      ${currentDTMUser?.role !== 'gerceklestirmeci' && !currentOnayliBelgelerProjeId && !['onaylandi','arsivlendi'].includes(currentProjeStatus) ? `
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;padding-bottom:32px">
-        ${currentProjeStatus !== 'onaylandi' ? `
         <button onclick="geriGonderClick('${currentCloudProjeId}', '${escAttr(p.isAdi)}')"
           style="padding:10px 24px;background:#fff;border:1px solid #dc2626;color:#dc2626;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ↩ Geri Gönder
@@ -3170,7 +3169,7 @@ function renderProjeOzetPage() {
         <button onclick="onaylaClick('${currentCloudProjeId}', '${escAttr(p.isAdi)}')"
           style="padding:10px 24px;background:#16a34a;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ✓ Onayla
-        </button>` : ''}
+        </button>
       </div>` : '<div style="padding-bottom:32px"></div>'}
     </div>`;
 }
