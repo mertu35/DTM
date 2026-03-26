@@ -2101,7 +2101,7 @@ async function arsivdenCikarClick(projeId, isAdi) {
     if (!hedef) return;
 
     const guncelleme = hedef === 'sahip'
-      ? { status: 'geri_gonderildi', arsivlendiAt: null, geriGonderNotu: 'Arşivden çıkarıldı.', geriGonderenAd: currentDTMUser?.displayName || 'Yönetici' }
+      ? { status: 'geri_gonderildi', arsivlendiAt: null, geriGonderNot: 'Arşivden çıkarıldı.', geriGonderBy: currentDTMUser?.displayName || 'Yönetici' }
       : { status: 'gonderildi', arsivlendiAt: null };
 
     await db.collection('projeler').doc(projeId).update(guncelleme);
@@ -2150,8 +2150,8 @@ async function adminGeriGonderClick(projeId, isAdi) {
     if (!not.trim()) { showToast('Lütfen bir not ekleyin.', 'warning'); return; }
 
     const guncelleme = hedef === 'sahip'
-      ? { status: 'geri_gonderildi', geriGonderNotu: not.trim(), geriGonderenAd: currentDTMUser?.displayName || 'Yönetici', onaylandiAt: null, onaylandiBy: null }
-      : { status: 'gonderildi', geriGonderNotu: not.trim(), geriGonderenAd: currentDTMUser?.displayName || 'Yönetici', onaylandiAt: null, onaylandiBy: null };
+      ? { status: 'geri_gonderildi', geriGonderNot: not.trim(), geriGonderBy: currentDTMUser?.displayName || 'Yönetici', onaylandiAt: null, onaylandiBy: null }
+      : { status: 'gonderildi', geriGonderNot: not.trim(), geriGonderBy: currentDTMUser?.displayName || 'Yönetici', onaylandiAt: null, onaylandiBy: null };
 
     await db.collection('projeler').doc(projeId).update(guncelleme);
     showToast('Proje geri gönderildi.', 'success');
@@ -2564,6 +2564,10 @@ async function renderGonderilenProjelerPage() {
             <span class="ky-proje-date">📅 ${tarih}</span>
             ${getStatusBadge(p.status)}
           </div>
+          ${p.geriGonderNot ? `
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:7px 10px;margin-top:6px;font-size:12px;color:#991b1b">
+              <strong>${p.geriGonderBy || 'Yönetici'}:</strong> ${p.geriGonderNot}
+            </div>` : ''}
         </div>
         <div class="ky-proje-actions">${butonlar(p.id, isAdiSafe)}</div>
       </div>`;
