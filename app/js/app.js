@@ -2894,7 +2894,7 @@ async function gerceklestirmeciBelgelerProjeAc(projeId, readOnly = false) {
     currentGerceklestirmeciBelgelerProjeId = projeId;
     currentGerceklestirmeciBelge = 'dt-onay-belgesi';
     currentGerceklestirmeciReadOnly = readOnly;
-    currentGerceklestirmeciTab = readOnly ? 'belgeler' : 'projeler';
+    currentGerceklestirmeciTab = 'belgeler';
     currentPage = 'gerceklestirmeci-belgeler';
     renderPage();
   } catch(e) {
