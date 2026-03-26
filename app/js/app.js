@@ -491,7 +491,10 @@ async function onAuthReady(user) {
     updateLastLogin();
     init();
     checkDuyurular();
-    if (currentDTMUser.role === 'gerceklestirmeci') checkGonderilenProjeler();
+    if (currentDTMUser.role === 'gerceklestirmeci') {
+      checkGonderilenProjeler();
+      setInterval(checkGonderilenProjeler, 30000); // 30 saniyede bir kontrol
+    }
     if (currentDTMUser.role === 'user') checkGeriGonderiend();
   } else {
     document.getElementById('loginOverlay').style.display = 'flex';
@@ -2456,6 +2459,7 @@ async function renderProjelerimPage() {
 
 // ===================== GERÇEKLEŞTİRMECİ SAYFASI =====================
 async function renderGonderilenProjelerPage() {
+  checkGonderilenProjeler(); // Sayfaya her girişte badge güncelle
   const main = document.getElementById('mainContent');
   main.innerHTML = `
     <div class="page-header">
