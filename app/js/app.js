@@ -2083,11 +2083,11 @@ async function arsivdenCikarClick(projeId, isAdi) {
           <div style="display:flex;flex-direction:column;gap:10px">
             <button id="arsivHedefSahip" style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px;transition:border-color 0.15s">
               <div style="font-weight:600;color:#111">👤 ${sahipAd}</div>
-              <div style="font-size:12px;color:#6b7280;margin-top:2px">Proje sahibine geri gönder (geri_gonderildi)</div>
+              <div style="font-size:12px;color:#6b7280;margin-top:2px">Proje sahibine geri gönder</div>
             </button>
             ${gcAd ? `<button id="arsivHedefGc" style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px;transition:border-color 0.15s">
               <div style="font-weight:600;color:#111">👷 ${gcAd}</div>
-              <div style="font-size:12px;color:#6b7280;margin-top:2px">Gerçekleştirmeciye geri gönder (gonderildi)</div>
+              <div style="font-size:12px;color:#6b7280;margin-top:2px">Gerçekleştirmeciye geri gönder</div>
             </button>` : ''}
           </div>
           <button id="arsivHedefIptal" style="margin-top:16px;width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb;cursor:pointer;font-size:13px;color:#6b7280">İptal</button>
