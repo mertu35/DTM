@@ -3560,12 +3560,13 @@ async function checkGonderilenProjeler() {
     const snap = await db.collection('projeler').where('atananGerceklestirmeciUid', '==', uid).get();
     const gorulenler = (await db.collection('users').doc(uid).get()).data()?.gorulenProjeler || [];
     const yeniSayi = snap.docs.filter(d => d.data().status === 'gonderildi' && !gorulenler.includes(d.id)).length;
+    console.log('[Badge] toplam:', snap.docs.length, '| yeni:', yeniSayi, '| gorulenler:', gorulenler.length);
     const badge = document.getElementById('gonderilenBadge');
     if (badge) {
       badge.textContent = yeniSayi;
       badge.style.display = yeniSayi > 0 ? 'inline-flex' : 'none';
     }
-  } catch(e) {}
+  } catch(e) { console.error('[Badge] hata:', e); }
 }
 
 async function checkDuyurular() {
