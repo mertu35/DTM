@@ -2473,15 +2473,12 @@ async function renderGonderilenProjelerPage() {
     const bekleyenler = projeler.filter(p => p.status === 'gonderildi');
     const onaylananlar = projeler.filter(p => ['onaylandi', 'arsivlendi'].includes(p.status));
 
-    // Yeni gönderilenleri işaretle, badge sıfırla
-    if (bekleyenler.length > 0) {
-      const ids = bekleyenler.map(p => p.id);
-      db.collection('users').doc(currentDTMUser.uid).update({
-        gorulenProjeler: firebase.firestore.FieldValue.arrayUnion(...ids)
-      }).catch(() => {});
-      const badge = document.getElementById('gonderilenBadge');
-      if (badge) badge.style.display = 'none';
-    }
+    // Projeler sayfası ziyaret zamanını kaydet → badge sıfırlanır
+    db.collection('users').doc(currentDTMUser.uid).update({
+      lastGonderilenVisit: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(() => {});
+    const badge = document.getElementById('gonderilenBadge');
+    if (badge) badge.style.display = 'none';
 
     const projeKart = (p, butonlar) => {
       const tarih = p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') :
@@ -3557,16 +3554,23 @@ async function checkGonderilenProjeler() {
   try {
     const uid = currentDTMUser?.uid;
     if (!uid) return;
-    const snap = await db.collection('projeler').where('atananGerceklestirmeciUid', '==', uid).get();
-    const gorulenler = (await db.collection('users').doc(uid).get()).data()?.gorulenProjeler || [];
-    const yeniSayi = snap.docs.filter(d => d.data().status === 'gonderildi' && !gorulenler.includes(d.id)).length;
-    console.log('[Badge] toplam:', snap.docs.length, '| yeni:', yeniSayi, '| gorulenler:', gorulenler.length);
+    const [snap, userSnap] = await Promise.all([
+      db.collection('projeler').where('atananGerceklestirmeciUid', '==', uid).get(),
+      db.collection('users').doc(uid).get()
+    ]);
+    const lastVisit = userSnap.data()?.lastGonderilenVisit?.toMillis?.() || 0;
+    const yeniSayi = snap.docs.filter(d => {
+      const data = d.data();
+      if (data.status !== 'gonderildi') return false;
+      const gonderildiAt = data.gonderildiAt?.toMillis?.() || 0;
+      return gonderildiAt > lastVisit;
+    }).length;
     const badge = document.getElementById('gonderilenBadge');
     if (badge) {
       badge.textContent = yeniSayi;
       badge.style.display = yeniSayi > 0 ? 'inline-flex' : 'none';
     }
-  } catch(e) { console.error('[Badge] hata:', e); }
+  } catch(e) {}
 }
 
 async function checkDuyurular() {
