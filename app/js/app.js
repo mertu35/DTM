@@ -3547,9 +3547,11 @@ async function checkGeriGonderiend() {
 
 async function checkGonderilenProjeler() {
   try {
-    const snap = await db.collection('projeler').where('status', '==', 'gonderildi').get();
-    const gorulenler = (await db.collection('users').doc(currentDTMUser.uid).get()).data()?.gorulenProjeler || [];
-    const yeniSayi = snap.docs.filter(d => !gorulenler.includes(d.id)).length;
+    const uid = currentDTMUser?.uid;
+    if (!uid) return;
+    const snap = await db.collection('projeler').where('atananGerceklestirmeciUid', '==', uid).get();
+    const gorulenler = (await db.collection('users').doc(uid).get()).data()?.gorulenProjeler || [];
+    const yeniSayi = snap.docs.filter(d => d.data().status === 'gonderildi' && !gorulenler.includes(d.id)).length;
     const badge = document.getElementById('gonderilenBadge');
     if (badge) {
       badge.textContent = yeniSayi;
