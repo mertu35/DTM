@@ -816,6 +816,12 @@ function renderVeriGirisPage() {
     </div>`).join('');
 
   const yaklasikMaliyet = hesaplaYaklasikMaliyet(proje);
+  const ymSinirAsildi = (() => {
+    if (!proje.ymOnayTarihi) return false;
+    const yil = new Date(proje.ymOnayTarihi).getFullYear();
+    const sinirObj = (referans.dtSinirlari || []).find(s => s.yil === yil);
+    return sinirObj && sinirObj.sinir > 0 && yaklasikMaliyet > sinirObj.sinir;
+  })();
 
   // Teklif Firma tabloları
   const teklifFirmaRows = proje.teklifFirmalar.map((f, fi) => {
@@ -1115,9 +1121,10 @@ function renderVeriGirisPage() {
       </div>
       <div class="card-body">
         ${ymFirmaRows}
-        <div style="margin-top:12px; padding:12px; background:var(--primary-light); border-radius:6px;">
+        <div style="margin-top:12px; padding:12px; background:${ymSinirAsildi ? '#fef2f2' : 'var(--primary-light)'}; border-radius:6px; border:${ymSinirAsildi ? '1px solid #fca5a5' : 'none'}">
           <strong>Yaklaşık Maliyet: ${formatCurrency(yaklasikMaliyet)} TL</strong>
           <span style="color:var(--gray-500); margin-left:10px;">(${sayidanYaziya(yaklasikMaliyet)})</span>
+          ${ymSinirAsildi ? '<div style="color:#dc2626;font-size:12px;margin-top:4px;font-weight:600">⚠️ Doğrudan Temin sınırı aşıldı!</div>' : ''}
         </div>
       </div>
     </div>
@@ -1197,12 +1204,11 @@ function onFieldChange(field, value) {
   const eskiDeger = proje[field];
   proje[field] = value;
 
-  // Tarih sırası kontrolü: ymOnayTarihi < dtOnayTarihi olmalı
-  if (field === 'ymOnayTarihi' || field === 'dtOnayTarihi') {
-    const ym = proje.ymOnayTarihi;
-    const dt = proje.dtOnayTarihi;
-    if (ym && dt && ym >= dt) {
-      showToast('Y.M. Onay Tarihi, D.T. Onay Tarihinden önce olmalıdır.', 'warning');
+  // Gelecek tarih kontrolü
+  if (['ymOnayTarihi', 'dtOnayTarihi', 'sozlesmeTarihi'].includes(field) && value) {
+    const bugun = new Date().toISOString().slice(0, 10);
+    if (value > bugun) {
+      showToast('Tarih bugünden ileri bir tarih olamaz.', 'warning');
       proje[field] = eskiDeger;
       const el = document.getElementById(field);
       if (el) el.value = eskiDeger || '';
@@ -1210,7 +1216,20 @@ function onFieldChange(field, value) {
     }
   }
 
-  // Sözleşme tarihi: dtOnayTarihinden sonra olmalı
+  // Tarih sırası kontrolü: ymOnayTarihi <= dtOnayTarihi olmalı
+  if (field === 'ymOnayTarihi' || field === 'dtOnayTarihi') {
+    const ym = proje.ymOnayTarihi;
+    const dt = proje.dtOnayTarihi;
+    if (ym && dt && ym > dt) {
+      showToast('Y.M. Onay Tarihi, D.T. Onay Tarihinden sonra olamaz.', 'warning');
+      proje[field] = eskiDeger;
+      const el = document.getElementById(field);
+      if (el) el.value = eskiDeger || '';
+      return;
+    }
+  }
+
+  // Sözleşme tarihi: dtOnayTarihinden önce olamaz
   if (field === 'sozlesmeTarihi' || field === 'dtOnayTarihi') {
     const dt = proje.dtOnayTarihi;
     const sozlesme = proje.sozlesmeTarihi;
