@@ -1387,7 +1387,6 @@ async function belgelerProjeAc(projeId) {
   }
 }
 
-function bindBelgeler() {}
 
 function yazdirBelge() {
   let html = '';
@@ -1802,85 +1801,6 @@ async function yukleProjeCloud() {
   });
 }
 
-function renderKaydetYukleStatic() {
-  const aktifProjeKarti = projeAktif ? (() => {
-    const cloudBtnText = '💾 Kaydet';
-    const isAdi = proje.isAdi || '(İsimsiz Proje)';
-    const kayitliClass = currentCloudProjeId ? 'ky-status-saved' : 'ky-status-unsaved';
-    const kayitliText = currentCloudProjeId ? '☁️ Bulutta kayıtlı' : '⚠️ Kaydedilmedi';
-    return `
-      <!-- Mevcut Proje Kartı -->
-      <div class="ky-card ky-card-project">
-        <div class="ky-card-glow ky-card-glow-blue"></div>
-        <div class="ky-card-top">
-          <div class="ky-card-icon-wrap ky-icon-blue">💾</div>
-          <div class="ky-card-label">Aktif Proje</div>
-        </div>
-        <div class="ky-card-project-name">${isAdi}</div>
-        <div class="ky-status ${kayitliClass}">${kayitliText}</div>
-        <div class="ky-card-buttons">
-          <button class="ky-btn ky-btn-primary" onclick="cloudKaydet()">${cloudBtnText}</button>
-          <div class="ky-btn-row">
-            <button class="ky-btn ky-btn-outline" onclick="exportProjeJSON(proje)">📥 İndir</button>
-            <button class="ky-btn ky-btn-ghost-danger" onclick="yeniProje()">✕ Yeni Proje</button>
-          </div>
-        </div>
-      </div>`;
-  })() : '';
-
-  return `
-    <div class="ky-top-grid">
-      ${aktifProjeKarti}
-
-      <!-- Dosyadan Yükle Kartı -->
-      <div class="ky-card ky-card-upload">
-        <div class="ky-card-glow ky-card-glow-green"></div>
-        <div class="ky-card-top">
-          <div class="ky-card-icon-wrap ky-icon-green">📁</div>
-          <div class="ky-card-label">Dosyadan Yükle</div>
-        </div>
-        <div class="ky-upload-desc">Daha önce indirdiğiniz JSON proje dosyasını seçerek tekrar yükleyin.</div>
-        <div class="ky-upload-area">
-          <label class="ky-file-label" id="kyFileLabel">
-            <span class="ky-file-icon">📄</span>
-            <span class="ky-file-text">Dosya seçmek için tıklayın</span>
-            <input type="file" id="fileInput" accept=".json" onchange="if(this.files[0]){document.getElementById('kyFileLabel').querySelector('.ky-file-text').textContent=this.files[0].name;document.getElementById('kyFileLabel').classList.add('ky-file-selected')}">
-          </label>
-        </div>
-        <button class="ky-btn ky-btn-success" onclick="yukleProje()">📤 Yükle</button>
-      </div>
-    </div>
-  `;
-}
-
-function renderVeriMerkeziYedek() {
-  return `
-    <div class="card">
-      <div class="card-header" style="background:linear-gradient(135deg,#e8f4fd,#dbeafe);border-bottom:2px solid #3b82f6;">
-        <h3 style="color:#1e40af;">&#128190; Veri Merkezini Yedekle</h3>
-      </div>
-      <div class="card-body" style="background:#f8faff;">
-        <div style="display:flex;gap:24px;align-items:stretch;flex-wrap:wrap;">
-          <div style="flex:1;min-width:220px;background:#fff;border:1.5px solid #3b82f6;border-radius:10px;padding:18px 22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(59,130,246,0.08);">
-            <div style="font-weight:600;color:#1e40af;font-size:13px;">&#128200; Yedek Al</div>
-            <div style="font-size:12px;color:#64748b;">Veri Merkezi verilerini JSON olarak bilgisayara kaydet.</div>
-            <button class="btn btn-primary" onclick="exportRefJSON()" style="margin-top:auto;">Veri Merkezini Kaydet</button>
-          </div>
-          <div style="flex:1;min-width:220px;background:#fff;border:1.5px solid #10b981;border-radius:10px;padding:18px 22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(16,185,129,0.08);">
-            <div style="font-weight:600;color:#065f46;font-size:13px;">&#128196; Yedekten Geri Yükle</div>
-            <div style="font-size:12px;color:#64748b;">Daha önce kaydedilmiş verileri geri getir.</div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:auto;flex-wrap:wrap;">
-              <button class="btn btn-success" id="eskiVerilerBtn" onclick="yukleReferans()" style="white-space:nowrap;" disabled>Eski Verileri Getir</button>
-              <input type="file" id="refFileInput" accept=".json" style="font-size:12px;color:#475569;" onchange="document.getElementById('eskiVerilerBtn').disabled = !this.files.length;">
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function bindKaydetYukle() {}
 
 async function cloudKaydet() {
   if (currentProjeBaskaKullanici) { showToast('Bu proje başka bir kullanıcıya ait.', 'warning'); return; }
@@ -2038,23 +1958,6 @@ async function gonderiOnayla(projeId) {
   }
 }
 
-async function belgeyeGit(projeId) {
-  try {
-    const doc = await getProjeFromCloud(projeId);
-    if (currentDTMUser?.role === 'gerceklestirmeci' && doc.atananGerceklestirmeciUid !== auth.currentUser?.uid) {
-      showToast('Bu projeye erişim yetkiniz yok.', 'error'); return;
-    }
-    proje = Object.assign(getDefaultProje(), doc.data);
-    currentCloudProjeId = projeId;
-    currentProjeStatus = doc.status || 'onaylandi';
-    currentGerceklestirmeciBelgelerProjeId = projeId;
-    currentGerceklestirmeciBelge = 'dt-onay-belgesi';
-    currentPage = 'gerceklestirmeci-belgeler';
-    renderPage();
-  } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
-  }
-}
 
 async function arsivleClick(projeId, isAdi) {
   if (!await showConfirm(`"${isAdi}" projesi arşive kaldırılacak.`, 'Arşivle')) return;
@@ -2159,20 +2062,6 @@ async function adminGeriGonderClick(projeId, isAdi) {
   } catch(e) { showToast('Hata: ' + e.message, 'error'); }
 }
 
-async function onayiKaldirClick(projeId, isAdi) {
-  if (!await showConfirm(`"${isAdi}" projesinin onayı kaldırılacak.<br><br>Oluşturulan belgeler silinecek. Emin misiniz?`, 'Onayı Kaldır')) return;
-  try {
-    await db.collection('projeler').doc(projeId).update({
-      status: 'gonderildi',
-      onaylandiAt: null,
-      onaylandiBy: null
-    });
-    currentProjeStatus = 'gonderildi';
-    renderPage();
-  } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
-  }
-}
 
 async function gonderilenOnaylaClick(projeId, isAdi) {
   try {
