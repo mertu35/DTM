@@ -1194,7 +1194,22 @@ function bindVeriGiris() {
 }
 
 function onFieldChange(field, value) {
+  const eskiDeger = proje[field];
   proje[field] = value;
+
+  // Tarih sırası kontrolü: ymOnayTarihi < dtOnayTarihi olmalı
+  if (field === 'ymOnayTarihi' || field === 'dtOnayTarihi') {
+    const ym = proje.ymOnayTarihi;
+    const dt = proje.dtOnayTarihi;
+    if (ym && dt && ym >= dt) {
+      showToast('Y.M. Onay Tarihi, D.T. Onay Tarihinden önce olmalıdır.', 'warning');
+      proje[field] = eskiDeger;
+      const el = document.getElementById(field);
+      if (el) el.value = eskiDeger || '';
+      return;
+    }
+  }
+
   autoSave();
 }
 
