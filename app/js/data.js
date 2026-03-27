@@ -38,7 +38,12 @@ function getDefaultReferans() {
     idareList: [
       'KARAMAN İL ÖZEL İDARESİ'
     ],
-    butceTertibiList: []
+    butceTertibiList: [],
+    dtSinirlari: [
+      { yil: 2026, sinir: 0 },
+      { yil: 2027, sinir: 0 },
+      { yil: 2028, sinir: 0 }
+    ]
   };
 }
 
@@ -115,7 +120,7 @@ function loadProje() {
   return getDefaultProje();
 }
 
-const GLOBAL_REF_FIELDS = ['onaylayanList', 'idareList', 'mudurlukler', 'ilceler'];
+const GLOBAL_REF_FIELDS = ['onaylayanList', 'idareList', 'mudurlukler', 'ilceler', 'dtSinirlari'];
 const GLOBAL_REF_KEY = 'dtm_global_referans';
 
 function saveReferans(ref) {

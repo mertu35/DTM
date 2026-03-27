@@ -1210,6 +1210,24 @@ function onFieldChange(field, value) {
     }
   }
 
+  // Sözleşme tarihi: dtOnayTarihinden sonra olmalı
+  if (field === 'sozlesmeTarihi' || field === 'dtOnayTarihi') {
+    const dt = proje.dtOnayTarihi;
+    const sozlesme = proje.sozlesmeTarihi;
+    if (dt && sozlesme && sozlesme < dt) {
+      showToast('Sözleşme Tarihi, D.T. Onay Tarihinden önce olamaz.', 'warning');
+      proje[field] = eskiDeger;
+      const el = document.getElementById(field);
+      if (el) el.value = eskiDeger || '';
+      return;
+    }
+  }
+
+  // DT sınırı kontrolü: ymOnayTarihi değişince yıla göre sınır kontrol et
+  if (field === 'ymOnayTarihi' && value) {
+    checkDtSiniri();
+  }
+
   autoSave();
 }
 
@@ -1262,6 +1280,17 @@ function onFirmaChange(el, type) {
   renderPage();
 }
 
+function checkDtSiniri() {
+  if (!proje.ymOnayTarihi) return;
+  const yil = new Date(proje.ymOnayTarihi).getFullYear();
+  const sinirObj = (referans.dtSinirlari || []).find(s => s.yil === yil);
+  if (!sinirObj || !sinirObj.sinir) return;
+  const ym = hesaplaYaklasikMaliyet(proje);
+  if (ym > sinirObj.sinir) {
+    showToast(`Yaklaşık maliyet (${formatCurrencyInt(ym)} TL), ${yil} D.T. sınırını (${formatCurrencyInt(sinirObj.sinir)} TL) aşıyor!`, 'warning');
+  }
+}
+
 function onFiyatChange(el) {
   const type = el.dataset.firma;
   const fi = parseInt(el.dataset.fi);
@@ -1269,6 +1298,7 @@ function onFiyatChange(el) {
   const val = parseFloat(el.value) || 0;
   if (type === 'ym') {
     proje.ymFirmalar[fi].fiyatlar[ki] = val;
+    checkDtSiniri();
   } else {
     proje.teklifFirmalar[fi].fiyatlar[ki] = val;
   }
@@ -1571,6 +1601,25 @@ function renderVeriMerkeziPage() {
           <input type="text" id="yeniIlce" placeholder="Yeni ilçe adı" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px">
           <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniIlce').value;if(v){referans.ilceler.push(v);saveGlobalReferans(referans);renderPage();}">Ekle</button>
         </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h3>D.T. Sınır Tutarları</h3><span class="toggle-icon">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px">Yıllara göre Doğrudan Temin sınır tutarlarını girin (KDV hariç, TL).</p>
+        <table class="ref-table">
+          <thead><tr><th>Yıl</th><th>Sınır Tutarı (TL)</th></tr></thead>
+          <tbody>
+            ${(referans.dtSinirlari || []).map((s, i) => `
+              <tr>
+                <td style="font-weight:600">${s.yil}</td>
+                <td><input type="number" value="${s.sinir}" min="0" placeholder="0" onchange="onRefChange('dtSinirlari', ${i}, 'sinir', parseFloat(this.value)||0)"></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
       </div>
     </div>
     ` : ''}
