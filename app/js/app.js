@@ -1,4 +1,4 @@
-﻿// ===================== APP.JS =====================
+// ===================== APP.JS =====================
 let proje = getDefaultProje();
 let referans = loadReferans();
 let currentPage = 'anasayfa';
@@ -671,7 +671,7 @@ async function renderAnaSayfaPage() {
       listEl.innerHTML = son5.map(p => {
         const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
         return `<div onclick="cloudProjeAc('${p.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100);cursor:pointer" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
-          <span style="font-weight:500;font-size:13px">${p.locked ? '🔒 ' : ''}${p.isAdi || '(İsimsiz)'}</span>
+          <span style="font-weight:500;font-size:13px">${p.locked ? '🔒 ' : ''}${escHtml(p.isAdi || '(İsimsiz)')}</span>
           <span style="font-size:12px;color:var(--gray-400)">${tarih}</span>
         </div>`;
       }).join('');
@@ -1300,7 +1300,7 @@ async function renderBelgelerPage() {
           const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
           return `<div class="ky-proje-item">
             <div class="ky-proje-info">
-              <div class="ky-proje-name">${p.isAdi || '(İsimsiz)'}</div>
+              <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
               <div class="ky-proje-meta">
                 <span class="ky-proje-date">&#128197; ${tarih}</span>
                 ${getStatusBadge(p.status || 'taslak')}
@@ -1622,7 +1622,7 @@ async function renderDashboardPage() {
         : (p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-');
       return `<tr onclick="dashboardProjeAc('${p.id}')" style="cursor:pointer"
         onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
-        <td style="font-weight:500">${p.isAdi || '(İsimsiz)'}</td>
+        <td style="font-weight:500">${escHtml(p.isAdi || '(İsimsiz)')}</td>
         <td>${tarih}</td>
         <td class="rakam">${ym > 0 ? formatCurrencyInt(ym) + ' TL' : '-'}</td>
         <td class="rakam">${kazananFirma ? kazananFirma.ad : '-'}</td>
@@ -1753,7 +1753,7 @@ async function renderKaydetYuklePage() {
                       : (p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-');
           return `<div class="ky-proje-item">
             <div class="ky-proje-info">
-              <div class="ky-proje-name">${p.isAdi || '(İsimsiz)'}</div>
+              <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
               <div class="ky-proje-meta">
                 <span class="ky-proje-date">📅 ${tarih}</span>
                 ${getStatusBadge('onaylandi')}
@@ -2352,7 +2352,7 @@ async function renderProjelerimPage() {
         <div class="ky-proje-info">
           <div class="ky-proje-name">
             ${kilitli ? '<span style="margin-right:4px">🔒</span>' : ''}
-            ${p.isAdi || '(İsimsiz)'}
+            ${escHtml(p.isAdi || '(İsimsiz)')}
           </div>
           <div class="ky-proje-meta">
             <span class="ky-proje-date">📅 ${tarih}</span>
@@ -2447,7 +2447,7 @@ async function renderGonderilenProjelerPage() {
       const isAdiSafe = escAttr(p.isAdi);
       return `<div class="ky-proje-item">
         <div class="ky-proje-info">
-          <div class="ky-proje-name"><span class="ky-proje-dot"></span>${p.isAdi || '(İsimsiz)'}</div>
+          <div class="ky-proje-name"><span class="ky-proje-dot"></span>${escHtml(p.isAdi || '(İsimsiz)')}</div>
           <div class="ky-proje-meta">
             <span class="ky-proje-user">👤 ${p.userDisplayName || '-'}</span>
             <span class="ky-proje-date">📅 ${tarih}</span>
@@ -2606,7 +2606,7 @@ async function renderGerceklestirmeciBelgelerPage() {
         : `<button class="ky-btn-open" onclick="gerceklestirmeciBelgelerProjeAc('${p.id}')">Belge Oluştur</button>`;
       return `<div class="ky-proje-item">
         <div class="ky-proje-info">
-          <div class="ky-proje-name">${p.isAdi || '(İsimsiz)'}</div>
+          <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
           <div class="ky-proje-meta">
             <span class="ky-proje-user">&#128100; ${p.userDisplayName || '-'}</span>
             <span class="ky-proje-date">&#128197; ${tarih}</span>
@@ -2956,7 +2956,7 @@ function renderProjeOzetPage() {
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
         <button onclick="${currentOnayliBelgelerProjeId ? 'currentOnayliBelgelerProjeId=null' : "currentPage='gonderilen-projeler'"};renderPage();" style="padding:7px 14px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">← Geri</button>
         <div>
-          <h2 style="font-size:20px;font-weight:700;color:#111827;margin:0">${p.isAdi || '(İsimsiz Proje)'}</h2>
+          <h2 style="font-size:20px;font-weight:700;color:#111827;margin:0">${escHtml(p.isAdi || '(İsimsiz Proje)')}</h2>
           <div style="font-size:12px;color:#6b7280;margin-top:2px">${getStatusBadge(currentProjeStatus || 'gonderildi')} Proje Özeti</div>
         </div>
       </div>
@@ -2964,7 +2964,7 @@ function renderProjeOzetPage() {
       ${kart('📋 Proje Bilgileri', `<table style="width:100%;border-collapse:collapse">
         ${satir('İdare', p.idareAdi)}
         ${satir('Müdürlük', p.mudurluk)}
-        ${satir('İş / Hizmet Adı', p.isAdi)}
+        ${satir('İş / Hizmet Adı', escHtml(p.isAdi))}
         ${satir('İş Türü', p.isTuru)}
         ${satir('KDV Oranı', '%' + p.kdvOrani)}
         ${satir('Şehir / İlçe', [p.sehir, p.ilce].filter(Boolean).join(' / '))}
