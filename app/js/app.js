@@ -1290,11 +1290,16 @@ function onKalemChange(el) {
 
 function onFirmaChange(el, type) {
   const idx = parseInt(el.dataset.index);
-  if (type === 'ym') {
-    proje.ymFirmalar[idx].ad = el.value;
-  } else {
-    proje.teklifFirmalar[idx].ad = el.value;
+  const yeniFirma = el.value;
+  const liste = type === 'ym' ? proje.ymFirmalar : proje.teklifFirmalar;
+
+  if (yeniFirma && liste.some((f, i) => i !== idx && f.ad === yeniFirma)) {
+    showToast('Bu firma zaten eklenmiş. Farklı bir firma seçin.', 'warning');
+    el.value = liste[idx].ad || '';
+    return;
   }
+
+  liste[idx].ad = yeniFirma;
   autoSave();
   renderPage();
 }
