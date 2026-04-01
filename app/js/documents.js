@@ -652,8 +652,8 @@ function renderBittiTutanagi(proje, referans) {
       <h2 class="belge-baslik">İŞ BİTİRME TUTANAĞI</h2>
 
       <table class="bilgi-tablo" style="margin:20px 0">
-        <tr><td class="etiket" style="width:35%">İdarenin Adı</td><td style="width:14px;vertical-align:top">:</td><td>${proje.idareAdi}</td></tr>
-        <tr><td class="etiket">Yapılan İş / Hizmetin Adı</td><td style="width:14px;vertical-align:top">:</td><td>${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
+        <tr><td class="etiket" style="width:35%">Yapılan İş / Hizmetin Adı</td><td style="width:14px;vertical-align:top">:</td><td>${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
+        <tr><td class="etiket">Yüklenicinin Adı</td><td style="width:14px;vertical-align:top">:</td><td>${kazanan.ad || '-'}</td></tr>
         <tr><td class="etiket">Sözleşme Tarihi</td><td style="width:14px;vertical-align:top">:</td><td>${formatDate(proje.sozlesmeTarihi)}</td></tr>
         <tr><td class="etiket">Sözleşme Bedeli</td><td style="width:14px;vertical-align:top">:</td><td>${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
         <tr><td class="etiket">İş Süresi</td><td style="width:14px;vertical-align:top">:</td><td>${proje.isSuresi} Takvim Günü</td></tr>
@@ -662,7 +662,7 @@ function renderBittiTutanagi(proje, referans) {
       </table>
 
       <div style="margin:40px 0;text-align:justify;line-height:1.8">
-        <p>Yukarıda bilgileri belirtilen işin, sözleşme ve eklerine uygun olarak tamamlandığı ${formatDate(bitisT)} tarihinde yerinde yapılan inceleme sonucunda tespit edilmiş olup, iş bu tutanak tarafımızca düzenlenmiştir.</p>
+        <p>Yukarıda bilgileri belirtilen işin, sözleşme ve eklerine uygun olarak tamamlandığı ${formatDate(bitisT)} tarihinde yerinde yapılan inceleme sonucunda tespit edilmiş olup, iş bu tutanak ${tekGorevli ? 'tarafımca' : 'tarafımızca'} düzenlenmiştir.</p>
       </div>
 
       <div style="margin-top:50px">
