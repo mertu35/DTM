@@ -645,11 +645,7 @@ function renderBittiTutanagi(proje, referans) {
 
   return `
     <div class="belge">
-      <div style="text-align:center;margin-bottom:25px;line-height:1.8">
-        <p>T.C.<br><strong>${proje.idareAdi}</strong><br>${proje.mudurluk.toLocaleUpperCase('tr-TR')}</p>
-      </div>
-
-      <h2 class="belge-baslik">İŞ BİTİRME TUTANAĞI</h2>
+      <h2 class="belge-baslik">TUTANAK</h2>
 
       <table class="bilgi-tablo" style="margin:20px 0">
         <tr><td class="etiket" style="width:35%">Yapılan İş / Hizmetin Adı</td><td style="width:14px;vertical-align:top">:</td><td>${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
