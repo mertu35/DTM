@@ -1310,11 +1310,19 @@ async function parseDTOluru(file) {
     }
 
     // Sayı + Tarih: "Sayı : E-xxx-xxx-79656 08.04.2026"
-    const sayiTarihMatch = fullText.match(/Sayı\s*:\s*([\w.\-]+)\s+(\d{2})\.(\d{2})\.(\d{4})/);
-    if (sayiTarihMatch) {
-      const parts = sayiTarihMatch[1].split('-');
-      proje.dtOnayNo = parts[parts.length - 1];
-      proje.dtOnayTarihi = `${sayiTarihMatch[4]}-${sayiTarihMatch[3]}-${sayiTarihMatch[2]}`;
+    // PDF.js bazen araya boşluk ekler, bu yüzden ayrı ayrı arıyoruz
+    const sayiIdx = fullText.search(/Sayı\s*:/);
+    if (sayiIdx >= 0) {
+      const satirMetni = fullText.substring(sayiIdx, sayiIdx + 100);
+      const sayiMatch = satirMetni.match(/Sayı\s*:\s*([\w.\-]+)/);
+      if (sayiMatch) {
+        const parts = sayiMatch[1].split('-');
+        proje.dtOnayNo = parts[parts.length - 1];
+      }
+      const tarihMatch = satirMetni.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+      if (tarihMatch) {
+        proje.dtOnayTarihi = `${tarihMatch[3]}-${tarihMatch[2]}-${tarihMatch[1]}`;
+      }
     }
 
     // Görevli: "ilgili [Ünvan] [Ad SOYAD]'xx doğrudan temin"
