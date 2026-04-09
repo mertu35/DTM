@@ -1297,6 +1297,7 @@ function onKalemChange(el) {
 
 async function parseDTOluru(file) {
   if (!file) return;
+  if (typeof pdfjsLib === 'undefined') { showToast('PDF okuyucu yüklenemedi.', 'error'); return; }
   try {
     showToast('PDF okunuyor...', 'info');
     const arrayBuffer = await file.arrayBuffer();
@@ -1316,18 +1317,17 @@ async function parseDTOluru(file) {
       proje.dtOnayTarihi = `${sayiTarihMatch[4]}-${sayiTarihMatch[3]}-${sayiTarihMatch[2]}`;
     }
 
-    // Görevli: "[Ünvan] [Ad SOYAD]'xx doğrudan temin"
-    const gorevliMatch = fullText.match(/([A-Za-zÇŞĞÜÖİçşğüöı ]+?)[\u2018\u2019'']\w+\s+doğrudan\s+temin/i);
+    // Görevli: "ilgili [Ünvan] [Ad SOYAD]'xx doğrudan temin"
+    // \S* yerine kullanıyoruz çünkü Türkçe ü,ş gibi harfler \w ile eşleşmez
+    const gorevliMatch = fullText.match(/ilgili\s+([A-Za-zÇŞĞÜÖİçşğüöı ]+?)\s*['\u2018\u2019\u02BC]\S*\s+doğrudan\s+temin/i);
     if (gorevliMatch) {
       const tamMetin = gorevliMatch[1].trim();
       const kelimeler = tamMetin.split(/\s+/);
-      // Sondan itibaren büyük harf kelimeler = SOYAD
       let idx = kelimeler.length - 1;
       const soyadlar = [];
       while (idx >= 0 && /^[A-ZÇŞĞÜÖİ]+$/.test(kelimeler[idx])) {
         soyadlar.unshift(kelimeler[idx--]);
       }
-      // Önceki büyük harfle başlayan kelime = AD
       const adlar = (idx >= 0 && /^[A-ZÇŞĞÜÖİ][a-zçşğüöı]/.test(kelimeler[idx])) ? [kelimeler[idx--]] : [];
       proje.dtGorevliler[0].ad = [...adlar, ...soyadlar].join(' ');
       proje.dtGorevliler[0].unvan = kelimeler.slice(0, idx + 1).join(' ');
