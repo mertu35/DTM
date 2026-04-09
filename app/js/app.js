@@ -945,6 +945,13 @@ function renderVeriGirisPage() {
         <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
+        <div style="margin-bottom:14px;padding:10px 14px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="font-size:13px;color:#1e40af;">📄 Olur belgesinden otomatik doldur</span>
+          <label style="cursor:pointer;padding:6px 16px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;white-space:nowrap;user-select:none">
+            PDF Seç
+            <input type="file" accept=".pdf" style="display:none" onchange="parseYMOluru(this.files[0]);this.value=''">
+          </label>
+        </div>
         ${ymGorevliRows}
         ${ymEkleBtn}
         <div class="form-grid" style="margin-top:12px">
@@ -1341,6 +1348,60 @@ async function parseDTOluru(file) {
       proje.dtGorevliler[0].ad = [...adlar, ...soyadlar].join(' ');
       proje.dtGorevliler[0].unvan = kelimeler.slice(0, idx + 1).join(' ');
       proje.dtGorevliSayisi = 1;
+    }
+
+    autoSave();
+    renderPage();
+    showToast('Olur belgesi okundu, alanlar dolduruldu!', 'success');
+  } catch(e) {
+    showToast('PDF okunamadı: ' + e.message, 'error');
+  }
+}
+
+async function parseYMOluru(file) {
+  if (!file) return;
+  if (typeof pdfjsLib === 'undefined') { showToast('PDF okuyucu yüklenemedi.', 'error'); return; }
+  try {
+    showToast('PDF okunuyor...', 'info');
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      fullText += content.items.map(item => item.str).join(' ') + '\n';
+    }
+
+    // Sayı + Tarih
+    const sayiIdx = fullText.search(/Sayı\s*:/);
+    if (sayiIdx >= 0) {
+      const satirMetni = fullText.substring(sayiIdx, sayiIdx + 100);
+      const sayiMatch = satirMetni.match(/Sayı\s*:\s*(.+?)\s+(\d{2}\.\d{2}\.\d{4})/);
+      if (sayiMatch) {
+        const sayiKisim = sayiMatch[1].replace(/\s+/g, '');
+        const parts = sayiKisim.split('-');
+        proje.ymOnayNo = parts[parts.length - 1];
+      }
+      const tarihMatch = satirMetni.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+      if (tarihMatch) {
+        proje.ymOnayTarihi = `${tarihMatch[3]}-${tarihMatch[2]}-${tarihMatch[1]}`;
+      }
+    }
+
+    // Görevli: "olarak [Ünvan] [Ad SOYAD]'xx görevlendirilmesi"
+    const gorevliMatch = fullText.match(/olarak\s+([A-Za-zÇŞĞÜÖİçşğüöı ]+?)\s*['\u2018\u2019\u02BC]\S*\s+görevlendirilmesi/i);
+    if (gorevliMatch) {
+      const tamMetin = gorevliMatch[1].trim();
+      const kelimeler = tamMetin.split(/\s+/);
+      let idx = kelimeler.length - 1;
+      const soyadlar = [];
+      while (idx >= 0 && /^[A-ZÇŞĞÜÖİ]+$/.test(kelimeler[idx])) {
+        soyadlar.unshift(kelimeler[idx--]);
+      }
+      const adlar = (idx >= 0 && /^[A-ZÇŞĞÜÖİ][a-zçşğüöı]/.test(kelimeler[idx])) ? [kelimeler[idx--]] : [];
+      proje.ymGorevliler[0].ad = [...adlar, ...soyadlar].join(' ');
+      proje.ymGorevliler[0].unvan = kelimeler.slice(0, idx + 1).join(' ');
+      proje.ymGorevliSayisi = 1;
     }
 
     autoSave();
