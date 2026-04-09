@@ -1314,9 +1314,10 @@ async function parseDTOluru(file) {
     const sayiIdx = fullText.search(/Sayı\s*:/);
     if (sayiIdx >= 0) {
       const satirMetni = fullText.substring(sayiIdx, sayiIdx + 100);
-      const sayiMatch = satirMetni.match(/Sayı\s*:\s*([\w.\-]+)/);
+      const sayiMatch = satirMetni.match(/Sayı\s*:\s*(.+?)\s+(\d{2}\.\d{2}\.\d{4})/);
       if (sayiMatch) {
-        const parts = sayiMatch[1].split('-');
+        const sayiKisim = sayiMatch[1].replace(/\s+/g, ''); // boşlukları temizle
+        const parts = sayiKisim.split('-');
         proje.dtOnayNo = parts[parts.length - 1];
       }
       const tarihMatch = satirMetni.match(/(\d{2})\.(\d{2})\.(\d{4})/);
