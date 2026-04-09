@@ -963,6 +963,19 @@ function renderVeriGirisPage() {
             <label>Onay Sayısı</label>
             <input type="text" id="ymOnayNo" value="${proje.ymOnayNo}" onchange="onFieldChange('ymOnayNo', this.value)">
           </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Y.M. Tutanak Tarihi</label>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:normal;font-size:13px">
+                <input type="checkbox" ${proje.ymTutanakTarihiAyni !== false ? 'checked' : ''} onchange="onFieldChange('ymTutanakTarihiAyni', this.checked);renderPage()">
+                Onay tarihi ile aynı
+              </label>
+              ${proje.ymTutanakTarihiAyni !== false
+                ? `<span style="font-size:13px;color:var(--gray-500)">${proje.ymOnayTarihi ? formatDate(proje.ymOnayTarihi) : '(Önce onay tarihi girin)'}</span>`
+                : `<input type="date" value="${proje.ymTutanakTarihi || ''}" onchange="onFieldChange('ymTutanakTarihi', this.value)">`
+              }
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -990,6 +1003,19 @@ function renderVeriGirisPage() {
           <div class="form-group">
             <label>Onay Sayısı</label>
             <input type="text" id="dtOnayNo" value="${proje.dtOnayNo}" onchange="onFieldChange('dtOnayNo', this.value)">
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>D.T. Tutanak Tarihi</label>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:normal;font-size:13px">
+                <input type="checkbox" ${proje.dtTutanakTarihiAyni !== false ? 'checked' : ''} onchange="onFieldChange('dtTutanakTarihiAyni', this.checked);renderPage()">
+                Onay tarihi ile aynı
+              </label>
+              ${proje.dtTutanakTarihiAyni !== false
+                ? `<span style="font-size:13px;color:var(--gray-500)">${proje.dtOnayTarihi ? formatDate(proje.dtOnayTarihi) : '(Önce onay tarihi girin)'}</span>`
+                : `<input type="date" value="${proje.dtTutanakTarihi || ''}" onchange="onFieldChange('dtTutanakTarihi', this.value)">`
+              }
+            </div>
           </div>
         </div>
       </div>

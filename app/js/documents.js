@@ -6,6 +6,7 @@ function renderYaklasikMaliyet(proje, referans) {
   const ymGorevliler = getAktifGorevliler(proje.ymGorevliler);
   const yaklasikMaliyet = hesaplaYaklasikMaliyet(proje);
   const ymYaziyla = sayidanYaziya(yaklasikMaliyet);
+  const ymTutanakT = proje.ymTutanakTarihiAyni !== false ? proje.ymOnayTarihi : (proje.ymTutanakTarihi || proje.ymOnayTarihi);
 
   // Firma başlıkları (satır 7-8-9)
   const firma1 = proje.ymFirmalar[0];
@@ -111,7 +112,7 @@ function renderYaklasikMaliyet(proje, referans) {
       </table>
 
       <div style="margin:12px 0;border:0.5mm solid #000;padding:10px 14px;page-break-inside:avoid">
-        <p style="text-align:justify;line-height:1.2">Karaman İl Özel İdaresi ${proje.mudurluk} yetkilisince görevlendirilmem nedeniyle yukarıda özelliği belirtilen işin yapılması için 4734 sayılı Kamu İhale Kanununun 9. Maddesi gereğince yaklaşık maliyet çıkarılmış olup, ihale konusu işin ${formatCurrency(yaklasikMaliyet)} (${ymYaziyla}) (KDV hariç) bedelle ihaleye çıkması belirlenmiş ve iş bu tutanak tanzimen düzenlenmiştir. ${formatDate(proje.ymOnayTarihi)}</p>
+        <p style="text-align:justify;line-height:1.2">Karaman İl Özel İdaresi ${proje.mudurluk} yetkilisince görevlendirilmem nedeniyle yukarıda özelliği belirtilen işin yapılması için 4734 sayılı Kamu İhale Kanununun 9. Maddesi gereğince yaklaşık maliyet çıkarılmış olup, ihale konusu işin ${formatCurrency(yaklasikMaliyet)} (${ymYaziyla}) (KDV hariç) bedelle ihaleye çıkması belirlenmiş ve iş bu tutanak tanzimen düzenlenmiştir. ${formatDate(ymTutanakT)}</p>
 
         <div style="margin-top:10px">
           <p><strong>DAYANAKLAR</strong></p>
@@ -131,7 +132,7 @@ function renderYaklasikMaliyet(proje, referans) {
           <!-- OLUR: 3. Firma sütununun altında (140px) -->
           <div style="width:190px;text-align:center;padding-top:65px">
             <p style="font-weight:bold">OLUR</p>
-            <p>${formatDate(proje.ymOnayTarihi)}</p>
+            <p>${formatDate(ymTutanakT)}</p>
             <p style="margin-top:10px"><strong>${proje.onaylayanAmir.ad}</strong></p>
             <p style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</p>
           </div>
@@ -150,6 +151,7 @@ function renderTeklifTutanagi(proje, referans) {
   const kazanan = kazananIdx >= 0 ? getKazananFirma(proje, referans) : null;
   const gorevliMetni = getGorevliMetni(proje.dtGorevliler);
   const tarafMetni = getTarafMetni(proje.dtGorevliler);
+  const dtTutanakT = proje.dtTutanakTarihiAyni !== false ? proje.dtOnayTarihi : (proje.dtTutanakTarihi || proje.dtOnayTarihi);
 
   // Firma isimleri
   const f1 = proje.teklifFirmalar[0];
@@ -306,7 +308,7 @@ function renderTeklifTutanagi(proje, referans) {
       ${kazananHTML}
 
       <div style="margin:6px 0;border:0.5mm solid #000;padding:7px 14px;page-break-inside:avoid">
-        <p style="text-align:justify;line-height:1.4">4734 sayılı Kamu İhale Kanunu'nun 22 nci Maddesi uyarınca <strong>doğrudan temin usulüyle</strong> yapılacak alımlara ilişkin yapılan piyasa araştırmasında ${teklifVerenMetni} teklif edilen fiyatlar ${tarafMetni} değerlendirilerek yukarıda adı ve adresleri belirtilen ${kazananKisiMetni} alım yapılması uygun görülmüştür. ${formatDate(proje.dtOnayTarihi)}</p>
+        <p style="text-align:justify;line-height:1.4">4734 sayılı Kamu İhale Kanunu'nun 22 nci Maddesi uyarınca <strong>doğrudan temin usulüyle</strong> yapılacak alımlara ilişkin yapılan piyasa araştırmasında ${teklifVerenMetni} teklif edilen fiyatlar ${tarafMetni} değerlendirilerek yukarıda adı ve adresleri belirtilen ${kazananKisiMetni} alım yapılması uygun görülmüştür. ${formatDate(dtTutanakT)}</p>
 
         <div style="display:flex;align-items:flex-start;margin-top:8px;gap:0">
           <!-- Görevliler sol tarafta -->
