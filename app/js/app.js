@@ -1005,7 +1005,7 @@ function renderVeriGirisPage() {
             <input type="text" id="dtOnayNo" value="${proje.dtOnayNo}" onchange="onFieldChange('dtOnayNo', this.value)">
           </div>
           <div class="form-group" style="grid-column:1/-1">
-            <label>D.T. Tutanak Tarihi</label>
+            <label>Teklif Tutanağı Tarihi</label>
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px">
               <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:normal;font-size:13px">
                 <input type="checkbox" ${proje.dtTutanakTarihiAyni !== false ? 'checked' : ''} onchange="onFieldChange('dtTutanakTarihiAyni', this.checked);renderPage()">
