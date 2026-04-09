@@ -966,6 +966,13 @@ function renderVeriGirisPage() {
         <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
+        <div style="margin-bottom:14px;padding:10px 14px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="font-size:13px;color:#1e40af;">📄 Olur belgesinden otomatik doldur</span>
+          <label style="cursor:pointer;padding:6px 16px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;white-space:nowrap;user-select:none">
+            PDF Seç
+            <input type="file" accept=".pdf" style="display:none" onchange="parseDTOluru(this.files[0]);this.value=''">
+          </label>
+        </div>
         ${dtGorevliRows}
         ${dtEkleBtn}
         <div class="form-grid" style="margin-top:12px">
@@ -1286,6 +1293,53 @@ function onKalemChange(el) {
   const sub = el.dataset.sub;
   proje.isKalemleri[idx][sub] = el.value;
   autoSave();
+}
+
+async function parseDTOluru(file) {
+  if (!file) return;
+  try {
+    showToast('PDF okunuyor...', 'info');
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      fullText += content.items.map(item => item.str).join(' ') + '\n';
+    }
+
+    // Sayı + Tarih: "Sayı : E-xxx-xxx-79656 08.04.2026"
+    const sayiTarihMatch = fullText.match(/Sayı\s*:\s*([\w.\-]+)\s+(\d{2})\.(\d{2})\.(\d{4})/);
+    if (sayiTarihMatch) {
+      const parts = sayiTarihMatch[1].split('-');
+      proje.dtOnayNo = parts[parts.length - 1];
+      proje.dtOnayTarihi = `${sayiTarihMatch[4]}-${sayiTarihMatch[3]}-${sayiTarihMatch[2]}`;
+    }
+
+    // Görevli: "[Ünvan] [Ad SOYAD]'xx doğrudan temin"
+    const gorevliMatch = fullText.match(/([A-Za-zÇŞĞÜÖİçşğüöı ]+?)[\u2018\u2019'']\w+\s+doğrudan\s+temin/i);
+    if (gorevliMatch) {
+      const tamMetin = gorevliMatch[1].trim();
+      const kelimeler = tamMetin.split(/\s+/);
+      // Sondan itibaren büyük harf kelimeler = SOYAD
+      let idx = kelimeler.length - 1;
+      const soyadlar = [];
+      while (idx >= 0 && /^[A-ZÇŞĞÜÖİ]+$/.test(kelimeler[idx])) {
+        soyadlar.unshift(kelimeler[idx--]);
+      }
+      // Önceki büyük harfle başlayan kelime = AD
+      const adlar = (idx >= 0 && /^[A-ZÇŞĞÜÖİ][a-zçşğüöı]/.test(kelimeler[idx])) ? [kelimeler[idx--]] : [];
+      proje.dtGorevliler[0].ad = [...adlar, ...soyadlar].join(' ');
+      proje.dtGorevliler[0].unvan = kelimeler.slice(0, idx + 1).join(' ');
+      proje.dtGorevliSayisi = 1;
+    }
+
+    autoSave();
+    renderPage();
+    showToast('Olur belgesi okundu, alanlar dolduruldu!', 'success');
+  } catch(e) {
+    showToast('PDF okunamadı: ' + e.message, 'error');
+  }
 }
 
 function onFirmaChange(el, type) {

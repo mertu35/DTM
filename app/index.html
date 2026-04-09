@@ -159,6 +159,9 @@
   
   <!-- html2pdf.js for PDF exports (lokal) -->
   <script src="js/html2pdf.bundle.min.js"></script>
+  <!-- PDF.js for olur belgesi parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>if(typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <!-- App scripts -->
   <script src="js/config.js"></script>
   <script src="js/firebase.js?v=20260325"></script>
