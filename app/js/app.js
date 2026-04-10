@@ -437,6 +437,14 @@ async function doLogin() {
   }
 }
 
+function toggleLoginPwd(btn) {
+  const input = document.getElementById('loginPassword');
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  btn.innerHTML = isHidden ? '&#128584;' : '&#128065;';
+  btn.classList.toggle('visible', isHidden);
+}
+
 function showLoginError(msg) {
   const el = document.getElementById('loginError');
   el.textContent = msg;

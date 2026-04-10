@@ -246,12 +246,19 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 13px;
-  color: rgba(255,255,255,0.65);
+  font-size: 14px;
+  color: rgba(255,255,255,0.82);
 }
 .login-brand-feature-icon {
-  font-size: 16px;
+  font-size: 18px;
   flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
 }
 
 /* Sağ Form Paneli */
@@ -262,17 +269,44 @@ body {
   align-items: center;
   justify-content: center;
   background: rgba(255,255,255,0.04);
+  background-image: radial-gradient(circle, rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 26px 26px;
   backdrop-filter: blur(20px);
   border-left: 1px solid rgba(255,255,255,0.08);
   padding: 40px 32px;
   position: relative;
+  overflow: hidden;
+}
+/* Dekoratif halkalar */
+.login-form-panel::before {
+  content: '';
+  position: absolute;
+  width: 340px; height: 340px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.06);
+  bottom: -130px; right: -100px;
+  pointer-events: none;
+}
+.login-form-panel::after {
+  content: '';
+  position: absolute;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.05);
+  top: 48px; right: 16px;
+  pointer-events: none;
 }
 .login-box {
   width: 100%;
   background: #fff;
   border-radius: 16px;
   padding: 40px 36px;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.12);
+  box-shadow:
+    0 24px 64px rgba(0,0,0,0.28),
+    0 0 0 1px rgba(59,130,246,0.18),
+    0 0 40px rgba(59,130,246,0.07);
+  position: relative;
+  z-index: 1;
 }
 .login-form-header {
   text-align: center;
@@ -335,14 +369,37 @@ body {
   outline: none;
   border-color: #3b82f6;
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.18), 0 0 12px rgba(59,130,246,0.1);
+}
+
+/* Şifre göster/gizle butonu */
+.login-pwd-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.4;
+  padding: 4px;
+  line-height: 1;
+  transition: opacity 0.15s;
+}
+.login-pwd-toggle:hover { opacity: 0.75; }
+.login-pwd-toggle.visible { opacity: 0.7; }
+/* Password input sağda toggle olduğunda padding ekle */
+.login-input-wrap input[type="password"],
+.login-input-wrap input[type="text"] {
+  padding-right: 38px;
 }
 
 /* Giriş butonu */
 .login-btn {
   width: 100%;
   margin-top: 8px;
-  padding: 13px 20px;
+  padding: 14px 20px;
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: #fff;
   border: none;
@@ -355,26 +412,32 @@ body {
   justify-content: center;
   gap: 8px;
   animation: login-btn-pulse 2.5s ease-in-out infinite;
-  transition: transform 0.15s, filter 0.15s;
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s, filter 0.2s;
   font-family: 'Inter', sans-serif;
+  letter-spacing: 0.2px;
 }
 .login-btn:hover {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
+  animation: none;
+  filter: brightness(1.1);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 28px rgba(37,99,235,0.55), 0 2px 8px rgba(37,99,235,0.3);
 }
 .login-btn:active {
-  transform: scale(0.98) translateY(0);
+  transform: scale(0.97) translateY(0);
   animation: none;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.3);
 }
 .login-btn:disabled {
   animation: none;
   opacity: 0.7;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 .login-btn-arrow {
   animation: login-arrow-bounce 1.4s ease-in-out infinite;
   display: inline-block;
+  font-style: normal;
 }
 
 /* Versiyon */
@@ -384,12 +447,13 @@ body {
 }
 .login-version {
   font-size: 11px;
-  color: #4338ca;
-  background: #e0e7ff;
+  color: #94a3b8;
+  background: #f1f5f9;
   padding: 3px 10px;
   border-radius: 12px;
   display: inline-block;
-  font-weight: 600;
+  font-weight: 500;
+  opacity: 0.7;
 }
 
 /* Hata mesajı */
