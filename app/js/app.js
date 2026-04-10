@@ -643,16 +643,52 @@ async function renderAnaSayfaPage() {
     </div>
 
     <!-- Yeni Proje Modal -->
-    <div id="yeniProjeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center">
-      <div style="background:#fff;border-radius:12px;padding:32px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+    <div id="yeniProjeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:12px;padding:32px;width:460px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
         <h3 style="margin-bottom:8px;font-size:18px;color:var(--gray-800)">📋 Yeni Proje Oluştur</h3>
-        <p style="font-size:13px;color:var(--gray-500);margin-bottom:20px">Projeye bir isim verin.</p>
-        <label style="font-size:13px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:6px">İş / Hizmet Adı</label>
-        <input id="yeniProjeAdi" type="text" placeholder="Örn: Çatı Onarım İşi" style="width:100%;padding:10px 12px;border:1px solid var(--gray-300);border-radius:6px;font-size:14px;margin-bottom:20px;box-sizing:border-box"
-          onkeydown="if(event.key==='Enter')yeniProjeOlustur()">
-        <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button onclick="document.getElementById('yeniProjeModal').style.display='none'" style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">İptal</button>
-          <button onclick="yeniProjeOlustur()" class="btn btn-primary" style="padding:8px 20px">Oluştur</button>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:24px">Nasıl oluşturmak istersiniz?</p>
+
+        <!-- Adım 1: Seçim -->
+        <div id="yeniProjeAdim1" style="display:flex;flex-direction:column;gap:12px">
+          <button onclick="document.getElementById('yeniProjeAdim1').style.display='none';document.getElementById('yeniProjeAdim2Manuel').style.display='block';setTimeout(()=>document.getElementById('yeniProjeAdi')?.focus(),50)"
+            style="padding:16px;border:2px solid var(--gray-200);border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px;transition:border-color 0.15s"
+            onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--gray-200)'">
+            <div style="font-weight:600;color:var(--gray-800)">✏️ Manuel Oluştur</div>
+            <div style="font-size:12px;color:var(--gray-500);margin-top:4px">İş adını kendiniz yazarak başlayın</div>
+          </button>
+          <button onclick="document.getElementById('yeniProjeAdim1').style.display='none';document.getElementById('yeniProjeAdim2Olur').style.display='block'"
+            style="padding:16px;border:2px solid var(--gray-200);border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px;transition:border-color 0.15s"
+            onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--gray-200)'">
+            <div style="font-weight:600;color:var(--gray-800)">📄 Olur Dosyasından Oluştur</div>
+            <div style="font-size:12px;color:var(--gray-500);margin-top:4px">Onay belgesi yükleyerek iş adını otomatik doldurun</div>
+          </button>
+          <button onclick="document.getElementById('yeniProjeModal').style.display='none'" style="padding:8px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--gray-400)">İptal</button>
+        </div>
+
+        <!-- Adım 2a: Manuel -->
+        <div id="yeniProjeAdim2Manuel" style="display:none">
+          <label style="font-size:13px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:6px">İş / Hizmet Adı</label>
+          <input id="yeniProjeAdi" type="text" placeholder="Örn: Çatı Onarım İşi" style="width:100%;padding:10px 12px;border:1px solid var(--gray-300);border-radius:6px;font-size:14px;margin-bottom:20px;box-sizing:border-box"
+            onkeydown="if(event.key==='Enter')yeniProjeOlustur()">
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button onclick="document.getElementById('yeniProjeAdim2Manuel').style.display='none';document.getElementById('yeniProjeAdim1').style.display='flex'" style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">← Geri</button>
+            <button onclick="yeniProjeOlustur()" class="btn btn-primary" style="padding:8px 20px">Oluştur</button>
+          </div>
+        </div>
+
+        <!-- Adım 2b: Olur belgesi -->
+        <div id="yeniProjeAdim2Olur" style="display:none">
+          <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px">Doğrudan Temin veya Yaklaşık Maliyet Onay Belgesini yükleyin, iş adı otomatik okunacak.</p>
+          <div style="padding:24px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;text-align:center;margin-bottom:16px">
+            <div style="font-size:13px;color:#1e40af;margin-bottom:12px">📄 Onay belgesi PDF'ini seçin</div>
+            <label style="cursor:pointer;padding:8px 24px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;display:inline-block">
+              PDF Seç
+              <input type="file" accept=".pdf" style="display:none" onchange="parseOnayBelgesiIsAdi(this.files[0]);this.value=''">
+            </label>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button onclick="document.getElementById('yeniProjeAdim2Olur').style.display='none';document.getElementById('yeniProjeAdim1').style.display='flex'" style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">← Geri</button>
+          </div>
         </div>
       </div>
     </div>
@@ -692,12 +728,24 @@ function yeniProjeBaslat() {
     renderPage();
     setTimeout(() => {
       const m = document.getElementById('yeniProjeModal');
-      if (m) { m.style.display = 'flex'; setTimeout(() => document.getElementById('yeniProjeAdi')?.focus(), 50); }
+      if (m) { yeniProjeModalSifirla(m); m.style.display = 'flex'; }
     }, 400);
     return;
   }
+  yeniProjeModalSifirla(modal);
   modal.style.display = 'flex';
-  setTimeout(() => document.getElementById('yeniProjeAdi')?.focus(), 100);
+}
+
+function yeniProjeModalSifirla(modal) {
+  // Her açılışta adım 1'e döndür, input temizle
+  const adim1 = modal.querySelector('#yeniProjeAdim1');
+  const adim2m = modal.querySelector('#yeniProjeAdim2Manuel');
+  const adim2o = modal.querySelector('#yeniProjeAdim2Olur');
+  if (adim1) adim1.style.display = 'flex';
+  if (adim2m) adim2m.style.display = 'none';
+  if (adim2o) adim2o.style.display = 'none';
+  const inp = modal.querySelector('#yeniProjeAdi');
+  if (inp) inp.value = '';
 }
 
 function yeniProjeOlustur() {
@@ -1433,6 +1481,79 @@ async function parseYMOluru(file) {
     autoSave();
     renderPage();
     showToast('Olur belgesi okundu, alanlar dolduruldu!', 'success');
+  } catch(e) {
+    showToast('PDF okunamadı: ' + e.message, 'error');
+  }
+}
+
+async function parseOnayBelgesiIsAdi(file) {
+  if (!file) return;
+  if (typeof pdfjsLib === 'undefined') { showToast('PDF okuyucu yüklenemedi.', 'error'); return; }
+  try {
+    showToast('PDF okunuyor...', 'info');
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      fullText += content.items.map(item => item.str).join(' ') + '\n';
+    }
+
+    // Tırnak içindeki metni bul: "..." veya "..." veya "..."
+    let isAdi = null;
+    const tirnakMatch = fullText.match(/[\u201C\u201E\u0022\u00AB]([^\u201D\u201C\u0022\u00BB\n]{5,120})[\u201D\u201F\u0022\u00BB]/);
+    if (tirnakMatch) {
+      isAdi = tirnakMatch[1].trim();
+    }
+
+    // Alternatif: "konusu" veya "İşin Adı" keyword'ünden sonraki metin
+    if (!isAdi) {
+      const konusuMatch = fullText.match(/(?:konusu|İşin\s+Adı|Hizmetin\s+Adı)\s*[:\-]?\s*([A-Za-zÇŞĞÜÖİçşğüöı0-9 \/\-]{5,100}?)(?:\s{2,}|\n|$)/i);
+      if (konusuMatch) {
+        isAdi = konusuMatch[1].trim();
+      }
+    }
+
+    if (!isAdi) {
+      showToast('İş adı PDF içinde bulunamadı. Manuel girin.', 'warning');
+      // Manuel adım'a geç
+      const modal = document.getElementById('yeniProjeModal');
+      if (modal) {
+        modal.querySelector('#yeniProjeAdim2Olur').style.display = 'none';
+        modal.querySelector('#yeniProjeAdim2Manuel').style.display = 'block';
+        setTimeout(() => modal.querySelector('#yeniProjeAdi')?.focus(), 50);
+      }
+      return;
+    }
+
+    // Kullanıcıya sor
+    const onaylandi = await showConfirm(`İş adı bu mu?\n\n"${isAdi}"`, 'Evet, Kullan', 'Hayır');
+    if (!onaylandi) {
+      // Manuel adım'a geç, bulunan adı prefill et
+      const modal = document.getElementById('yeniProjeModal');
+      if (modal) {
+        modal.querySelector('#yeniProjeAdim2Olur').style.display = 'none';
+        modal.querySelector('#yeniProjeAdim2Manuel').style.display = 'block';
+        const inp = modal.querySelector('#yeniProjeAdi');
+        if (inp) { inp.value = isAdi; setTimeout(() => inp.focus(), 50); }
+      }
+      return;
+    }
+
+    // Proje oluştur
+    document.getElementById('yeniProjeModal').style.display = 'none';
+    proje = getDefaultProje();
+    proje.isAdi = isAdi;
+    currentCloudProjeId = null;
+    currentProjeKilitli = false;
+    currentProjeBaskaKullanici = false;
+    projeAktif = true;
+    currentPage = 'veri-giris';
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector('[data-page="veri-giris"]')?.classList.add('active');
+    renderPage();
+    showToast('Proje oluşturuldu!', 'success');
   } catch(e) {
     showToast('PDF okunamadı: ' + e.message, 'error');
   }
