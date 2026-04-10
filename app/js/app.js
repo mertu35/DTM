@@ -1504,14 +1504,14 @@ async function parseOnayBelgesiIsAdi(file) {
     let isAdi = null;
     const tirnakMatch = fullText.match(/[\u201C\u201E\u0022\u00AB]([^\u201D\u201C\u0022\u00BB\n]{5,120})[\u201D\u201F\u0022\u00BB]/);
     if (tirnakMatch) {
-      isAdi = tirnakMatch[1].trim();
+      isAdi = tirnakMatch[1].replace(/\s+/g, ' ').trim();
     }
 
     // Alternatif: "konusu" veya "İşin Adı" keyword'ünden sonraki metin
     if (!isAdi) {
       const konusuMatch = fullText.match(/(?:konusu|İşin\s+Adı|Hizmetin\s+Adı)\s*[:\-]?\s*([A-Za-zÇŞĞÜÖİçşğüöı0-9 \/\-]{5,100}?)(?:\s{2,}|\n|$)/i);
       if (konusuMatch) {
-        isAdi = konusuMatch[1].trim();
+        isAdi = konusuMatch[1].replace(/\s+/g, ' ').trim();
       }
     }
 
