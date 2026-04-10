@@ -426,14 +426,14 @@ async function doLogin() {
   const errDiv = document.getElementById('loginError');
   if (!username || !password) { showLoginError('Kullanıcı adı ve şifre gerekli.'); return; }
   btn.disabled = true;
-  btn.textContent = 'Giriş yapılıyor...';
+  btn.innerHTML = '<span>Giriş yapılıyor...</span>';
   errDiv.style.display = 'none';
   try {
     await dtmLogin(username, password);
   } catch(e) {
     showLoginError('Kullanıcı adı veya şifre hatalı.');
     btn.disabled = false;
-    btn.textContent = 'Giriş Yap';
+    btn.innerHTML = '<span>Giriş Yap</span><span class="login-btn-arrow">&#8594;</span>';
   }
 }
 
@@ -504,7 +504,7 @@ async function onAuthReady(user) {
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('appLayout').style.display = 'none';
     const btn = document.getElementById('loginBtn');
-    if (btn) { btn.disabled = false; btn.textContent = 'Giriş Yap'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span>Giriş Yap</span><span class="login-btn-arrow">&#8594;</span>'; }
     const err = document.getElementById('loginError');
     if (err) err.style.display = 'none';
   }

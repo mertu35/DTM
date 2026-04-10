@@ -22,27 +22,69 @@
 
   <!-- ===== GİRİŞ EKRANI ===== -->
   <div class="login-overlay" id="loginOverlay" style="display:none">
-    <div class="login-box">
-      <div class="login-logo">
+    <!-- Animasyonlu arka plan orb'ları -->
+    <div class="login-orb login-orb-1"></div>
+    <div class="login-orb login-orb-2"></div>
+    <div class="login-orb login-orb-3"></div>
+
+    <!-- Sol: Kurumsal Branding Paneli -->
+    <div class="login-brand">
+      <div class="login-brand-inner">
         <img src="https://www.karamanozelidare.gov.tr/kurumlar/karamanozelidare.gov.tr/01-Kurumsal-Dosyalar/Logo/karaman_ilozelidare_logo.png"
              alt="Karaman İl Özel İdaresi"
-             style="max-width:140px;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto">
-        <h1>DTM</h1>
-        <p>Doğrudan Temin Modülü</p>
-        <span class="login-version">v1.1.1</span>
+             class="login-brand-logo">
+        <div class="login-brand-dtm">DTM</div>
+        <div class="login-brand-title">Doğrudan Temin Modülü</div>
+        <div class="login-brand-subtitle">Karaman İl Özel İdaresi<br>Yatırım ve İnşaat Müdürlüğü</div>
+        <div class="login-brand-divider"></div>
+        <div class="login-brand-features">
+          <div class="login-brand-feature">
+            <span class="login-brand-feature-icon">&#128196;</span>
+            <span>Belge üretimi ve takibi</span>
+          </div>
+          <div class="login-brand-feature">
+            <span class="login-brand-feature-icon">&#128202;</span>
+            <span>Proje yönetimi ve raporlama</span>
+          </div>
+          <div class="login-brand-feature">
+            <span class="login-brand-feature-icon">&#128274;</span>
+            <span>Güvenli bulut tabanlı erişim</span>
+          </div>
+        </div>
       </div>
-      <div id="loginError" class="login-error" style="display:none"></div>
-      <div class="form-group">
-        <label>Kullanıcı Adı</label>
-        <input type="text" id="loginUsername" placeholder="Kullanıcı adınızı giriniz" autocomplete="username">
+    </div>
+
+    <!-- Sağ: Form Paneli -->
+    <div class="login-form-panel">
+      <div class="login-box">
+        <div class="login-form-header">
+          <div class="login-form-icon">&#128274;</div>
+          <h2>Sisteme Giriş</h2>
+          <p>Yetkili kullanıcı bilgilerinizle oturum açın</p>
+        </div>
+        <div id="loginError" class="login-error" style="display:none"></div>
+        <div class="login-field">
+          <label>Kullanıcı Adı</label>
+          <div class="login-input-wrap">
+            <span class="login-input-icon">&#128100;</span>
+            <input type="text" id="loginUsername" placeholder="Kullanıcı adınızı giriniz" autocomplete="username">
+          </div>
+        </div>
+        <div class="login-field">
+          <label>Şifre</label>
+          <div class="login-input-wrap">
+            <span class="login-input-icon">&#128272;</span>
+            <input type="password" id="loginPassword" placeholder="Şifrenizi giriniz" autocomplete="current-password">
+          </div>
+        </div>
+        <button class="login-btn" id="loginBtn" onclick="doLogin()">
+          <span>Giriş Yap</span>
+          <span class="login-btn-arrow">&#8594;</span>
+        </button>
+        <div class="login-version-wrap">
+          <span class="login-version">v1.1.1</span>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Şifre</label>
-        <input type="password" id="loginPassword" placeholder="Şifrenizi giriniz" autocomplete="current-password">
-      </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:8px" id="loginBtn" onclick="doLogin()">
-        Giriş Yap
-      </button>
     </div>
   </div>
 
