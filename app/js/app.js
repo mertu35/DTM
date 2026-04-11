@@ -2728,7 +2728,7 @@ async function renderProjelerimPage() {
           ${durmBilgisi}
           ${p.status === 'geri_gonderildi' && p.geriGonderNot ? `
             <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:7px 10px;margin-top:6px;font-size:12px;color:#991b1b">
-              <strong>Not:</strong> ${p.geriGonderNot}
+              <strong>Not:</strong> ${escHtml(p.geriGonderNot)}
             </div>` : ''}
         </div>
         <div class="ky-proje-actions">
@@ -2822,7 +2822,7 @@ async function renderGonderilenProjelerPage() {
           </div>
           ${p.geriGonderNot ? `
             <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:7px 10px;margin-top:6px;font-size:12px;color:#991b1b">
-              <strong>${p.geriGonderBy || 'Yönetici'}:</strong> ${p.geriGonderNot}
+              <strong>${escHtml(p.geriGonderBy || 'Yönetici')}:</strong> ${escHtml(p.geriGonderNot)}
             </div>` : ''}
         </div>
         <div class="ky-proje-actions">${butonlar(p.id, isAdiSafe)}</div>
