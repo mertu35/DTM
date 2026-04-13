@@ -1196,6 +1196,10 @@ function renderVeriGirisPage() {
             <label>İşin Fiili Bitim Tarihi</label>
             <input type="date" id="fiiliBitimTarihi" value="${proje.fiiliBitimTarihi}" onchange="onFieldChange('fiiliBitimTarihi', this.value)">
           </div>
+          <div class="form-group">
+            <label>Bitti Tutanağı Ekleri <span style="font-weight:400;color:var(--gray-400);font-size:11px">(opsiyonel)</span></label>
+            <input type="text" id="bittiEkleri" value="${proje.bittiEkleri || ''}" placeholder="Örn: 1- Fotoğraflar, 2- Teknik Rapor" onchange="onFieldChange('bittiEkleri', this.value)">
+          </div>
         </div>
       </div>
     </div>

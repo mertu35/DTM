@@ -663,6 +663,11 @@ function renderBittiTutanagi(proje, referans) {
         <p>Yukarıda bilgileri belirtilen işin, sözleşme ve eklerine uygun olarak tamamlandığı ${formatDate(bitisT)} tarihinde yerinde yapılan inceleme sonucunda tespit edilmiş olup, iş bu tutanak ${tekGorevli ? 'tarafımca' : 'tarafımızca'} düzenlenmiştir.</p>
       </div>
 
+      ${proje.bittiEkleri ? `
+      <div style="margin-top:16px;line-height:1.8">
+        <strong>Ek:</strong> ${proje.bittiEkleri}
+      </div>` : ''}
+
       <div style="margin-top:50px">
         <p style="${dtGorevliler.length === 1 ? 'text-align:left' : 'text-align:center'};font-weight:bold;margin-bottom:10px">${dtGorevliler.length === 1 ? 'KONTROL GÖREVLİSİ' : 'KONTROL GÖREVLİLERİ'}</p>
         <table style="width:100%;border-collapse:collapse">
