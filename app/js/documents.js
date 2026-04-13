@@ -638,6 +638,7 @@ function renderBittiTutanagi(proje, referans) {
   const dtGorevliler = getAktifGorevliler(proje.dtGorevliler);
 
   const tekGorevli = dtGorevliler.length === 1;
+  const bittiEkleriArr = (Array.isArray(proje.bittiEkleri) ? proje.bittiEkleri : proje.bittiEkleri ? [proje.bittiEkleri] : []).filter(e => e.trim());
   const gorevliImzalar = dtGorevliler.map(g =>
     `<td style="border:none;text-align:${tekGorevli ? 'left' : 'center'};padding-top:40px">
       <strong>${g.ad}</strong><br>
@@ -663,10 +664,10 @@ function renderBittiTutanagi(proje, referans) {
         <p>Yukarıda bilgileri belirtilen işin, sözleşme ve eklerine uygun olarak tamamlandığı ${formatDate(bitisT)} tarihinde yerinde yapılan inceleme sonucunda tespit edilmiş olup, iş bu tutanak ${tekGorevli ? 'tarafımca' : 'tarafımızca'} düzenlenmiştir.</p>
       </div>
 
-      ${Array.isArray(proje.bittiEkleri) && proje.bittiEkleri.filter(e => e.trim()).length > 0 ? `
+      ${bittiEkleriArr.length > 0 ? `
       <div style="margin-top:20px;line-height:1.8">
-        <strong>Ek${proje.bittiEkleri.filter(e => e.trim()).length > 1 ? 'ler' : ''}:</strong>
-        ${proje.bittiEkleri.filter(e => e.trim()).map((e, i) => `<div>${i + 1}- ${e}</div>`).join('')}
+        <strong>Ek${bittiEkleriArr.length > 1 ? 'ler' : ''}:</strong>
+        ${bittiEkleriArr.map((e, i) => `<div>${i + 1}- ${e}</div>`).join('')}
       </div>` : ''}
 
       <div style="margin-top:50px">

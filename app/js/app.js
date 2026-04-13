@@ -1199,7 +1199,7 @@ function renderVeriGirisPage() {
           <div class="form-group">
             <label>Bitti Tutanağı Ekleri <span style="font-weight:400;color:var(--gray-400);font-size:11px">(opsiyonel)</span></label>
             <div id="bittiEkleriList">
-              ${(proje.bittiEkleri || []).map((ek, i) => `
+              ${(Array.isArray(proje.bittiEkleri) ? proje.bittiEkleri : proje.bittiEkleri ? [proje.bittiEkleri] : []).map((ek, i) => `
                 <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
                   <span style="min-width:20px;font-size:13px;color:var(--gray-500);font-weight:600">${i + 1}-</span>
                   <input type="text" value="${escHtml(ek)}" data-ek-index="${i}" placeholder="Ek açıklaması"

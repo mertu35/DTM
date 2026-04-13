@@ -116,11 +116,19 @@ function saveProje(proje) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(proje));
 }
 
+function normalizeProje(p) {
+  // bittiEkleri eski string formatından array'e migrate et
+  if (!Array.isArray(p.bittiEkleri)) {
+    p.bittiEkleri = p.bittiEkleri ? [p.bittiEkleri] : [];
+  }
+  return p;
+}
+
 function loadProje() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     const parsed = JSON.parse(saved);
-    return Object.assign(getDefaultProje(), parsed);
+    return normalizeProje(Object.assign(getDefaultProje(), parsed));
   }
   return getDefaultProje();
 }
