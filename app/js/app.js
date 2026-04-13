@@ -1198,7 +1198,20 @@ function renderVeriGirisPage() {
           </div>
           <div class="form-group">
             <label>Bitti Tutanağı Ekleri <span style="font-weight:400;color:var(--gray-400);font-size:11px">(opsiyonel)</span></label>
-            <input type="text" id="bittiEkleri" value="${proje.bittiEkleri || ''}" placeholder="Örn: 1- Fotoğraflar, 2- Teknik Rapor" onchange="onFieldChange('bittiEkleri', this.value)">
+            <div id="bittiEkleriList">
+              ${(proje.bittiEkleri || []).map((ek, i) => `
+                <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
+                  <span style="min-width:20px;font-size:13px;color:var(--gray-500);font-weight:600">${i + 1}-</span>
+                  <input type="text" value="${escHtml(ek)}" data-ek-index="${i}" placeholder="Ek açıklaması"
+                    style="flex:1" onchange="onBittiEkChange(this)">
+                  <button type="button" onclick="onBittiEkSil(${i})"
+                    style="padding:5px 9px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;color:#6b7280;font-size:14px;line-height:1;transition:all 0.15s"
+                    onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'"
+                    onmouseout="this.style.borderColor='#d1d5db';this.style.color='#6b7280'">✕</button>
+                </div>`).join('')}
+            </div>
+            <button type="button" onclick="onBittiEkEkle()"
+              class="btn btn-outline btn-sm" style="margin-top:4px">+ Ek Ekle</button>
           </div>
         </div>
       </div>
@@ -1386,6 +1399,33 @@ function onKalemChange(el) {
   const sub = el.dataset.sub;
   proje.isKalemleri[idx][sub] = el.value;
   autoSave();
+}
+
+function onBittiEkChange(el) {
+  const idx = parseInt(el.dataset.ekIndex);
+  if (!Array.isArray(proje.bittiEkleri)) proje.bittiEkleri = [];
+  proje.bittiEkleri[idx] = el.value;
+  autoSave();
+}
+
+function onBittiEkEkle() {
+  if (!Array.isArray(proje.bittiEkleri)) proje.bittiEkleri = [];
+  proje.bittiEkleri.push('');
+  autoSave();
+  renderPage();
+  // Yeni eklenen input'a focus
+  setTimeout(() => {
+    const list = document.getElementById('bittiEkleriList');
+    const inputs = list?.querySelectorAll('input');
+    inputs?.[inputs.length - 1]?.focus();
+  }, 50);
+}
+
+function onBittiEkSil(idx) {
+  if (!Array.isArray(proje.bittiEkleri)) return;
+  proje.bittiEkleri.splice(idx, 1);
+  autoSave();
+  renderPage();
 }
 
 async function parseDTOluru(file) {

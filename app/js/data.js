@@ -72,7 +72,7 @@ function getDefaultProje() {
     sozlesmeTarihi: '',
     isSuresi: '',
     fiiliBitimTarihi: '',
-    bittiEkleri: '',
+    bittiEkleri: [],
     isKalemleri: [
       { ad: '', miktar: '', birim: '' },
       { ad: '', miktar: '', birim: '' },
