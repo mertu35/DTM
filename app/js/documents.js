@@ -67,7 +67,7 @@ function renderYaklasikMaliyet(proje, referans) {
         </tr>
       </table>
 
-      <table class="veri-tablo" style="font-size:11pt">
+      <table class="veri-tablo" style="font-size:9.5pt">
         <thead>
           <tr>
             <th rowspan="3" style="width:35px">S.NO</th>
@@ -125,7 +125,7 @@ function renderYaklasikMaliyet(proje, referans) {
             ${ymGorevliler.map(g =>
               `<div style="text-align:center;flex:1;padding-top:5px">
                 <strong>${g.ad}</strong><br>
-                <span style="font-size:11pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
+                <span style="font-size:9.5pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
               </div>`
             ).join('')}
           </div>
@@ -134,7 +134,7 @@ function renderYaklasikMaliyet(proje, referans) {
             <p style="font-weight:bold">OLUR</p>
             <p>${formatDate(ymTutanakT)}</p>
             <p style="margin-top:10px"><strong>${proje.onaylayanAmir.ad}</strong></p>
-            <p style="font-size:11pt">${proje.onaylayanAmir.unvan}</p>
+            <p style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</p>
           </div>
           <!-- Boşluk: Yaklaşık Maliyet sütunlarının altı (140px) -->
           <div style="width:140px"></div>
@@ -209,7 +209,7 @@ function renderTeklifTutanagi(proje, referans) {
   }
 
   const kazananHTML = kazanan ? `
-    <table class="veri-tablo" style="margin-top:0;border-top:none;font-size:11pt;table-layout:fixed">
+    <table class="veri-tablo" style="margin-top:0;border-top:none;font-size:9.5pt;table-layout:fixed">
       <colgroup>
         <col style="width:32px">
         <col style="width:160px">
@@ -271,7 +271,7 @@ function renderTeklifTutanagi(proje, referans) {
         </tr>
       </table>
 
-      <table class="veri-tablo" style="font-size:11pt;table-layout:fixed">
+      <table class="veri-tablo" style="font-size:9.5pt;table-layout:fixed">
         <colgroup>
           <col style="width:32px">
           <col style="width:160px">
@@ -324,7 +324,7 @@ function renderTeklifTutanagi(proje, referans) {
                 <td style="border:none;white-space:nowrap">Ünvanı</td>
                 <td style="border:none">:</td>
                 ${dtGorevliler.map(g =>
-                  `<td style="border:none;font-size:11pt;padding-left:25px">${g.unvan || getUnvanByAd(g.ad, referans)}</td>`
+                  `<td style="border:none;font-size:9.5pt;padding-left:25px">${g.unvan || getUnvanByAd(g.ad, referans)}</td>`
                 ).join('')}
               </tr>
             </table>
@@ -333,7 +333,7 @@ function renderTeklifTutanagi(proje, referans) {
           <div style="width:190px;text-align:center;padding-top:20px">
             <p style="font-weight:bold">UYGUNDUR</p>
             <p style="margin-top:30px"><strong>${proje.onaylayanAmir.ad}</strong></p>
-            <p style="font-size:11pt">${proje.onaylayanAmir.unvan}</p>
+            <p style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</p>
           </div>
         </div>
       </div>
@@ -367,7 +367,7 @@ function renderSozlesme(proje, referans) {
 
       <table style="width:100%;border-collapse:collapse;margin:10px 0">
         <tr>
-          <td style="border:1px solid #000;text-align:center;padding:10px;font-weight:bold;color:#365F91;font-size:11pt;letter-spacing:0.5px">
+          <td style="border:1px solid #000;text-align:center;padding:10px;font-weight:bold;color:#365F91;font-size:9.5pt;letter-spacing:0.5px">
             ${proje.isAdi.toLocaleUpperCase('tr-TR')}
           </td>
         </tr>
@@ -643,7 +643,7 @@ function renderBittiTutanagi(proje, referans) {
     `<td style="border:none;text-align:left;padding-top:40px;width:${tekGorevli ? '50%' : ''}">
       <div style="display:inline-block;text-align:center;">
         <strong>${g.ad}</strong><br>
-        <span style="font-size:12pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
+        <span style="font-size:13pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
       </div>
     </td>`
   ).join('');
@@ -701,13 +701,13 @@ function renderDogrudanTeminOnayBelgesi(proje) {
   return `
     <div class="belge">
       <div style="text-align:center;margin-bottom:6px">
-        <div style="font-size:11pt;font-weight:bold">T.C.</div>
-        <div style="font-size:11pt;font-weight:bold">${proje.idareAdi}</div>
+        <div style="font-size:9.5pt;font-weight:bold">T.C.</div>
+        <div style="font-size:9.5pt;font-weight:bold">${proje.idareAdi}</div>
         <div style="font-size:10pt;font-weight:bold">${proje.mudurluk}</div>
       </div>
 
       <h2 class="belge-baslik" style="margin:10px 0 4px">DOĞRUDAN TEMİN ONAY BELGESİ</h2>
-      <div style="text-align:center;font-size:11pt;margin-bottom:14px">(4734 sayılı Kanunun 22. maddesi (d) bendi gereğince)</div>
+      <div style="text-align:center;font-size:9.5pt;margin-bottom:14px">(4734 sayılı Kanunun 22. maddesi (d) bendi gereğince)</div>
 
       <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
         ${satir('ALIMI YAPAN İDARENİN ADI', `${proje.idareAdi} (${proje.mudurluk})`)}
@@ -751,7 +751,7 @@ function renderDogrudanTeminOnayBelgesi(proje) {
         <div style="flex:1;padding:10px 14px;text-align:center">
           <div style="font-weight:bold">Uygundur. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</div>
           <div style="margin-top:16px"><strong>${proje.onaylayanAmir.ad}</strong></div>
-          <div style="font-size:11pt">${proje.onaylayanAmir.unvan}</div>
+          <div style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</div>
         </div>
       </div>
     </div>
@@ -827,7 +827,7 @@ function renderHakedisRaporu(proje, referans) {
             ${dtGorevliler.map(g =>
               `<div style="text-align:center">
                 <strong>${g.ad}</strong><br>
-                <span style="font-size:11pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
+                <span style="font-size:9.5pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
               </div>`
             ).join('')}
           </div>
@@ -837,7 +837,7 @@ function renderHakedisRaporu(proje, referans) {
       <div style="text-align:center;margin-top:40px">
         <p style="font-weight:bold;letter-spacing:2px">ONAYLAYAN</p>
         <p style="margin-top:20px"><strong>${proje.onaylayanAmir.ad}</strong></p>
-        <p style="font-size:11pt">${proje.onaylayanAmir.unvan}</p>
+        <p style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</p>
       </div>
     </div>
   `;
@@ -922,7 +922,7 @@ function belgePdfIndir(html, landscape = false, sozlesme = false, dosyaAdi = 'be
   const container = document.createElement('div');
   container.style.cssText = `position:fixed;left:-9999px;top:0;width:${pageW}px;`;
   container.innerHTML = `
-    <div style="font-family:Times New Roman,serif;font-size:11pt;color:#000;padding:${bodyPadding};width:${pageW}px;box-sizing:border-box;">
+    <div style="font-family:Times New Roman,serif;font-size:9.5pt;color:#000;padding:${bodyPadding};width:${pageW}px;box-sizing:border-box;">
       ${html}
     </div>`;
   document.body.appendChild(container);
