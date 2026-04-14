@@ -647,7 +647,7 @@ function renderBittiTutanagi(proje, referans) {
   ).join('');
 
   return `
-    <div class="belge">
+    <div class="belge tutanak">
       <h2 class="belge-baslik">TUTANAK</h2>
 
       <table class="bilgi-tablo" style="margin:20px 0">
