@@ -244,6 +244,9 @@ async function cokluBelgeIndir(secilen) {
     .madde p { margin-top:5px; text-align:justify; }
     .sozlesme .madde p, .sozlesme .madde { font-size:12pt; }
     .sozlesme .madde { margin-bottom:7px; line-height:1.35; }
+    .tutanak { font-size:12pt; }
+    .tutanak .bilgi-tablo td { font-size:12pt; padding:4px 6px; }
+    .tutanak .belge-baslik { font-size:16pt; }
     .sozlesme-imza { margin-top:20px; }
     .hakedis-tablo td:first-child { width:30px; text-align:center; font-weight:bold; }
     small { font-size:8.5pt; }
@@ -377,6 +380,9 @@ function cokluGerceklestirmeciBelgeIndir(secilen) {
     .madde p { margin-top:5px; text-align:justify; }
     .sozlesme .madde p, .sozlesme .madde { font-size:12pt; }
     .sozlesme .madde { margin-bottom:7px; line-height:1.35; }
+    .tutanak { font-size:12pt; }
+    .tutanak .bilgi-tablo td { font-size:12pt; padding:4px 6px; }
+    .tutanak .belge-baslik { font-size:16pt; }
     .sozlesme-imza { margin-top:20px; }
     .hakedis-tablo td:first-child { width:30px; text-align:center; font-weight:bold; }
     small { font-size:8.5pt; }
