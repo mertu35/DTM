@@ -238,11 +238,12 @@ function renderTeklifTutanagi(proje, referans) {
       </tbody>
     </table>` : '';
 
-  // Görevli imzaları - sadece ad (ünvan ayrı satırda)
+  // Görevli imzaları - yaklaşık maliyet stiliyle (koyu ad, normal ünvan, ortalı)
   const gorevliImzalar = dtGorevliler.map(g =>
-    `<td style="border:none;padding-top:5px;padding-left:25px;vertical-align:top;width:${100/Math.max(dtGorevliler.length,1)}%">
-      ${g.ad}
-    </td>`
+    `<div style="text-align:center;flex:1;padding-top:5px">
+      <strong>${g.ad}</strong><br>
+      <span style="font-size:9.5pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
+    </div>`
   ).join('');
 
   return `
@@ -314,20 +315,9 @@ function renderTeklifTutanagi(proje, referans) {
           <!-- Görevliler sol tarafta -->
           <div style="flex:1">
             <p style="font-weight:bold;text-align:center;margin-bottom:6px">Piyasa Fiyat Araştırması ${dtGorevliler.length > 1 ? 'Görevlileri' : 'Görevlisi'}</p>
-            <table style="width:100%;border-collapse:collapse">
-              <tr>
-                <td style="border:none;width:90px;white-space:nowrap">Adı Soyadı</td>
-                <td style="border:none;width:10px">:</td>
-                ${gorevliImzalar}
-              </tr>
-              <tr>
-                <td style="border:none;white-space:nowrap">Ünvanı</td>
-                <td style="border:none">:</td>
-                ${dtGorevliler.map(g =>
-                  `<td style="border:none;font-size:9.5pt;padding-left:25px">${g.unvan || getUnvanByAd(g.ad, referans)}</td>`
-                ).join('')}
-              </tr>
-            </table>
+            <div style="display:flex;gap:10px">
+              ${gorevliImzalar}
+            </div>
           </div>
           <!-- UYGUNDUR sağda -->
           <div style="width:190px;text-align:center;padding-top:20px">
