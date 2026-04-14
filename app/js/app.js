@@ -222,7 +222,7 @@ async function cokluBelgeIndir(secilen) {
 
   const css = `
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: "Times New Roman", serif; font-size:9.5pt; color:#000; background:#fff; }
+    body { font-family: "Times New Roman", serif; font-size:11pt; color:#000; background:#fff; }
     .belge-bolum { padding:15mm 20mm; }
     .pg-yatay { padding:10mm 15mm; }
     .belge { width:100%; }
@@ -232,7 +232,7 @@ async function cokluBelgeIndir(secilen) {
     .bilgi-tablo td { padding:2px 6px; vertical-align:top; }
     .bilgi-tablo .etiket { font-weight:bold; }
     .veri-tablo { width:100%; border-collapse:collapse; margin-bottom:10px; border:0.5mm solid #000; }
-    .veri-tablo th, .veri-tablo td { border:0.5mm solid #000; padding:2px 4px; text-align:left; font-size:9.5pt; }
+    .veri-tablo th, .veri-tablo td { border:0.5mm solid #000; padding:2px 4px; text-align:left; font-size:11pt; }
     .veri-tablo th { background:#f0f0f0; text-align:center; font-weight:bold; }
     .rakam { text-align:right !important; } .merkez { text-align:center !important; } .bold { font-weight:bold; }
     .toplam-satir td { font-weight:bold; background:#f9f9f9; }
@@ -358,7 +358,7 @@ function cokluGerceklestirmeciBelgeIndir(secilen) {
 
   const css = `
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: "Times New Roman", serif; font-size:9.5pt; color:#000; background:#fff; }
+    body { font-family: "Times New Roman", serif; font-size:11pt; color:#000; background:#fff; }
     .belge-bolum { padding:15mm 20mm; }
     .pg-yatay { padding:10mm 15mm; }
     .belge { width:100%; }
@@ -368,7 +368,7 @@ function cokluGerceklestirmeciBelgeIndir(secilen) {
     .bilgi-tablo td { padding:2px 6px; vertical-align:top; }
     .bilgi-tablo .etiket { font-weight:bold; }
     .veri-tablo { width:100%; border-collapse:collapse; margin-bottom:10px; border:0.5mm solid #000; }
-    .veri-tablo th, .veri-tablo td { border:0.5mm solid #000; padding:2px 4px; text-align:left; font-size:9.5pt; }
+    .veri-tablo th, .veri-tablo td { border:0.5mm solid #000; padding:2px 4px; text-align:left; font-size:11pt; }
     .veri-tablo th { background:#f0f0f0; text-align:center; font-weight:bold; }
     .rakam { text-align:right !important; } .merkez { text-align:center !important; } .bold { font-weight:bold; }
     .toplam-satir td { font-weight:bold; background:#f9f9f9; }
