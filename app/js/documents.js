@@ -649,25 +649,25 @@ function renderBittiTutanagi(proje, referans) {
   ).join('');
 
   return `
-    <div class="belge tutanak">
-      <h2 class="belge-baslik">TUTANAK</h2>
+    <div class="belge tutanak" style="font-size:13pt">
+      <h2 class="belge-baslik" style="font-size:17pt">TUTANAK</h2>
 
-      <table class="bilgi-tablo" style="margin:20px 0">
-        <tr><td class="etiket" style="width:35%">Yapılan İş / Hizmetin Adı</td><td style="width:14px;vertical-align:top">:</td><td>${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
-        <tr><td class="etiket">Yüklenicinin Adı</td><td style="width:14px;vertical-align:top">:</td><td>${kazanan.ad || '-'}</td></tr>
-        <tr><td class="etiket">Sözleşme Tarihi</td><td style="width:14px;vertical-align:top">:</td><td>${formatDate(proje.sozlesmeTarihi)}</td></tr>
-        <tr><td class="etiket">Sözleşme Bedeli</td><td style="width:14px;vertical-align:top">:</td><td>${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
-        <tr><td class="etiket">İş Süresi</td><td style="width:14px;vertical-align:top">:</td><td>${proje.isSuresi} Takvim Günü</td></tr>
-        <tr><td class="etiket">İşe Başlama Tarihi</td><td style="width:14px;vertical-align:top">:</td><td>${formatDate(proje.sozlesmeTarihi)}</td></tr>
-        <tr><td class="etiket">İşin Bitim Tarihi</td><td style="width:14px;vertical-align:top">:</td><td>${formatDate(bitisT)}</td></tr>
+      <table class="bilgi-tablo" style="margin:20px 0;font-size:13pt">
+        <tr><td class="etiket" style="width:35%;font-size:13pt">Yapılan İş / Hizmetin Adı</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
+        <tr><td class="etiket" style="font-size:13pt">Yüklenicinin Adı</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${kazanan.ad || '-'}</td></tr>
+        <tr><td class="etiket" style="font-size:13pt">Sözleşme Tarihi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${formatDate(proje.sozlesmeTarihi)}</td></tr>
+        <tr><td class="etiket" style="font-size:13pt">Sözleşme Bedeli</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
+        <tr><td class="etiket" style="font-size:13pt">İş Süresi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${proje.isSuresi} Takvim Günü</td></tr>
+        <tr><td class="etiket" style="font-size:13pt">İşe Başlama Tarihi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${formatDate(proje.sozlesmeTarihi)}</td></tr>
+        <tr><td class="etiket" style="font-size:13pt">İşin Bitim Tarihi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${formatDate(bitisT)}</td></tr>
       </table>
 
-      <div style="margin:40px 0;text-align:justify;line-height:1.8">
+      <div style="margin:40px 0;text-align:justify;line-height:1.8;font-size:13pt">
         <p>Yukarıda bilgileri belirtilen işin, sözleşme ve eklerine uygun olarak tamamlandığı ${formatDate(bitisT)} tarihinde yerinde yapılan inceleme sonucunda tespit edilmiş olup, iş bu tutanak ${tekGorevli ? 'tarafımca' : 'tarafımızca'} düzenlenmiştir.</p>
       </div>
 
       ${bittiEkleriArr.length > 0 ? `
-      <div style="margin-top:20px;line-height:1.8">
+      <div style="margin-top:20px;line-height:1.8;font-size:13pt">
         <strong>Ek${bittiEkleriArr.length > 1 ? 'ler' : ''}:</strong>
         ${bittiEkleriArr.map((e, i) => `<div>${i + 1}- ${e}</div>`).join('')}
       </div>` : ''}
