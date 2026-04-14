@@ -633,31 +633,31 @@ function renderBittiTutanagi(proje, referans) {
     `<td style="border:none;text-align:${tekGorevli ? 'left' : 'center'};padding-top:16px;width:${100 / dtGorevliler.length}%">
       <div style="display:inline-block;text-align:center;">
         <strong>${g.ad}</strong><br>
-        <span style="font-size:13pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
+        <span style="font-size:11.5pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
       </div>
     </td>`
   ).join('');
 
   return `
-    <div class="belge tutanak" style="font-size:13pt">
+    <div class="belge tutanak" style="font-size:11.5pt">
       <h2 class="belge-baslik" style="font-size:17pt">TUTANAK</h2>
 
-      <table class="bilgi-tablo" style="margin:20px 0;font-size:13pt">
-        <tr><td class="etiket" style="width:35%;font-size:13pt">Yapılan İş / Hizmetin Adı</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
-        <tr><td class="etiket" style="font-size:13pt">Yüklenicinin Adı</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${kazanan.ad || '-'}</td></tr>
-        <tr><td class="etiket" style="font-size:13pt">Sözleşme Tarihi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${formatDate(proje.sozlesmeTarihi)}</td></tr>
-        <tr><td class="etiket" style="font-size:13pt">Sözleşme Bedeli</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
-        <tr><td class="etiket" style="font-size:13pt">İş Süresi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${proje.isSuresi} Takvim Günü</td></tr>
-        <tr><td class="etiket" style="font-size:13pt">İşe Başlama Tarihi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${formatDate(proje.sozlesmeTarihi)}</td></tr>
-        <tr><td class="etiket" style="font-size:13pt">İşin Bitim Tarihi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:13pt">${formatDate(bitisT)}</td></tr>
+      <table class="bilgi-tablo" style="margin:20px 0;font-size:11.5pt">
+        <tr><td class="etiket" style="width:35%;font-size:11.5pt">Yapılan İş / Hizmetin Adı</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11.5pt">${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
+        <tr><td class="etiket" style="font-size:11.5pt">Yüklenicinin Adı</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11.5pt">${kazanan.ad || '-'}</td></tr>
+        <tr><td class="etiket" style="font-size:11.5pt">Sözleşme Tarihi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11.5pt">${formatDate(proje.sozlesmeTarihi)}</td></tr>
+        <tr><td class="etiket" style="font-size:11.5pt">Sözleşme Bedeli</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11.5pt">${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
+        <tr><td class="etiket" style="font-size:11.5pt">İş Süresi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11.5pt">${proje.isSuresi} Takvim Günü</td></tr>
+        <tr><td class="etiket" style="font-size:11.5pt">İşe Başlama Tarihi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11.5pt">${formatDate(proje.sozlesmeTarihi)}</td></tr>
+        <tr><td class="etiket" style="font-size:11.5pt">İşin Bitim Tarihi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11.5pt">${formatDate(bitisT)}</td></tr>
       </table>
 
-      <div style="margin:40px 0;text-align:justify;line-height:1.8;font-size:13pt">
+      <div style="margin:40px 0;text-align:justify;line-height:1.8;font-size:11.5pt">
         <p>Yukarıda bilgileri belirtilen işin, sözleşme ve eklerine uygun olarak tamamlandığı ${formatDate(bitisT)} tarihinde yerinde yapılan inceleme sonucunda tespit edilmiş olup, iş bu tutanak ${tekGorevli ? 'tarafımca' : 'tarafımızca'} düzenlenmiştir.</p>
       </div>
 
       ${bittiEkleriArr.length > 0 ? `
-      <div style="margin-top:20px;line-height:1.8;font-size:13pt">
+      <div style="margin-top:20px;line-height:1.8;font-size:11.5pt">
         <strong>Ek${bittiEkleriArr.length > 1 ? 'ler' : ''}:</strong>
         ${bittiEkleriArr.map((e, i) => `<div>${i + 1}- ${e}</div>`).join('')}
       </div>` : ''}
