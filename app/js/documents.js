@@ -640,7 +640,7 @@ function renderBittiTutanagi(proje, referans) {
 
   return `
     <div class="belge tutanak" style="font-size:11pt">
-      <h2 class="belge-baslik" style="font-size:17pt">TUTANAK</h2>
+      <h2 class="belge-baslik" style="font-size:13pt">TUTANAK</h2>
 
       <table class="bilgi-tablo" style="margin:20px 0;font-size:11pt">
         <tr><td class="etiket" style="width:35%;font-size:11pt">Yapılan İş / Hizmetin Adı</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11pt">${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
