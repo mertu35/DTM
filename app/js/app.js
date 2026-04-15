@@ -692,16 +692,30 @@ async function renderAnaSayfaPage() {
 
         <!-- Adım 2b: Olur belgesi -->
         <div id="yeniProjeAdim2Olur" style="display:none">
-          <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px">Doğrudan Temin veya Yaklaşık Maliyet Onay Belgesini yükleyin, iş adı otomatik okunacak.</p>
-          <div style="padding:24px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;text-align:center;margin-bottom:16px">
-            <div style="font-size:13px;color:#1e40af;margin-bottom:12px">📄 Onay belgesi PDF'ini seçin</div>
-            <label style="cursor:pointer;padding:8px 24px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;display:inline-block">
-              PDF Seç
-              <input type="file" accept=".pdf" style="display:none" onchange="parseOnayBelgesiIsAdi(this.files[0]);this.value=''">
-            </label>
+          <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px">Onay belgelerini yükleyin, alanlar otomatik doldurulacak. İkisini birden veya yalnızca birini yükleyebilirsiniz.</p>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+            <!-- YM Belgesi -->
+            <div style="padding:14px 18px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;display:flex;align-items:center;gap:12px">
+              <span style="font-size:13px;color:#1e40af;flex:1;font-weight:500">📄 Y.M. Onay Belgesi</span>
+              <span id="ymDosyaAdi" style="font-size:12px;color:#374151;flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+              <label style="cursor:pointer;padding:6px 16px;background:#2563eb;color:#fff;border-radius:6px;font-size:12px;display:inline-block;white-space:nowrap;flex-shrink:0">
+                PDF Seç
+                <input type="file" accept=".pdf" id="ymPdfInput" style="display:none" onchange="document.getElementById('ymDosyaAdi').textContent=this.files[0]?this.files[0].name:''">
+              </label>
+            </div>
+            <!-- DT Belgesi -->
+            <div style="padding:14px 18px;background:#f0fdf4;border:1.5px dashed #86efac;border-radius:8px;display:flex;align-items:center;gap:12px">
+              <span style="font-size:13px;color:#166534;flex:1;font-weight:500">📄 D.T. Onay Belgesi</span>
+              <span id="dtDosyaAdi" style="font-size:12px;color:#374151;flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+              <label style="cursor:pointer;padding:6px 16px;background:#16a34a;color:#fff;border-radius:6px;font-size:12px;display:inline-block;white-space:nowrap;flex-shrink:0">
+                PDF Seç
+                <input type="file" accept=".pdf" id="dtPdfInput" style="display:none" onchange="document.getElementById('dtDosyaAdi').textContent=this.files[0]?this.files[0].name:''">
+              </label>
+            </div>
           </div>
           <div style="display:flex;gap:10px;justify-content:flex-end">
             <button onclick="document.getElementById('yeniProjeAdim2Olur').style.display='none';document.getElementById('yeniProjeAdim1').style.display='flex'" style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">← Geri</button>
+            <button onclick="parseIkiOlurBelgesi()" style="padding:8px 24px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;border:none;cursor:pointer;font-weight:600">Oku ve Devam Et →</button>
           </div>
         </div>
       </div>
@@ -760,6 +774,15 @@ function yeniProjeModalSifirla(modal) {
   if (adim2o) adim2o.style.display = 'none';
   const inp = modal.querySelector('#yeniProjeAdi');
   if (inp) inp.value = '';
+  // Dosya seçimlerini temizle
+  const ymInput = modal.querySelector('#ymPdfInput');
+  const dtInput = modal.querySelector('#dtPdfInput');
+  if (ymInput) ymInput.value = '';
+  if (dtInput) dtInput.value = '';
+  const ymLabel = modal.querySelector('#ymDosyaAdi');
+  const dtLabel = modal.querySelector('#dtDosyaAdi');
+  if (ymLabel) ymLabel.textContent = '';
+  if (dtLabel) dtLabel.textContent = '';
 }
 
 function yeniProjeOlustur() {
@@ -1539,6 +1562,155 @@ async function parseYMOluru(file) {
     autoSave();
     renderPage();
     showToast('Olur belgesi okundu, alanlar dolduruldu!', 'success');
+  } catch(e) {
+    showToast('PDF okunamadı: ' + e.message, 'error');
+  }
+}
+
+async function parseIkiOlurBelgesi() {
+  const ymInput = document.getElementById('ymPdfInput');
+  const dtInput = document.getElementById('dtPdfInput');
+  const ymFile = ymInput && ymInput.files[0] ? ymInput.files[0] : null;
+  const dtFile = dtInput && dtInput.files[0] ? dtInput.files[0] : null;
+
+  if (!ymFile && !dtFile) {
+    showToast('En az bir PDF dosyası seçin.', 'warning');
+    return;
+  }
+
+  if (typeof pdfjsLib === 'undefined') { showToast('PDF okuyucu yüklenemedi.', 'error'); return; }
+
+  showToast('PDF(ler) okunuyor...', 'info');
+
+  // PDF metnini oku
+  async function readPdfText(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(item => item.str).join(' ') + '\n';
+    }
+    return text;
+  }
+
+  // Tek belgeden bilgileri çıkar
+  function belgeyiAnaliz(fullText) {
+    const isDT = /doğrudan\s+temin/i.test(fullText);
+    const isYM = /yaklaşık\s+maliyet/i.test(fullText);
+
+    let isAdi = null;
+    const tirnakMatch = fullText.match(/[\u201C\u201E\u0022\u00AB]([^\u201D\u201C\u0022\u00BB\n]{5,120})[\u201D\u201F\u0022\u00BB]/);
+    if (tirnakMatch) isAdi = tirnakMatch[1].replace(/\s+/g, ' ').trim();
+    if (!isAdi) {
+      const konusuMatch = fullText.match(/(?:konusu|İşin\s+Adı|Hizmetin\s+Adı)\s*[:\-]?\s*([A-Za-zÇŞĞÜÖİçşğüöı0-9 \/\-]{5,100}?)(?:\s{2,}|\n|$)/i);
+      if (konusuMatch) isAdi = konusuMatch[1].replace(/\s+/g, ' ').trim();
+    }
+
+    let onayNo = null, onayTarihi = null, gorevliAd = null, gorevliUnvan = null;
+    const sayiIdx = fullText.search(/Sayı\s*:/);
+    if (sayiIdx >= 0) {
+      const satirMetni = fullText.substring(sayiIdx, sayiIdx + 100);
+      const sayiMatch = satirMetni.match(/Sayı\s*:\s*(.+?)\s+(\d{2}\.\d{2}\.\d{4})/);
+      if (sayiMatch) {
+        const parts = sayiMatch[1].replace(/\s+/g, '').split('-');
+        onayNo = parts[parts.length - 1];
+      }
+      const tarihMatch = satirMetni.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+      if (tarihMatch) onayTarihi = `${tarihMatch[3]}-${tarihMatch[2]}-${tarihMatch[1]}`;
+    }
+
+    const gorevliMatchDT = fullText.match(/ilgili\s+([A-Za-zÇŞĞÜÖİçşğüöı ]+?)\s*['\u2018\u2019\u02BC]\S*\s+doğrudan\s+temin/i);
+    const gorevliMatchYM = fullText.match(/olarak\s+([A-Za-zÇŞĞÜÖİçşğüöı ]+?)\s*['\u2018\u2019\u02BC]\S*\s+görevlendirilmesi/i);
+    const gorevliMatch = isDT ? gorevliMatchDT : (isYM ? gorevliMatchYM : (gorevliMatchDT || gorevliMatchYM));
+    if (gorevliMatch) {
+      const tamMetin = gorevliMatch[1].trim();
+      const kelimeler = tamMetin.split(/\s+/);
+      let idx = kelimeler.length - 1;
+      const soyadlar = [];
+      while (idx >= 0 && /^[A-ZÇŞĞÜÖİ]+$/.test(kelimeler[idx])) soyadlar.unshift(kelimeler[idx--]);
+      const adlar = (idx >= 0 && /^[A-ZÇŞĞÜÖİ][a-zçşğüöı]/.test(kelimeler[idx])) ? [kelimeler[idx--]] : [];
+      gorevliAd = [...adlar, ...soyadlar].join(' ');
+      gorevliUnvan = kelimeler.slice(0, idx + 1).join(' ');
+    }
+
+    return { isDT, isYM, isAdi, onayNo, onayTarihi, gorevliAd, gorevliUnvan };
+  }
+
+  try {
+    // Her iki dosyayı da oku
+    const ymSonuc = ymFile ? belgeyiAnaliz(await readPdfText(ymFile)) : null;
+    const dtSonuc = dtFile ? belgeyiAnaliz(await readPdfText(dtFile)) : null;
+
+    // İş adını belirle (YM öncelikli, yoksa DT'den al)
+    const isAdi = (ymSonuc && ymSonuc.isAdi) || (dtSonuc && dtSonuc.isAdi);
+    if (!isAdi) {
+      showToast('İş adı PDF içinde bulunamadı. Manuel girin.', 'warning');
+      const modal = document.getElementById('yeniProjeModal');
+      if (modal) {
+        modal.querySelector('#yeniProjeAdim2Olur').style.display = 'none';
+        modal.querySelector('#yeniProjeAdim2Manuel').style.display = 'block';
+        setTimeout(() => modal.querySelector('#yeniProjeAdi')?.focus(), 50);
+      }
+      return;
+    }
+
+    // Özet oluştur
+    const satirlar = [];
+    satirlar.push(`📋 İş Adı: ${isAdi}`);
+    if (ymSonuc) {
+      satirlar.push('');
+      satirlar.push('📘 Y.M. Onay Belgesi:');
+      if (ymSonuc.onayNo)     satirlar.push(`  🔢 Sayı: ${ymSonuc.onayNo}`);
+      if (ymSonuc.onayTarihi) satirlar.push(`  📅 Tarih: ${ymSonuc.onayTarihi.split('-').reverse().join('.')}`);
+      if (ymSonuc.gorevliAd)  satirlar.push(`  👤 Görevli: ${ymSonuc.gorevliAd}`);
+    }
+    if (dtSonuc) {
+      satirlar.push('');
+      satirlar.push('📗 D.T. Onay Belgesi:');
+      if (dtSonuc.onayNo)     satirlar.push(`  🔢 Sayı: ${dtSonuc.onayNo}`);
+      if (dtSonuc.onayTarihi) satirlar.push(`  📅 Tarih: ${dtSonuc.onayTarihi.split('-').reverse().join('.')}`);
+      if (dtSonuc.gorevliAd)  satirlar.push(`  👤 Görevli: ${dtSonuc.gorevliAd}`);
+    }
+
+    const onaylandi = await showConfirm(`Aşağıdaki bilgiler okundu:\n\n${satirlar.join('\n')}\n\nForma aktaralım mı?`, 'Evet, Aktar', 'Hayır');
+    if (!onaylandi) {
+      const modal = document.getElementById('yeniProjeModal');
+      if (modal) {
+        modal.querySelector('#yeniProjeAdim2Olur').style.display = 'none';
+        modal.querySelector('#yeniProjeAdim2Manuel').style.display = 'block';
+        const inp = modal.querySelector('#yeniProjeAdi');
+        if (inp) { inp.value = isAdi; setTimeout(() => inp.focus(), 50); }
+      }
+      return;
+    }
+
+    // Proje oluştur ve alanları doldur
+    document.getElementById('yeniProjeModal').style.display = 'none';
+    proje = getDefaultProje();
+    proje.isAdi = isAdi;
+
+    if (ymSonuc) {
+      if (ymSonuc.onayNo)     proje.ymOnayNo = ymSonuc.onayNo;
+      if (ymSonuc.onayTarihi) proje.ymOnayTarihi = ymSonuc.onayTarihi;
+      if (ymSonuc.gorevliAd)  { proje.ymGorevliler[0].ad = ymSonuc.gorevliAd; proje.ymGorevliler[0].unvan = ymSonuc.gorevliUnvan || ''; proje.ymGorevliSayisi = 1; }
+    }
+    if (dtSonuc) {
+      if (dtSonuc.onayNo)     proje.dtOnayNo = dtSonuc.onayNo;
+      if (dtSonuc.onayTarihi) proje.dtOnayTarihi = dtSonuc.onayTarihi;
+      if (dtSonuc.gorevliAd)  { proje.dtGorevliler[0].ad = dtSonuc.gorevliAd; proje.dtGorevliler[0].unvan = dtSonuc.gorevliUnvan || ''; proje.dtGorevliSayisi = 1; }
+    }
+
+    currentCloudProjeId = null;
+    currentProjeKilitli = false;
+    currentProjeBaskaKullanici = false;
+    projeAktif = true;
+    currentPage = 'veri-giris';
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector('[data-page="veri-giris"]')?.classList.add('active');
+    renderPage();
+    showToast('Proje oluşturuldu, alanlar dolduruldu!', 'success');
   } catch(e) {
     showToast('PDF okunamadı: ' + e.message, 'error');
   }
