@@ -1558,14 +1558,16 @@ async function parseOnayBelgesiIsAdi(file) {
       fullText += content.items.map(item => item.str).join(' ') + '\n';
     }
 
-    // Tırnak içindeki metni bul: "..." veya "..." veya "..."
+    // Belge tipini tespit et
+    const isDT = /doğrudan\s+temin/i.test(fullText);
+    const isYM = /yaklaşık\s+maliyet/i.test(fullText);
+
+    // İş adını tırnak içinden bul
     let isAdi = null;
     const tirnakMatch = fullText.match(/[\u201C\u201E\u0022\u00AB]([^\u201D\u201C\u0022\u00BB\n]{5,120})[\u201D\u201F\u0022\u00BB]/);
     if (tirnakMatch) {
       isAdi = tirnakMatch[1].replace(/\s+/g, ' ').trim();
     }
-
-    // Alternatif: "konusu" veya "İşin Adı" keyword'ünden sonraki metin
     if (!isAdi) {
       const konusuMatch = fullText.match(/(?:konusu|İşin\s+Adı|Hizmetin\s+Adı)\s*[:\-]?\s*([A-Za-zÇŞĞÜÖİçşğüöı0-9 \/\-]{5,100}?)(?:\s{2,}|\n|$)/i);
       if (konusuMatch) {
@@ -1575,7 +1577,6 @@ async function parseOnayBelgesiIsAdi(file) {
 
     if (!isAdi) {
       showToast('İş adı PDF içinde bulunamadı. Manuel girin.', 'warning');
-      // Manuel adım'a geç
       const modal = document.getElementById('yeniProjeModal');
       if (modal) {
         modal.querySelector('#yeniProjeAdim2Olur').style.display = 'none';
@@ -1585,10 +1586,49 @@ async function parseOnayBelgesiIsAdi(file) {
       return;
     }
 
-    // Kullanıcıya sor
-    const onaylandi = await showConfirm(`İş adı bu mu?\n\n"${isAdi}"`, 'Evet, Kullan', 'Hayır');
+    // Sayı ve tarih çek
+    let onayNo = null, onayTarihi = null, gorevliAd = null, gorevliUnvan = null;
+    const sayiIdx = fullText.search(/Sayı\s*:/);
+    if (sayiIdx >= 0) {
+      const satirMetni = fullText.substring(sayiIdx, sayiIdx + 100);
+      const sayiMatch = satirMetni.match(/Sayı\s*:\s*(.+?)\s+(\d{2}\.\d{2}\.\d{4})/);
+      if (sayiMatch) {
+        const parts = sayiMatch[1].replace(/\s+/g, '').split('-');
+        onayNo = parts[parts.length - 1];
+      }
+      const tarihMatch = satirMetni.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+      if (tarihMatch) {
+        onayTarihi = `${tarihMatch[3]}-${tarihMatch[2]}-${tarihMatch[1]}`;
+      }
+    }
+
+    // Görevliyi çek (DT veya YM pattern)
+    const gorevliMatchDT = fullText.match(/ilgili\s+([A-Za-zÇŞĞÜÖİçşğüöı ]+?)\s*['\u2018\u2019\u02BC]\S*\s+doğrudan\s+temin/i);
+    const gorevliMatchYM = fullText.match(/olarak\s+([A-Za-zÇŞĞÜÖİçşğüöı ]+?)\s*['\u2018\u2019\u02BC]\S*\s+görevlendirilmesi/i);
+    const gorevliMatch = isDT ? gorevliMatchDT : (isYM ? gorevliMatchYM : (gorevliMatchDT || gorevliMatchYM));
+    if (gorevliMatch) {
+      const tamMetin = gorevliMatch[1].trim();
+      const kelimeler = tamMetin.split(/\s+/);
+      let idx = kelimeler.length - 1;
+      const soyadlar = [];
+      while (idx >= 0 && /^[A-ZÇŞĞÜÖİ]+$/.test(kelimeler[idx])) soyadlar.unshift(kelimeler[idx--]);
+      const adlar = (idx >= 0 && /^[A-ZÇŞĞÜÖİ][a-zçşğüöı]/.test(kelimeler[idx])) ? [kelimeler[idx--]] : [];
+      gorevliAd = [...adlar, ...soyadlar].join(' ');
+      gorevliUnvan = kelimeler.slice(0, idx + 1).join(' ');
+    }
+
+    // Özet onay mesajı oluştur
+    const tip = isDT ? 'D.T. Onay Belgesi' : (isYM ? 'Y.M. Onay Belgesi' : 'Onay Belgesi');
+    const satirlar = [
+      `📄 Belge Türü: ${tip}`,
+      `📋 İş Adı: ${isAdi}`,
+      onayNo    ? `🔢 Sayı: ${onayNo}` : null,
+      onayTarihi ? `📅 Tarih: ${onayTarihi.split('-').reverse().join('.')}` : null,
+      gorevliAd  ? `👤 Görevli: ${gorevliAd}` : null,
+    ].filter(Boolean).join('\n');
+
+    const onaylandi = await showConfirm(`Aşağıdaki bilgiler okundu:\n\n${satirlar}\n\nForma aktaralım mı?`, 'Evet, Aktar', 'Hayır');
     if (!onaylandi) {
-      // Manuel adım'a geç, bulunan adı prefill et
       const modal = document.getElementById('yeniProjeModal');
       if (modal) {
         modal.querySelector('#yeniProjeAdim2Olur').style.display = 'none';
@@ -1599,10 +1639,19 @@ async function parseOnayBelgesiIsAdi(file) {
       return;
     }
 
-    // Proje oluştur
+    // Proje oluştur ve alanları doldur
     document.getElementById('yeniProjeModal').style.display = 'none';
     proje = getDefaultProje();
     proje.isAdi = isAdi;
+    if (isDT || (!isYM && gorevliMatchDT)) {
+      if (onayNo)     proje.dtOnayNo = onayNo;
+      if (onayTarihi) proje.dtOnayTarihi = onayTarihi;
+      if (gorevliAd)  { proje.dtGorevliler[0].ad = gorevliAd; proje.dtGorevliler[0].unvan = gorevliUnvan || ''; proje.dtGorevliSayisi = 1; }
+    } else {
+      if (onayNo)     proje.ymOnayNo = onayNo;
+      if (onayTarihi) proje.ymOnayTarihi = onayTarihi;
+      if (gorevliAd)  { proje.ymGorevliler[0].ad = gorevliAd; proje.ymGorevliler[0].unvan = gorevliUnvan || ''; proje.ymGorevliSayisi = 1; }
+    }
     currentCloudProjeId = null;
     currentProjeKilitli = false;
     currentProjeBaskaKullanici = false;
@@ -1611,7 +1660,7 @@ async function parseOnayBelgesiIsAdi(file) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.querySelector('[data-page="veri-giris"]')?.classList.add('active');
     renderPage();
-    showToast('Proje oluşturuldu!', 'success');
+    showToast('Proje oluşturuldu, alanlar dolduruldu!', 'success');
   } catch(e) {
     showToast('PDF okunamadı: ' + e.message, 'error');
   }
