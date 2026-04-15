@@ -1635,7 +1635,20 @@ async function parseIkiOlurBelgesi() {
       gorevliUnvan = kelimeler.slice(0, idx + 1).join(' ');
     }
 
-    return { isDT, isYM, isAdi, onayNo, onayTarihi, gorevliAd, gorevliUnvan };
+    // Onaylayan amir: DT belgesinde OLUR bölümünden çek
+    let onaylayanAd = null, onaylayanUnvan = null;
+    const olurIdx = fullText.search(/\bOLUR\b/);
+    if (olurIdx >= 0) {
+      const olurSonrasi = fullText.substring(olurIdx, olurIdx + 500);
+      // İsim: "Ahmet YILMAZ" veya "Ahmet Mehmet YILMAZ" formatı
+      const isimMatch = olurSonrasi.match(/\b([A-ZÇŞĞÜÖİ][a-zçşğüöı]+(?:\s+[A-ZÇŞĞÜÖİ][a-zçşğüöı]+)?\s+[A-ZÇŞĞÜÖİ]{2,}(?:\s+[A-ZÇŞĞÜÖİ]{2,})?)\b/);
+      if (isimMatch) onaylayanAd = isimMatch[1].trim();
+      // Ünvan: Müdür, Genel Sekreter, Vali, Başkan içeren ifade
+      const unvanMatch = olurSonrasi.match(/\b((?:[A-ZÇŞĞÜÖİa-zçşğüöı]+\s+){0,5}(?:Müdür|Genel\s+Sekreter|Vali|Başkan|Kaymakam)(?:\s+[A-Za-zÇŞĞÜÖİçşğüöı\.]+){0,3})\b/);
+      if (unvanMatch) onaylayanUnvan = unvanMatch[1].replace(/\s+/g, ' ').trim();
+    }
+
+    return { isDT, isYM, isAdi, onayNo, onayTarihi, gorevliAd, gorevliUnvan, onaylayanAd, onaylayanUnvan };
   }
 
   try {
@@ -1669,9 +1682,10 @@ async function parseIkiOlurBelgesi() {
     if (dtSonuc) {
       satirlar.push('');
       satirlar.push('📗 D.T. Onay Belgesi:');
-      if (dtSonuc.onayNo)     satirlar.push(`  🔢 Sayı: ${dtSonuc.onayNo}`);
-      if (dtSonuc.onayTarihi) satirlar.push(`  📅 Tarih: ${dtSonuc.onayTarihi.split('-').reverse().join('.')}`);
-      if (dtSonuc.gorevliAd)  satirlar.push(`  👤 Görevli: ${dtSonuc.gorevliAd}`);
+      if (dtSonuc.onayNo)        satirlar.push(`  🔢 Sayı: ${dtSonuc.onayNo}`);
+      if (dtSonuc.onayTarihi)    satirlar.push(`  📅 Tarih: ${dtSonuc.onayTarihi.split('-').reverse().join('.')}`);
+      if (dtSonuc.gorevliAd)     satirlar.push(`  👤 Görevli: ${dtSonuc.gorevliAd}`);
+      if (dtSonuc.onaylayanAd)   satirlar.push(`  ✅ Onaylayan: ${dtSonuc.onaylayanAd}${dtSonuc.onaylayanUnvan ? ' / ' + dtSonuc.onaylayanUnvan : ''}`);
     }
 
     const onaylandi = await showConfirm(`Aşağıdaki bilgiler okundu:\n\n${satirlar.join('\n')}\n\nForma aktaralım mı?`, 'Evet, Aktar', 'Hayır');
@@ -1697,9 +1711,10 @@ async function parseIkiOlurBelgesi() {
       if (ymSonuc.gorevliAd)  { proje.ymGorevliler[0].ad = ymSonuc.gorevliAd; proje.ymGorevliler[0].unvan = ymSonuc.gorevliUnvan || ''; proje.ymGorevliSayisi = 1; }
     }
     if (dtSonuc) {
-      if (dtSonuc.onayNo)     proje.dtOnayNo = dtSonuc.onayNo;
-      if (dtSonuc.onayTarihi) proje.dtOnayTarihi = dtSonuc.onayTarihi;
-      if (dtSonuc.gorevliAd)  { proje.dtGorevliler[0].ad = dtSonuc.gorevliAd; proje.dtGorevliler[0].unvan = dtSonuc.gorevliUnvan || ''; proje.dtGorevliSayisi = 1; }
+      if (dtSonuc.onayNo)      proje.dtOnayNo = dtSonuc.onayNo;
+      if (dtSonuc.onayTarihi)  proje.dtOnayTarihi = dtSonuc.onayTarihi;
+      if (dtSonuc.gorevliAd)   { proje.dtGorevliler[0].ad = dtSonuc.gorevliAd; proje.dtGorevliler[0].unvan = dtSonuc.gorevliUnvan || ''; proje.dtGorevliSayisi = 1; }
+      if (dtSonuc.onaylayanAd) proje.onaylayanAmir = { ad: dtSonuc.onaylayanAd, unvan: dtSonuc.onaylayanUnvan || '' };
     }
 
     currentCloudProjeId = null;
