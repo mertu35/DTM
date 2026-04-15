@@ -1637,10 +1637,13 @@ async function parseIkiOlurBelgesi() {
 
     // Onaylayan amir: DT belgesinde OLUR bölümünden çek
     // Format: "OLUR [tarih?] Sinan ÖZYER Yatırım ve İnşaat Müdür V."
+    // Dikkat: "OLUR'larınıza", "OLUR'unuza" gibi ekli halleri atla — kesme işareti veya harf geliyorsa geç
     let onaylayanAd = null, onaylayanUnvan = null;
-    const olurIdx = fullText.search(/\bOLUR\b/);
-    if (olurIdx >= 0) {
-      const olurSonrasi = fullText.substring(olurIdx, olurIdx + 300).replace(/\s+/g, ' ');
+    const olurPattern = /\bOLUR(?![''\u2018\u2019\u02BCa-zçşğüöıA-ZÇŞĞÜÖİ])/g;
+    let olurMatch2, lastOlurIdx = -1;
+    while ((olurMatch2 = olurPattern.exec(fullText)) !== null) lastOlurIdx = olurMatch2.index;
+    if (lastOlurIdx >= 0) {
+      const olurSonrasi = fullText.substring(lastOlurIdx, lastOlurIdx + 300).replace(/\s+/g, ' ');
       // İsim: büyük harfle başlayan kelime(ler) + TAM BÜYÜK soyadı (Sinan ÖZYER, Ahmet Mehmet YILMAZ)
       const isimMatch = olurSonrasi.match(/\b([A-ZÇŞĞÜÖİ][a-zçşğüöı]+(?:\s+[A-ZÇŞĞÜÖİ][a-zçşğüöı]+)?\s+[A-ZÇŞĞÜÖİ]{2,}(?:\s+[A-ZÇŞĞÜÖİ]{2,})?)/);
       if (isimMatch) onaylayanAd = isimMatch[1].trim();
