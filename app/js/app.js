@@ -1676,27 +1676,33 @@ async function parseIkiOlurBelgesi() {
       return;
     }
 
-    // Özet oluştur
-    const satirlar = [];
-    satirlar.push(`📋 İş Adı: ${isAdi}`);
+    // YM belgesi ayrı onay
+    let ymKabul = false;
     if (ymSonuc) {
-      satirlar.push('');
-      satirlar.push('📘 Y.M. Onay Belgesi:');
-      if (ymSonuc.onayNo)     satirlar.push(`  🔢 Sayı: ${ymSonuc.onayNo}`);
-      if (ymSonuc.onayTarihi) satirlar.push(`  📅 Tarih: ${ymSonuc.onayTarihi.split('-').reverse().join('.')}`);
-      if (ymSonuc.gorevliAd)  satirlar.push(`  👤 Görevli: ${ymSonuc.gorevliAd}`);
-    }
-    if (dtSonuc) {
-      satirlar.push('');
-      satirlar.push('📗 D.T. Onay Belgesi:');
-      if (dtSonuc.onayNo)        satirlar.push(`  🔢 Sayı: ${dtSonuc.onayNo}`);
-      if (dtSonuc.onayTarihi)    satirlar.push(`  📅 Tarih: ${dtSonuc.onayTarihi.split('-').reverse().join('.')}`);
-      if (dtSonuc.gorevliAd)     satirlar.push(`  👤 Görevli: ${dtSonuc.gorevliAd}`);
-      if (dtSonuc.onaylayanAd)   satirlar.push(`  ✅ Onaylayan: ${dtSonuc.onaylayanAd}${dtSonuc.onaylayanUnvan ? ' / ' + dtSonuc.onaylayanUnvan : ''}`);
+      const ymSatirlar = [
+        `📋 İş Adı: ${ymSonuc.isAdi || isAdi}`,
+        ymSonuc.onayNo     ? `🔢 Sayı: ${ymSonuc.onayNo}` : null,
+        ymSonuc.onayTarihi ? `📅 Tarih: ${ymSonuc.onayTarihi.split('-').reverse().join('.')}` : null,
+        ymSonuc.gorevliAd  ? `👤 Görevli: ${ymSonuc.gorevliAd}` : null,
+      ].filter(Boolean).join('\n');
+      ymKabul = await showConfirm(`📘 Y.M. Onay Belgesi bilgileri:\n\n${ymSatirlar}\n\nBu belgeyi aktaralım mı?`, 'Evet, Aktar', 'Bu Belgeyi Atla');
     }
 
-    const onaylandi = await showConfirm(`Aşağıdaki bilgiler okundu:\n\n${satirlar.join('\n')}\n\nForma aktaralım mı?`, 'Evet, Aktar', 'Hayır');
-    if (!onaylandi) {
+    // DT belgesi ayrı onay
+    let dtKabul = false;
+    if (dtSonuc) {
+      const dtSatirlar = [
+        `📋 İş Adı: ${dtSonuc.isAdi || isAdi}`,
+        dtSonuc.onayNo      ? `🔢 Sayı: ${dtSonuc.onayNo}` : null,
+        dtSonuc.onayTarihi  ? `📅 Tarih: ${dtSonuc.onayTarihi.split('-').reverse().join('.')}` : null,
+        dtSonuc.gorevliAd   ? `👤 Görevli: ${dtSonuc.gorevliAd}` : null,
+        dtSonuc.onaylayanAd ? `✅ Onaylayan: ${dtSonuc.onaylayanAd}${dtSonuc.onaylayanUnvan ? ' / ' + dtSonuc.onaylayanUnvan : ''}` : null,
+      ].filter(Boolean).join('\n');
+      dtKabul = await showConfirm(`📗 D.T. Onay Belgesi bilgileri:\n\n${dtSatirlar}\n\nBu belgeyi aktaralım mı?`, 'Evet, Aktar', 'Bu Belgeyi Atla');
+    }
+
+    // İkisi de reddedildiyse iptal
+    if (!ymKabul && !dtKabul) {
       const modal = document.getElementById('yeniProjeModal');
       if (modal) {
         modal.querySelector('#yeniProjeAdim2Olur').style.display = 'none';
@@ -1707,22 +1713,21 @@ async function parseIkiOlurBelgesi() {
       return;
     }
 
-    // Proje oluştur ve alanları doldur
+    // Proje oluştur ve kabul edilen belgeleri aktar
     document.getElementById('yeniProjeModal').style.display = 'none';
     proje = getDefaultProje();
     proje.isAdi = isAdi;
 
-    if (ymSonuc) {
+    if (ymKabul && ymSonuc) {
       if (ymSonuc.onayNo)     proje.ymOnayNo = ymSonuc.onayNo;
       if (ymSonuc.onayTarihi) proje.ymOnayTarihi = ymSonuc.onayTarihi;
       if (ymSonuc.gorevliAd)  { proje.ymGorevliler[0].ad = ymSonuc.gorevliAd; proje.ymGorevliler[0].unvan = ymSonuc.gorevliUnvan || ''; proje.ymGorevliSayisi = 1; }
     }
-    if (dtSonuc) {
+    if (dtKabul && dtSonuc) {
       if (dtSonuc.onayNo)      proje.dtOnayNo = dtSonuc.onayNo;
       if (dtSonuc.onayTarihi)  proje.dtOnayTarihi = dtSonuc.onayTarihi;
       if (dtSonuc.gorevliAd)   { proje.dtGorevliler[0].ad = dtSonuc.gorevliAd; proje.dtGorevliler[0].unvan = dtSonuc.gorevliUnvan || ''; proje.dtGorevliSayisi = 1; }
       if (dtSonuc.onaylayanAd) {
-        // Referans listesiyle eşleştir (aynı ad varsa canonical ünvanı kullan)
         const refMatch = referans.onaylayanList.find(o => o.ad === dtSonuc.onaylayanAd);
         proje.onaylayanAmir = { ad: dtSonuc.onaylayanAd, unvan: refMatch ? refMatch.unvan : (dtSonuc.onaylayanUnvan || '') };
       }
