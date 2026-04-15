@@ -1636,16 +1636,20 @@ async function parseIkiOlurBelgesi() {
     }
 
     // Onaylayan amir: DT belgesinde OLUR bölümünden çek
+    // Format: "OLUR [tarih?] Sinan ÖZYER Yatırım ve İnşaat Müdür V."
     let onaylayanAd = null, onaylayanUnvan = null;
     const olurIdx = fullText.search(/\bOLUR\b/);
     if (olurIdx >= 0) {
-      const olurSonrasi = fullText.substring(olurIdx, olurIdx + 500);
-      // İsim: "Ahmet YILMAZ" veya "Ahmet Mehmet YILMAZ" formatı
-      const isimMatch = olurSonrasi.match(/\b([A-ZÇŞĞÜÖİ][a-zçşğüöı]+(?:\s+[A-ZÇŞĞÜÖİ][a-zçşğüöı]+)?\s+[A-ZÇŞĞÜÖİ]{2,}(?:\s+[A-ZÇŞĞÜÖİ]{2,})?)\b/);
+      const olurSonrasi = fullText.substring(olurIdx, olurIdx + 300).replace(/\s+/g, ' ');
+      // İsim: büyük harfle başlayan kelime(ler) + TAM BÜYÜK soyadı (Sinan ÖZYER, Ahmet Mehmet YILMAZ)
+      const isimMatch = olurSonrasi.match(/\b([A-ZÇŞĞÜÖİ][a-zçşğüöı]+(?:\s+[A-ZÇŞĞÜÖİ][a-zçşğüöı]+)?\s+[A-ZÇŞĞÜÖİ]{2,}(?:\s+[A-ZÇŞĞÜÖİ]{2,})?)/);
       if (isimMatch) onaylayanAd = isimMatch[1].trim();
-      // Ünvan: Müdür, Genel Sekreter, Vali, Başkan içeren ifade
-      const unvanMatch = olurSonrasi.match(/\b((?:[A-ZÇŞĞÜÖİa-zçşğüöı]+\s+){0,5}(?:Müdür|Genel\s+Sekreter|Vali|Başkan|Kaymakam)(?:\s+[A-Za-zÇŞĞÜÖİçşğüöı\.]+){0,3})\b/);
-      if (unvanMatch) onaylayanUnvan = unvanMatch[1].replace(/\s+/g, ' ').trim();
+      // Ünvan: isimden sonraki kısımda Müdür/Genel Sekreter/Vali/Başkan/Kaymakam içeren cümle
+      if (onaylayanAd) {
+        const isimSonrasi = olurSonrasi.substring(olurSonrasi.indexOf(onaylayanAd) + onaylayanAd.length);
+        const unvanMatch = isimSonrasi.match(/^\s*((?:[A-Za-zÇŞĞÜÖİçşğüöı]+\s+){0,6}(?:Müdür|Genel\s+Sekreter|Vali|Başkan|Kaymakam)[A-Za-zÇŞĞÜÖİçşğüöı\.\s]*?)(?:\s{2,}|\d|$)/);
+        if (unvanMatch) onaylayanUnvan = unvanMatch[1].replace(/\s+/g, ' ').trim();
+      }
     }
 
     return { isDT, isYM, isAdi, onayNo, onayTarihi, gorevliAd, gorevliUnvan, onaylayanAd, onaylayanUnvan };
@@ -1714,7 +1718,11 @@ async function parseIkiOlurBelgesi() {
       if (dtSonuc.onayNo)      proje.dtOnayNo = dtSonuc.onayNo;
       if (dtSonuc.onayTarihi)  proje.dtOnayTarihi = dtSonuc.onayTarihi;
       if (dtSonuc.gorevliAd)   { proje.dtGorevliler[0].ad = dtSonuc.gorevliAd; proje.dtGorevliler[0].unvan = dtSonuc.gorevliUnvan || ''; proje.dtGorevliSayisi = 1; }
-      if (dtSonuc.onaylayanAd) proje.onaylayanAmir = { ad: dtSonuc.onaylayanAd, unvan: dtSonuc.onaylayanUnvan || '' };
+      if (dtSonuc.onaylayanAd) {
+        // Referans listesiyle eşleştir (aynı ad varsa canonical ünvanı kullan)
+        const refMatch = referans.onaylayanList.find(o => o.ad === dtSonuc.onaylayanAd);
+        proje.onaylayanAmir = { ad: dtSonuc.onaylayanAd, unvan: refMatch ? refMatch.unvan : (dtSonuc.onaylayanUnvan || '') };
+      }
     }
 
     currentCloudProjeId = null;
