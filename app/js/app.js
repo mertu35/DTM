@@ -873,7 +873,13 @@ function renderVeriGirisPage() {
     <div class="card" style="margin-bottom:12px">
       <div class="card-body" style="padding:12px">
         <div class="form-group" style="margin-bottom:10px">
-          <label>${fi + 1}. Firma</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <label style="margin:0">${fi + 1}. Firma</label>
+            <label title="PDF'den oku" style="cursor:pointer;padding:3px 8px;background:#eff6ff;border:1px solid #93c5fd;border-radius:5px;font-size:11px;color:#1e40af;white-space:nowrap">
+              📄 PDF'den Oku
+              <input type="file" accept=".pdf" style="display:none" onchange="parseTeklifPDF(this.files[0],'ym',${fi});this.value=''">
+            </label>
+          </div>
           <select data-field="ymFirmalar" data-index="${fi}" data-sub="ad" onchange="onFirmaChange(this, 'ym')">
             <option value="">-- Firma Seçin --</option>
             ${referans.firmaList.map(fr => `<option value="${fr.ad}" ${f.ad === fr.ad ? 'selected' : ''}>${fr.ad}</option>`).join('')}
@@ -916,7 +922,13 @@ function renderVeriGirisPage() {
     <div class="card" style="margin-bottom:12px;${isKazanan ? 'border:2px solid var(--success)' : ''}">
       <div class="card-body" style="padding:12px">
         <div class="form-group" style="margin-bottom:10px">
-          <label>${fi + 1}. Firma ${isKazanan ? '(KAZANAN)' : ''}</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <label style="margin:0">${fi + 1}. Firma ${isKazanan ? '(KAZANAN)' : ''}</label>
+            <label title="PDF'den oku" style="cursor:pointer;padding:3px 8px;background:#f0fdf4;border:1px solid #86efac;border-radius:5px;font-size:11px;color:#166534;white-space:nowrap">
+              📄 PDF'den Oku
+              <input type="file" accept=".pdf" style="display:none" onchange="parseTeklifPDF(this.files[0],'teklif',${fi});this.value=''">
+            </label>
+          </div>
           <select data-field="teklifFirmalar" data-index="${fi}" data-sub="ad" onchange="onFirmaChange(this, 'teklif')">
             <option value="">-- Firma Seçin --</option>
             ${referans.firmaList.map(fr => `<option value="${fr.ad}" ${f.ad === fr.ad ? 'selected' : ''}>${fr.ad}</option>`).join('')}
@@ -1864,6 +1876,71 @@ async function parseOnayBelgesiIsAdi(file) {
     document.querySelector('[data-page="veri-giris"]')?.classList.add('active');
     renderPage();
     showToast('Proje oluşturuldu, alanlar dolduruldu!', 'success');
+  } catch(e) {
+    showToast('PDF okunamadı: ' + e.message, 'error');
+  }
+}
+
+function parseTLTutar(str) {
+  let s = str.replace(/[TLtl\s₺,]/g, ''); // virgülü de kaldır
+  // Türkçe format: "95.000" → nokta binler ayırıcısı (son grup 3 hane)
+  if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  return parseFloat(s) || 0;
+}
+
+async function parseTeklifPDF(file, type, fi) {
+  if (!file) return;
+  if (typeof pdfjsLib === 'undefined') { showToast('PDF okuyucu yüklenemedi.', 'error'); return; }
+  showToast('PDF okunuyor...', 'info');
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      fullText += content.items.map(item => item.str).join(' ') + '\n';
+    }
+
+    // Tutar: "105,000TL" veya "95.000 TL" → Toplam Tutarı satırından çek
+    let tutar = 0;
+    const tutarMatch = fullText.match(/Toplam\s*Tutar[ıi]?\s*[\r\n ]*([0-9][0-9.,]*)\s*TL/i)
+      || fullText.match(/([0-9][0-9.,]+)\s*TL\b/i);
+    if (tutarMatch) tutar = parseTLTutar(tutarMatch[1]);
+
+    // Firma adı: "taahhüt ederiz" sonrasında imzalayan tarafı bul
+    let firmaAdi = '';
+    const taahhutIdx = fullText.search(/taahhüt\s+ederiz/i);
+    const aramaMetni = taahhutIdx >= 0 ? fullText.substring(taahhutIdx, taahhutIdx + 400) : fullText.slice(-400);
+
+    // Referans listesindeki firmalardan birini metinde ara (en güvenilir yöntem)
+    const eslesen = referans.firmaList.find(fr =>
+      fr.ad && aramaMetni.includes(fr.ad)
+    ) || referans.firmaList.find(fr =>
+      fr.ad && fullText.includes(fr.ad)
+    );
+    if (eslesen) firmaAdi = eslesen.ad;
+
+    // Onay
+    const satirlar = [
+      firmaAdi ? `🏢 Firma: ${firmaAdi}` : '🏢 Firma: (bulunamadı)',
+      tutar > 0  ? `💰 Tutar: ${formatCurrency(tutar)} TL` : '💰 Tutar: (bulunamadı)',
+    ].join('\n');
+    const onaylandi = await showConfirm(`PDF'den okunan bilgiler:\n\n${satirlar}\n\nAktaralım mı?`, 'Evet, Aktar', 'Hayır');
+    if (!onaylandi) return;
+
+    const liste = type === 'ym' ? proje.ymFirmalar : proje.teklifFirmalar;
+    if (firmaAdi) liste[fi].ad = firmaAdi;
+    if (tutar > 0) {
+      // Tek kalem: tutarı ilk aktif kalemin birim fiyatına yaz
+      const aktifKi = proje.isKalemleri.findIndex(k => k.ad?.trim());
+      const ki = aktifKi >= 0 ? aktifKi : 0;
+      const miktar = parseFloat(proje.isKalemleri[ki]?.miktar) || 1;
+      liste[fi].fiyatlar[ki] = Math.round((tutar / miktar) * 100) / 100;
+    }
+    saveProje(proje);
+    renderPage();
+    showToast('Firma bilgileri aktarıldı!', 'success');
   } catch(e) {
     showToast('PDF okunamadı: ' + e.message, 'error');
   }
