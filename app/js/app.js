@@ -1941,11 +1941,19 @@ async function parseTeklifPDF(file, type, fi) {
     // DEBUG: ham metni konsola yaz
     console.log('[parseTeklifPDF] Ham metin:\n', fullText.substring(0, 1000));
 
-    // Tutar: metindeki TÜM "sayı TL" kalıplarını bul, en büyüğünü al (toplam tutar)
-    const tlEslesmeler = [...fullText.matchAll(/([0-9]+[.,][0-9.,]*|[0-9]{4,})\s*TL/gi)];
-    const tutarlar = tlEslesmeler.map(m => parseTLTutar(m[1])).filter(t => t > 100);
-    const tutar = tutarlar.length > 0 ? Math.max(...tutarlar) : 0;
-    console.log('[parseTeklifPDF] Bulunan tutarlar:', tutarlar, '→ seçilen:', tutar);
+    // Tutar: önce "Tutarı [sayı]" kalıbını ara (en güvenilir)
+    // Vision API bazen "TL" harflerini yanlış okur, bu yüzden TL'ye bağımlı olmuyoruz
+    let tutar = 0;
+    const tutariMatch = fullText.match(/Tutar[ıi]\s*[\n\r ]*([0-9]+[.,]\d{3})/i);
+    if (tutariMatch) {
+      tutar = parseTLTutar(tutariMatch[1]);
+    } else {
+      // Yedek: "sayı TL" kalıplarını bul, en büyüğünü al
+      const tlEslesmeler = [...fullText.matchAll(/([0-9]+[.,][0-9.,]*|[0-9]{4,})\s*TL/gi)];
+      const tutarlar = tlEslesmeler.map(m => parseTLTutar(m[1])).filter(t => t > 100);
+      tutar = tutarlar.length > 0 ? Math.max(...tutarlar) : 0;
+    }
+    console.log('[parseTeklifPDF] Bulunan tutar:', tutar);
 
     // Firma adı: büyük/küçük harf duyarsız, taahhüt sonrası + tam metin arama
     let firmaAdi = '';
