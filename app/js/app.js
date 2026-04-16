@@ -467,6 +467,8 @@ async function onAuthReady(user) {
   if (lo) lo.style.display = 'none';
   if (user && currentDTMUser) {
     // Referansı buluttan yükle (kullanıcı + global)
+    // Vision API key'i Remote Config'den yükle
+    loadVisionApiKey().catch(() => {});
     try {
       const [cloudRef, globalRef] = await Promise.all([
         loadReferansFromCloud(),
@@ -1594,19 +1596,6 @@ async function parseIkiOlurBelgesi() {
 
   showToast('PDF(ler) okunuyor...', 'info');
 
-  // PDF metnini oku
-  async function readPdfText(file) {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let text = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      text += content.items.map(item => item.str).join(' ') + '\n';
-    }
-    return text;
-  }
-
   // Tek belgeden bilgileri çıkar
   function belgeyiAnaliz(fullText) {
     const isDT = /doğrudan\s+temin/i.test(fullText);
@@ -1764,14 +1753,7 @@ async function parseOnayBelgesiIsAdi(file) {
   if (typeof pdfjsLib === 'undefined') { showToast('PDF okuyucu yüklenemedi.', 'error'); return; }
   try {
     showToast('PDF okunuyor...', 'info');
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      fullText += content.items.map(item => item.str).join(' ') + '\n';
-    }
+    const fullText = await readPdfText(file);
 
     // Belge tipini tespit et
     const isDT = /doğrudan\s+temin/i.test(fullText);
@@ -1879,6 +1861,63 @@ async function parseOnayBelgesiIsAdi(file) {
   } catch(e) {
     showToast('PDF okunamadı: ' + e.message, 'error');
   }
+}
+
+// PDF sayfasını canvas'a render edip Vision API'ye gönder
+async function readPdfWithVision(file) {
+  if (!visionApiKey) throw new Error('Vision API anahtarı yüklenmedi.');
+  if (typeof pdfjsLib === 'undefined') throw new Error('PDF okuyucu yüklenemedi.');
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    const b64 = canvas.toDataURL('image/png').split(',')[1];
+    const resp = await fetch(
+      `https://vision.googleapis.com/v1/images:annotate?key=${visionApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requests: [{
+            image: { content: b64 },
+            features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
+            imageContext: { languageHints: ['tr'] }
+          }]
+        })
+      }
+    );
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    fullText += (data.responses?.[0]?.fullTextAnnotation?.text || '') + '\n';
+  }
+  return fullText;
+}
+
+// PDF metnini önce PDF.js ile dene, boş gelirse Vision API'ye düş
+async function readPdfText(file) {
+  if (typeof pdfjsLib === 'undefined') throw new Error('PDF okuyucu yüklenemedi.');
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map(item => item.str).join(' ') + '\n';
+  }
+  // Metin yeterince doluysa PDF.js yeterli
+  if (fullText.replace(/\s/g, '').length > 50) return fullText;
+  // Taranmış belge — Vision API'ye düş
+  if (visionApiKey) {
+    showToast('Taranmış belge algılandı, Vision API ile okunuyor...', 'info');
+    return await readPdfWithVision(file);
+  }
+  return fullText;
 }
 
 function parseTLTutar(str) {
