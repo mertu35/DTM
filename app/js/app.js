@@ -1932,37 +1932,25 @@ async function parseTeklifPDF(file, type, fi) {
   if (typeof pdfjsLib === 'undefined') { showToast('PDF okuyucu yüklenemedi.', 'error'); return; }
   showToast('PDF okunuyor...', 'info');
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      fullText += content.items.map(item => item.str).join(' ') + '\n';
-    }
+    const fullText = await readPdfText(file);
 
-    // Tutar: "105,000TL" veya "95.000 TL" → Toplam Tutarı satırından çek
-    let tutar = 0;
-    const tutarMatch = fullText.match(/Toplam\s*Tutar[ıi]?\s*[\r\n ]*([0-9][0-9.,]*)\s*TL/i)
-      || fullText.match(/([0-9][0-9.,]+)\s*TL\b/i);
-    if (tutarMatch) tutar = parseTLTutar(tutarMatch[1]);
+    // Tutar: metindeki TÜM "sayı TL" kalıplarını bul, en büyüğünü al (toplam tutar)
+    const tlEslesmeler = [...fullText.matchAll(/([0-9]+[.,][0-9.,]*|[0-9]{4,})\s*TL/gi)];
+    const tutarlar = tlEslesmeler.map(m => parseTLTutar(m[1])).filter(t => t > 100);
+    const tutar = tutarlar.length > 0 ? Math.max(...tutarlar) : 0;
 
-    // Firma adı: "taahhüt ederiz" sonrasında imzalayan tarafı bul
+    // Firma adı: büyük/küçük harf duyarsız, taahhüt sonrası + tam metin arama
     let firmaAdi = '';
+    const norm = s => s?.toLowerCase().replace(/\s+/g, ' ').trim();
     const taahhutIdx = fullText.search(/taahhüt\s+ederiz/i);
-    const aramaMetni = taahhutIdx >= 0 ? fullText.substring(taahhutIdx, taahhutIdx + 400) : fullText.slice(-400);
-
-    // Referans listesindeki firmalardan birini metinde ara (en güvenilir yöntem)
-    const eslesen = referans.firmaList.find(fr =>
-      fr.ad && aramaMetni.includes(fr.ad)
-    ) || referans.firmaList.find(fr =>
-      fr.ad && fullText.includes(fr.ad)
-    );
+    const aramaMetni = taahhutIdx >= 0 ? fullText.substring(taahhutIdx, taahhutIdx + 800) : fullText.slice(-800);
+    const eslesen = referans.firmaList.find(fr => fr.ad && norm(aramaMetni).includes(norm(fr.ad)))
+      || referans.firmaList.find(fr => fr.ad && norm(fullText).includes(norm(fr.ad)));
     if (eslesen) firmaAdi = eslesen.ad;
 
     // Onay
     const satirlar = [
-      firmaAdi ? `🏢 Firma: ${firmaAdi}` : '🏢 Firma: (bulunamadı)',
+      firmaAdi ? `🏢 Firma: ${firmaAdi}` : '🏢 Firma: (bulunamadı — listede kayıtlı değil)',
       tutar > 0  ? `💰 Tutar: ${formatCurrency(tutar)} TL` : '💰 Tutar: (bulunamadı)',
     ].join('\n');
     const onaylandi = await showConfirm(`PDF'den okunan bilgiler:\n\n${satirlar}\n\nAktaralım mı?`, 'Evet, Aktar', 'Hayır');
@@ -1971,7 +1959,6 @@ async function parseTeklifPDF(file, type, fi) {
     const liste = type === 'ym' ? proje.ymFirmalar : proje.teklifFirmalar;
     if (firmaAdi) liste[fi].ad = firmaAdi;
     if (tutar > 0) {
-      // Tek kalem: tutarı ilk aktif kalemin birim fiyatına yaz
       const aktifKi = proje.isKalemleri.findIndex(k => k.ad?.trim());
       const ki = aktifKi >= 0 ? aktifKi : 0;
       const miktar = parseFloat(proje.isKalemleri[ki]?.miktar) || 1;
