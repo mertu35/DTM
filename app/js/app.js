@@ -1910,11 +1910,15 @@ async function readPdfText(file) {
     const content = await page.getTextContent();
     fullText += content.items.map(item => item.str).join(' ') + '\n';
   }
-  // Metin yeterince doluysa PDF.js yeterli
-  if (fullText.replace(/\s/g, '').length > 50) return fullText;
-  // Taranmış belge — Vision API'ye düş
+  // Metin kalitesini kontrol et:
+  // Çok boşluk (3+) → bozuk OCR katmanı (örn: "T.C,   KARAMAN   trOznr")
+  const cokBosluk = (fullText.match(/\s{3,}/g) || []).length;
+  const harfOrani = (fullText.match(/[a-zA-ZçşğüöıÇŞĞÜÖİ]/g) || []).length / Math.max(fullText.replace(/\s/g, '').length, 1);
+  const kaliteliMetin = fullText.replace(/\s/g, '').length > 50 && cokBosluk < 15 && harfOrani > 0.45;
+  if (kaliteliMetin) return fullText;
+  // Bozuk OCR veya taranmış belge — Vision API'ye düş
   if (visionApiKey) {
-    showToast('Taranmış belge algılandı, Vision API ile okunuyor...', 'info');
+    showToast('Taranmış/düşük kaliteli belge algılandı, Vision API ile okunuyor...', 'info');
     return await readPdfWithVision(file);
   }
   return fullText;
