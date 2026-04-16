@@ -2385,36 +2385,37 @@ function renderVeriMerkeziPage() {
     </div>
     ` : ''}
   `;
-
-  // Vision API kullanım verisi yükle
-  if (isSuperAdmin) {
-    const ayAnahtar = new Date().toISOString().slice(0, 7);
-    db.collection('visionUsage').doc(ayAnahtar).get().then(snap => {
-      const sayfa = snap.exists ? (snap.data().sayfaSayisi || 0) : 0;
-      const sonKullanici = snap.exists ? (snap.data().sonKullanici || '-') : '-';
-      const yuzde = Math.min(100, Math.round(sayfa / VISION_AYLIK_LIMIT * 100));
-      const renk = yuzde >= 80 ? '#ef4444' : yuzde >= 50 ? '#f59e0b' : '#22c55e';
-      const bar = `<div style="background:#e5e7eb;border-radius:4px;height:8px;margin:6px 0">
-        <div style="background:${renk};width:${yuzde}%;height:8px;border-radius:4px;transition:width .3s"></div>
-      </div>`;
-      document.getElementById('visionUsageIcerik').innerHTML = `
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span><strong>${ayAnahtar}</strong></span>
-          <span style="color:${renk};font-weight:600">${sayfa} / ${VISION_AYLIK_LIMIT} sayfa</span>
-        </div>
-        ${bar}
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-500);margin-top:4px">
-          <span>%${yuzde} kullanıldı</span>
-          <span>Son: ${sonKullanici}</span>
-        </div>
-      `;
-    }).catch(() => {
-      document.getElementById('visionUsageIcerik').innerHTML = '<span style="color:var(--gray-400)">Veri alınamadı.</span>';
-    });
-  }
 }
 
-function bindVeriMerkezi() {}
+function bindVeriMerkezi() {
+  if (currentDTMUser?.role !== 'superadmin') return;
+  const ayAnahtar = new Date().toISOString().slice(0, 7);
+  db.collection('visionUsage').doc(ayAnahtar).get().then(snap => {
+    const el = document.getElementById('visionUsageIcerik');
+    if (!el) return;
+    const sayfa = snap.exists ? (snap.data().sayfaSayisi || 0) : 0;
+    const sonKullanici = snap.exists ? (snap.data().sonKullanici || '-') : '-';
+    const yuzde = Math.min(100, Math.round(sayfa / VISION_AYLIK_LIMIT * 100));
+    const renk = yuzde >= 80 ? '#ef4444' : yuzde >= 50 ? '#f59e0b' : '#22c55e';
+    const bar = `<div style="background:#e5e7eb;border-radius:4px;height:8px;margin:6px 0">
+      <div style="background:${renk};width:${yuzde}%;height:8px;border-radius:4px;transition:width .3s"></div>
+    </div>`;
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span><strong>${ayAnahtar}</strong></span>
+        <span style="color:${renk};font-weight:600">${sayfa} / ${VISION_AYLIK_LIMIT} sayfa</span>
+      </div>
+      ${bar}
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-500);margin-top:4px">
+        <span>%${yuzde} kullanıldı</span>
+        <span>Son: ${sonKullanici}</span>
+      </div>
+    `;
+  }).catch(() => {
+    const el = document.getElementById('visionUsageIcerik');
+    if (el) el.innerHTML = '<span style="color:var(--gray-400)">Veri alınamadı.</span>';
+  });
+}
 
 function onRefChange(list, index, field, value) {
   if (typeof referans[list][index] === 'object') {
