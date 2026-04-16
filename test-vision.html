@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Vision API Test</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f1f5f9; color: #1e293b; padding: 32px; }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .sub { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+    .card { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px; margin-bottom: 20px; }
+    .card h2 { font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 14px; text-transform: uppercase; letter-spacing: .5px; }
+    label { font-size: 13px; font-weight: 500; display: block; margin-bottom: 6px; color: #374151; }
+    input[type=text], input[type=password] {
+      width: 100%; padding: 9px 12px; border: 1px solid #d1d5db;
+      border-radius: 7px; font-size: 13px; font-family: monospace;
+      outline: none; transition: border .15s;
+    }
+    input[type=text]:focus, input[type=password]:focus { border-color: #3b82f6; }
+    .row { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+    .btn {
+      padding: 9px 20px; border-radius: 7px; font-size: 13px; font-weight: 600;
+      border: none; cursor: pointer; transition: opacity .15s;
+    }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-outline { background: #fff; color: #374151; border: 1px solid #d1d5db; }
+    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+    .drop-zone {
+      border: 2px dashed #93c5fd; border-radius: 10px; padding: 32px;
+      text-align: center; cursor: pointer; background: #eff6ff;
+      transition: background .15s, border-color .15s;
+    }
+    .drop-zone.over { background: #dbeafe; border-color: #3b82f6; }
+    .drop-zone.has-file { background: #f0fdf4; border-color: #86efac; }
+    .drop-zone p { font-size: 13px; color: #1e40af; margin-top: 8px; }
+    .drop-zone .file-name { font-size: 13px; color: #166534; font-weight: 600; margin-top: 6px; }
+    .pages-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    .page-card {
+      border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;
+      background: #fff; width: 200px; flex-shrink: 0;
+    }
+    .page-card canvas { display: block; width: 100%; height: auto; }
+    .page-label { font-size: 11px; color: #64748b; padding: 4px 8px; border-top: 1px solid #f1f5f9; text-align: center; }
+    .result-block {
+      background: #0f172a; color: #e2e8f0; border-radius: 8px;
+      padding: 16px; font-family: monospace; font-size: 12px;
+      line-height: 1.6; white-space: pre-wrap; max-height: 400px;
+      overflow-y: auto; margin-top: 10px;
+    }
+    .result-block.success { border-left: 3px solid #22c55e; }
+    .result-block.error { border-left: 3px solid #ef4444; color: #fca5a5; }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; margin-left: 8px;
+    }
+    .badge-ok { background: #dcfce7; color: #166534; }
+    .badge-err { background: #fee2e2; color: #991b1b; }
+    .badge-wait { background: #fef9c3; color: #854d0e; }
+    .progress { font-size: 12px; color: #64748b; margin-top: 8px; }
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .compare-col h3 { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .compare-col .result-block { max-height: 300px; }
+    hr { border: none; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+    .tip { font-size: 12px; color: #94a3b8; margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<h1>Google Vision API — Test Aracı</h1>
+<p class="sub">Taranmış PDF'leri Vision API ile okur, mevcut PDF.js çıktısıyla karşılaştırır. Ana projeye karışmaz.</p>
+
+<!-- ADIM 1: API Anahtarı -->
+<div class="card">
+  <h2>1. API Anahtarı</h2>
+  <label>Google Cloud Vision API Anahtarı</label>
+  <div style="display:flex;gap:8px">
+    <input type="password" id="apiKey" placeholder="AIza..." autocomplete="off">
+    <button class="btn btn-outline" onclick="toggleKey()">Göster</button>
+  </div>
+  <p class="tip">console.cloud.google.com → API ve Hizmetler → Kimlik Bilgileri → API Anahtarı Oluştur</p>
+</div>
+
+<!-- ADIM 2: PDF Yükle -->
+<div class="card">
+  <h2>2. PDF Yükle</h2>
+  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <div style="font-size:36px">📄</div>
+    <p>Tıkla veya PDF'i sürükle bırak</p>
+    <div class="file-name" id="fileName"></div>
+    <input type="file" id="fileInput" accept=".pdf,image/*" style="display:none" onchange="onFileSelect(this.files[0])">
+  </div>
+  <div class="pages-grid" id="pagesGrid"></div>
+</div>
+
+<!-- ADIM 3: Test -->
+<div class="card">
+  <h2>3. Çalıştır</h2>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button class="btn btn-primary" id="runBtn" onclick="runTest()" disabled>Vision API ile Oku</button>
+    <button class="btn btn-outline" id="pdjsBtn" onclick="runPdfjs()" disabled>PDF.js ile Karşılaştır</button>
+    <span id="statusBadge"></span>
+  </div>
+  <div class="progress" id="progressTxt"></div>
+
+  <hr>
+
+  <div class="compare" id="compareSection" style="display:none">
+    <div class="compare-col">
+      <h3>📷 Vision API Sonucu</h3>
+      <div class="result-block" id="visionResult"></div>
+    </div>
+    <div class="compare-col">
+      <h3>📄 PDF.js Sonucu</h3>
+      <div class="result-block" id="pdfjsResult"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  let currentFile = null;
+  let pageCanvases = []; // base64 PNG listesi
+  let pdfDoc = null;
+
+  function toggleKey() {
+    const inp = document.getElementById('apiKey');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  // Drag & drop
+  const dz = document.getElementById('dropZone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); onFileSelect(e.dataTransfer.files[0]); });
+
+  async function onFileSelect(file) {
+    if (!file) return;
+    currentFile = file;
+    pageCanvases = [];
+    document.getElementById('fileName').textContent = file.name;
+    dz.classList.add('has-file');
+    document.getElementById('pagesGrid').innerHTML = '';
+    document.getElementById('compareSection').style.display = 'none';
+    setStatus('Sayfa(lar) yükleniyor...', 'wait');
+
+    const isImage = file.type.startsWith('image/');
+
+    if (isImage) {
+      // Resim dosyası — direkt base64'e çevir
+      const b64 = await fileToBase64(file);
+      pageCanvases.push(b64);
+      // Önizleme
+      const img = document.createElement('img');
+      img.src = 'data:' + file.type + ';base64,' + b64;
+      img.style.cssText = 'width:200px;border-radius:8px;border:1px solid #e2e8f0';
+      document.getElementById('pagesGrid').appendChild(img);
+    } else {
+      // PDF — PDF.js ile her sayfayı canvas'a çiz
+      const arrayBuffer = await file.arrayBuffer();
+      pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const scale = 2; // yüksek çözünürlük
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+        // Önizleme kartı
+        const card = document.createElement('div');
+        card.className = 'page-card';
+        const thumb = document.createElement('canvas');
+        thumb.width = 200;
+        thumb.height = Math.round(200 * viewport.height / viewport.width);
+        thumb.getContext('2d').drawImage(canvas, 0, 0, thumb.width, thumb.height);
+        card.appendChild(thumb);
+        const lbl = document.createElement('div');
+        lbl.className = 'page-label';
+        lbl.textContent = `Sayfa ${i}`;
+        card.appendChild(lbl);
+        document.getElementById('pagesGrid').appendChild(card);
+
+        // Base64 PNG olarak sakla (tam çözünürlük)
+        const b64 = canvas.toDataURL('image/png').split(',')[1];
+        pageCanvases.push(b64);
+      }
+    }
+
+    setStatus(`${pageCanvases.length} sayfa hazır`, 'ok');
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('pdjsBtn').disabled = !pdfDoc;
+  }
+
+  async function fileToBase64(file) {
+    return new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = e => res(e.target.result.split(',')[1]);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function runTest() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    if (!apiKey) { alert('API anahtarı giriniz.'); return; }
+    if (!pageCanvases.length) { alert('Önce PDF yükleyin.'); return; }
+
+    document.getElementById('runBtn').disabled = true;
+    document.getElementById('compareSection').style.display = 'grid';
+    const resultEl = document.getElementById('visionResult');
+    resultEl.className = 'result-block';
+    resultEl.textContent = '';
+    setStatus('Vision API\'ye gönderiliyor...', 'wait');
+
+    let fullText = '';
+    let hasError = false;
+
+    for (let i = 0; i < pageCanvases.length; i++) {
+      document.getElementById('progressTxt').textContent = `Sayfa ${i + 1} / ${pageCanvases.length} işleniyor...`;
+      try {
+        const resp = await fetch(
+          `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              requests: [{
+                image: { content: pageCanvases[i] },
+                features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
+                imageContext: { languageHints: ['tr'] }
+              }]
+            })
+          }
+        );
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error.message);
+        const responses = data.responses?.[0];
+        if (responses?.error) throw new Error(responses.error.message);
+        const text = responses?.fullTextAnnotation?.text || '(metin bulunamadı)';
+        fullText += (pageCanvases.length > 1 ? `\n\n--- SAYFA ${i + 1} ---\n\n` : '') + text;
+      } catch (e) {
+        fullText += `\n\n[HATA - Sayfa ${i + 1}]: ${e.message}`;
+        hasError = true;
+      }
+    }
+
+    resultEl.textContent = fullText.trim();
+    resultEl.className = 'result-block ' + (hasError ? 'error' : 'success');
+    setStatus(hasError ? 'Bazı sayfalarda hata' : 'Tamamlandı', hasError ? 'err' : 'ok');
+    document.getElementById('progressTxt').textContent = '';
+    document.getElementById('runBtn').disabled = false;
+  }
+
+  async function runPdfjs() {
+    if (!pdfDoc) return;
+    const resultEl = document.getElementById('pdfjsResult');
+    document.getElementById('compareSection').style.display = 'grid';
+    resultEl.className = 'result-block';
+    resultEl.textContent = 'PDF.js okuyuyor...';
+    let fullText = '';
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+      const page = await pdfDoc.getPage(i);
+      const content = await page.getTextContent();
+      const text = content.items.map(item => item.str).join(' ');
+      fullText += (pdfDoc.numPages > 1 ? `\n\n--- SAYFA ${i} ---\n\n` : '') + text;
+    }
+    resultEl.textContent = fullText.trim() || '(PDF.js metin bulamadı — muhtemelen taranmış görüntü)';
+    resultEl.className = 'result-block success';
+  }
+
+  function setStatus(msg, type) {
+    const el = document.getElementById('statusBadge');
+    const cls = { ok: 'badge-ok', err: 'badge-err', wait: 'badge-wait' };
+    el.className = 'badge ' + (cls[type] || '');
+    el.textContent = msg;
+  }
+</script>
+
+</body>
+</html>
