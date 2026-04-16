@@ -1934,19 +1934,26 @@ async function parseTeklifPDF(file, type, fi) {
   try {
     const fullText = await readPdfText(file);
 
+    // DEBUG: ham metni konsola yaz
+    console.log('[parseTeklifPDF] Ham metin:\n', fullText.substring(0, 1000));
+
     // Tutar: metindeki TÜM "sayı TL" kalıplarını bul, en büyüğünü al (toplam tutar)
     const tlEslesmeler = [...fullText.matchAll(/([0-9]+[.,][0-9.,]*|[0-9]{4,})\s*TL/gi)];
     const tutarlar = tlEslesmeler.map(m => parseTLTutar(m[1])).filter(t => t > 100);
     const tutar = tutarlar.length > 0 ? Math.max(...tutarlar) : 0;
+    console.log('[parseTeklifPDF] Bulunan tutarlar:', tutarlar, '→ seçilen:', tutar);
 
     // Firma adı: büyük/küçük harf duyarsız, taahhüt sonrası + tam metin arama
     let firmaAdi = '';
     const norm = s => s?.toLowerCase().replace(/\s+/g, ' ').trim();
     const taahhutIdx = fullText.search(/taahhüt\s+ederiz/i);
     const aramaMetni = taahhutIdx >= 0 ? fullText.substring(taahhutIdx, taahhutIdx + 800) : fullText.slice(-800);
+    console.log('[parseTeklifPDF] Arama metni (taahhüt sonrası):\n', aramaMetni);
+    console.log('[parseTeklifPDF] Firma listesi:', referans.firmaList.map(f => f.ad));
     const eslesen = referans.firmaList.find(fr => fr.ad && norm(aramaMetni).includes(norm(fr.ad)))
       || referans.firmaList.find(fr => fr.ad && norm(fullText).includes(norm(fr.ad)));
     if (eslesen) firmaAdi = eslesen.ad;
+    console.log('[parseTeklifPDF] Eşleşen firma:', firmaAdi || 'YOK');
 
     // Onay
     const satirlar = [
