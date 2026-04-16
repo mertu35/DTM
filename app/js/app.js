@@ -1864,11 +1864,40 @@ async function parseOnayBelgesiIsAdi(file) {
 }
 
 // PDF sayfasını canvas'a render edip Vision API'ye gönder
+const VISION_AYLIK_LIMIT = 500;
+
+async function visionKullanımKontrol() {
+  const ayAnahtar = new Date().toISOString().slice(0, 7); // "2026-04"
+  const ref = db.collection('visionUsage').doc(ayAnahtar);
+  const snap = await ref.get();
+  const mevcutSayfa = snap.exists ? (snap.data().sayfaSayisi || 0) : 0;
+  if (mevcutSayfa >= VISION_AYLIK_LIMIT) {
+    throw new Error(`Aylık Vision API limiti (${VISION_AYLIK_LIMIT} sayfa) doldu. Yönetici ile iletişime geçin.`);
+  }
+  return { ref, mevcutSayfa };
+}
+
+async function visionKullanımArtir(ref, sayfaSayisi) {
+  await ref.set({
+    sayfaSayisi: firebase.firestore.FieldValue.increment(sayfaSayisi),
+    sonGuncelleme: firebase.firestore.FieldValue.serverTimestamp(),
+    sonKullanici: currentDTMUser?.displayName || currentDTMUser?.username || ''
+  }, { merge: true });
+}
+
 async function readPdfWithVision(file) {
   if (!visionApiKey) throw new Error('Vision API anahtarı yüklenmedi.');
   if (typeof pdfjsLib === 'undefined') throw new Error('PDF okuyucu yüklenemedi.');
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  // Limit kontrolü
+  const { ref, mevcutSayfa } = await visionKullanımKontrol();
+  const kalanSayfa = VISION_AYLIK_LIMIT - mevcutSayfa;
+  if (pdf.numPages > kalanSayfa) {
+    throw new Error(`Bu ay kalan Vision API kotası (${kalanSayfa} sayfa) bu belge için yetersiz.`);
+  }
+
   let fullText = '';
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
@@ -1896,6 +1925,9 @@ async function readPdfWithVision(file) {
     if (data.error) throw new Error(data.error.message);
     fullText += (data.responses?.[0]?.fullTextAnnotation?.text || '') + '\n';
   }
+
+  // Kullanımı kaydet
+  await visionKullanımArtir(ref, pdf.numPages);
   return fullText;
 }
 
