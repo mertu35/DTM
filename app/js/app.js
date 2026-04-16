@@ -1970,9 +1970,6 @@ async function parseTeklifPDF(file, type, fi) {
   try {
     const fullText = await readPdfText(file);
 
-    // DEBUG: ham metni konsola yaz
-    console.log('[parseTeklifPDF] Ham metin:\n', fullText.substring(0, 1000));
-
     // Tutar: önce "Tutarı [sayı]" kalıbını ara (en güvenilir)
     // Vision API bazen "TL" harflerini yanlış okur, bu yüzden TL'ye bağımlı olmuyoruz
     let tutar = 0;
@@ -1985,19 +1982,15 @@ async function parseTeklifPDF(file, type, fi) {
       const tutarlar = tlEslesmeler.map(m => parseTLTutar(m[1])).filter(t => t > 100);
       tutar = tutarlar.length > 0 ? Math.max(...tutarlar) : 0;
     }
-    console.log('[parseTeklifPDF] Bulunan tutar:', tutar);
 
     // Firma adı: büyük/küçük harf duyarsız, taahhüt sonrası + tam metin arama
     let firmaAdi = '';
     const norm = s => s?.toLowerCase().replace(/\s+/g, ' ').trim();
     const taahhutIdx = fullText.search(/taahhüt\s+ederiz/i);
     const aramaMetni = taahhutIdx >= 0 ? fullText.substring(taahhutIdx, taahhutIdx + 800) : fullText.slice(-800);
-    console.log('[parseTeklifPDF] Arama metni (taahhüt sonrası):\n', aramaMetni);
-    console.log('[parseTeklifPDF] Firma listesi:', referans.firmaList.map(f => f.ad));
     const eslesen = referans.firmaList.find(fr => fr.ad && norm(aramaMetni).includes(norm(fr.ad)))
       || referans.firmaList.find(fr => fr.ad && norm(fullText).includes(norm(fr.ad)));
     if (eslesen) firmaAdi = eslesen.ad;
-    console.log('[parseTeklifPDF] Eşleşen firma:', firmaAdi || 'YOK');
 
     // Onay
     const satirlar = [
@@ -2381,8 +2374,44 @@ function renderVeriMerkeziPage() {
         </table>
       </div>
     </div>
+
+    <div class="card" id="visionUsageCard">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h3>📷 Vision API Kullanımı</h3><span class="toggle-icon">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <div id="visionUsageIcerik" style="font-size:13px;color:var(--gray-600)">Yükleniyor...</div>
+      </div>
+    </div>
     ` : ''}
   `;
+
+  // Vision API kullanım verisi yükle
+  if (isSuperAdmin) {
+    const ayAnahtar = new Date().toISOString().slice(0, 7);
+    db.collection('visionUsage').doc(ayAnahtar).get().then(snap => {
+      const sayfa = snap.exists ? (snap.data().sayfaSayisi || 0) : 0;
+      const sonKullanici = snap.exists ? (snap.data().sonKullanici || '-') : '-';
+      const yuzde = Math.min(100, Math.round(sayfa / VISION_AYLIK_LIMIT * 100));
+      const renk = yuzde >= 80 ? '#ef4444' : yuzde >= 50 ? '#f59e0b' : '#22c55e';
+      const bar = `<div style="background:#e5e7eb;border-radius:4px;height:8px;margin:6px 0">
+        <div style="background:${renk};width:${yuzde}%;height:8px;border-radius:4px;transition:width .3s"></div>
+      </div>`;
+      document.getElementById('visionUsageIcerik').innerHTML = `
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span><strong>${ayAnahtar}</strong></span>
+          <span style="color:${renk};font-weight:600">${sayfa} / ${VISION_AYLIK_LIMIT} sayfa</span>
+        </div>
+        ${bar}
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-500);margin-top:4px">
+          <span>%${yuzde} kullanıldı</span>
+          <span>Son: ${sonKullanici}</span>
+        </div>
+      `;
+    }).catch(() => {
+      document.getElementById('visionUsageIcerik').innerHTML = '<span style="color:var(--gray-400)">Veri alınamadı.</span>';
+    });
+  }
 }
 
 function bindVeriMerkezi() {}
