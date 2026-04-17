@@ -11,6 +11,48 @@ function escHtml(str) {
   return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Butonu kilitleyerek async işlem çalıştır (double-submit önler)
+async function butonKilitli(btn, yuklemeMetni, fn) {
+  if (!btn || btn.disabled) return;
+  const origHTML = btn.innerHTML;
+  btn.disabled = true;
+  if (yuklemeMetni) btn.innerHTML = yuklemeMetni;
+  try {
+    return await fn();
+  } finally {
+    if (btn.isConnected) {
+      btn.disabled = false;
+      btn.innerHTML = origHTML;
+    }
+  }
+}
+
+// Firebase / genel hata mesajlarını Türkçeleştir
+function hataMesaji(err) {
+  const kod = err?.code || '';
+  const msg = err?.message || String(err);
+  const koda = {
+    'permission-denied': 'Yetkiniz yok. (Yönetici ile görüşün)',
+    'not-found': 'Kayıt bulunamadı.',
+    'unavailable': 'Sunucuya erişilemiyor. İnternet bağlantınızı kontrol edin.',
+    'deadline-exceeded': 'İstek zaman aşımına uğradı. Tekrar deneyin.',
+    'resource-exhausted': 'Sistem limit aşımı. Biraz sonra tekrar deneyin.',
+    'unauthenticated': 'Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.',
+    'already-exists': 'Bu kayıt zaten mevcut.',
+    'cancelled': 'İşlem iptal edildi.',
+    'failed-precondition': 'İşlem koşulları uygun değil.',
+    'invalid-argument': 'Geçersiz veri girdiniz.',
+    'auth/wrong-password': 'Şifre hatalı.',
+    'auth/user-not-found': 'Kullanıcı bulunamadı.',
+    'auth/too-many-requests': 'Çok fazla deneme. Biraz bekleyin.',
+    'auth/network-request-failed': 'İnternet bağlantısı kurulamadı.',
+    'auth/invalid-email': 'Geçersiz kullanıcı adı.',
+    'auth/weak-password': 'Şifre en az 6 karakter olmalı.',
+    'auth/requires-recent-login': 'Güvenlik için tekrar giriş yapın.'
+  };
+  return koda[kod] || msg || 'Bilinmeyen hata';
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
