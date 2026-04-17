@@ -1,6 +1,22 @@
 // ===================== UTILS.JS =====================
 // Tarih, para, sayıdan yazıya çevirme yardımcıları
 
+// Form input'una .has-error class ekle, ilk yazı/focus'ta temizle
+function markError(...inputs) {
+  inputs.forEach(el => {
+    if (!el) return;
+    el.classList.add('has-error');
+    const clear = () => {
+      el.classList.remove('has-error');
+      el.removeEventListener('input', clear);
+      el.removeEventListener('focus', clear);
+    };
+    el.addEventListener('input', clear);
+    el.addEventListener('focus', clear);
+  });
+  if (inputs[0]?.focus) inputs[0].focus();
+}
+
 // HTML attribute içinde güvenli kullanım için escape (XSS önlemi)
 function escAttr(str) {
   return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -12,16 +28,19 @@ function escHtml(str) {
 }
 
 // Butonu kilitleyerek async işlem çalıştır (double-submit önler)
+// .btn-loading class'ı ekleyerek CSS spinner gösterir
 async function butonKilitli(btn, yuklemeMetni, fn) {
   if (!btn || btn.disabled) return;
   const origHTML = btn.innerHTML;
   btn.disabled = true;
+  btn.classList.add('btn-loading');
   if (yuklemeMetni) btn.innerHTML = yuklemeMetni;
   try {
     return await fn();
   } finally {
     if (btn.isConnected) {
       btn.disabled = false;
+      btn.classList.remove('btn-loading');
       btn.innerHTML = origHTML;
     }
   }
