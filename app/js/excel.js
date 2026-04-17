@@ -186,7 +186,7 @@ function exportYaklasikMaliyetExcel(proje, referans) {
     <th rowspan="3" class="sutun-h">YAPILAN İŞ / MAL / HİZMETİN ADI</th>
     <th rowspan="3" class="sutun-h">MİKTARI</th>
     <td rowspan="3" style="border:none"></td>
-    <th colspan="2" class="grup-h">1 FİRMA</th>
+    <th colspan="2" class="grup-h">1. FİRMA</th>
     <th colspan="2" class="grup-h">2. FİRMA</th>
     <th colspan="2" class="grup-h">3. FİRMA</th>
     <th colspan="2" class="grup-h">YAKLAŞIK MALİYET</th>
@@ -301,6 +301,17 @@ function exportTeklifTutanagiExcel(proje, referans) {
     ? getAktifGorevliler(proje.dtGorevliler || []) : (proje.dtGorevliler || []).filter(g => g.ad);
   const dtTutanakT = proje.dtTutanakTarihiAyni !== false
     ? proje.dtOnayTarihi : (proje.dtTutanakTarihi || proje.dtOnayTarihi);
+  const getFirmaTur = (ad) => {
+    const found = (referans.firmaList || []).find(x => x.ad === ad);
+    return found ? found.tur : 'Şirket';
+  };
+  const aktiveTurler = [f1, f2, f3].filter(f => f.ad).map(f => getFirmaTur(f.ad));
+  const hepsiKisi = aktiveTurler.length > 0 && aktiveTurler.every(t => t === 'Kişi');
+  const hepsiFirma = aktiveTurler.length > 0 && aktiveTurler.every(t => t === 'Şirket');
+  const teklifVerenMetni = hepsiKisi ? 'kişilerce' : hepsiFirma ? 'firmalarca' : 'kişi / firmalarca';
+  const tarafMetni = typeof getTarafMetni === 'function' ? getTarafMetni(proje.dtGorevliler || []) : (dtGorevliler.length > 1 ? 'tarafımızca' : 'tarafımca');
+  const kazananTur = kazanan ? getFirmaTur(kazanan.ad) : 'Şirket';
+  const kazananKisiMetni = kazananTur === 'Kişi' ? 'kişiden' : 'firmadan';
 
   // Teklif kalem satırları
   let teklifRows = '';
@@ -335,10 +346,10 @@ function exportTeklifTutanagiExcel(proje, referans) {
         <td colspan="4">${k.ad || ''}</td>
         <td class="center">${mik ? mik.toLocaleString('tr-TR') : ''}</td>
         <td class="center">${k.birim || ''}</td>
-        <td class="center">${kazanan.ad || ''}</td>
+        <td class="center">${i === 0 ? (kazanan.ad || '') : ''}</td>
         <td></td>
         ${tdRakam(fiyat)}<td class="center" style="font-size:8pt">+KDV</td>
-        <td colspan="2">${kazanan.adres || ''}</td>
+        <td colspan="2">${i === 0 ? (kazanan.adres || '') : ''}</td>
         <td></td>
       </tr>`;
     });
@@ -495,9 +506,8 @@ function exportTeklifTutanagiExcel(proje, referans) {
     <td colspan="2" style="border:none"></td>
     <td colspan="15" class="metin-kutu" style="text-align:justify;line-height:1.5">
       4734 sayılı Kamu İhale Kanunu'nun 22 nci Maddesi uyarınca <b>doğrudan temin usulüyle</b>
-      yapılacak alımlara ilişkin yapılan piyasa araştırmasında teklif edilen fiyatlar değerlendirilerek
-      yukarıda adı ve adresleri belirtilen
-      ${kazanan ? `<b>${kazanan.ad}</b>'den` : '…'}
+      yapılacak alımlara ilişkin yapılan piyasa araştırmasında ${teklifVerenMetni} teklif edilen fiyatlar ${tarafMetni} değerlendirilerek
+      yukarıda adı ve adresleri belirtilen ${kazanan ? `<b>${kazanan.ad}</b> ${kazananKisiMetni}` : '…'}
       alım yapılması uygun görülmüştür. <b>${formatDate(dtTutanakT)}</b>
     </td>
   </tr>
