@@ -2411,9 +2411,10 @@ function bindVeriMerkezi() {
         <span>Son: ${sonKullanici}</span>
       </div>
     `;
-  }).catch(() => {
+  }).catch(err => {
+    console.error('[visionUsage] Firestore hatası:', err?.code, err?.message);
     const el = document.getElementById('visionUsageIcerik');
-    if (el) el.innerHTML = '<span style="color:var(--gray-400)">Veri alınamadı.</span>';
+    if (el) el.innerHTML = `<span style="color:var(--gray-400)">Veri alınamadı. (${err?.code || 'bilinmiyor'})</span>`;
   });
 }
 
