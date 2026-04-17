@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dtm-v13';
+const CACHE_NAME = 'dtm-v14';
 const STATIC_ASSETS = [
   './index.html',
   './css/style.css',
@@ -8,6 +8,7 @@ const STATIC_ASSETS = [
   './js/data.js',
   './js/calculations.js',
   './js/documents.js',
+  './js/excel.js',
   './icons/icon.svg',
   './manifest.json'
 ];

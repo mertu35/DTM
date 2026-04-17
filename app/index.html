@@ -162,6 +162,12 @@
         </div>
       </nav>
 
+      <!-- Tema değiştir -->
+      <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Koyu/Açık tema">
+        <span id="themeToggleLabel">🌙 Koyu Tema</span>
+        <span class="theme-toggle-switch" aria-hidden="true"></span>
+      </div>
+
       <!-- Kullanıcı bilgisi + çıkış -->
       <div class="sidebar-user">
         <div class="sidebar-user-info">
@@ -202,16 +208,19 @@
   
   <!-- html2pdf.js for PDF exports (lokal) -->
   <script src="js/html2pdf.bundle.min.js"></script>
+  <!-- SheetJS for Excel exports -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- PDF.js for olur belgesi parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>if(typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <!-- App scripts -->
   <script src="js/config.js"></script>
-  <script src="js/firebase.js?v=20260417"></script>
-  <script src="js/utils.js?v=20260417"></script>
-  <script src="js/data.js?v=20260417"></script>
-  <script src="js/calculations.js?v=20260417"></script>
-  <script src="js/documents.js?v=20260417"></script>
-  <script src="js/app.js?v=20260417"></script>
+  <script src="js/firebase.js?v=20260417b"></script>
+  <script src="js/utils.js?v=20260417b"></script>
+  <script src="js/data.js?v=20260417b"></script>
+  <script src="js/calculations.js?v=20260417b"></script>
+  <script src="js/documents.js?v=20260417b"></script>
+  <script src="js/excel.js?v=20260417b"></script>
+  <script src="js/app.js?v=20260417b"></script>
 </body>
 </html>

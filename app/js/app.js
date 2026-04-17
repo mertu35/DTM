@@ -138,36 +138,42 @@ function acBelgeIndirModal() {
   if (mevcut) mevcut.remove();
 
   const belgeler = [
-    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
-    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
-    { id: 'sozlesme', ad: 'Sözleşme' },
-    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı' },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true },
+    { id: 'sozlesme', ad: 'Sözleşme', excel: false },
+    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false },
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false }
   ];
 
   const checkboxler = belgeler.map(b => `
-    <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px solid #f3f4f6;">
-      <input type="checkbox" class="belge-indir-cb" value="${b.id}" checked
-        style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb">
-      <span style="font-size:14px;color:#1f2937">${b.ad}</span>
+    <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px solid var(--gray-100);">
+      <input type="checkbox" class="belge-indir-cb" value="${b.id}" data-excel="${b.excel}" checked
+        style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
+      <span style="font-size:14px;color:var(--gray-800);flex:1">${b.ad}</span>
+      ${b.excel ? '<span style="font-size:10px;background:#10b981;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">XLSX</span>' : ''}
     </label>`).join('');
 
   const overlay = document.createElement('div');
   overlay.id = 'dtmBelgeIndirModal';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  overlay.className = 'dtm-modal-overlay';
   overlay.innerHTML = `
-    <div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-      <h3 style="margin:0 0 4px;font-size:16px;color:#1f2937">&#128196; Belge İndir</h3>
-      <p style="margin:0 0 14px;font-size:13px;color:#6b7280">İndirilecek belgeleri işaretleyin</p>
-      <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:2px solid #e5e7eb;margin-bottom:2px;font-weight:600;">
-        <input type="checkbox" id="hepsiniSecCb" checked
-          style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb">
-        <span style="font-size:14px;color:#374151">Tümünü Seç</span>
-      </label>
-      ${checkboxler}
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-        <button id="dtmBelgeIndirIptal" style="background:#f3f4f6;color:#374151;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">İptal</button>
-        <button id="dtmBelgeIndirOnay" style="background:#2563eb;color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">&#128196; İndir</button>
+    <div class="dtm-modal" style="max-width:420px">
+      <div class="dtm-modal-header">
+        <h3>&#128196; Belge İndir</h3>
+      </div>
+      <div class="dtm-modal-body">
+        <p style="margin:0 0 14px;font-size:13px;color:var(--gray-500)">İndirilecek belgeleri işaretleyin</p>
+        <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:2px solid var(--gray-200);margin-bottom:2px;font-weight:600;">
+          <input type="checkbox" id="hepsiniSecCb" checked
+            style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
+          <span style="font-size:14px;color:var(--gray-700)">Tümünü Seç</span>
+        </label>
+        ${checkboxler}
+      </div>
+      <div class="dtm-modal-footer">
+        <button id="dtmBelgeIndirIptal" class="btn btn-outline">İptal</button>
+        <button id="dtmBelgeIndirExcel" class="btn" style="background:#10b981;color:#fff" title="Sadece XLSX işaretli belgeler">&#128202; Excel</button>
+        <button id="dtmBelgeIndirOnay" class="btn btn-primary">&#128196; PDF</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -193,6 +199,16 @@ function acBelgeIndirModal() {
     if (!secilen.length) { showToast('En az bir belge seçin', 'warning'); return; }
     overlay.remove();
     await cokluBelgeIndir(secilen);
+  };
+
+  document.getElementById('dtmBelgeIndirExcel').onclick = () => {
+    const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')]
+      .filter(cb => cb.dataset.excel === 'true')
+      .map(cb => cb.value);
+    if (!secilen.length) { showToast('Excel desteği olan belge seçilmedi (Yaklaşık Maliyet veya Teklif Tutanağı)', 'warning'); return; }
+    overlay.remove();
+    secilen.forEach(belgeId => belgeIdindenExcelUret(belgeId, proje, referans));
+    showToast(`${secilen.length} belge Excel olarak indirildi.`, 'success');
   };
 }
 
@@ -278,36 +294,42 @@ function acGerceklestirmeciIndirModal() {
   if (mevcut) mevcut.remove();
 
   const belgeler = [
-    { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi' },
-    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
-    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
-    { id: 'sozlesme', ad: 'Sözleşme' },
-    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı' },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
+    { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi', excel: false },
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true },
+    { id: 'sozlesme', ad: 'Sözleşme', excel: false },
+    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false },
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false }
   ];
 
   const checkboxler = belgeler.map(b => `
-    <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px solid #f3f4f6;">
-      <input type="checkbox" class="belge-indir-cb" value="${b.id}" checked
-        style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb">
-      <span style="font-size:14px;color:#1f2937">${b.ad}</span>
+    <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px solid var(--gray-100);">
+      <input type="checkbox" class="belge-indir-cb" value="${b.id}" data-excel="${b.excel}" checked
+        style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
+      <span style="font-size:14px;color:var(--gray-800);flex:1">${b.ad}</span>
+      ${b.excel ? '<span style="font-size:10px;background:#10b981;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">XLSX</span>' : ''}
     </label>`).join('');
 
   const overlay = document.createElement('div');
   overlay.id = 'dtmBelgeIndirModal';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  overlay.className = 'dtm-modal-overlay';
   overlay.innerHTML = `
-    <div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-      <h3 style="margin:0 0 4px;font-size:16px;color:#1f2937">&#128196; Belge İndir</h3>
-      <p style="margin:0 0 14px;font-size:13px;color:#6b7280">İndirilecek belgeleri işaretleyin</p>
-      <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:2px solid #e5e7eb;margin-bottom:2px;font-weight:600;">
-        <input type="checkbox" id="hepsiniSecCb2" checked style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb">
-        <span style="font-size:14px;color:#374151">Tümünü Seç</span>
-      </label>
-      ${checkboxler}
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-        <button id="gcIndirIptal" style="background:#f3f4f6;color:#374151;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">İptal</button>
-        <button id="gcIndirOnay" style="background:#2563eb;color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">&#128196; İndir</button>
+    <div class="dtm-modal" style="max-width:420px">
+      <div class="dtm-modal-header">
+        <h3>&#128196; Belge İndir</h3>
+      </div>
+      <div class="dtm-modal-body">
+        <p style="margin:0 0 14px;font-size:13px;color:var(--gray-500)">İndirilecek belgeleri işaretleyin</p>
+        <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:2px solid var(--gray-200);margin-bottom:2px;font-weight:600;">
+          <input type="checkbox" id="hepsiniSecCb2" checked style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
+          <span style="font-size:14px;color:var(--gray-700)">Tümünü Seç</span>
+        </label>
+        ${checkboxler}
+      </div>
+      <div class="dtm-modal-footer">
+        <button id="gcIndirIptal" class="btn btn-outline">İptal</button>
+        <button id="gcIndirExcel" class="btn" style="background:#10b981;color:#fff" title="Sadece XLSX işaretli belgeler">&#128202; Excel</button>
+        <button id="gcIndirOnay" class="btn btn-primary">&#128196; PDF</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -328,6 +350,16 @@ function acGerceklestirmeciIndirModal() {
     if (!secilen.length) { showToast('En az bir belge seçin', 'warning'); return; }
     overlay.remove();
     cokluGerceklestirmeciBelgeIndir(secilen);
+  };
+
+  document.getElementById('gcIndirExcel').onclick = () => {
+    const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')]
+      .filter(cb => cb.dataset.excel === 'true')
+      .map(cb => cb.value);
+    if (!secilen.length) { showToast('Excel desteği olan belge seçilmedi (Yaklaşık Maliyet veya Teklif Tutanağı)', 'warning'); return; }
+    overlay.remove();
+    secilen.forEach(belgeId => belgeIdindenExcelUret(belgeId, proje, referans));
+    showToast(`${secilen.length} belge Excel olarak indirildi.`, 'success');
   };
 }
 
@@ -531,8 +563,30 @@ async function onAuthReady(user) {
   }
 }
 
+// Tema değiştirme (açık/koyu)
+function applyTheme(tema) {
+  document.body.classList.toggle('dark', tema === 'dark');
+  const label = document.getElementById('themeToggleLabel');
+  if (label) label.textContent = tema === 'dark' ? '☀️ Açık Tema' : '🌙 Koyu Tema';
+}
+function toggleTheme() {
+  const yeni = document.body.classList.contains('dark') ? 'light' : 'dark';
+  try { localStorage.setItem('dtmTheme', yeni); } catch(e) {}
+  applyTheme(yeni);
+}
+// İlk yükleme — body yoksa hata vermesin diye try
+try {
+  const kayitli = localStorage.getItem('dtmTheme');
+  if (kayitli === 'dark') document.documentElement.classList.add('dark-preload');
+} catch(e) {}
+
 // Enter tuşu ile login
 document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const kayitli = localStorage.getItem('dtmTheme') || 'light';
+    applyTheme(kayitli);
+  } catch(e) {}
+
   document.getElementById('loginPassword').addEventListener('keydown', e => {
     if (e.key === 'Enter') doLogin();
   });
