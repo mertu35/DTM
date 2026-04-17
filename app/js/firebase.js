@@ -92,7 +92,7 @@ async function updateLastLogin() {
   if (!user) return;
   await db.collection('users').doc(user.uid).update({
     lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(() => {});
+  }).catch(e => console.warn('[lastLogin] Kaydedilemedi:', e?.code, e?.message));
 }
 
 // ===== REFERANS FIRESTORE FONKSİYONLARI =====
@@ -193,7 +193,8 @@ async function updateProjeInCloud(projeId, projeData) {
   });
 }
 
-// Kullanıcının projelerini getir
+// Kullanıcının projelerini getir (en fazla PROJE_LIMIT kayıt)
+const PROJE_LIMIT = 500;
 async function getUserProjeler() {
   const user = auth.currentUser;
   if (!user) return [];
@@ -205,7 +206,11 @@ async function getUserProjeler() {
   } else {
     query = db.collection('projeler').where('userId', '==', user.uid);
   }
-  const snap = await query.get();
+  // Limit + limit aşıldıysa konsola uyarı
+  const snap = await query.limit(PROJE_LIMIT).get();
+  if (snap.size === PROJE_LIMIT) {
+    console.warn(`[projeler] Limit (${PROJE_LIMIT}) doldu — eski projeler gösterilmeyebilir.`);
+  }
   const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   // Index gerektirmemek için client tarafında sırala
   return docs.sort((a, b) => {

@@ -437,7 +437,10 @@ async function doLogin() {
   try {
     await dtmLogin(username, password);
   } catch(e) {
-    showLoginError('Kullanıcı adı veya şifre hatalı.');
+    // Ağ/sistem hatası: spesifik mesaj. Kimlik hatası: generic mesaj (güvenlik).
+    const ozelKodlar = ['auth/network-request-failed', 'auth/too-many-requests', 'auth/requires-recent-login'];
+    const mesaj = ozelKodlar.includes(e?.code) ? hataMesaji(e) : 'Kullanıcı adı veya şifre hatalı.';
+    showLoginError(mesaj);
     btn.disabled = false;
     btn.innerHTML = '<span>Giriş Yap</span><span class="login-btn-arrow">&#8594;</span>';
   }
@@ -468,7 +471,7 @@ async function onAuthReady(user) {
   if (user && currentDTMUser) {
     // Referansı buluttan yükle (kullanıcı + global)
     // Vision API key'i Remote Config'den yükle
-    loadVisionApiKey().catch(() => {});
+    loadVisionApiKey().catch(e => console.warn('[Vision API] Key yüklenemedi:', e?.code, e?.message));
     try {
       const [cloudRef, globalRef] = await Promise.all([
         loadReferansFromCloud(),
@@ -2668,7 +2671,7 @@ async function cloudKaydet() {
         extraUpdate.status = 'taslak';
         currentProjeStatus = 'taslak';
       }
-      await db.collection('projeler').doc(currentCloudProjeId).update(extraUpdate).catch(() => {});
+      await db.collection('projeler').doc(currentCloudProjeId).update(extraUpdate).catch(e => console.warn('[proje] Durum güncellenemedi:', e?.code, e?.message));
       showToast('Proje başarıyla kaydedildi!');
     } else {
       currentCloudProjeId = await saveProjeToCloud(proje);
@@ -2676,7 +2679,7 @@ async function cloudKaydet() {
     }
     renderPage();
   } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
+    showToast('Hata: ' + hataMesaji(e), 'error');
   }
 }
 
@@ -2695,7 +2698,7 @@ async function dashboardProjeAc(projeId) {
     updateNavLock();
     renderPage();
   } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
+    showToast('Hata: ' + hataMesaji(e), 'error');
   }
 }
 
@@ -2722,7 +2725,7 @@ async function cloudProjeAc(projeId) {
     updateNavLock();
     renderPage();
   } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
+    showToast('Hata: ' + hataMesaji(e), 'error');
   }
 }
 
@@ -2790,26 +2793,28 @@ async function gonderiClick(projeId, isAdi) {
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end">
           <button onclick="document.getElementById('gonderiModal').remove()" style="padding:9px 20px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">İptal</button>
-          <button onclick="gonderiOnayla('${projeId}')" style="padding:9px 20px;background:#16a34a;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Gönder</button>
+          <button id="gonderiOnaylaBtn" onclick="gonderiOnayla('${projeId}', this)" style="padding:9px 20px;background:#16a34a;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Gönder</button>
         </div>
       </div>
     </div>`;
   document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
-async function gonderiOnayla(projeId) {
+async function gonderiOnayla(projeId, btn) {
   const select = document.getElementById('gerceklestirmeciSelect');
   const uid = select.value;
   const ad = select.options[select.selectedIndex]?.dataset?.ad || '';
   if (!uid) { showToast('Lütfen bir gerçekleştirmeci seçin.', 'warning'); return; }
-  document.getElementById('gonderiModal').remove();
-  try {
-    await gonderiProje(projeId, uid, ad);
-    if (currentCloudProjeId === projeId) currentProjeKilitli = true;
-    renderPage();
-  } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
-  }
+  await butonKilitli(btn, 'Gönderiliyor...', async () => {
+    try {
+      await gonderiProje(projeId, uid, ad);
+      document.getElementById('gonderiModal')?.remove();
+      if (currentCloudProjeId === projeId) currentProjeKilitli = true;
+      renderPage();
+    } catch(e) {
+      showToast('Hata: ' + hataMesaji(e), 'error');
+    }
+  });
 }
 
 
@@ -2819,7 +2824,7 @@ async function arsivleClick(projeId, isAdi) {
     await db.collection('projeler').doc(projeId).update({ status: 'arsivlendi', arsivlendiAt: firebase.firestore.FieldValue.serverTimestamp() });
     showToast('Proje arşive kaldırıldı.', 'success');
     renderPage();
-  } catch(e) { showToast('Hata: ' + e.message, 'error'); }
+  } catch(e) { showToast('Hata: ' + hataMesaji(e), 'error'); }
 }
 
 async function arsivdenCikarClick(projeId, isAdi) {
@@ -2864,7 +2869,7 @@ async function arsivdenCikarClick(projeId, isAdi) {
     await db.collection('projeler').doc(projeId).update(guncelleme);
     showToast('Proje arşivden çıkarıldı.', 'success');
     renderPage();
-  } catch(e) { showToast('Hata: ' + e.message, 'error'); }
+  } catch(e) { showToast('Hata: ' + hataMesaji(e), 'error'); }
 }
 
 async function adminGeriGonderClick(projeId, isAdi) {
@@ -2913,7 +2918,7 @@ async function adminGeriGonderClick(projeId, isAdi) {
     await db.collection('projeler').doc(projeId).update(guncelleme);
     showToast('Proje geri gönderildi.', 'success');
     renderPage();
-  } catch(e) { showToast('Hata: ' + e.message, 'error'); }
+  } catch(e) { showToast('Hata: ' + hataMesaji(e), 'error'); }
 }
 
 
@@ -2929,7 +2934,7 @@ async function gonderilenOnaylaClick(projeId, isAdi) {
     await onaylaProje(projeId);
     renderPage();
   } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
+    showToast('Hata: ' + hataMesaji(e), 'error');
   }
 }
 
@@ -2946,7 +2951,7 @@ async function onaylaClick(projeId, isAdi) {
     currentPage = 'onay-belgesi';
     renderPage();
   } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
+    showToast('Hata: ' + hataMesaji(e), 'error');
   }
 }
 
@@ -2958,7 +2963,7 @@ async function geriGonderClick(projeId, isAdi) {
     await geriGonderProje(projeId, not.trim());
     renderPage();
   } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
+    showToast('Hata: ' + hataMesaji(e), 'error');
   }
 }
 
@@ -2970,7 +2975,7 @@ async function cloudProjeSil(projeId, isAdi, kilitli) {
     if (currentCloudProjeId === projeId) { currentCloudProjeId = null; currentProjeKilitli = false; }
     renderPage();
   } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
+    showToast('Hata: ' + hataMesaji(e), 'error');
   }
 }
 
@@ -2980,7 +2985,7 @@ async function cloudProjeKilitle(projeId, kilitle) {
     if (currentCloudProjeId === projeId) currentProjeKilitli = kilitle;
     renderPage();
   } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
+    showToast('Hata: ' + hataMesaji(e), 'error');
   }
 }
 
@@ -3082,7 +3087,7 @@ async function renderKullaniciYonetimiPage() {
             </div>
           </div>
           <div id="kullaniciMsg" style="margin:8px 0;font-size:13px"></div>
-          <button class="btn btn-primary" onclick="kullaniciEkle()">+ Kullanıcı Ekle</button>
+          <button class="btn btn-primary" onclick="kullaniciEkle(this)">+ Kullanıcı Ekle</button>
         </div>
       </div>
 
@@ -3119,7 +3124,7 @@ async function renderKullaniciYonetimiPage() {
   }
 }
 
-async function kullaniciEkle() {
+async function kullaniciEkle(btn) {
   const ad = document.getElementById('yeniAd').value.trim();
   const username = document.getElementById('yeniUsername').value.trim();
   const sifre = document.getElementById('yeniSifre').value;
@@ -3130,18 +3135,20 @@ async function kullaniciEkle() {
   if (sifre.length < 6) { msg.style.color = 'red'; msg.textContent = 'Şifre en az 6 karakter olmalı.'; return; }
 
   msg.style.color = 'var(--gray-500)'; msg.textContent = 'Kullanıcı oluşturuluyor...';
-  try {
-    await createDTMUser(username, sifre, ad, rol);
-    msg.style.color = 'green'; msg.textContent = `✓ "${ad}" kullanıcısı başarıyla oluşturuldu.`;
-    document.getElementById('yeniAd').value = '';
-    document.getElementById('yeniUsername').value = '';
-    document.getElementById('yeniSifre').value = '';
-    renderKullaniciYonetimiPage();
-  } catch(e) {
-    msg.style.color = 'red';
-    if (e.code === 'auth/email-already-in-use') msg.textContent = 'Bu kullanıcı adı zaten kullanımda.';
-    else msg.textContent = 'Hata: ' + e.message;
-  }
+  await butonKilitli(btn, 'Oluşturuluyor...', async () => {
+    try {
+      await createDTMUser(username, sifre, ad, rol);
+      msg.style.color = 'green'; msg.textContent = `✓ "${escHtml(ad)}" kullanıcısı başarıyla oluşturuldu.`;
+      document.getElementById('yeniAd').value = '';
+      document.getElementById('yeniUsername').value = '';
+      document.getElementById('yeniSifre').value = '';
+      renderKullaniciYonetimiPage();
+    } catch(e) {
+      msg.style.color = 'red';
+      if (e.code === 'auth/email-already-in-use') msg.textContent = 'Bu kullanıcı adı zaten kullanımda.';
+      else msg.textContent = 'Hata: ' + hataMesaji(e);
+    }
+  });
 }
 
 async function kullaniciRolDegistir(uid, yeniRol) {
@@ -3149,7 +3156,7 @@ async function kullaniciRolDegistir(uid, yeniRol) {
     await changeUserRole(uid, yeniRol);
     renderKullaniciYonetimiPage();
   } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
+    showToast('Hata: ' + hataMesaji(e), 'error');
   }
 }
 
@@ -3159,7 +3166,7 @@ async function kullaniciSil(uid, ad) {
     await db.collection('users').doc(uid).delete();
     renderKullaniciYonetimiPage();
   } catch(e) {
-    showToast('Hata: ' + e.message, 'error');
+    showToast('Hata: ' + hataMesaji(e), 'error');
   }
 }
 
@@ -3177,7 +3184,7 @@ async function renderProjelerimPage() {
       const ids = geriGonderilenler.map(p => p.id);
       db.collection('users').doc(currentDTMUser.uid).update({
         gorulenGeriGonderilenler: firebase.firestore.FieldValue.arrayUnion(...ids)
-      }).catch(() => {});
+      }).catch(e => console.warn('[geriGonder] İşaretlenemedi:', e?.code, e?.message));
     }
     const badge = document.getElementById('geriGonderBadge');
     if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
@@ -3291,7 +3298,7 @@ async function renderGonderilenProjelerPage() {
     // Projeler sayfası ziyaret zamanını kaydet → badge sıfırlanır
     db.collection('users').doc(currentDTMUser.uid).update({
       lastGonderilenVisit: firebase.firestore.FieldValue.serverTimestamp()
-    }).catch(() => {});
+    }).catch(e => console.warn('[lastGonderilenVisit] Güncellenemedi:', e?.code, e?.message));
     const badge = document.getElementById('gonderilenBadge');
     if (badge) badge.style.display = 'none';
 
@@ -3988,7 +3995,7 @@ async function renderOnayliBelgelerPage() {
   if (currentDTMUser?.uid) {
     db.collection('users').doc(currentDTMUser.uid).update({
       lastOnayliVisit: firebase.firestore.FieldValue.serverTimestamp()
-    }).catch(() => {});
+    }).catch(e => console.warn('[lastOnayliVisit] Güncellenemedi:', e?.code, e?.message));
     const badge = document.getElementById('onayliBadge');
     if (badge) badge.style.display = 'none';
   }
@@ -4468,7 +4475,7 @@ async function renderDuyurularPage() {
           <div class="form-group"><label>Başlık</label><input type="text" id="duyuruBaslik" placeholder="Duyuru başlığı"></div>
           <div class="form-group"><label>Mesaj</label><textarea id="duyuruMesaj" rows="4" placeholder="Duyuru içeriği..." style="width:100%;padding:8px;border:1px solid var(--gray-200);border-radius:6px;font-size:14px;resize:vertical"></textarea></div>
           <div id="duyuruMsg" style="margin:8px 0;font-size:13px"></div>
-          <button class="btn btn-primary" onclick="duyuruOlustur()">Yayınla</button>
+          <button class="btn btn-primary" onclick="duyuruOlustur(this)">Yayınla</button>
         </div>
       </div>` : '';
     const listHTML = duyurular.length === 0
@@ -4501,18 +4508,20 @@ async function renderDuyurularPage() {
   }
 }
 
-async function duyuruOlustur() {
+async function duyuruOlustur(btn) {
   const baslik = document.getElementById('duyuruBaslik').value.trim();
   const mesaj = document.getElementById('duyuruMesaj').value.trim();
   const msg = document.getElementById('duyuruMsg');
   if (!baslik || !mesaj) { msg.style.color = 'red'; msg.textContent = 'Başlık ve mesaj zorunlu.'; return; }
-  try {
-    await createDuyuru(baslik, mesaj);
-    msg.style.color = 'green'; msg.textContent = 'Duyuru yayınlandı!';
-    document.getElementById('duyuruBaslik').value = '';
-    document.getElementById('duyuruMesaj').value = '';
-    renderDuyurularPage();
-  } catch(e) { msg.style.color = 'red'; msg.textContent = 'Hata: ' + e.message; }
+  await butonKilitli(btn, 'Yayınlanıyor...', async () => {
+    try {
+      await createDuyuru(baslik, mesaj);
+      msg.style.color = 'green'; msg.textContent = 'Duyuru yayınlandı!';
+      document.getElementById('duyuruBaslik').value = '';
+      document.getElementById('duyuruMesaj').value = '';
+      renderDuyurularPage();
+    } catch(e) { msg.style.color = 'red'; msg.textContent = 'Hata: ' + hataMesaji(e); }
+  });
 }
 
 async function duyuruOku(duyuruId) {
@@ -4521,7 +4530,7 @@ async function duyuruOku(duyuruId) {
     okunmamiDuyuruSayisi = Math.max(0, okunmamiDuyuruSayisi - 1);
     updateDuyuruBadge();
     renderDuyurularPage();
-  } catch(e) { showToast('Hata: ' + e.message, 'error'); }
+  } catch(e) { showToast('Hata: ' + hataMesaji(e), 'error'); }
 }
 
 async function duyuruSil(duyuruId) {
@@ -4529,6 +4538,6 @@ async function duyuruSil(duyuruId) {
   try {
     await deleteDuyuru(duyuruId);
     renderDuyurularPage();
-  } catch(e) { showToast('Hata: ' + e.message, 'error'); }
+  } catch(e) { showToast('Hata: ' + hataMesaji(e), 'error'); }
 }
 
