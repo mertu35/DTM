@@ -63,10 +63,20 @@ service cloud.firestore {
     }
 
     // Vision API aylık kullanım sayacı
+    // Sayaç sadece artabilir — reset/azaltma engellenir
     match /visionUsage/{ayDoc} {
       allow read: if request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
-      allow write: if request.auth != null;
+      // İlk yazım: en fazla 50 sayfa
+      allow create: if request.auth != null &&
+        request.resource.data.sayfaSayisi is number &&
+        request.resource.data.sayfaSayisi >= 0 &&
+        request.resource.data.sayfaSayisi <= 50;
+      // Güncelleme: sayaç sadece artabilir, tek istekte en fazla 50 artış
+      allow update: if request.auth != null &&
+        request.resource.data.sayfaSayisi is number &&
+        request.resource.data.sayfaSayisi > resource.data.sayfaSayisi &&
+        request.resource.data.sayfaSayisi - resource.data.sayfaSayisi <= 50;
     }
   }
 }

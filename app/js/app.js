@@ -2147,7 +2147,7 @@ async function renderBelgelerPage() {
       </button>
       <div>
         <h2>&#128196; Belgeler</h2>
-        <p style="display:flex;align-items:center;gap:8px">${proje.isAdi || ''} ${getStatusBadge(currentProjeStatus)}</p>
+        <p style="display:flex;align-items:center;gap:8px">${escHtml(proje.isAdi || '')} ${getStatusBadge(currentProjeStatus)}</p>
       </div>
     </div>
     <div class="belge-tabs">${tabs}</div>
@@ -2408,7 +2408,7 @@ function bindVeriMerkezi() {
       ${bar}
       <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-500);margin-top:4px">
         <span>%${yuzde} kullanıldı</span>
-        <span>Son: ${sonKullanici}</span>
+        <span>Son: ${escHtml(sonKullanici)}</span>
       </div>
     `;
   }).catch(err => {
@@ -2785,7 +2785,7 @@ async function gonderiClick(projeId, isAdi) {
           <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Gerçekleştirmeci Seçin</label>
           <select id="gerceklestirmeciSelect" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
             <option value="">-- Seçin --</option>
-            ${gerceklestirmeciler.map(g => `<option value="${g.uid}" data-ad="${g.displayName}">${g.displayName}</option>`).join('')}
+            ${gerceklestirmeciler.map(g => `<option value="${g.uid}" data-ad="${escAttr(g.displayName)}">${escHtml(g.displayName)}</option>`).join('')}
           </select>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end">
@@ -2814,7 +2814,7 @@ async function gonderiOnayla(projeId) {
 
 
 async function arsivleClick(projeId, isAdi) {
-  if (!await showConfirm(`"${isAdi}" projesi arşive kaldırılacak.`, 'Arşivle')) return;
+  if (!await showConfirm(`"${escHtml(isAdi)}" projesi arşive kaldırılacak.`, 'Arşivle')) return;
   try {
     await db.collection('projeler').doc(projeId).update({ status: 'arsivlendi', arsivlendiAt: firebase.firestore.FieldValue.serverTimestamp() });
     showToast('Proje arşive kaldırıldı.', 'success');
@@ -2925,7 +2925,7 @@ async function gonderilenOnaylaClick(projeId, isAdi) {
       showToast('Onay belgesi bilgileri eksik! Gerçekleştirme görevlisi önce ödenek ve bütçe tertibi bilgilerini girmelidir.', 'warning');
       return;
     }
-    if (!await showConfirm(`"${isAdi}" projesi onaylanacak.<br><br>Bu işlem geri alınamaz. Emin misiniz?`, 'Onayla')) return;
+    if (!await showConfirm(`"${escHtml(isAdi)}" projesi onaylanacak.<br><br>Bu işlem geri alınamaz. Emin misiniz?`, 'Onayla')) return;
     await onaylaProje(projeId);
     renderPage();
   } catch(e) {
@@ -2939,7 +2939,7 @@ async function onaylaClick(projeId, isAdi) {
     showToast('Onay belgesi bilgileri eksik! Lütfen gerçekleştirme görevlisinin önce ödenek ve bütçe tertibi bilgilerini girmesini bekleyin.', 'warning');
     return;
   }
-  if (!await showConfirm(`"${isAdi}" projesi onaylanacak.<br><br>Bu işlem geri alınamaz. Emin misiniz?`, 'Onayla')) return;
+  if (!await showConfirm(`"${escHtml(isAdi)}" projesi onaylanacak.<br><br>Bu işlem geri alınamaz. Emin misiniz?`, 'Onayla')) return;
   try {
     await onaylaProje(projeId);
     // Belge oluşturma sayfasına yönlendir
@@ -2964,7 +2964,7 @@ async function geriGonderClick(projeId, isAdi) {
 
 async function cloudProjeSil(projeId, isAdi, kilitli) {
   if (kilitli) { showToast(`"${isAdi}" projesi kilitli. Silmek için önce kilidi açın.`, 'warning'); return; }
-  if (!await showConfirm(`"${isAdi}" projesi kalıcı olarak silinecek. Emin misiniz?`, 'Sil')) return;
+  if (!await showConfirm(`"${escHtml(isAdi)}" projesi kalıcı olarak silinecek. Emin misiniz?`, 'Sil')) return;
   try {
     await deleteProjeFromCloud(projeId);
     if (currentCloudProjeId === projeId) { currentCloudProjeId = null; currentProjeKilitli = false; }
@@ -3094,8 +3094,8 @@ async function renderKullaniciYonetimiPage() {
             <tbody>
               ${users.map(u => `
                 <tr>
-                  <td>${u.displayName || '-'}</td>
-                  <td>${u.username || '-'}</td>
+                  <td>${escHtml(u.displayName || '-')}</td>
+                  <td>${escHtml(u.username || '-')}</td>
                   <td>${u.uid !== currentDTMUser.uid ? `
                     <select onchange="kullaniciRolDegistir('${u.uid}', this.value)" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer">
                       <option value="user" ${u.role === 'user' ? 'selected' : ''}>Kullanıcı</option>
@@ -3105,7 +3105,7 @@ async function renderKullaniciYonetimiPage() {
                     </select>` : `<span class="badge badge-admin">${getRoleLabel(u.role)}</span>`}
                   </td>
                   <td>
-                    ${u.uid !== currentDTMUser.uid ? `<button class="btn btn-danger btn-sm" onclick="kullaniciSil('${u.uid}', '${u.displayName}')">Sil</button>` : '<span style="color:var(--gray-400);font-size:12px">(Aktif oturum)</span>'}
+                    ${u.uid !== currentDTMUser.uid ? `<button class="btn btn-danger btn-sm" onclick="kullaniciSil('${u.uid}', '${escAttr(u.displayName)}')">Sil</button>` : '<span style="color:var(--gray-400);font-size:12px">(Aktif oturum)</span>'}
                   </td>
                 </tr>`).join('')}
             </tbody>
@@ -3154,7 +3154,7 @@ async function kullaniciRolDegistir(uid, yeniRol) {
 }
 
 async function kullaniciSil(uid, ad) {
-  if (!await showConfirm(`"${ad}" kullanıcısı kalıcı olarak silinecek. Emin misiniz?`, 'Sil')) return;
+  if (!await showConfirm(`"${escHtml(ad)}" kullanıcısı kalıcı olarak silinecek. Emin misiniz?`, 'Sil')) return;
   try {
     await db.collection('users').doc(uid).delete();
     renderKullaniciYonetimiPage();
@@ -3303,7 +3303,7 @@ async function renderGonderilenProjelerPage() {
         <div class="ky-proje-info">
           <div class="ky-proje-name"><span class="ky-proje-dot"></span>${escHtml(p.isAdi || '(İsimsiz)')}</div>
           <div class="ky-proje-meta">
-            <span class="ky-proje-user">👤 ${p.userDisplayName || '-'}</span>
+            <span class="ky-proje-user">👤 ${escHtml(p.userDisplayName || '-')}</span>
             <span class="ky-proje-date">📅 ${tarih}</span>
             ${getStatusBadge(p.status)}
           </div>
@@ -3462,7 +3462,7 @@ async function renderGerceklestirmeciBelgelerPage() {
         <div class="ky-proje-info">
           <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
           <div class="ky-proje-meta">
-            <span class="ky-proje-user">&#128100; ${p.userDisplayName || '-'}</span>
+            <span class="ky-proje-user">&#128100; ${escHtml(p.userDisplayName || '-')}</span>
             <span class="ky-proje-date">&#128197; ${tarih}</span>
             ${getStatusBadge(p.status)}
           </div>
@@ -3517,7 +3517,7 @@ function renderGerceklestirmeciProjeDetay(main) {
       </button>
       <div>
         <h2>📋 Proje Detayı</h2>
-        <p style="display:flex;align-items:center;gap:8px">${proje.isAdi || ''} ${getStatusBadge(proje.status)}</p>
+        <p style="display:flex;align-items:center;gap:8px">${escHtml(proje.isAdi || '')} ${getStatusBadge(proje.status)}</p>
       </div>
     </div>
 
@@ -3656,7 +3656,7 @@ function renderGerceklestirmeciBelgelerView(main) {
       </button>
       <div>
         <h2>📄 Belgeler${currentGerceklestirmeciReadOnly ? ' <span style="font-size:12px;font-weight:600;color:#6b7280;background:#f3f4f6;padding:3px 8px;border-radius:6px;vertical-align:middle">Salt Okunur</span>' : ''}</h2>
-        <p style="display:flex;align-items:center;gap:8px">${proje.isAdi || ''} ${getStatusBadge(currentProjeStatus || 'onaylandi')}</p>
+        <p style="display:flex;align-items:center;gap:8px">${escHtml(proje.isAdi || '')} ${getStatusBadge(currentProjeStatus || 'onaylandi')}</p>
       </div>
     </div>
     <div class="belge-tabs">${tabs}</div>
@@ -3962,7 +3962,7 @@ function renderOnayBelgesiPage() {
         <button onclick="currentPage='gonderilen-projeler';renderPage();" style="padding:7px 14px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">← Geri</button>
         <div>
           <h2 style="font-size:20px;font-weight:700;color:#111827;margin:0">Onay Belgesi Oluştur</h2>
-          <div style="font-size:12px;color:#6b7280;margin-top:2px">${proje.isAdi || '(İsimsiz Proje)'}</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:2px">${escHtml(proje.isAdi || '(İsimsiz Proje)')}</div>
         </div>
       </div>
       <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:32px;text-align:center">
@@ -4229,8 +4229,8 @@ function renderProfilPage() {
             </div>
           </div>
           <div>
-            <div style="font-size:22px;font-weight:700">${u.displayName || '-'}</div>
-            <div style="font-size:14px;opacity:0.8;margin-top:4px">@${u.username || '-'}</div>
+            <div style="font-size:22px;font-weight:700">${escHtml(u.displayName || '-')}</div>
+            <div style="font-size:14px;opacity:0.8;margin-top:4px">@${escHtml(u.username || '-')}</div>
             <div style="margin-top:8px">
               <span style="background:rgba(255,255,255,0.2);font-size:11px;font-weight:600;padding:3px 12px;border-radius:20px">
                 ${getRoleLabel(u.role)}
@@ -4481,9 +4481,9 @@ async function renderDuyurularPage() {
               <div class="duyuru-ust">
                 <div class="duyuru-baslik">
                   ${!okundu ? '<span class="duyuru-yeni">Yeni</span>' : ''}
-                  ${d.baslik}
+                  ${escHtml(d.baslik)}
                 </div>
-                <div class="duyuru-meta">${d.createdBy} &middot; ${tarih}</div>
+                <div class="duyuru-meta">${escHtml(d.createdBy || '')} &middot; ${tarih}</div>
               </div>
               <div class="duyuru-mesaj">${escHtml(d.mesaj)}</div>
               <div class="duyuru-actions">
