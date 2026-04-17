@@ -3306,12 +3306,12 @@ async function renderProjelerimPage() {
         if (durumFiltre !== 'hepsi' && !b.keys.includes(durumFiltre)) return '';
         let grup = projeler.filter(p => b.keys.includes(p.status || 'taslak'));
         if (ara) grup = grup.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara));
-        return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
-          <div style="padding:12px 16px;background:${b.renk};border-bottom:1px solid ${b.kenar};font-weight:700;font-size:13px;color:${b.yaziRenk}">
+        return `<div class="ky-bolum-kart" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
+          <div class="ky-bolum-baslik" style="padding:12px 16px;background:${b.renk};border-bottom:1px solid ${b.kenar};font-weight:700;font-size:13px;color:${b.yaziRenk}">
             ${b.baslik} (${grup.length})
           </div>
           ${grup.length === 0
-            ? `<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Bu kategoride proje yok.'}</div>`
+            ? `<div class="ky-bolum-empty" style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Bu kategoride proje yok.'}</div>`
             : `<div class="ky-proje-grid">${grup.map(projeKart).join('')}</div>`}
         </div>`;
       }).join('');

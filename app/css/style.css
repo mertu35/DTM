@@ -1900,3 +1900,115 @@ body.dark [style*="background: #dbeafe"] {
 }
 body.dark .theme-toggle-switch { background: var(--primary); }
 body.dark .theme-toggle-switch::after { transform: translateX(16px); }
+
+/* ============ EKSİK DARK MODE DÜZELTMELERİ ============ */
+
+/* Sidebar Metinleri (Normalde --gray-300 kullanıyor, ama dark mode'da bu koyulaşıyor) */
+body.dark .nav-item {
+  color: #d1d5db !important; /* Her zaman açık gri */
+}
+body.dark .nav-item:hover, body.dark .nav-item.active {
+  color: #ffffff !important;
+  background: rgba(255,255,255,0.05); /* Hover olunca hafif aydınlat */
+}
+body.dark .nav-section {
+  color: #9ca3af !important; /* Alt başlıklar */
+}
+
+/* Stat-Card ve Kartların Beyaz Kalması */
+body.dark .stat-card,
+body.dark .belge-liste-item {
+  background: var(--dtm-surface);
+  border: 1px solid var(--dtm-border);
+}
+body.dark .stat-card .stat-value {
+  color: var(--gray-800); /* Normal body color */
+}
+
+/* Butonlar (Ekle vb. Outline Butonlar) */
+body.dark .btn-outline {
+  background: transparent !important;
+  color: var(--gray-400) !important;
+  border-color: var(--dtm-border) !important;
+}
+body.dark .btn-outline:hover {
+  background: var(--dtm-surface-2) !important;
+  color: #fff !important;
+}
+body.dark .btn-secondary {
+  background: var(--dtm-surface-2) !important;
+  color: #f8fafc !important;
+  border-color: var(--dtm-border) !important;
+}
+body.dark .btn-secondary:hover {
+  background: var(--gray-700) !important;
+}
+
+/* Form girdileri */
+body.dark input, 
+body.dark select, 
+body.dark textarea {
+  background: var(--dtm-surface) !important;
+  color: #f1f5f9 !important; /* gray-800 inverted form text */
+  border-color: var(--dtm-border) !important;
+}
+
+/* Liste Kartları / Empty State vs */
+body.dark .empty-state,
+body.dark .ky-proje-item,
+body.dark .ky-bolum-kart {
+  background: var(--dtm-surface) !important;
+  border-color: var(--dtm-border) !important;
+}
+body.dark .ky-bolum-baslik {
+  background: var(--dtm-surface) !important;
+  border-bottom-color: var(--dtm-border) !important;
+  color: #e2e8f0 !important;
+}
+body.dark .ky-proje-aktif {
+  background: var(--dtm-surface-2) !important;
+  border-color: var(--primary) !important;
+}
+body.dark .ky-proje-item .ky-proje-meta {
+  color: var(--gray-400);
+}
+body.dark .ky-proje-item .ky-proje-name {
+  color: #f8fafc; /* gray-900 inverted */
+}
+
+/* Kapanan/Pasif Belge Sekmeleri (Tabs) */
+body.dark .belge-tab {
+  background: var(--dtm-surface);
+  border-color: var(--dtm-border);
+  color: var(--gray-400);
+}
+body.dark .belge-tab:hover {
+  background: var(--dtm-surface-2);
+}
+
+/* Belge (A4 Kağıdı) İÇİ ASLA karanlık olmasın (Baskı formatı) */
+body.dark .belge {
+  background-color: #fff !important; 
+  color: #000 !important;
+}
+body.dark .belge * {
+  color: #000 !important; 
+  background-color: transparent;
+}
+body.dark .belge .veri-tablo th {
+  background-color: rgba(0,0,0,0.05) !important;
+}
+body.dark .belge .veri-tablo td {
+  background-color: transparent !important;
+}
+
+/* Ama veri-tablo, modal/app içinde kullanıldıysa koyu yap: .belge içinde DEĞİLSE */
+body.dark .dtm-modal .veri-tablo th,
+body.dark .app-layout > main .veri-tablo th {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+body.dark .dtm-modal .veri-tablo td,
+body.dark .app-layout > main .veri-tablo td {
+  background: var(--dtm-surface) !important;
+}

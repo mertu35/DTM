@@ -1,217 +1,359 @@
 // ===================== EXCEL.JS =====================
-// SheetJS ile Excel (.xlsx) çıktı üretir
+// Excel çıktısı: HTML-to-XLS yöntemi (SheetJS CE cell style desteklemiyor)
+// Excel, HTML formatındaki .xls dosyalarını border/renk/merge ile açar.
 
-function excelDosyaAdi(baslik, projeAdi) {
-  const ad = (projeAdi || 'Proje').replace(/[<>:"/\\|?*]/g, '-').substring(0, 80);
-  return `${baslik} - ${ad}.xlsx`;
+const EXCEL_DESTEKLI_BELGELER = ['yaklasik-maliyet', 'teklif-tutanagi'];
+
+// ── Ortak: HTML tablosunu .xls olarak indir ──
+function htmlIndirXls(htmlStr, dosyaAdi) {
+  const blob = new Blob(['\ufeff' + htmlStr], {
+    type: 'application/vnd.ms-excel;charset=utf-8'
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = dosyaAdi.replace(/\.xlsx?$/, '') + '.xls';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
 }
 
-function sheetJSYuklu() {
-  if (typeof XLSX === 'undefined') {
-    showToast('Excel kütüphanesi yüklenemedi. İnternet bağlantınızı kontrol edin.', 'error');
-    return false;
-  }
-  return true;
+// ── Excel HTML sarıcısı ──
+function excelHtmlSaric(icerik, sayfaAdi) {
+  return `<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:x='urn:schemas-microsoft-com:office:excel'
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset='utf-8'>
+<!--[if gte mso 9]><xml>
+ <x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+  <x:Name>${sayfaAdi}</x:Name>
+  <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+ </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook>
+</xml><![endif]-->
+<style>
+  body { font-family: Arial, sans-serif; font-size: 9pt; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { border: 1px solid #000; padding: 3px 6px; vertical-align: middle; }
+  .center { text-align: center; }
+  .right  { text-align: right; }
+  .bold   { font-weight: bold; }
+  .baslik-satir td { font-size: 13pt; font-weight: bold; text-align: center; border: none; }
+  .no-border td { border: none; }
+  .grup-h { background-color: #1F3864; color: #fff; font-weight: bold; text-align: center; }
+  .firma-h { background-color: #2F5496; color: #fff; font-weight: bold; text-align: center; }
+  .sutun-h { background-color: #BDD7EE; font-weight: bold; text-align: center; }
+  .toplam-satir td { background-color: #F2F2F2; font-weight: bold; }
+  .etiket-h { background-color: #F2F2F2; font-weight: bold; }
+  .metin-kutu td { border: 2px solid #000; padding: 8px; text-align: justify; line-height: 1.4; }
+  .kazanan-h td { background-color: #E2EFDA; font-weight: bold; }
+  .rakam { text-align: right; mso-number-format:"#,##0.00"; }
+</style>
+</head><body>
+${icerik}
+</body></html>`;
 }
 
-function sutunGenislik(ws, widths) {
-  ws['!cols'] = widths.map(w => ({ wch: w }));
+// ── Para formatı (rakam) ──
+function exRakam(sayi) {
+  if (!sayi || sayi === 0) return '';
+  return `<td class="rakam" style="mso-number-format:'#,##0.00'">${
+    typeof formatCurrency === 'function' ? formatCurrency(sayi) : sayi.toLocaleString('tr-TR', { minimumFractionDigits: 2 })
+  }</td>`;
 }
-
-function birlestir(ws, s_r, s_c, e_r, e_c) {
-  if (!ws['!merges']) ws['!merges'] = [];
-  ws['!merges'].push({ s: { r: s_r, c: s_c }, e: { r: e_r, c: e_c } });
-}
-
-function paraFormatUygula(ws, rowStart, rowEnd, colStart, colEnd) {
-  const fmt = '#,##0.00';
-  for (let r = rowStart; r <= rowEnd; r++) {
-    for (let c = colStart; c <= colEnd; c++) {
-      const adr = XLSX.utils.encode_cell({ r, c });
-      if (ws[adr] && typeof ws[adr].v === 'number') ws[adr].z = fmt;
-    }
-  }
+function exRakamBold(sayi) {
+  if (!sayi || sayi === 0) return '<td></td>';
+  return `<td class="rakam bold" style="mso-number-format:'#,##0.00'"><b>${
+    typeof formatCurrency === 'function' ? formatCurrency(sayi) : sayi.toLocaleString('tr-TR', { minimumFractionDigits: 2 })
+  }</b></td>`;
 }
 
 // ===== YAKLAŞIK MALİYET EXCEL =====
-// PDF yapısını birebir taklit eder:
-// Sütunlar: S.NO | İş Adı | Miktar | F1-BF | F1-T | F2-BF | F2-T | F3-BF | F3-T | YM-BF | YM-T
-function exportYaklasikMaliyetExcel(proje) {
-  if (!sheetJSYuklu()) return;
-
-  const kalemler = getKalemler(proje);
+function exportYaklasikMaliyetExcel(proje, referans) {
+  const kalemler   = getKalemler(proje);
   const f1 = proje.ymFirmalar[0] || { ad: '', fiyatlar: [] };
   const f2 = proje.ymFirmalar[1] || { ad: '', fiyatlar: [] };
   const f3 = proje.ymFirmalar[2] || { ad: '', fiyatlar: [] };
   const ym = hesaplaYaklasikMaliyet(proje);
-
-  const data = [];
-  // Satır 0: Başlık (11 sütun: indeks 0-10)
-  data.push(['YAKLAŞIK MALİYET TESPİT TUTANAĞI', '', '', '', '', '', '', '', '', '', '']);
-  data.push(['']);
-  // Satır 2-4: Proje bilgileri
-  data.push(['İdarenin Adı', proje.idareAdi || '']);
-  data.push(['Yapılan İş / Mal / Hizmetin Adı', proje.isAdi || '']);
-  data.push(['Onay Belgesi Tarih/No',
-    `${formatDate(proje.ymOnayTarihi)} Tarih ve ${proje.ymOnayNo || ''} Sayılı Olur`]);
-  data.push(['']);
-
-  // PDF Header Satır 1 (indeks 6): Firma grup başlıkları
-  data.push([
-    'S.NO', 'YAPILAN İŞ / MAL / HİZMETİN ADI', 'MİKTARI',
-    '1. FİRMA', '', '2. FİRMA', '', '3. FİRMA', '',
-    'YAKLAŞIK MALİYET', ''
-  ]);
-  // PDF Header Satır 2 (indeks 7): Firma adları — her firmayı kendi iki sütununa yay
-  data.push([
-    '', '', '',
-    f1.ad || '-', '', f2.ad || '-', '', f3.ad || '-', '',
-    '', ''
-  ]);
-  // PDF Header Satır 3 (indeks 8): BF/Toplam etiketleri
-  data.push([
-    '', '', '',
-    'BİRİM FİYAT (TL)', 'TOPLAM FİYAT (TL)',
-    'BİRİM FİYAT (TL)', 'TOPLAM FİYAT (TL)',
-    'BİRİM FİYAT (TL)', 'TOPLAM FİYAT (TL)',
-    'BİRİM FİYAT (TL)', 'TOPLAM FİYAT (TL)'
-  ]);
-
-  // Veri satırları (indeks 9+)
-  kalemler.forEach((k, i) => {
-    const miktar = parseFloat(k.miktar) || 0;
-    const bf1 = f1.fiyatlar[i] || 0;
-    const bf2 = f2.fiyatlar[i] || 0;
-    const bf3 = f3.fiyatlar[i] || 0;
-    const ortT = hesaplaYMKalemOrtalama(proje, i);
-    const ortBF = ortT / (miktar || 1);
-    data.push([
-      i + 1, k.ad, miktar,
-      bf1 || '', bf1 * miktar || '',
-      bf2 || '', bf2 * miktar || '',
-      bf3 || '', bf3 * miktar || '',
-      ortBF || '', ortT || ''
-    ]);
-  });
-
-  // Toplam satırı
+  const ymYazi = sayidanYaziya(ym);
+  const ymGorevliler = typeof getAktifGorevliler === 'function'
+    ? getAktifGorevliler(proje.ymGorevliler || []) : [];
+  const ymTutanakT = proje.ymTutanakTarihiAyni !== false
+    ? proje.ymOnayTarihi : (proje.ymTutanakTarihi || proje.ymOnayTarihi);
   const t1Top = hesaplaYMFirmaToplam(f1, kalemler);
   const t2Top = hesaplaYMFirmaToplam(f2, kalemler);
   const t3Top = hesaplaYMFirmaToplam(f3, kalemler);
-  data.push(['', 'TOPLAM:', '', '', t1Top || '', '', t2Top || '', '', t3Top || '', '', ym || '']);
-  data.push(['']);
-  data.push(['Yaklaşık Maliyet (Yazı ile):', sayidanYaziya(ym)]);
+  const COL = 11; // toplam sütun sayısı
 
-  const ws = XLSX.utils.aoa_to_sheet(data);
+  // Kalem satırları
+  let kalemRows = '';
+  kalemler.forEach((k, i) => {
+    const mik  = parseFloat(k.miktar) || 0;
+    const bf1  = f1.fiyatlar[i] || 0;
+    const bf2  = f2.fiyatlar[i] || 0;
+    const bf3  = f3.fiyatlar[i] || 0;
+    const ortT = hesaplaYMKalemOrtalama(proje, i);
+    const ortBF = ortT / (mik || 1);
+    kalemRows += `<tr>
+      <td class="center">${i + 1}</td>
+      <td>${k.ad || ''}</td>
+      <td class="center">${mik}</td>
+      ${exRakam(bf1 || null)} ${exRakam(bf1 * mik || null)}
+      ${exRakam(bf2 || null)} ${exRakam(bf2 * mik || null)}
+      ${exRakam(bf3 || null)} ${exRakam(bf3 * mik || null)}
+      ${exRakam(ortBF || null)} ${exRakam(ortT || null)}
+    </tr>`;
+  });
 
-  // Merge'ler
-  birlestir(ws, 0, 0, 0, 10);   // Başlık
-  // Satır 6 (header 1): S.NO/İşAdı/Miktar rowspan simulation + firma grup başlıkları
-  birlestir(ws, 6, 0, 8, 0);    // S.NO span 3 satır
-  birlestir(ws, 6, 1, 8, 1);    // İş Adı span 3 satır
-  birlestir(ws, 6, 2, 8, 2);    // Miktar span 3 satır
-  birlestir(ws, 6, 3, 6, 4);    // 1. FİRMA
-  birlestir(ws, 6, 5, 6, 6);    // 2. FİRMA
-  birlestir(ws, 6, 7, 6, 8);    // 3. FİRMA
-  birlestir(ws, 6, 9, 6, 10);   // YAKLAŞIK MALİYET
-  // Satır 7 (header 2): firma adları
-  birlestir(ws, 7, 3, 7, 4);    // f1.ad
-  birlestir(ws, 7, 5, 7, 6);    // f2.ad
-  birlestir(ws, 7, 7, 7, 8);    // f3.ad
-  birlestir(ws, 7, 9, 7, 10);   // YM (boş ama span)
+  // Görevli imzaları
+  const gorevliImzalar = ymGorevliler.map(g =>
+    `<td class="center">${g.ad || ''}<br/><small>${g.unvan || ''}</small></td>`
+  ).join('');
+  const bosPad = ymGorevliler.length > 0
+    ? `<td colspan="${Math.max(1, 9 - ymGorevliler.length)}"></td>` : '<td colspan="9"></td>';
 
-  sutunGenislik(ws, [5, 38, 9, 14, 14, 14, 14, 14, 14, 14, 14]);
-  paraFormatUygula(ws, 9, 9 + kalemler.length, 3, 10);
+  const html = `<table>
+  <tr class="baslik-satir"><td colspan="${COL}">YAKLAŞIK MALİYET TESPİT TUTANAĞI</td></tr>
+  <tr class="no-border"><td colspan="${COL}">&nbsp;</td></tr>
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Yaklaşık Maliyet');
-  XLSX.writeFile(wb, excelDosyaAdi('Yaklaşık Maliyet', proje.isAdi));
+  <!-- Proje Bilgileri -->
+  <tr>
+    <td colspan="2" class="etiket-h">İdarenin Adı</td>
+    <td colspan="9">${proje.idareAdi || ''}</td>
+  </tr>
+  <tr>
+    <td colspan="2" class="etiket-h">Yapılan İş / Mal / Hizmetin Adı, Niteliği</td>
+    <td colspan="9">${proje.isAdi || ''}</td>
+  </tr>
+  <tr>
+    <td colspan="2" class="etiket-h">Alım ve Yetkilendirilen Görevlilere İlişkin Onay Belgesi /<br>Görevlendirme Onayı Tarih ve No.su</td>
+    <td colspan="9">${formatDate(proje.ymOnayTarihi)} Tarih ve ${proje.ymOnayNo || ''} Sayılı Olur</td>
+  </tr>
+
+  <tr class="no-border"><td colspan="${COL}">&nbsp;</td></tr>
+
+  <!-- Tablo Başlığı -->
+  <tr>
+    <th rowspan="3" class="sutun-h">S.NO</th>
+    <th rowspan="3" class="sutun-h">YAPILAN İŞ / MAL / HİZMETİN ADI</th>
+    <th rowspan="3" class="sutun-h">MİKTARI</th>
+    <th colspan="2" class="grup-h">1. FİRMA</th>
+    <th colspan="2" class="grup-h">2. FİRMA</th>
+    <th colspan="2" class="grup-h">3. FİRMA</th>
+    <th colspan="2" class="grup-h">YAKLAŞIK MALİYET</th>
+  </tr>
+  <tr>
+    <th colspan="2" class="firma-h">${f1.ad || '-'}</th>
+    <th colspan="2" class="firma-h">${f2.ad || '-'}</th>
+    <th colspan="2" class="firma-h">${f3.ad || '-'}</th>
+    <th colspan="2" class="firma-h"></th>
+  </tr>
+  <tr>
+    <th class="sutun-h">BİRİM FİYAT (TL)</th><th class="sutun-h">TOPLAM FİYAT (TL)</th>
+    <th class="sutun-h">BİRİM FİYAT (TL)</th><th class="sutun-h">TOPLAM FİYAT (TL)</th>
+    <th class="sutun-h">BİRİM FİYAT (TL)</th><th class="sutun-h">TOPLAM FİYAT (TL)</th>
+    <th class="sutun-h">BİRİM FİYAT (TL)</th><th class="sutun-h">TOPLAM FİYAT (TL)</th>
+  </tr>
+
+  <!-- Kalemler -->
+  ${kalemRows}
+
+  <!-- Toplam -->
+  <tr class="toplam-satir">
+    <td></td><td colspan="2"><b>TOPLAM:</b></td>
+    <td></td>${exRakamBold(t1Top)}
+    <td></td>${exRakamBold(t2Top)}
+    <td></td>${exRakamBold(t3Top)}
+    <td></td>${exRakamBold(ym)}
+  </tr>
+
+  <tr class="no-border"><td colspan="${COL}">&nbsp;</td></tr>
+
+  <!-- Açıklayıcı Metin -->
+  <tr class="metin-kutu">
+    <td colspan="${COL}">
+      Karaman İl Özel İdaresi ${proje.mudurluk || ''} yetkilisince görevlendirilmem
+      nedeniyle yukarıda özelliği belirtilen işin yapılması için 4734 sayılı Kamu İhale
+      Kanununun 9. Maddesi gereğince yaklaşık maliyet çıkarılmış olup, ihale konusu işin
+      ${typeof formatCurrency === 'function' ? formatCurrency(ym) : ym} (${ymYazi})
+      (KDV hariç) bedelle ihaleye çıkması belirlenmiş ve iş bu tutanak tanzimen
+      düzenlenmiştir. ${formatDate(ymTutanakT)}<br><br>
+      <b>DAYANAKLAR</b><br>
+      EK - 1 : Piyasa Fiyat Araştırması ( ${proje.ymFirmalar.filter(f => f.ad).length} Adet )
+    </td>
+  </tr>
+
+  <tr class="no-border"><td colspan="${COL}">&nbsp;</td></tr>
+
+  <!-- İmzalar -->
+  <tr>
+    ${gorevliImzalar}
+    ${bosPad}
+    <td colspan="2" class="center bold">OLUR<br>${formatDate(ymTutanakT)}<br><br>
+      <b>${proje.onaylayanAmir?.ad || ''}</b><br>
+      <small>${proje.onaylayanAmir?.unvan || ''}</small>
+    </td>
+  </tr>
+</table>`;
+
+  const dosyaAdi = `Yaklaşık Maliyet - ${(proje.isAdi || 'Proje').replace(/[<>:"/\\|?*]/g, '-').substring(0, 60)}`;
+  htmlIndirXls(excelHtmlSaric(html, 'Yaklaşık Maliyet'), dosyaAdi);
 }
 
 // ===== TEKLİF TUTANAĞI EXCEL =====
-// Sütunlar: S.NO | İş Adı | Miktar | Birim | F1 Teklif | F2 Teklif | F3 Teklif
 function exportTeklifTutanagiExcel(proje, referans) {
-  if (!sheetJSYuklu()) return;
-
   const kalemler = getKalemler(proje);
   const f1 = proje.teklifFirmalar[0] || { ad: '', fiyatlar: [] };
   const f2 = proje.teklifFirmalar[1] || { ad: '', fiyatlar: [] };
   const f3 = proje.teklifFirmalar[2] || { ad: '', fiyatlar: [] };
   const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
   const kazanan = kazananIdx >= 0 ? getKazananFirma(proje, referans) : null;
-
-  const data = [];
-  data.push(['TEKLİF TUTANAĞI', '', '', '', '', '', '']);
-  data.push(['']);
-  data.push(['İdarenin Adı', proje.idareAdi || '']);
-  data.push(['Yapılan İş / Mal / Hizmetin Adı', proje.isAdi || '']);
-  data.push(['Onay Belgesi Tarih/No',
-    `${formatDate(proje.dtOnayTarihi)} Tarih ve ${proje.dtOnayNo || ''} Sayılı Olur`]);
-  data.push(['']);
-
-  // Header (indeks 6)
-  data.push([
-    'S.NO', 'YAPILAN İŞ / MAL / HİZMETİN ADI', 'MİKTAR', 'BİRİM',
-    (f1.ad || '1. Firma') + '\n(BF + KDV)',
-    (f2.ad || '2. Firma') + '\n(BF + KDV)',
-    (f3.ad || '3. Firma') + '\n(BF + KDV)'
-  ]);
-
-  // Veri satırları (indeks 7+)
-  kalemler.forEach((k, i) => {
-    data.push([
-      i + 1, k.ad, parseFloat(k.miktar) || 0, k.birim || '',
-      f1.fiyatlar[i] || '',
-      f2.fiyatlar[i] || '',
-      f3.fiyatlar[i] || ''
-    ]);
-  });
-
-  // Toplam satırı
   const t1 = hesaplaTeklifFirmaToplam(f1, kalemler);
   const t2 = hesaplaTeklifFirmaToplam(f2, kalemler);
   const t3 = hesaplaTeklifFirmaToplam(f3, kalemler);
-  data.push(['', 'TOPLAM (KDV Hariç)', '', '', t1 || '', t2 || '', t3 || '']);
+  const dtGorevliler = typeof getAktifGorevliler === 'function'
+    ? getAktifGorevliler(proje.dtGorevliler || []) : [];
+  const dtTutanakT = proje.dtTutanakTarihiAyni !== false
+    ? proje.dtOnayTarihi : (proje.dtTutanakTarihi || proje.dtOnayTarihi);
 
-  // Kazanan firma bölümü
+  let teklifRows = '';
+  kalemler.forEach((k, i) => {
+    const mik = parseFloat(k.miktar) || 0;
+    const bf1 = f1.fiyatlar[i] || 0;
+    const bf2 = f2.fiyatlar[i] || 0;
+    const bf3 = f3.fiyatlar[i] || 0;
+    teklifRows += `<tr>
+      <td class="center">${i + 1}</td>
+      <td>${k.ad || ''}</td>
+      <td class="center">${mik}</td>
+      <td class="center">${k.birim || ''}</td>
+      ${exRakam(bf1 || null)}
+      ${exRakam(bf2 || null)}
+      ${exRakam(bf3 || null)}
+    </tr>`;
+  });
+
+  let kazananBolum = '';
   if (kazanan) {
     const kazananToplam = proje.teklifFirmalar[kazananIdx]
       ? hesaplaTeklifFirmaToplam(proje.teklifFirmalar[kazananIdx], kalemler) : 0;
-    data.push(['']);
-    data.push(['KAZANAN FİRMA', '', '', '', '', '', '']);
-    data.push(['Firma Adı / Kişi', kazanan.ad || '']);
-    data.push(['Adresi', kazanan.adres || '']);
-    data.push(['Toplam Teklif Bedeli (KDV Hariç)', kazananToplam || '']);
-
-    // Kazanan toplam para formatı
-    const ws_temp = XLSX.utils.aoa_to_sheet(data);
-    const toplamAdr = XLSX.utils.encode_cell({ r: data.length - 1, c: 1 });
-    if (ws_temp[toplamAdr] && typeof ws_temp[toplamAdr].v === 'number') {
-      ws_temp[toplamAdr].z = '#,##0.00';
-    }
+    const kf = proje.teklifFirmalar[kazananIdx];
+    let kazananRows = '';
+    kalemler.forEach((k, i) => {
+      const mik = parseFloat(k.miktar) || 0;
+      const bf  = kf.fiyatlar[i] || 0;
+      kazananRows += `<tr>
+        <td class="center">${i + 1}</td>
+        <td>${k.ad}</td>
+        <td class="center">${mik}</td>
+        <td class="center">${k.birim || ''}</td>
+        ${i === 0 ? `<td rowspan="${kalemler.length}">${kazanan.ad}</td>` : ''}
+        ${exRakam(bf || null)}
+        ${i === 0 ? `<td rowspan="${kalemler.length}">${kazanan.adres || ''}</td>` : ''}
+      </tr>`;
+    });
+    kazananBolum = `
+  <tr class="no-border"><td colspan="7">&nbsp;</td></tr>
+  <tr class="kazanan-h"><td colspan="7"><b>UYGUN GÖRÜLEN KİŞİ / FİRMA</b></td></tr>
+  <tr>
+    <th class="sutun-h">SIRA NO</th>
+    <th class="sutun-h">MAL / HİZMET / YAPIM İŞİ</th>
+    <th class="sutun-h">MİKTAR</th>
+    <th class="sutun-h">BİRİM</th>
+    <th class="sutun-h">ADI</th>
+    <th class="sutun-h">Firma Fiyat Teklifi</th>
+    <th class="sutun-h">ADRESİ</th>
+  </tr>
+  ${kazananRows}
+  <tr class="toplam-satir">
+    <td colspan="4"><b>TOPLAM (KDV Hariç)</b></td>
+    ${exRakamBold(kazananToplam)} <td></td> <td></td>
+  </tr>`;
   }
 
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  birlestir(ws, 0, 0, 0, 6);  // Başlık
+  const gorevliImzalar = dtGorevliler.map(g =>
+    `<td class="center">${g.ad || ''}<br/><small>${g.unvan || ''}</small></td>`
+  ).join('');
+  const bosPad = `<td colspan="${Math.max(1, 5 - dtGorevliler.length)}"></td>`;
 
-  sutunGenislik(ws, [5, 38, 9, 8, 20, 20, 20]);
-  // Para formatı: veri satırları, firma teklif sütunları
-  paraFormatUygula(ws, 7, 7 + kalemler.length, 4, 6);
-  // Toplam satırı
-  paraFormatUygula(ws, 7 + kalemler.length, 7 + kalemler.length, 4, 6);
+  const html = `<table>
+  <tr class="baslik-satir"><td colspan="7">TEKLİF TUTANAĞI</td></tr>
+  <tr class="no-border"><td colspan="7">&nbsp;</td></tr>
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Teklif Tutanağı');
-  XLSX.writeFile(wb, excelDosyaAdi('Teklif Tutanağı', proje.isAdi));
+  <tr>
+    <td colspan="2" class="etiket-h">İdarenin Adı</td>
+    <td colspan="5">${proje.idareAdi || ''}</td>
+  </tr>
+  <tr>
+    <td colspan="2" class="etiket-h">Yapılan İş / Mal / Hizmetin Adı, Niteliği</td>
+    <td colspan="5">${proje.isAdi || ''}</td>
+  </tr>
+  <tr>
+    <td colspan="2" class="etiket-h">Onay Belgesi Tarih ve No.su</td>
+    <td colspan="5">${formatDate(proje.dtOnayTarihi)} Tarih ve ${proje.dtOnayNo || ''} Sayılı Olur</td>
+  </tr>
+  <tr class="no-border"><td colspan="7">&nbsp;</td></tr>
+
+  <tr>
+    <th rowspan="3" class="sutun-h">SIRA NO</th>
+    <th rowspan="3" class="sutun-h">MAL / HİZMET / YAPIM İŞİ</th>
+    <th rowspan="3" class="sutun-h">MİKTAR</th>
+    <th rowspan="3" class="sutun-h">BİRİM</th>
+    <th colspan="3" class="grup-h">KİŞİ / FİRMA VE FİYAT TEKLİFLERİ</th>
+  </tr>
+  <tr>
+    <th class="sutun-h">1. (Kişi / Firma Adı)</th>
+    <th class="sutun-h">2. (Kişi / Firma Adı)</th>
+    <th class="sutun-h">3. (Kişi / Firma Adı)</th>
+  </tr>
+  <tr>
+    <th class="firma-h">${f1.ad || '-'}</th>
+    <th class="firma-h">${f2.ad || '-'}</th>
+    <th class="firma-h">${f3.ad || '-'}</th>
+  </tr>
+
+  ${teklifRows}
+
+  <tr class="toplam-satir">
+    <td colspan="3"><b>TOPLAM (KDV Hariç)</b></td>
+    <td></td>
+    ${exRakamBold(t1)} ${exRakamBold(t2)} ${exRakamBold(t3)}
+  </tr>
+
+  ${kazananBolum}
+
+  <tr class="no-border"><td colspan="7">&nbsp;</td></tr>
+  <tr class="metin-kutu">
+    <td colspan="7">
+      4734 sayılı Kamu İhale Kanunu'nun 22 nci Maddesi uyarınca <b>doğrudan temin
+      usulüyle</b> yapılacak alımlara ilişkin yapılan piyasa araştırmasında teklif edilen
+      fiyatlar değerlendirilerek yukarıda adı ve adresleri belirtilen
+      ${kazanan ? kazanan.ad + "'den" : 'firmadan'} alım yapılması uygun görülmüştür.
+      ${formatDate(dtTutanakT)}
+    </td>
+  </tr>
+
+  <tr class="no-border"><td colspan="7">&nbsp;</td></tr>
+  <tr>
+    <td colspan="2" class="bold center">Piyasa Fiyat Araştırması Görevlileri</td>
+    ${gorevliImzalar}
+    ${bosPad}
+    <td colspan="2" class="center bold">UYGUNDUR<br>${formatDate(dtTutanakT)}<br><br>
+      <b>${proje.onaylayanAmir?.ad || ''}</b><br>
+      <small>${proje.onaylayanAmir?.unvan || ''}</small>
+    </td>
+  </tr>
+</table>`;
+
+  const dosyaAdi = `Teklif Tutanağı - ${(proje.isAdi || 'Proje').replace(/[<>:"/\\|?*]/g, '-').substring(0, 60)}`;
+  htmlIndirXls(excelHtmlSaric(html, 'Teklif Tutanağı'), dosyaAdi);
 }
 
 // Belge ID'sine göre Excel üret
 function belgeIdindenExcelUret(belgeId, proje, referans) {
   switch (belgeId) {
-    case 'yaklasik-maliyet': exportYaklasikMaliyetExcel(proje); return true;
+    case 'yaklasik-maliyet': exportYaklasikMaliyetExcel(proje, referans); return true;
     case 'teklif-tutanagi':  exportTeklifTutanagiExcel(proje, referans); return true;
     default: return false;
   }
 }
-
-const EXCEL_DESTEKLI_BELGELER = ['yaklasik-maliyet', 'teklif-tutanagi'];

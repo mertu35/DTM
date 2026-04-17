@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dtm-v14';
+const CACHE_NAME = 'dtm-v15';
 const STATIC_ASSETS = [
   './index.html',
   './css/style.css',
@@ -36,11 +36,20 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = event.request.url;
 
+  // blob: ve data: URL'lerini (SheetJS Excel indirme, PDF vb.) ASLA yakalama
+  if (url.startsWith('blob:') || url.startsWith('data:')) {
+    return;
+  }
+
   // Firebase ve CDN isteklerini geçir
   if (url.includes('firebaseio.com') ||
       url.includes('googleapis.com') ||
       url.includes('gstatic.com') ||
-      url.includes('firestore.googleapis.com')) {
+      url.includes('firestore.googleapis.com') ||
+      url.includes('cdn.jsdelivr.net') ||
+      url.includes('cdnjs.cloudflare.com') ||
+      url.includes('fonts.googleapis.com') ||
+      url.includes('fonts.gstatic.com')) {
     return;
   }
 
