@@ -80,15 +80,17 @@ function showPrompt(baslik, placeholder = '') {
 
     const overlay = document.createElement('div');
     overlay.id = 'dtmPromptModal';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    overlay.className = 'dtm-modal-overlay';
     overlay.innerHTML = `
-      <div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <p style="font-size:15px;color:#1f2937;line-height:1.6;margin:0 0 14px">${baslik}</p>
-        <textarea id="dtmPromptInput" placeholder="${placeholder}" rows="4"
-          style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:8px;padding:10px;font-size:14px;resize:vertical;font-family:inherit"></textarea>
-        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
-          <button id="dtmPromptIptal" style="background:#f3f4f6;color:#374151;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">İptal</button>
-          <button id="dtmPromptOnay" style="background:#dc2626;color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">Geri Gönder</button>
+      <div class="dtm-modal" style="max-width:420px">
+        <div class="dtm-modal-body">
+          <p style="margin:0 0 14px">${escHtml(baslik)}</p>
+          <textarea id="dtmPromptInput" placeholder="${escAttr(placeholder)}" rows="4"
+            style="width:100%;box-sizing:border-box;border:1px solid var(--gray-200);border-radius:8px;padding:10px;font-size:14px;resize:vertical;font-family:inherit"></textarea>
+        </div>
+        <div class="dtm-modal-footer">
+          <button id="dtmPromptIptal" class="btn btn-outline">İptal</button>
+          <button id="dtmPromptOnay" class="btn btn-danger">Geri Gönder</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -111,13 +113,13 @@ function showConfirm(mesaj, onayBtn = 'Evet', iptalBtn = 'İptal') {
 
     const overlay = document.createElement('div');
     overlay.id = 'dtmConfirmModal';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    overlay.className = 'dtm-modal-overlay';
     overlay.innerHTML = `
-      <div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <p style="font-size:15px;color:#1f2937;line-height:1.6;margin:0 0 22px">${mesaj}</p>
-        <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button id="dtmConfirmIptal" style="background:#f3f4f6;color:#374151;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">${iptalBtn}</button>
-          <button id="dtmConfirmOnay" style="background:#dc2626;color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer">${onayBtn}</button>
+      <div class="dtm-modal" style="max-width:380px">
+        <div class="dtm-modal-body">${mesaj}</div>
+        <div class="dtm-modal-footer">
+          <button id="dtmConfirmIptal" class="btn btn-outline">${escHtml(iptalBtn)}</button>
+          <button id="dtmConfirmOnay" class="btn btn-danger">${escHtml(onayBtn)}</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -791,8 +793,9 @@ function yeniProjeModalSifirla(modal) {
 }
 
 function yeniProjeOlustur() {
-  const isAdi = document.getElementById('yeniProjeAdi')?.value.trim();
-  if (!isAdi) { showToast('Lütfen bir proje adı girin.', 'warning'); return; }
+  const isAdiEl = document.getElementById('yeniProjeAdi');
+  const isAdi = isAdiEl?.value.trim();
+  if (!isAdi) { markError(isAdiEl); showToast('Lütfen bir proje adı girin.', 'warning'); return; }
   proje = getDefaultProje();
   proje.isAdi = isAdi;
   currentCloudProjeId = null;
@@ -2088,10 +2091,13 @@ async function renderBelgelerPage() {
       if (!listEl) return;
       if (projeler.length === 0) {
         listEl.innerHTML = `
-          <div style="text-align:center;padding:60px 20px;color:var(--gray-400)">
-            <div style="font-size:48px;margin-bottom:16px">&#128196;</div>
-            <div style="font-size:15px;font-weight:600;margin-bottom:8px">Henüz proje yok</div>
-            <div style="font-size:13px">Önce bir proje oluşturun.</div>
+          <div class="dtm-empty">
+            <div class="dtm-empty-icon">&#128196;</div>
+            <div class="dtm-empty-title">Henüz proje yok</div>
+            <div class="dtm-empty-desc">Belge oluşturmak için önce bir proje oluşturun.</div>
+            <div class="dtm-empty-action">
+              <button class="btn btn-primary" onclick="yeniProjeBaslat()">Yeni Proje</button>
+            </div>
           </div>`;
         return;
       }
@@ -3125,14 +3131,20 @@ async function renderKullaniciYonetimiPage() {
 }
 
 async function kullaniciEkle(btn) {
-  const ad = document.getElementById('yeniAd').value.trim();
-  const username = document.getElementById('yeniUsername').value.trim();
-  const sifre = document.getElementById('yeniSifre').value;
+  const adEl = document.getElementById('yeniAd');
+  const usernameEl = document.getElementById('yeniUsername');
+  const sifreEl = document.getElementById('yeniSifre');
+  const ad = adEl.value.trim();
+  const username = usernameEl.value.trim();
+  const sifre = sifreEl.value;
   const rol = document.getElementById('yeniRol').value;
   const msg = document.getElementById('kullaniciMsg');
 
-  if (!ad || !username || !sifre) { msg.style.color = 'red'; msg.textContent = 'Tüm alanları doldurun.'; return; }
-  if (sifre.length < 6) { msg.style.color = 'red'; msg.textContent = 'Şifre en az 6 karakter olmalı.'; return; }
+  if (!ad || !username || !sifre) {
+    markError(...[!ad && adEl, !username && usernameEl, !sifre && sifreEl].filter(Boolean));
+    msg.style.color = 'red'; msg.textContent = 'Tüm alanları doldurun.'; return;
+  }
+  if (sifre.length < 6) { markError(sifreEl); msg.style.color = 'red'; msg.textContent = 'Şifre en az 6 karakter olmalı.'; return; }
 
   msg.style.color = 'var(--gray-500)'; msg.textContent = 'Kullanıcı oluşturuluyor...';
   await butonKilitli(btn, 'Oluşturuluyor...', async () => {
@@ -3480,10 +3492,10 @@ async function renderGerceklestirmeciBelgelerPage() {
 
     if (aktif.length === 0 && onaylananlar.length === 0) {
       listEl.innerHTML = `
-        <div style="text-align:center;padding:60px 20px;color:var(--gray-400)">
-          <div style="font-size:48px;margin-bottom:16px">&#128196;</div>
-          <div style="font-size:15px;font-weight:600;margin-bottom:8px">Henüz gönderilen proje yok</div>
-          <div style="font-size:13px">Belgeler oluşturmak için size gönderilmiş bir proje bulunmalıdır.</div>
+        <div class="dtm-empty">
+          <div class="dtm-empty-icon">&#128196;</div>
+          <div class="dtm-empty-title">Henüz gönderilen proje yok</div>
+          <div class="dtm-empty-desc">Belge oluşturmak için size gönderilmiş bir proje bulunmalıdır.</div>
         </div>`;
       return;
     }
@@ -4062,9 +4074,9 @@ async function renderOnayliBelgelerPage() {
       if (!listeEl) return;
 
       if (liste.length === 0) {
-        listeEl.innerHTML = `<div style="text-align:center;padding:48px 20px;color:var(--gray-400)">
-          <div style="font-size:40px;margin-bottom:12px">${aktifSekme==='arsiv'?'🗃️':'📥'}</div>
-          <div style="font-size:14px;font-weight:600;color:var(--gray-500)">${ara?'Arama ile eşleşen proje bulunamadı.':aktifSekme==='arsiv'?'Arşivde proje yok.':'İşlem bekleyen proje yok.'}</div>
+        listeEl.innerHTML = `<div class="dtm-empty">
+          <div class="dtm-empty-icon">${aktifSekme==='arsiv'?'🗃️':'📥'}</div>
+          <div class="dtm-empty-title">${ara?'Arama ile eşleşen proje bulunamadı.':aktifSekme==='arsiv'?'Arşivde proje yok.':'İşlem bekleyen proje yok.'}</div>
         </div>`;
         return;
       }
@@ -4335,14 +4347,20 @@ async function avatarSec(avatarName) {
 }
 
 async function sifreDegistir() {
-  const mevcut = document.getElementById('mevcutSifre').value;
-  const yeni = document.getElementById('yeniSifre').value;
-  const tekrar = document.getElementById('yeniSifreTekrar').value;
+  const mevcutEl = document.getElementById('mevcutSifre');
+  const yeniEl = document.getElementById('yeniSifre');
+  const tekrarEl = document.getElementById('yeniSifreTekrar');
+  const mevcut = mevcutEl.value;
+  const yeni = yeniEl.value;
+  const tekrar = tekrarEl.value;
   const msg = document.getElementById('sifreMsg');
 
-  if (!mevcut || !yeni || !tekrar) { msg.style.color = 'red'; msg.textContent = 'Tüm alanları doldurun.'; return; }
-  if (yeni.length < 6) { msg.style.color = 'red'; msg.textContent = 'Yeni şifre en az 6 karakter olmalı.'; return; }
-  if (yeni !== tekrar) { msg.style.color = 'red'; msg.textContent = 'Yeni şifreler eşleşmiyor.'; return; }
+  if (!mevcut || !yeni || !tekrar) {
+    markError(...[!mevcut && mevcutEl, !yeni && yeniEl, !tekrar && tekrarEl].filter(Boolean));
+    msg.style.color = 'red'; msg.textContent = 'Tüm alanları doldurun.'; return;
+  }
+  if (yeni.length < 6) { markError(yeniEl); msg.style.color = 'red'; msg.textContent = 'Yeni şifre en az 6 karakter olmalı.'; return; }
+  if (yeni !== tekrar) { markError(tekrarEl); msg.style.color = 'red'; msg.textContent = 'Yeni şifreler eşleşmiyor.'; return; }
 
   msg.style.color = 'var(--gray-500)'; msg.textContent = 'Güncelleniyor...';
   try {
@@ -4509,10 +4527,15 @@ async function renderDuyurularPage() {
 }
 
 async function duyuruOlustur(btn) {
-  const baslik = document.getElementById('duyuruBaslik').value.trim();
-  const mesaj = document.getElementById('duyuruMesaj').value.trim();
+  const baslikEl = document.getElementById('duyuruBaslik');
+  const mesajEl = document.getElementById('duyuruMesaj');
+  const baslik = baslikEl.value.trim();
+  const mesaj = mesajEl.value.trim();
   const msg = document.getElementById('duyuruMsg');
-  if (!baslik || !mesaj) { msg.style.color = 'red'; msg.textContent = 'Başlık ve mesaj zorunlu.'; return; }
+  if (!baslik || !mesaj) {
+    markError(...[!baslik && baslikEl, !mesaj && mesajEl].filter(Boolean));
+    msg.style.color = 'red'; msg.textContent = 'Başlık ve mesaj zorunlu.'; return;
+  }
   await butonKilitli(btn, 'Yayınlanıyor...', async () => {
     try {
       await createDuyuru(baslik, mesaj);
