@@ -138,19 +138,20 @@ function acBelgeIndirModal() {
   if (mevcut) mevcut.remove();
 
   const belgeler = [
-    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true },
-    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true },
-    { id: 'sozlesme', ad: 'Sözleşme', excel: false },
-    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false }
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
+    { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true },
+    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false, word: false },
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
   ];
 
   const checkboxler = belgeler.map(b => `
     <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px solid var(--gray-100);">
-      <input type="checkbox" class="belge-indir-cb" value="${b.id}" data-excel="${b.excel}" checked
+      <input type="checkbox" class="belge-indir-cb" value="${b.id}" data-excel="${b.excel}" data-word="${b.word}" checked
         style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
       <span style="font-size:14px;color:var(--gray-800);flex:1">${b.ad}</span>
       ${b.excel ? '<span style="font-size:10px;background:#10b981;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">XLSX</span>' : ''}
+      ${b.word ? '<span style="font-size:10px;background:#2563eb;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">DOC</span>' : ''}
     </label>`).join('');
 
   const overlay = document.createElement('div');
@@ -172,6 +173,7 @@ function acBelgeIndirModal() {
       </div>
       <div class="dtm-modal-footer">
         <button id="dtmBelgeIndirIptal" class="btn btn-outline">İptal</button>
+        <button id="dtmBelgeIndirWord" class="btn" style="background:#2563eb;color:#fff" title="Sadece DOC işaretli belgeler">&#128196; Word</button>
         <button id="dtmBelgeIndirExcel" class="btn" style="background:#10b981;color:#fff" title="Sadece XLSX işaretli belgeler">&#128202; Excel</button>
         <button id="dtmBelgeIndirOnay" class="btn btn-primary">&#128196; PDF</button>
       </div>
@@ -209,6 +211,16 @@ function acBelgeIndirModal() {
     overlay.remove();
     secilen.forEach(belgeId => belgeIdindenExcelUret(belgeId, proje, referans));
     showToast(`${secilen.length} belge Excel olarak indirildi.`, 'success');
+  };
+
+  document.getElementById('dtmBelgeIndirWord').onclick = () => {
+    const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')]
+      .filter(cb => cb.dataset.word === 'true')
+      .map(cb => cb.value);
+    if (!secilen.length) { showToast('Word desteği olan belge seçilmedi (Sözleşme veya Hakediş Raporu)', 'warning'); return; }
+    overlay.remove();
+    secilen.forEach(belgeId => belgeIdindenWordUret(belgeId, proje, referans));
+    showToast(`${secilen.length} belge Word olarak indirildi.`, 'success');
   };
 }
 
@@ -294,20 +306,21 @@ function acGerceklestirmeciIndirModal() {
   if (mevcut) mevcut.remove();
 
   const belgeler = [
-    { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi', excel: false },
-    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true },
-    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true },
-    { id: 'sozlesme', ad: 'Sözleşme', excel: false },
-    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false }
+    { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi', excel: false, word: false },
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
+    { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true },
+    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false, word: false },
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
   ];
 
   const checkboxler = belgeler.map(b => `
     <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px solid var(--gray-100);">
-      <input type="checkbox" class="belge-indir-cb" value="${b.id}" data-excel="${b.excel}" checked
+      <input type="checkbox" class="belge-indir-cb" value="${b.id}" data-excel="${b.excel}" data-word="${b.word}" checked
         style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
       <span style="font-size:14px;color:var(--gray-800);flex:1">${b.ad}</span>
       ${b.excel ? '<span style="font-size:10px;background:#10b981;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">XLSX</span>' : ''}
+      ${b.word ? '<span style="font-size:10px;background:#2563eb;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">DOC</span>' : ''}
     </label>`).join('');
 
   const overlay = document.createElement('div');
@@ -328,6 +341,7 @@ function acGerceklestirmeciIndirModal() {
       </div>
       <div class="dtm-modal-footer">
         <button id="gcIndirIptal" class="btn btn-outline">İptal</button>
+        <button id="gcIndirWord" class="btn" style="background:#2563eb;color:#fff" title="Sadece DOC işaretli belgeler">&#128196; Word</button>
         <button id="gcIndirExcel" class="btn" style="background:#10b981;color:#fff" title="Sadece XLSX işaretli belgeler">&#128202; Excel</button>
         <button id="gcIndirOnay" class="btn btn-primary">&#128196; PDF</button>
       </div>
@@ -360,6 +374,16 @@ function acGerceklestirmeciIndirModal() {
     overlay.remove();
     secilen.forEach(belgeId => belgeIdindenExcelUret(belgeId, proje, referans));
     showToast(`${secilen.length} belge Excel olarak indirildi.`, 'success');
+  };
+
+  document.getElementById('gcIndirWord').onclick = () => {
+    const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')]
+      .filter(cb => cb.dataset.word === 'true')
+      .map(cb => cb.value);
+    if (!secilen.length) { showToast('Word desteği olan belge seçilmedi (Sözleşme veya Hakediş Raporu)', 'warning'); return; }
+    overlay.remove();
+    secilen.forEach(belgeId => belgeIdindenWordUret(belgeId, proje, referans));
+    showToast(`${secilen.length} belge Word olarak indirildi.`, 'success');
   };
 }
 
