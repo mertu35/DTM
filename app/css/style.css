@@ -1551,3 +1551,189 @@ body {
     flex: 1;
   }
 }
+
+/* ====================================================== */
+/* ============ DTM TASARIM SİSTEMİ (v1.3) ============== */
+/* ====================================================== */
+
+/* ---- Typography ---- */
+h1 { font-size: 24px; font-weight: 700; color: var(--gray-900); line-height: 1.3; }
+h2 { font-size: 20px; font-weight: 700; color: var(--gray-800); line-height: 1.3; }
+h3 { font-size: 16px; font-weight: 600; color: var(--gray-800); line-height: 1.4; }
+h4 { font-size: 14px; font-weight: 600; color: var(--gray-700); line-height: 1.4; }
+small, .text-sm { font-size: 12px; color: var(--gray-500); }
+
+/* ---- Buton iyileştirmeleri ---- */
+.btn {
+  line-height: 1.4;
+  min-height: 36px;
+  justify-content: center;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.btn:disabled, .btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.btn-danger:hover { background: #b91c1c; }
+.btn-warning {
+  background: var(--warning);
+  color: #fff;
+}
+.btn-warning:hover { background: #d97706; }
+.btn-ghost {
+  background: transparent;
+  color: var(--gray-700);
+}
+.btn-ghost:hover { background: var(--gray-100); }
+.btn-lg {
+  padding: 11px 22px;
+  font-size: 15px;
+  min-height: 44px;
+}
+.btn-sm { min-height: 28px; }
+.btn-block { width: 100%; }
+
+/* Buton içi yükleniyor spinner */
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+}
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  top: 50%;
+  left: 50%;
+  margin: -7px 0 0 -7px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: dtm-btn-spin 0.7s linear infinite;
+}
+@keyframes dtm-btn-spin { to { transform: rotate(360deg); } }
+
+/* ---- Standart Modal ---- */
+.dtm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: dtm-modal-fade 0.15s ease-out;
+}
+@keyframes dtm-modal-fade { from { opacity: 0; } to { opacity: 1; } }
+.dtm-modal {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25), 0 4px 12px rgba(15, 23, 42, 0.1);
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: dtm-modal-slide 0.18s ease-out;
+}
+@keyframes dtm-modal-slide {
+  from { transform: translateY(10px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+.dtm-modal-header {
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--gray-100);
+}
+.dtm-modal-header h3 {
+  font-size: 17px;
+  color: var(--gray-900);
+}
+.dtm-modal-body {
+  padding: 18px 24px;
+  overflow-y: auto;
+  flex: 1;
+  color: var(--gray-700);
+  line-height: 1.55;
+  font-size: 14px;
+}
+.dtm-modal-footer {
+  padding: 14px 24px 18px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--gray-100);
+}
+
+/* ---- Empty State ---- */
+.dtm-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--gray-500);
+}
+.dtm-empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.55;
+}
+.dtm-empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 6px;
+}
+.dtm-empty-desc {
+  font-size: 13px;
+  max-width: 360px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+.dtm-empty-action {
+  margin-top: 16px;
+}
+
+/* ---- Form input hata durumu ---- */
+.form-input.has-error,
+input.has-error,
+select.has-error,
+textarea.has-error {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px rgba(224, 36, 36, 0.12) !important;
+}
+.form-error-msg {
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ---- Touch target garantisi (mobil) ---- */
+@media (max-width: 768px) {
+  .btn, .nav-item, button[class*="btn-"] {
+    min-height: 44px;
+  }
+  .btn-sm { min-height: 36px; }
+  .dtm-modal { max-width: 100%; }
+  .dtm-modal-footer { flex-direction: column-reverse; }
+  .dtm-modal-footer .btn { width: 100%; }
+}
+
+/* ---- Reduced motion tercihi ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
