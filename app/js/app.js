@@ -141,7 +141,7 @@ function acBelgeIndirModal() {
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
     { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true },
-    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false, word: false },
+    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false, word: true },
     { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
   ];
 
@@ -310,7 +310,7 @@ function acGerceklestirmeciIndirModal() {
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
     { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true },
-    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false, word: false },
+    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false, word: true },
     { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
   ];
 
