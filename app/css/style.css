@@ -1865,20 +1865,20 @@ body.dark [style*="background: #dbeafe"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  margin: 8px auto;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.10);
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid var(--gray-600);
   cursor: pointer;
-  font-size: 20px;
+  font-size: 15px;
   transition: background 0.15s, transform 0.15s;
   user-select: none;
+  flex-shrink: 0;
 }
 .theme-toggle:hover {
-  background: rgba(255,255,255,0.13);
-  transform: scale(1.12);
+  background: rgba(255,255,255,0.10);
+  transform: scale(1.10);
 }
 
 /* ============ EKSİK DARK MODE DÜZELTMELERİ ============ */
