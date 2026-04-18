@@ -591,7 +591,7 @@ async function onAuthReady(user) {
 function applyTheme(tema) {
   document.body.classList.toggle('dark', tema === 'dark');
   const label = document.getElementById('themeToggleLabel');
-  if (label) label.textContent = tema === 'dark' ? '☀️ Açık Tema' : '🌙 Koyu Tema';
+  if (label) label.textContent = tema === 'dark' ? '☀️' : '🌙';
 }
 function toggleTheme() {
   const yeni = document.body.classList.contains('dark') ? 'light' : 'dark';
