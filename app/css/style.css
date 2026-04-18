@@ -1975,11 +1975,17 @@ body.dark .belge * {
   color: #000 !important; 
   background-color: transparent;
 }
-body.dark .belge .veri-tablo th {
-  background-color: rgba(0,0,0,0.05) !important;
+body.dark .belge-preview .belge .veri-tablo th {
+  background-color: #f0f0f0 !important;
+  color: #000 !important;
 }
-body.dark .belge .veri-tablo td {
+body.dark .belge-preview .belge .veri-tablo td {
   background-color: transparent !important;
+  color: #000 !important;
+}
+body.dark .belge-preview .belge .toplam-satir td {
+  background-color: #f9f9f9 !important;
+  color: #000 !important;
 }
 
 /* Ama veri-tablo, modal/app içinde kullanıldıysa koyu yap: .belge içinde DEĞİLSE */
