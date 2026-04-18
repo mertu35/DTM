@@ -162,11 +162,6 @@
         </div>
       </nav>
 
-      <!-- Tema değiştir -->
-      <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Tema değiştir">
-        <span id="themeToggleLabel">🌙</span>
-      </div>
-
       <!-- Kullanıcı bilgisi + çıkış -->
       <div class="sidebar-user">
         <div class="sidebar-user-info">
@@ -176,7 +171,12 @@
             <div class="sidebar-user-role" id="sidebarUserRole">-</div>
           </div>
         </div>
-        <button class="btn-logout" onclick="doLogout()" title="Çıkış Yap">&#10148;</button>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Tema değiştir">
+            <span id="themeToggleLabel">🌙</span>
+          </div>
+          <button class="btn-logout" onclick="doLogout()" title="Çıkış Yap">&#10148;</button>
+        </div>
       </div>
     </aside>
 
