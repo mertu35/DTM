@@ -630,7 +630,7 @@ function renderBittiTutanagi(proje, referans) {
   const tekGorevli = dtGorevliler.length === 1;
   const bittiEkleriArr = (Array.isArray(proje.bittiEkleri) ? proje.bittiEkleri : proje.bittiEkleri ? [proje.bittiEkleri] : []).filter(e => e.trim());
   const gorevliImzalar = dtGorevliler.map(g =>
-    `<td style="border:none;text-align:center;padding-top:16px;width:${100 / dtGorevliler.length}%">
+    `<td style="border:none;text-align:left;padding-top:4px;width:${100 / dtGorevliler.length}%">
       <strong>${g.ad}</strong><br>
       <span style="font-size:11pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
     </td>`
@@ -660,7 +660,7 @@ function renderBittiTutanagi(proje, referans) {
         ${bittiEkleriArr.map((e, i) => `<div>${i + 1}- ${e}</div>`).join('')}
       </div>` : ''}
 
-      <div style="margin-top:50px;text-align:center">
+      <div style="margin-top:50px;text-align:left">
         <p style="font-weight:bold;margin-bottom:0">${dtGorevliler.length === 1 ? 'KONTROL GÖREVLİSİ' : 'KONTROL GÖREVLİLERİ'}</p>
         <table style="width:100%;border-collapse:collapse">
           <tr>${gorevliImzalar}</tr>
