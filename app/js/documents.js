@@ -630,26 +630,24 @@ function renderBittiTutanagi(proje, referans) {
   const tekGorevli = dtGorevliler.length === 1;
   const bittiEkleriArr = (Array.isArray(proje.bittiEkleri) ? proje.bittiEkleri : proje.bittiEkleri ? [proje.bittiEkleri] : []).filter(e => e.trim());
   const gorevliImzalar = dtGorevliler.map(g =>
-    `<td style="border:none;text-align:${tekGorevli ? 'left' : 'center'};padding-top:16px;width:${100 / dtGorevliler.length}%">
-      <div style="display:inline-block;text-align:center;">
-        <strong>${g.ad}</strong><br>
-        <span style="font-size:11pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
-      </div>
+    `<td style="border:none;text-align:center;padding-top:16px;width:${100 / dtGorevliler.length}%">
+      <strong>${g.ad}</strong><br>
+      <span style="font-size:11pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
     </td>`
   ).join('');
 
   return `
     <div class="belge tutanak" style="font-size:11pt">
-      <h2 class="belge-baslik" style="font-size:13pt">TUTANAK</h2>
+      <h2 class="belge-baslik" style="font-size:13pt;text-align:center">TUTANAK</h2>
 
-      <table class="bilgi-tablo" style="margin:20px 0;font-size:11pt">
-        <tr><td class="etiket" style="width:35%;font-size:11pt">Yapılan İş / Hizmetin Adı</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11pt">${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
-        <tr><td class="etiket" style="font-size:11pt">Yüklenicinin Adı</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11pt">${kazanan.ad || '-'}</td></tr>
-        <tr><td class="etiket" style="font-size:11pt">Sözleşme Tarihi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11pt">${formatDate(proje.sozlesmeTarihi)}</td></tr>
-        <tr><td class="etiket" style="font-size:11pt">Sözleşme Bedeli</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11pt">${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
-        <tr><td class="etiket" style="font-size:11pt">İş Süresi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11pt">${proje.isSuresi} Takvim Günü</td></tr>
-        <tr><td class="etiket" style="font-size:11pt">İşe Başlama Tarihi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11pt">${formatDate(proje.sozlesmeTarihi)}</td></tr>
-        <tr><td class="etiket" style="font-size:11pt">İşin Bitim Tarihi</td><td style="width:14px;vertical-align:top">:</td><td style="font-size:11pt">${formatDate(bitisT)}</td></tr>
+      <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:11pt">
+        <tr><td style="border:none;width:35%;font-weight:bold;padding:4px 0">Yapılan İş / Hizmetin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:4px 0">Yüklenicinin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${kazanan.ad || '-'}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:4px 0">Sözleşme Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:4px 0">Sözleşme Bedeli</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:4px 0">İş Süresi</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${proje.isSuresi} Takvim Günü</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:4px 0">İşe Başlama Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:4px 0">İşin Bitim Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${formatDate(bitisT)}</td></tr>
       </table>
 
       <div style="margin:40px 0;text-align:justify;line-height:1.8;font-size:11pt">
@@ -662,8 +660,8 @@ function renderBittiTutanagi(proje, referans) {
         ${bittiEkleriArr.map((e, i) => `<div>${i + 1}- ${e}</div>`).join('')}
       </div>` : ''}
 
-      <div style="margin-top:50px">
-        <p style="text-align:left;font-weight:bold;margin-bottom:10px">${dtGorevliler.length === 1 ? 'KONTROL GÖREVLİSİ' : 'KONTROL GÖREVLİLERİ'}</p>
+      <div style="margin-top:50px;text-align:center">
+        <p style="font-weight:bold;margin-bottom:0">${dtGorevliler.length === 1 ? 'KONTROL GÖREVLİSİ' : 'KONTROL GÖREVLİLERİ'}</p>
         <table style="width:100%;border-collapse:collapse">
           <tr>${gorevliImzalar}</tr>
         </table>
