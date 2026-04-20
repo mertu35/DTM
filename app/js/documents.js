@@ -630,7 +630,7 @@ function renderBittiTutanagi(proje, referans) {
   const tekGorevli = dtGorevliler.length === 1;
   const bittiEkleriArr = (Array.isArray(proje.bittiEkleri) ? proje.bittiEkleri : proje.bittiEkleri ? [proje.bittiEkleri] : []).filter(e => e.trim());
   const gorevliImzalar = dtGorevliler.map(g =>
-    `<td style="border:none;border-left:2px solid #000;padding-left:10px;text-align:left;padding-top:0;width:${100 / dtGorevliler.length}%">
+    `<td style="border:none;text-align:left;padding-top:0;width:${100 / dtGorevliler.length}%">
       <strong>${g.ad}</strong><br>
       <span style="font-size:11pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
     </td>`
