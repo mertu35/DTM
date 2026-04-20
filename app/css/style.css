@@ -183,7 +183,7 @@ body {
 .login-orb-3 {
   width: 280px; height: 280px;
   background: #38bdf8;
-  top: 20%; right: 42%;
+  top: 30%; left: 5%;
   animation: login-orb-float 14s ease-in-out infinite reverse;
 }
 
