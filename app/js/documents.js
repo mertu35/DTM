@@ -630,7 +630,7 @@ function renderBittiTutanagi(proje, referans) {
   const tekGorevli = dtGorevliler.length === 1;
   const bittiEkleriArr = (Array.isArray(proje.bittiEkleri) ? proje.bittiEkleri : proje.bittiEkleri ? [proje.bittiEkleri] : []).filter(e => e.trim());
   const gorevliImzalar = dtGorevliler.map(g =>
-    `<td style="border:none;text-align:center;padding-top:0;width:${100 / dtGorevliler.length}%">
+    `<td style="border:none;border-left:2px solid #000;padding-left:10px;text-align:left;padding-top:0;width:${100 / dtGorevliler.length}%">
       <strong>${g.ad}</strong><br>
       <span style="font-size:11pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
     </td>`
@@ -641,13 +641,13 @@ function renderBittiTutanagi(proje, referans) {
       <h2 class="belge-baslik" style="font-size:13pt;text-align:center">TUTANAK</h2>
 
       <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:11pt">
-        <tr><td style="border:none;width:35%;font-weight:bold;padding:1px 0">Yapılan İş / Hizmetin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
-        <tr><td style="border:none;font-weight:bold;padding:1px 0">Yüklenicinin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${kazanan.ad || '-'}</td></tr>
-        <tr><td style="border:none;font-weight:bold;padding:1px 0">Sözleşme Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
-        <tr><td style="border:none;font-weight:bold;padding:1px 0">Sözleşme Bedeli</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
-        <tr><td style="border:none;font-weight:bold;padding:1px 0">İş Süresi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${proje.isSuresi} Takvim Günü</td></tr>
-        <tr><td style="border:none;font-weight:bold;padding:1px 0">İşe Başlama Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
-        <tr><td style="border:none;font-weight:bold;padding:1px 0">İşin Bitim Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatDate(bitisT)}</td></tr>
+        <tr><td style="border:none;width:35%;font-weight:bold;padding:4px 0">Yapılan İş / Hizmetin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:4px 0">Yüklenicinin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${kazanan.ad || '-'}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:4px 0">Sözleşme Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:4px 0">Sözleşme Bedeli</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:4px 0">İş Süresi</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${proje.isSuresi} Takvim Günü</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:4px 0">İşe Başlama Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:4px 0">İşin Bitim Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:4px 0">:</td><td style="border:none;padding:4px 0">${formatDate(bitisT)}</td></tr>
       </table>
 
       <div style="margin:40px 0;text-align:justify;line-height:1.8;font-size:11pt">
