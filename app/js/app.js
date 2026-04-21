@@ -138,11 +138,11 @@ function acBelgeIndirModal() {
   if (mevcut) mevcut.remove();
 
   const belgeler = [
-    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
-    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
-    { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true },
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: false, word: false },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: false, word: false },
+    { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: false },
     { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false, word: true },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: false }
   ];
 
   const checkboxler = belgeler.map(b => `
@@ -307,11 +307,11 @@ function acGerceklestirmeciIndirModal() {
 
   const belgeler = [
     { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi', excel: false, word: false },
-    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
-    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
-    { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true },
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: false, word: false },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: false, word: false },
+    { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: false },
     { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false, word: true },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: false }
   ];
 
   const checkboxler = belgeler.map(b => `
