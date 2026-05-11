@@ -968,7 +968,7 @@ function renderVeriGirisPage() {
           </div>
           <select data-field="ymFirmalar" data-index="${fi}" data-sub="ad" onchange="onFirmaChange(this, 'ym')">
             <option value="">-- Firma Seçin --</option>
-            ${referans.firmaList.map(fr => `<option value="${fr.ad}" ${f.ad === fr.ad ? 'selected' : ''}>${fr.ad}</option>`).join('')}
+            ${[...referans.firmaList].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')).map(fr => `<option value="${fr.ad}" ${f.ad === fr.ad ? 'selected' : ''}>${fr.ad}</option>`).join('')}
           </select>
         </div>
         <table class="data-table">
@@ -1017,7 +1017,7 @@ function renderVeriGirisPage() {
           </div>
           <select data-field="teklifFirmalar" data-index="${fi}" data-sub="ad" onchange="onFirmaChange(this, 'teklif')">
             <option value="">-- Firma Seçin --</option>
-            ${referans.firmaList.map(fr => `<option value="${fr.ad}" ${f.ad === fr.ad ? 'selected' : ''}>${fr.ad}</option>`).join('')}
+            ${[...referans.firmaList].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')).map(fr => `<option value="${fr.ad}" ${f.ad === fr.ad ? 'selected' : ''}>${fr.ad}</option>`).join('')}
           </select>
         </div>
         <table class="data-table">
