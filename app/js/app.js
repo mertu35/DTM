@@ -2353,8 +2353,13 @@ function renderVeriMerkeziPage() {
 
   return `
     <div class="page-header">
-      <h2>Veri Merkezi</h2>
-      <p>Dropdown listelerini ve referans verilerini yönetin.</p>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h2>Veri Merkezi</h2>
+          <p>Dropdown listelerini ve referans verilerini yönetin.</p>
+        </div>
+        ${isSuperAdmin ? `<button class="btn btn-primary" onclick="forceMergeYukleniciHavuzu()">Tüm Firmaları Havuza Çek (Senkronize Et)</button>` : ''}
+      </div>
     </div>
 
     <div class="card">
@@ -3547,6 +3552,16 @@ async function renderGerceklestirmeciVeriMerkeziPageLoader() {
 
 async function syncYukleniciHavuzu() {
   try {
+    const globalSnap = await db.collection('globalReferans').doc('default').get();
+    let globalFirms = globalSnap.exists && globalSnap.data().yukleniciList ? globalSnap.data().yukleniciList : [];
+    referans.yukleniciList = globalFirms;
+  } catch(e) {
+    console.error('Yüklenici havuzu yüklenemedi:', e);
+  }
+}
+
+async function forceMergeYukleniciHavuzu() {
+  try {
     const usersRefSnap = await db.collection('referans').get();
     const globalSnap = await db.collection('globalReferans').doc('default').get();
     let globalFirms = globalSnap.exists && globalSnap.data().yukleniciList ? globalSnap.data().yukleniciList : [];
@@ -3575,13 +3590,15 @@ async function syncYukleniciHavuzu() {
     });
 
     if (changed) {
-      referans.yukleniciList = globalFirms;
       await db.collection('globalReferans').doc('default').set({ yukleniciList: globalFirms }, { merge: true });
+      alert("Havuz başarıyla güncellendi ve eksik firmalar eklendi!");
+      window.location.reload();
     } else {
-      referans.yukleniciList = globalFirms;
+      alert("Havuz zaten güncel, eklenecek yeni firma bulunamadı.");
     }
   } catch(e) {
-    console.error('Yüklenici havuzu senkronize edilemedi:', e);
+    console.error('Havuz birleştirme hatası:', e);
+    alert("Birleştirme başarısız: " + e.message);
   }
 }
 
