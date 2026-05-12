@@ -682,7 +682,7 @@ function renderPage() {
     case 'projelerim': renderProjelerimPage(); break;
     case 'gonderilen-projeler': renderGonderilenProjelerPage(); break;
     case 'gerceklestirmeci-belgeler': renderGerceklestirmeciBelgelerPage(); break;
-    case 'gerceklestirmeci-veri-merkezi': main.innerHTML = renderGerceklestirmeciVeriMerkeziPage(); break;
+    case 'gerceklestirmeci-veri-merkezi': renderGerceklestirmeciVeriMerkeziPageLoader(); break;
     case 'onayli-belgeler': renderOnayliBelgelerPage(); break;
     case 'proje-ozet': renderProjeOzetPage(); break;
     case 'onay-belgesi': renderOnayBelgesiPage(); break;
@@ -3514,27 +3514,75 @@ function renderGerceklestirmeciVeriMerkeziPage() {
         <table class="ref-table">
           <thead><tr><th>Ad</th><th>Adres</th><th>Tur</th><th>Telefon</th><th>Faks</th><th>E-Posta</th><th>Doğum Tarihi</th><th></th></tr></thead>
           <tbody>
-            ${(referans.firmaList || []).map((f, i) => `
+            ${(referans.yukleniciList || []).map((f, i) => `
               <tr>
-                <td><input type="text" value="${f.ad}" onchange="onRefChange('firmaList', ${i}, 'ad', this.value)"></td>
-                <td><input type="text" value="${f.adres}" onchange="onRefChange('firmaList', ${i}, 'adres', this.value)"></td>
-                <td><select onchange="onRefChange('firmaList', ${i}, 'tur', this.value)">
+                <td><input type="text" value="${f.ad}" onchange="onRefChange('yukleniciList', ${i}, 'ad', this.value)"></td>
+                <td><input type="text" value="${f.adres}" onchange="onRefChange('yukleniciList', ${i}, 'adres', this.value)"></td>
+                <td><select onchange="onRefChange('yukleniciList', ${i}, 'tur', this.value)">
                   <option value="Kişi" ${f.tur === 'Kisi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
                 </select></td>
-                <td><input type="text" value="${f.tel}" onchange="onRefChange('firmaList', ${i}, 'tel', this.value)"></td>
-                <td><input type="text" value="${f.faks || ''}" placeholder="Faks" onchange="onRefChange('firmaList', ${i}, 'faks', this.value)"></td>
-                <td><input type="text" value="${f.eposta || ''}" placeholder="E-Posta" onchange="onRefChange('firmaList', ${i}, 'eposta', this.value)"></td>
-                <td><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('firmaList', ${i}, 'dogumTarihi', this.value)"></td>
-                <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('firmaList', ${i})">Sil</button></td>
+                <td><input type="text" value="${f.tel}" onchange="onRefChange('yukleniciList', ${i}, 'tel', this.value)"></td>
+                <td><input type="text" value="${f.faks || ''}" placeholder="Faks" onchange="onRefChange('yukleniciList', ${i}, 'faks', this.value)"></td>
+                <td><input type="text" value="${f.eposta || ''}" placeholder="E-Posta" onchange="onRefChange('yukleniciList', ${i}, 'eposta', this.value)"></td>
+                <td><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('yukleniciList', ${i}, 'dogumTarihi', this.value)"></td>
+                <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('yukleniciList', ${i})">Sil</button></td>
               </tr>`).join('')}
           </tbody>
         </table>
-        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('firmaList', {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:''})">+ Ekle</button>
+        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('yukleniciList', {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:''})">+ Ekle</button>
       </div>
     </div>
   `;
 }
+
+async function renderGerceklestirmeciVeriMerkeziPageLoader() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray-400)">Yüklenici Havuzu senkronize ediliyor...</div>';
+  await syncYukleniciHavuzu();
+  main.innerHTML = renderGerceklestirmeciVeriMerkeziPage();
+}
+
+async function syncYukleniciHavuzu() {
+  try {
+    const usersRefSnap = await db.collection('referans').get();
+    const globalSnap = await db.collection('globalReferans').doc('default').get();
+    let globalFirms = globalSnap.exists && globalSnap.data().yukleniciList ? globalSnap.data().yukleniciList : [];
+    
+    let changed = false;
+    
+    usersRefSnap.forEach(doc => {
+      const data = doc.data();
+      if (data.firmaList && Array.isArray(data.firmaList)) {
+        data.firmaList.forEach(firma => {
+          if(!firma.ad) return;
+          const mevcut = globalFirms.find(gf => gf.ad.trim().toLowerCase() === firma.ad.trim().toLowerCase());
+          if (!mevcut) {
+            globalFirms.push({...firma});
+            changed = true;
+          } else {
+            ['adres', 'tur', 'tel', 'faks', 'eposta', 'dogumTarihi'].forEach(fld => {
+              if (!mevcut[fld] && firma[fld]) {
+                mevcut[fld] = firma[fld];
+                changed = true;
+              }
+            });
+          }
+        });
+      }
+    });
+
+    if (changed) {
+      referans.yukleniciList = globalFirms;
+      await db.collection('globalReferans').doc('default').set({ yukleniciList: globalFirms }, { merge: true });
+    } else {
+      referans.yukleniciList = globalFirms;
+    }
+  } catch(e) {
+    console.error('Yüklenici havuzu senkronize edilemedi:', e);
+  }
+}
+
 
 function btGuncelle(i, alan, deger) {
   if (!referans.butceTertibiList) return;
