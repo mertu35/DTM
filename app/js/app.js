@@ -3554,6 +3554,7 @@ async function syncYukleniciHavuzu() {
   try {
     const globalSnap = await db.collection('globalReferans').doc('default').get();
     let globalFirms = globalSnap.exists && globalSnap.data().yukleniciList ? globalSnap.data().yukleniciList : [];
+    globalFirms.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr'));
     referans.yukleniciList = globalFirms;
   } catch(e) {
     console.error('Yüklenici havuzu yüklenemedi:', e);
@@ -3590,6 +3591,7 @@ async function forceMergeYukleniciHavuzu() {
     });
 
     if (changed) {
+      globalFirms.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr'));
       await db.collection('globalReferans').doc('default').set({ yukleniciList: globalFirms }, { merge: true });
       alert("Havuz başarıyla güncellendi ve eksik firmalar eklendi!");
       window.location.reload();
