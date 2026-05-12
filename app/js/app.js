@@ -3518,30 +3518,55 @@ function renderGerceklestirmeciVeriMerkeziPage() {
         <h3>Yüklenici / Firma Listesi</h3><span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
-        <table class="ref-table">
-          <thead><tr><th>Ad</th><th>Adres</th><th>Tur</th><th>Telefon</th><th>Faks</th><th>E-Posta</th><th>Doğum Tarihi</th><th></th></tr></thead>
-          <tbody>
-            ${(referans.yukleniciList || []).map((f, i) => `
-              <tr>
-                <td><input type="text" value="${f.ad}" onchange="onRefChange('yukleniciList', ${i}, 'ad', this.value)"></td>
-                <td><input type="text" value="${f.adres}" onchange="onRefChange('yukleniciList', ${i}, 'adres', this.value)"></td>
-                <td><select onchange="onRefChange('yukleniciList', ${i}, 'tur', this.value)">
+        <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
+          <select style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--gray-300);" onchange="onYukleniciSelect(this.value)">
+            <option value="-1">-- Firma Seçin veya Yeni Ekleyin --</option>
+            ${(referans.yukleniciList || []).map((f, i) => `<option value="${i}" ${dtmSeciliYukleniciIndex === i ? 'selected' : ''}>${f.ad}</option>`).join('')}
+          </select>
+          <button class="btn btn-outline" onclick="onYukleniciEkle()">+ Yeni Ekle</button>
+        </div>
+        
+        ${dtmSeciliYukleniciIndex >= 0 && referans.yukleniciList[dtmSeciliYukleniciIndex] ? (() => {
+          const f = referans.yukleniciList[dtmSeciliYukleniciIndex];
+          const i = dtmSeciliYukleniciIndex;
+          return `
+          <div style="background:var(--gray-50); padding:15px; border-radius:8px; border:1px solid var(--gray-200);">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+              <div class="form-group"><label>Ad</label><input type="text" value="${f.ad}" onchange="onRefChange('yukleniciList', ${i}, 'ad', this.value)"></div>
+              <div class="form-group"><label>Tür</label><select onchange="onRefChange('yukleniciList', ${i}, 'tur', this.value)">
                   <option value="Kişi" ${f.tur === 'Kisi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
-                </select></td>
-                <td><input type="text" value="${f.tel}" onchange="onRefChange('yukleniciList', ${i}, 'tel', this.value)"></td>
-                <td><input type="text" value="${f.faks || ''}" placeholder="Faks" onchange="onRefChange('yukleniciList', ${i}, 'faks', this.value)"></td>
-                <td><input type="text" value="${f.eposta || ''}" placeholder="E-Posta" onchange="onRefChange('yukleniciList', ${i}, 'eposta', this.value)"></td>
-                <td><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('yukleniciList', ${i}, 'dogumTarihi', this.value)"></td>
-                <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('yukleniciList', ${i})">Sil</button></td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('yukleniciList', {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:''})">+ Ekle</button>
+              </select></div>
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${f.adres}" onchange="onRefChange('yukleniciList', ${i}, 'adres', this.value)"></div>
+              <div class="form-group"><label>Telefon</label><input type="text" value="${f.tel}" onchange="onRefChange('yukleniciList', ${i}, 'tel', this.value)"></div>
+              <div class="form-group"><label>Faks</label><input type="text" value="${f.faks || ''}" onchange="onRefChange('yukleniciList', ${i}, 'faks', this.value)"></div>
+              <div class="form-group"><label>E-Posta</label><input type="text" value="${f.eposta || ''}" onchange="onRefChange('yukleniciList', ${i}, 'eposta', this.value)"></div>
+              <div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('yukleniciList', ${i}, 'dogumTarihi', this.value)"></div>
+            </div>
+            <div style="margin-top:10px; text-align:right;">
+              <button class="btn btn-danger btn-sm" onclick="onRefDelete('yukleniciList', ${i}); onYukleniciSelect(-1);">Firmayı Sil</button>
+            </div>
+          </div>
+          `;
+        })() : ''}
       </div>
     </div>
   `;
 }
+
+let dtmSeciliYukleniciIndex = -1;
+window.onYukleniciSelect = function(val) {
+  dtmSeciliYukleniciIndex = parseInt(val, 10);
+  document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();
+};
+
+window.onYukleniciEkle = function() {
+  if(!referans.yukleniciList) referans.yukleniciList = [];
+  referans.yukleniciList.push({ad:'Yeni Firma', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:''});
+  dtmSeciliYukleniciIndex = referans.yukleniciList.length - 1;
+  saveGlobalReferans(referans);
+  document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();
+};
 
 async function renderGerceklestirmeciVeriMerkeziPageLoader() {
   const main = document.getElementById('mainContent');
