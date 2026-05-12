@@ -3179,12 +3179,13 @@ async function renderKullaniciYonetimiPage() {
         <div class="card-header"><h3>&#128101; Mevcut Kullanıcılar</h3></div>
         <div class="card-body">
           <table class="data-table">
-            <thead><tr><th>Ad Soyad</th><th>Kullanıcı Adı</th><th>Rol</th><th></th></tr></thead>
+            <thead><tr><th>Ad Soyad</th><th>Kullanıcı Adı</th><th>Şifre</th><th>Rol</th><th></th></tr></thead>
             <tbody>
               ${users.map(u => `
                 <tr>
                   <td>${escHtml(u.displayName || '-')}</td>
                   <td>${escHtml(u.username || '-')}</td>
+                  <td><span class="password-mask" style="font-family:monospace;background:var(--gray-100);padding:3px 6px;border-radius:4px;cursor:pointer;font-size:13px;user-select:none" onclick="this.textContent = this.textContent === '••••••••' ? '${escHtml(u.sifre || 'Bilinmiyor')}' : '••••••••'" title="Görmek için tıkla">••••••••</span></td>
                   <td>${u.uid !== currentDTMUser.uid ? `
                     <select onchange="kullaniciRolDegistir('${u.uid}', this.value)" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer">
                       <option value="user" ${u.role === 'user' ? 'selected' : ''}>Kullanıcı</option>

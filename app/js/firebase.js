@@ -49,6 +49,7 @@ async function createDTMUser(username, password, displayName, role) {
       username: username.toLowerCase().trim(),
       displayName,
       role: role || 'user',
+      sifre: password,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     await secondaryApp.auth().signOut();
@@ -84,6 +85,7 @@ async function changePassword(mevcutSifre, yeniSifre) {
   const credential = firebase.auth.EmailAuthProvider.credential(user.email, mevcutSifre);
   await user.reauthenticateWithCredential(credential);
   await user.updatePassword(yeniSifre);
+  await db.collection('users').doc(user.uid).update({ sifre: yeniSifre });
 }
 
 // Son giriş tarihini Firestore'a kaydet
