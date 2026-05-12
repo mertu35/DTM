@@ -2342,6 +2342,7 @@ function renderVeriMerkeziPage() {
       <td><input type="text" value="${f.tel}" onchange="onRefChange('firmaList', ${i}, 'tel', this.value)"></td>
       <td><input type="text" value="${f.faks || ''}" placeholder="Faks" onchange="onRefChange('firmaList', ${i}, 'faks', this.value)"></td>
       <td><input type="text" value="${f.eposta || ''}" placeholder="E-Posta" onchange="onRefChange('firmaList', ${i}, 'eposta', this.value)"></td>
+      <td><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('firmaList', ${i}, 'dogumTarihi', this.value)"></td>
       <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('firmaList', ${i})">Sil</button></td>
     </tr>`).join('');
 
@@ -2376,10 +2377,10 @@ function renderVeriMerkeziPage() {
       </div>
       <div class="card-body">
         <table class="ref-table">
-          <thead><tr><th>Ad</th><th>Adres</th><th>Tur</th><th>Telefon</th><th>Faks</th><th>E-Posta</th><th></th></tr></thead>
+          <thead><tr><th>Ad</th><th>Adres</th><th>Tur</th><th>Telefon</th><th>Faks</th><th>E-Posta</th><th>Doğum Tarihi</th><th></th></tr></thead>
           <tbody>${firmaRows}</tbody>
         </table>
-        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('firmaList', {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:''})">+ Ekle</button>
+        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('firmaList', {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:''})">+ Ekle</button>
       </div>
     </div>
     ` : ''}
@@ -3504,6 +3505,34 @@ function renderGerceklestirmeciVeriMerkeziPage() {
             if(no){if(!referans.butceTertibiList)referans.butceTertibiList=[];referans.butceTertibiList.push({no,aciklama:ac});saveReferans(referans);renderPage();}
           ">+ Ekle</button>
         </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h3>Yüklenici / Firma Listesi</h3><span class="toggle-icon">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <table class="ref-table">
+          <thead><tr><th>Ad</th><th>Adres</th><th>Tur</th><th>Telefon</th><th>Faks</th><th>E-Posta</th><th>Doğum Tarihi</th><th></th></tr></thead>
+          <tbody>
+            ${(referans.firmaList || []).map((f, i) => `
+              <tr>
+                <td><input type="text" value="${f.ad}" onchange="onRefChange('firmaList', ${i}, 'ad', this.value)"></td>
+                <td><input type="text" value="${f.adres}" onchange="onRefChange('firmaList', ${i}, 'adres', this.value)"></td>
+                <td><select onchange="onRefChange('firmaList', ${i}, 'tur', this.value)">
+                  <option value="Kişi" ${f.tur === 'Kisi' ? 'selected' : ''}>Kişi</option>
+                  <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
+                </select></td>
+                <td><input type="text" value="${f.tel}" onchange="onRefChange('firmaList', ${i}, 'tel', this.value)"></td>
+                <td><input type="text" value="${f.faks || ''}" placeholder="Faks" onchange="onRefChange('firmaList', ${i}, 'faks', this.value)"></td>
+                <td><input type="text" value="${f.eposta || ''}" placeholder="E-Posta" onchange="onRefChange('firmaList', ${i}, 'eposta', this.value)"></td>
+                <td><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('firmaList', ${i}, 'dogumTarihi', this.value)"></td>
+                <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('firmaList', ${i})">Sil</button></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('firmaList', {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:''})">+ Ekle</button>
       </div>
     </div>
   `;
