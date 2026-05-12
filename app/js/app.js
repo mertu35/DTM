@@ -2370,6 +2370,7 @@ function renderVeriMerkeziPage() {
       </div>
     </div>
 
+    ${!isSuperAdmin ? `
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
         <h3>Firma Listesi</h3><span class="toggle-icon">&#9660;</span>
@@ -2382,6 +2383,7 @@ function renderVeriMerkeziPage() {
         <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('firmaList', {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:''})">+ Ekle</button>
       </div>
     </div>
+    ` : ''}
 
     ${isSuperAdmin ? `
     <div class="card">
