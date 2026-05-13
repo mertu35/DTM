@@ -144,11 +144,14 @@ function normalizeStr(s) {
 function isFirmaBasitUsul(ad, referans) {
   if (!ad || !referans) return false;
   const isim = normalizeStr(ad);
-  let found = (referans.yukleniciList || []).find(f => normalizeStr(f.ad) === isim);
-  if (!found) {
-    found = (referans.firmaList || []).find(f => normalizeStr(f.ad) === isim);
-  }
-  return found ? !!found.basitUsul : false;
+  
+  const inYuklenici = (referans.yukleniciList || []).find(f => normalizeStr(f.ad) === isim);
+  const inFirma = (referans.firmaList || []).find(f => normalizeStr(f.ad) === isim);
+  
+  if (inYuklenici && inYuklenici.basitUsul) return true;
+  if (inFirma && inFirma.basitUsul) return true;
+  
+  return false;
 }
 
 function loadProje() {
