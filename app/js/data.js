@@ -130,10 +130,10 @@ function parseProje(jsonStr) {
 
 function isFirmaBasitUsul(ad, referans) {
   if (!ad || !referans) return false;
-  const isim = ad.trim().toLowerCase();
-  let found = (referans.yukleniciList || []).find(f => (f.ad||'').trim().toLowerCase() === isim);
+  const isim = ad.trim().toLocaleLowerCase('tr-TR');
+  let found = (referans.yukleniciList || []).find(f => (f.ad||'').trim().toLocaleLowerCase('tr-TR') === isim);
   if (!found) {
-    found = (referans.firmaList || []).find(f => (f.ad||'').trim().toLowerCase() === isim);
+    found = (referans.firmaList || []).find(f => (f.ad||'').trim().toLocaleLowerCase('tr-TR') === isim);
   }
   return found ? !!found.basitUsul : false;
 }
