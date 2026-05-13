@@ -160,15 +160,17 @@ function renderTeklifTutanagi(proje, referans) {
 
   // Dinamik metin hesapla
   const getFirmaTur = (ad) => {
-    const found = (referans.firmaList || []).find(x => x.ad === ad);
+    if (!ad) return 'Kişi';
+    const temizAd = ad.trim().toLowerCase();
+    const found = (referans.firmaList || []).find(x => (x.ad || '').trim().toLowerCase() === temizAd);
     return found ? found.tur : 'Kişi';
   };
   const aktiveTurler = [f1, f2, f3].filter(f => f.ad).map(f => getFirmaTur(f.ad));
-  const hepsiKisi = aktiveTurler.length > 0 && aktiveTurler.every(t => t === 'Kişi');
-  const hepsiFirma = aktiveTurler.length > 0 && aktiveTurler.every(t => t === 'Şirket');
+  const hepsiKisi = aktiveTurler.length > 0 && aktiveTurler.every(t => t.toLowerCase() === 'kişi' || t.toLowerCase() === 'kisi');
+  const hepsiFirma = aktiveTurler.length > 0 && aktiveTurler.every(t => t.toLowerCase() === 'şirket' || t.toLowerCase() === 'sirket');
   const teklifVerenMetni = hepsiKisi ? 'kişilerce' : hepsiFirma ? 'firmalarca' : 'kişi / firmalarca';
-  const kazananTur = kazanan ? getFirmaTur(kazanan.ad) : 'Şirket';
-  const kazananKisiMetni = kazananTur === 'Kişi' ? 'kişiden' : 'firmadan';
+  const kazananTur = kazanan ? getFirmaTur(kazanan.ad) : 'Kişi';
+  const kazananKisiMetni = (kazananTur.toLowerCase() === 'kişi' || kazananTur.toLowerCase() === 'kisi') ? 'kişiden' : 'firmadan';
 
   const f1Basit = isFirmaBasitUsul(f1.ad, referans);
   const f2Basit = isFirmaBasitUsul(f2.ad, referans);
