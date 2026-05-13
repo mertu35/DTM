@@ -2381,22 +2381,23 @@ function renderVeriMerkeziPage() {
           return `
           <div style="background:var(--gray-50); padding:15px; border-radius:8px; border:1px solid var(--gray-200);">
             <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-              <div class="form-group"><label>Ad</label><input type="text" value="${f.ad}" onchange="onRefChange('firmaList', ${i}, 'ad', this.value)"></div>
-              <div class="form-group"><label>Tür</label><select onchange="onRefChange('firmaList', ${i}, 'tur', this.value); renderPage('veri-merkezi');">
+              <div class="form-group"><label>Ad</label><input type="text" value="${f.ad}" onchange="onFirmaFieldChange('firmaList', ${i}, 'ad', this.value)"></div>
+              <div class="form-group"><label>Tür</label><select onchange="onFirmaFieldChange('firmaList', ${i}, 'tur', this.value); renderPage('veri-merkezi');">
                   <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
-              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${f.adres}" onchange="onRefChange('firmaList', ${i}, 'adres', this.value)"></div>
-              <div class="form-group"><label>Telefon</label><input type="text" value="${f.tel}" onchange="onRefChange('firmaList', ${i}, 'tel', this.value)"></div>
-              <div class="form-group"><label>Faks</label><input type="text" value="${f.faks || ''}" onchange="onRefChange('firmaList', ${i}, 'faks', this.value)"></div>
-              <div class="form-group"><label>E-Posta</label><input type="text" value="${f.eposta || ''}" onchange="onRefChange('firmaList', ${i}, 'eposta', this.value)"></div>
-              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('firmaList', ${i}, 'dogumTarihi', this.value)"></div>`}
-              <div class="form-group" style="grid-column: span 2; display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onRefChange('firmaList', ${i}, 'basitUsul', this.checked)">
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${f.adres}" onchange="onFirmaFieldChange('firmaList', ${i}, 'adres', this.value)"></div>
+              <div class="form-group"><label>Telefon</label><input type="text" value="${f.tel}" onchange="onFirmaFieldChange('firmaList', ${i}, 'tel', this.value)"></div>
+              <div class="form-group"><label>Faks</label><input type="text" value="${f.faks || ''}" onchange="onFirmaFieldChange('firmaList', ${i}, 'faks', this.value)"></div>
+              <div class="form-group"><label>E-Posta</label><input type="text" value="${f.eposta || ''}" onchange="onFirmaFieldChange('firmaList', ${i}, 'eposta', this.value)"></div>
+              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onFirmaFieldChange('firmaList', ${i}, 'dogumTarihi', this.value)"></div>`}
+              <div class="form-group" style="grid-column: span 2; display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
+                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('firmaList', ${i}, 'basitUsul', this.checked)">
                 <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:bold; color:var(--primary-color)">Bu Firma/Kişi Basit Usule Tabiidir</label>
               </div>
             </div>
-            <div style="margin-top:10px; text-align:right;">
+            <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
+              <button class="btn btn-primary" onclick="kaydetFirmaFormu()">Kaydet</button>
               <button class="btn btn-danger btn-sm" onclick="onRefDelete('firmaList', ${i}); onFirmaListeSelect(-1);">Firmayı Sil</button>
             </div>
           </div>
@@ -2535,6 +2536,24 @@ function onRefChange(list, index, field, value) {
   }
   GLOBAL_REF_FIELDS.includes(list) ? saveGlobalReferans(referans) : saveReferans(referans);
 }
+
+function onFirmaFieldChange(list, index, field, value) {
+  if (typeof referans[list][index] === 'object') {
+    referans[list][index][field] = value;
+  } else {
+    referans[list][index] = value;
+  }
+}
+
+window.kaydetFirmaFormu = function() {
+  const isSuperAdmin = currentDTMUser?.role === 'superadmin';
+  if (!isSuperAdmin) {
+    saveReferans(referans);
+  } else {
+    saveGlobalReferans(referans);
+  }
+  showToast("Firma / Kişi bilgileri başarıyla kaydedildi.", "success");
+};
 
 function onRefDelete(list, index) {
   referans[list].splice(index, 1);
@@ -3548,22 +3567,23 @@ function renderGerceklestirmeciVeriMerkeziPage() {
           return `
           <div style="background:var(--gray-50); padding:15px; border-radius:8px; border:1px solid var(--gray-200);">
             <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-              <div class="form-group"><label>Ad</label><input type="text" value="${f.ad}" onchange="onRefChange('yukleniciList', ${i}, 'ad', this.value)"></div>
-              <div class="form-group"><label>Tür</label><select onchange="onRefChange('yukleniciList', ${i}, 'tur', this.value); document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();">
+              <div class="form-group"><label>Ad</label><input type="text" value="${f.ad}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'ad', this.value)"></div>
+              <div class="form-group"><label>Tür</label><select onchange="onFirmaFieldChange('yukleniciList', ${i}, 'tur', this.value); document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();">
                   <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
-              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${f.adres}" onchange="onRefChange('yukleniciList', ${i}, 'adres', this.value)"></div>
-              <div class="form-group"><label>Telefon</label><input type="text" value="${f.tel}" onchange="onRefChange('yukleniciList', ${i}, 'tel', this.value)"></div>
-              <div class="form-group"><label>Faks</label><input type="text" value="${f.faks || ''}" onchange="onRefChange('yukleniciList', ${i}, 'faks', this.value)"></div>
-              <div class="form-group"><label>E-Posta</label><input type="text" value="${f.eposta || ''}" onchange="onRefChange('yukleniciList', ${i}, 'eposta', this.value)"></div>
-              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('yukleniciList', ${i}, 'dogumTarihi', this.value)"></div>`}
-              <div class="form-group" style="grid-column: span 2; display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onRefChange('yukleniciList', ${i}, 'basitUsul', this.checked)">
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${f.adres}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'adres', this.value)"></div>
+              <div class="form-group"><label>Telefon</label><input type="text" value="${f.tel}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'tel', this.value)"></div>
+              <div class="form-group"><label>Faks</label><input type="text" value="${f.faks || ''}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'faks', this.value)"></div>
+              <div class="form-group"><label>E-Posta</label><input type="text" value="${f.eposta || ''}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'eposta', this.value)"></div>
+              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'dogumTarihi', this.value)"></div>`}
+              <div class="form-group" style="grid-column: span 2; display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
+                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('yukleniciList', ${i}, 'basitUsul', this.checked)">
                 <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:bold; color:var(--primary-color)">Bu Firma/Kişi Basit Usule Tabiidir</label>
               </div>
             </div>
-            <div style="margin-top:10px; text-align:right;">
+            <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
+              <button class="btn btn-primary" onclick="kaydetYukleniciFormu()">Kaydet</button>
               <button class="btn btn-danger btn-sm" onclick="onRefDelete('yukleniciList', ${i}); onYukleniciSelect(-1);">Firmayı Sil</button>
             </div>
           </div>
@@ -3586,6 +3606,11 @@ window.onYukleniciEkle = function() {
   dtmSeciliYukleniciIndex = referans.yukleniciList.length - 1;
   saveGlobalReferans(referans);
   document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();
+};
+
+window.kaydetYukleniciFormu = function() {
+  saveGlobalReferans(referans);
+  showToast("Firma / Kişi bilgileri başarıyla kaydedildi.", "success");
 };
 
 let dtmSeciliFirmaIndex = -1;
