@@ -2391,7 +2391,7 @@ function renderVeriMerkeziPage() {
               <div class="form-group"><label>Faks</label><input type="text" value="${f.faks || ''}" onchange="onFirmaFieldChange('firmaList', ${i}, 'faks', this.value)"></div>
               <div class="form-group"><label>E-Posta</label><input type="text" value="${f.eposta || ''}" onchange="onFirmaFieldChange('firmaList', ${i}, 'eposta', this.value)"></div>
               ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onFirmaFieldChange('firmaList', ${i}, 'dogumTarihi', this.value)"></div>`}
-              <div class="form-group" style="grid-column: span 2; display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
+              <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
                 <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('firmaList', ${i}, 'basitUsul', this.checked)">
                 <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:bold; color:var(--primary-color)">Bu Firma/Kişi Basit Usule Tabiidir</label>
               </div>
@@ -3577,7 +3577,7 @@ function renderGerceklestirmeciVeriMerkeziPage() {
               <div class="form-group"><label>Faks</label><input type="text" value="${f.faks || ''}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'faks', this.value)"></div>
               <div class="form-group"><label>E-Posta</label><input type="text" value="${f.eposta || ''}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'eposta', this.value)"></div>
               ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'dogumTarihi', this.value)"></div>`}
-              <div class="form-group" style="grid-column: span 2; display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
+              <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
                 <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('yukleniciList', ${i}, 'basitUsul', this.checked)">
                 <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:bold; color:var(--primary-color)">Bu Firma/Kişi Basit Usule Tabiidir</label>
               </div>
