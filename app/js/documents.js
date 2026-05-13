@@ -161,7 +161,7 @@ function renderTeklifTutanagi(proje, referans) {
   // Dinamik metin hesapla
   const getFirmaTur = (ad) => {
     const found = (referans.firmaList || []).find(x => x.ad === ad);
-    return found ? found.tur : 'Şirket';
+    return found ? found.tur : 'Kişi';
   };
   const aktiveTurler = [f1, f2, f3].filter(f => f.ad).map(f => getFirmaTur(f.ad));
   const hepsiKisi = aktiveTurler.length > 0 && aktiveTurler.every(t => t === 'Kişi');
@@ -314,7 +314,7 @@ function renderTeklifTutanagi(proje, referans) {
       ${kazananHTML}
 
       <div style="margin:6px 0;border:0.5mm solid #000;padding:7px 14px;page-break-inside:avoid">
-        <p style="text-align:justify;line-height:1.4">4734 sayılı Kamu İhale Kanunu'nun 22 nci Maddesi uyarınca <strong>doğrudan temin usulüyle</strong> yapılacak alımlara ilişkin yapılan piyasa araştırmasında ${teklifVerenMetni} teklif edilen fiyatlar ${tarafMetni} değerlendirilerek yukarıda adı ve adresleri belirtilen ${kazananKisiMetni} alım yapılması uygun görülmüştür. ${formatDate(dtTutanakT)}</p>
+        <p style="text-align:justify;line-height:1.4">4734 sayılı Kamu İhale Kanunu'nun 22 nci Maddesi uyarınca <strong>doğrudan temin usulüyle</strong> yapılacak alımlara ilişkin yapılan piyasa araştırmasında ${teklifVerenMetni} teklif edilen fiyatlar ${tarafMetni} değerlendirilerek yukarıda adı ve adresi belirtilen ${kazananKisiMetni} alım yapılması uygun görülmüştür. ${formatDate(dtTutanakT)}</p>
 
         <div style="display:flex;align-items:flex-start;margin-top:8px;gap:0">
           <!-- Görevliler sol tarafta -->
