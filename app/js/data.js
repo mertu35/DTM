@@ -128,12 +128,25 @@ function parseProje(jsonStr) {
   return normalizeProje(JSON.parse(jsonStr));
 }
 
+function normalizeStr(s) {
+  if (!s) return '';
+  return s.trim()
+    .replace(/İ/g, 'i').replace(/I/g, 'i').replace(/ı/g, 'i')
+    .replace(/Ö/g, 'o').replace(/ö/g, 'o')
+    .replace(/Ü/g, 'u').replace(/ü/g, 'u')
+    .replace(/Ş/g, 's').replace(/ş/g, 's')
+    .replace(/Ğ/g, 'g').replace(/ğ/g, 'g')
+    .replace(/Ç/g, 'c').replace(/ç/g, 'c')
+    .toLowerCase()
+    .replace(/\s+/g, ''); // Tüm boşlukları kaldırarak eşleşme garantisi
+}
+
 function isFirmaBasitUsul(ad, referans) {
   if (!ad || !referans) return false;
-  const isim = ad.trim().toLocaleLowerCase('tr-TR');
-  let found = (referans.yukleniciList || []).find(f => (f.ad||'').trim().toLocaleLowerCase('tr-TR') === isim);
+  const isim = normalizeStr(ad);
+  let found = (referans.yukleniciList || []).find(f => normalizeStr(f.ad) === isim);
   if (!found) {
-    found = (referans.firmaList || []).find(f => (f.ad||'').trim().toLocaleLowerCase('tr-TR') === isim);
+    found = (referans.firmaList || []).find(f => normalizeStr(f.ad) === isim);
   }
   return found ? !!found.basitUsul : false;
 }
