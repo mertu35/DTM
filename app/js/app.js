@@ -568,6 +568,7 @@ async function onAuthReady(user) {
     updateLastLogin();
     init();
     checkDuyurular();
+    checkForUpdates(); // Otomatik güncelleme badge kontrolü
     if (currentDTMUser.role === 'gerceklestirmeci') {
       checkGonderilenProjeler();
       setInterval(checkGonderilenProjeler, 30000);
@@ -687,6 +688,7 @@ function renderPage() {
     case 'proje-ozet': renderProjeOzetPage(); break;
     case 'onay-belgesi': renderOnayBelgesiPage(); break;
     case 'profil': main.innerHTML = renderProfilPage(); bindProfil(); break;
+    case 'hakkinda': renderHakkindaPage(); break;
   }
 }
 
@@ -4823,4 +4825,144 @@ async function duyuruSil(duyuruId) {
     renderDuyurularPage();
   } catch(e) { showToast('Hata: ' + hataMesaji(e), 'error'); }
 }
+
+// ===================== HAKKINDA SAYFASI =====================
+const APP_CURRENT_VERSION = '1.4.0';
+
+async function checkForUpdates(showLoading = false) {
+  try {
+    const doc = await db.collection('appConfig').doc('version').get();
+    const latestVersion = doc.exists ? (doc.data().latest || APP_CURRENT_VERSION) : APP_CURRENT_VERSION;
+    const hasUpdate = latestVersion !== APP_CURRENT_VERSION;
+
+    // Badge güncelle
+    const badge = document.getElementById('guncellemeBadge');
+    if (badge) {
+      badge.style.display = hasUpdate ? 'inline-flex' : 'none';
+    }
+
+    return { latestVersion, hasUpdate };
+  } catch(e) {
+    return { latestVersion: APP_CURRENT_VERSION, hasUpdate: false };
+  }
+}
+
+async function renderHakkindaPage() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div class="page-header">
+      <h2>&#8505;&#65039; Hakkında</h2>
+      <p>Uygulama bilgileri ve güncelleme kontrolü.</p>
+    </div>
+    <div style="max-width:600px;margin:0 auto;">
+
+      <!-- Uygulama Kartı -->
+      <div style="background:linear-gradient(135deg,#1e3a5f,#1a56db);border-radius:16px;padding:32px;color:#fff;margin-bottom:20px;text-align:center;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
+        <div style="font-size:52px;margin-bottom:12px;">&#128196;</div>
+        <div style="font-size:24px;font-weight:700;margin-bottom:4px;">Doğrudan Temin Modülü</div>
+        <div style="font-size:13px;opacity:0.75;margin-bottom:16px;">Karaman İl Özel İdaresi &middot; Yatırım ve İnşaat Müdürlüğü</div>
+        <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:20px;padding:6px 20px;font-size:15px;font-weight:700;letter-spacing:1px;">
+          v${APP_CURRENT_VERSION}
+        </div>
+      </div>
+
+      <!-- Güncelleme Kontrol Kartı -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3>&#128260; Güncelleme Kontrolü</h3></div>
+        <div class="card-body">
+          <div id="guncellemeDurum" style="margin-bottom:16px;padding:12px 16px;border-radius:8px;background:var(--gray-50);border:1px solid var(--gray-200);font-size:14px;color:var(--gray-600);">
+            Güncelleme durumu kontrol ediliyor...
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="guncellemeyiKontrolEt()">&#128269; Güncellemeleri Denetle</button>
+            <button id="guncellemeyiUygulaBttn" class="btn btn-success" onclick="uygulamaGuncelle()" style="display:none;">&#128260; Güncellemeyi Uygula</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Teknik Bilgiler -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3>&#128295; Teknik Bilgiler</h3></div>
+        <div class="card-body" style="padding:0;">
+          <table style="width:100%;font-size:14px;border-collapse:collapse;">
+            <tbody>
+              <tr style="border-bottom:1px solid var(--gray-100);">
+                <td style="padding:10px 16px;color:var(--gray-500);width:50%">Mevcut Sürüm</td>
+                <td style="padding:10px 16px;font-weight:600;">v${APP_CURRENT_VERSION}</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--gray-100);">
+                <td style="padding:10px 16px;color:var(--gray-500)">Platform</td>
+                <td style="padding:10px 16px;font-weight:600;">Web (Firebase)</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--gray-100);">
+                <td style="padding:10px 16px;color:var(--gray-500)">Tarayıcı</td>
+                <td style="padding:10px 16px;font-weight:600;font-size:12px;">${navigator.userAgent.split(') ').pop().split(' ')[0] || navigator.userAgent}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 16px;color:var(--gray-500)">Son Giriş</td>
+                <td style="padding:10px 16px;font-weight:600;">${new Date().toLocaleDateString('tr-TR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- v1.4.0 Değişiklikler -->
+      <div class="card">
+        <div class="card-header"><h3>&#128221; v1.4.0 Sürüm Notları</h3></div>
+        <div class="card-body">
+          <ul style="margin:0;padding-left:20px;font-size:14px;line-height:2;">
+            <li>&#9989; Basit Usul mükellefiyet desteği tam entegrasyon</li>
+            <li>&#9989; Teklif, Karar ve Hakediş belgelerinde KDV muafiyeti</li>
+            <li>&#9989; Veri Merkezi firma listesi açılır liste yapısına geçiş</li>
+            <li>&#9989; Firma listesi alfabetik sıralama</li>
+            <li>&#9989; Şirketler için Doğum Tarihi alanı otomatik gizleme</li>
+            <li>&#9989; Manuel Kaydet butonu ile veri güvenliği</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>`;
+
+  // Sayfa açılınca otomatik kontrol et
+  guncellemeyiKontrolEt();
+}
+
+window.guncellemeyiKontrolEt = async function() {
+  const durumEl = document.getElementById('guncellemeDurum');
+  const btnUygula = document.getElementById('guncellemeyiUygulaBttn');
+  if (durumEl) {
+    durumEl.style.background = 'var(--gray-50)';
+    durumEl.style.borderColor = 'var(--gray-200)';
+    durumEl.style.color = 'var(--gray-500)';
+    durumEl.textContent = '⏳ Kontrol ediliyor...';
+  }
+  const { latestVersion, hasUpdate } = await checkForUpdates(true);
+  if (durumEl) {
+    if (hasUpdate) {
+      durumEl.style.background = '#fef3c7';
+      durumEl.style.borderColor = '#f59e0b';
+      durumEl.style.color = '#92400e';
+      durumEl.innerHTML = `&#9888;&#65039; <strong>Yeni sürüm mevcut: v${latestVersion}</strong><br><span style="font-size:12px">Mevcut sürümünüz: v${APP_CURRENT_VERSION}. Güncellemeyi uygulamak için butona tıklayın.</span>`;
+      if (btnUygula) btnUygula.style.display = 'inline-flex';
+    } else {
+      durumEl.style.background = '#f0fdf4';
+      durumEl.style.borderColor = '#86efac';
+      durumEl.style.color = '#166534';
+      durumEl.innerHTML = `&#9989; Uygulamanız güncel! <strong>v${APP_CURRENT_VERSION}</strong> en son sürümdür.`;
+      if (btnUygula) btnUygula.style.display = 'none';
+    }
+  }
+};
+
+window.uygulamaGuncelle = function() {
+  showToast('Güncelleme uygulanıyor, sayfa yenileniyor...', 'success');
+  setTimeout(() => {
+    if ('caches' in window) {
+      caches.keys().then(names => { names.forEach(n => caches.delete(n)); });
+    }
+    window.location.reload(true);
+  }, 800);
+};
 
