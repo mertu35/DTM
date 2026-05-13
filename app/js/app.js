@@ -2331,22 +2331,7 @@ function renderVeriMerkeziPage() {
       <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('onaylayanList', ${i})">Sil</button></td>
     </tr>`).join('');
 
-  const firmaRows = referans.firmaList.map((f, i) => `
-    <tr>
-      <td><input type="text" value="${f.ad}" onchange="onRefChange('firmaList', ${i}, 'ad', this.value)"></td>
-      <td><input type="text" value="${f.adres}" onchange="onRefChange('firmaList', ${i}, 'adres', this.value)"></td>
-      <td><select onchange="onRefChange('firmaList', ${i}, 'tur', this.value)">
-        <option value="Kişi" ${f.tur === 'Kisi' ? 'selected' : ''}>Kişi</option>
-        <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
-      </select></td>
-      <td><input type="text" value="${f.tel}" onchange="onRefChange('firmaList', ${i}, 'tel', this.value)"></td>
-      <td><input type="text" value="${f.faks || ''}" placeholder="Faks" onchange="onRefChange('firmaList', ${i}, 'faks', this.value)"></td>
-      <td><input type="text" value="${f.eposta || ''}" placeholder="E-Posta" onchange="onRefChange('firmaList', ${i}, 'eposta', this.value)"></td>
-      <td><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('firmaList', ${i}, 'dogumTarihi', this.value)"></td>
-      <td style="text-align:center"><input type="checkbox" ${f.basitUsul ? 'checked' : ''} onchange="onRefChange('firmaList', ${i}, 'basitUsul', this.checked)"></td>
-      <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('firmaList', ${i})">Sil</button></td>
-    </tr>`).join('');
-
+  const sortedFirms = (referans.firmaList || []).map((f, i) => ({f, i})).sort((a, b) => (a.f.ad || '').localeCompare(b.f.ad || '', 'tr-TR'));
   const ilceRows = referans.ilceler.map((il, i) => `
     <span style="display:inline-flex;align-items:center;gap:4px;margin:3px;padding:4px 8px;background:var(--gray-100);border-radius:4px;">
       ${il} <button class="btn btn-danger btn-sm" onclick="onRefDelete('ilceler', ${i})" style="padding:1px 5px">&times;</button>
@@ -2382,11 +2367,41 @@ function renderVeriMerkeziPage() {
         <h3>Firma Listesi</h3><span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
-        <table class="ref-table">
-          <thead><tr><th>Ad</th><th>Adres</th><th>Tur</th><th>Telefon</th><th>Faks</th><th>E-Posta</th><th>Doğum Tarihi</th><th>Basit Usul</th><th></th></tr></thead>
-          <tbody>${firmaRows}</tbody>
-        </table>
-        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('firmaList', {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:'', basitUsul:false})">+ Ekle</button>
+        <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
+          <select style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--gray-300);" onchange="onFirmaListeSelect(this.value)">
+            <option value="-1">-- Firma Seçin veya Yeni Ekleyin --</option>
+            ${sortedFirms.map(item => `<option value="${item.i}" ${dtmSeciliFirmaIndex === item.i ? 'selected' : ''}>${item.f.ad}</option>`).join('')}
+          </select>
+          <button class="btn btn-outline" onclick="onFirmaListeEkle()">+ Yeni Ekle</button>
+        </div>
+        
+        ${dtmSeciliFirmaIndex >= 0 && referans.firmaList[dtmSeciliFirmaIndex] ? (() => {
+          const f = referans.firmaList[dtmSeciliFirmaIndex];
+          const i = dtmSeciliFirmaIndex;
+          return `
+          <div style="background:var(--gray-50); padding:15px; border-radius:8px; border:1px solid var(--gray-200);">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+              <div class="form-group"><label>Ad</label><input type="text" value="${f.ad}" onchange="onRefChange('firmaList', ${i}, 'ad', this.value)"></div>
+              <div class="form-group"><label>Tür</label><select onchange="onRefChange('firmaList', ${i}, 'tur', this.value); renderPage('veri-merkezi');">
+                  <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
+                  <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
+              </select></div>
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${f.adres}" onchange="onRefChange('firmaList', ${i}, 'adres', this.value)"></div>
+              <div class="form-group"><label>Telefon</label><input type="text" value="${f.tel}" onchange="onRefChange('firmaList', ${i}, 'tel', this.value)"></div>
+              <div class="form-group"><label>Faks</label><input type="text" value="${f.faks || ''}" onchange="onRefChange('firmaList', ${i}, 'faks', this.value)"></div>
+              <div class="form-group"><label>E-Posta</label><input type="text" value="${f.eposta || ''}" onchange="onRefChange('firmaList', ${i}, 'eposta', this.value)"></div>
+              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('firmaList', ${i}, 'dogumTarihi', this.value)"></div>`}
+              <div class="form-group" style="grid-column: span 2; display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onRefChange('firmaList', ${i}, 'basitUsul', this.checked)">
+                <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:bold; color:var(--primary-color)">Bu Firma/Kişi Basit Usule Tabiidir</label>
+              </div>
+            </div>
+            <div style="margin-top:10px; text-align:right;">
+              <button class="btn btn-danger btn-sm" onclick="onRefDelete('firmaList', ${i}); onFirmaListeSelect(-1);">Firmayı Sil</button>
+            </div>
+          </div>
+          `;
+        })() : ''}
       </div>
     </div>
     ` : ''}
@@ -3522,7 +3537,7 @@ function renderGerceklestirmeciVeriMerkeziPage() {
         <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
           <select style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--gray-300);" onchange="onYukleniciSelect(this.value)">
             <option value="-1">-- Firma Seçin veya Yeni Ekleyin --</option>
-            ${(referans.yukleniciList || []).map((f, i) => `<option value="${i}" ${dtmSeciliYukleniciIndex === i ? 'selected' : ''}>${f.ad}</option>`).join('')}
+            ${(referans.yukleniciList || []).map((f, i) => ({f, i})).sort((a, b) => (a.f.ad || '').localeCompare(b.f.ad || '', 'tr-TR')).map(item => `<option value="${item.i}" ${dtmSeciliYukleniciIndex === item.i ? 'selected' : ''}>${item.f.ad}</option>`).join('')}
           </select>
           <button class="btn btn-outline" onclick="onYukleniciEkle()">+ Yeni Ekle</button>
         </div>
@@ -3534,15 +3549,15 @@ function renderGerceklestirmeciVeriMerkeziPage() {
           <div style="background:var(--gray-50); padding:15px; border-radius:8px; border:1px solid var(--gray-200);">
             <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
               <div class="form-group"><label>Ad</label><input type="text" value="${f.ad}" onchange="onRefChange('yukleniciList', ${i}, 'ad', this.value)"></div>
-              <div class="form-group"><label>Tür</label><select onchange="onRefChange('yukleniciList', ${i}, 'tur', this.value)">
-                  <option value="Kişi" ${f.tur === 'Kisi' ? 'selected' : ''}>Kişi</option>
+              <div class="form-group"><label>Tür</label><select onchange="onRefChange('yukleniciList', ${i}, 'tur', this.value); document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();">
+                  <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
               <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${f.adres}" onchange="onRefChange('yukleniciList', ${i}, 'adres', this.value)"></div>
               <div class="form-group"><label>Telefon</label><input type="text" value="${f.tel}" onchange="onRefChange('yukleniciList', ${i}, 'tel', this.value)"></div>
               <div class="form-group"><label>Faks</label><input type="text" value="${f.faks || ''}" onchange="onRefChange('yukleniciList', ${i}, 'faks', this.value)"></div>
               <div class="form-group"><label>E-Posta</label><input type="text" value="${f.eposta || ''}" onchange="onRefChange('yukleniciList', ${i}, 'eposta', this.value)"></div>
-              <div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('yukleniciList', ${i}, 'dogumTarihi', this.value)"></div>
+              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('yukleniciList', ${i}, 'dogumTarihi', this.value)"></div>`}
               <div class="form-group" style="grid-column: span 2; display: flex; align-items: center; gap: 8px; margin-top: 5px;">
                 <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onRefChange('yukleniciList', ${i}, 'basitUsul', this.checked)">
                 <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:bold; color:var(--primary-color)">Bu Firma/Kişi Basit Usule Tabiidir</label>
@@ -3571,6 +3586,20 @@ window.onYukleniciEkle = function() {
   dtmSeciliYukleniciIndex = referans.yukleniciList.length - 1;
   saveGlobalReferans(referans);
   document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();
+};
+
+let dtmSeciliFirmaIndex = -1;
+window.onFirmaListeSelect = function(val) {
+  dtmSeciliFirmaIndex = parseInt(val, 10);
+  renderPage('veri-merkezi');
+};
+
+window.onFirmaListeEkle = function() {
+  if(!referans.firmaList) referans.firmaList = [];
+  referans.firmaList.push({ad:'Yeni Firma', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:'', basitUsul:false});
+  dtmSeciliFirmaIndex = referans.firmaList.length - 1;
+  saveReferans(referans);
+  renderPage('veri-merkezi');
 };
 
 async function renderGerceklestirmeciVeriMerkeziPageLoader() {
