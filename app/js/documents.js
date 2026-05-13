@@ -752,12 +752,14 @@ function renderDogrudanTeminOnayBelgesi(proje) {
 }
 
 function renderHakedisRaporu(proje, referans) {
-  const hak = hesaplaHakedis(proje);
+  const hak = hesaplaHakedis(proje, referans);
   if (!hak) return '<div class="belge"><p>Kazanan firma belirlenemedi.</p></div>';
 
   const dtGorevliler = getAktifGorevliler(proje.dtGorevliler);
   const odenecekYazi = sayidanYaziya(hak.odenecek);
   const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
+  const kazanan = proje.teklifFirmalar[kazananIdx];
+  const basitUsul = kazanan ? isFirmaBasitUsul(kazanan.ad, referans) : false;
 
   return `
     <div class="belge">
@@ -775,7 +777,7 @@ function renderHakedisRaporu(proje, referans) {
           <tr class="toplam-satir"><td>C</td><td>Toplam Tutar (A+B)</td><td class="rakam">${formatCurrency(hak.toplamTutar)}</td></tr>
           <tr><td>D</td><td>Bir Önceki Hakedişin Toplam Tutarı</td><td class="rakam">${formatCurrency(hak.oncekiHakedis)}</td></tr>
           <tr class="toplam-satir"><td>E</td><td>Bu Hakedişin Tutarı (C – D)</td><td class="rakam">${formatCurrency(hak.buHakedis)}</td></tr>
-          <tr><td>F</td><td>KDV (E x %${proje.kdvOrani})</td><td class="rakam">${formatCurrency(hak.kdv)}</td></tr>
+          <tr><td>F</td><td>${basitUsul ? 'KDV (Basit Usul - Muaf)' : `KDV (E x %${proje.kdvOrani})`}</td><td class="rakam">${formatCurrency(hak.kdv)}</td></tr>
           <tr class="toplam-satir"><td>G</td><td>Tahakkuk Tutarı</td><td class="rakam">${formatCurrency(hak.tahakkuk)}</td></tr>
         </tbody>
       </table>
@@ -785,7 +787,7 @@ function renderHakedisRaporu(proje, referans) {
         <tbody>
           <tr><td>a)</td><td>Sözleşme Damga Vergisi [(E-g) x % 0,948]</td><td class="rakam">${formatCurrency(hak.sozlesmeDamga)}</td></tr>
           <tr><td>b)</td><td>Damga Vergisi [(E-g) x % 0,948]</td><td class="rakam">${formatCurrency(hak.damgaVergisi)}</td></tr>
-          <tr><td>c)</td><td>KDV Tevkifatı (F x 4/10)</td><td class="rakam">${formatCurrency(hak.kdvTevkifati)}</td></tr>
+          <tr><td>c)</td><td>${basitUsul ? 'KDV Tevkifatı (Muaf)' : 'KDV Tevkifatı (F x 4/10)'}</td><td class="rakam">${formatCurrency(hak.kdvTevkifati)}</td></tr>
           <tr><td>d)</td><td>Sosyal Sigortalar Kurumu Kesintisi</td><td class="rakam">${formatCurrency(hak.sgk)}</td></tr>
           <tr><td>e)</td><td>Vergi Borcu</td><td class="rakam">${formatCurrency(hak.vergi)}</td></tr>
           <tr><td>f)</td><td>Gecikme Cezası</td><td class="rakam">${formatCurrency(hak.gecikme)}</td></tr>

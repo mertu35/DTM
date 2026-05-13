@@ -93,7 +93,7 @@ function getKazananFirma(proje, referans) {
 }
 
 // Hakediş hesaplama
-function hesaplaHakedis(proje) {
+function hesaplaHakedis(proje, referans) {
   const kazanan = proje.teklifFirmalar[proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje)];
   if (!kazanan) return null;
 
@@ -103,7 +103,9 @@ function hesaplaHakedis(proje) {
   const toplamTutar = sozlesmeBedeli + fiyatFarki;
   const oncekiHakedis = parseFloat(proje.oncekiHakedisTutar) || 0;
   const buHakedis = toplamTutar - oncekiHakedis;
-  const kdvOrani = parseFloat(proje.kdvOrani) || 20;
+  
+  const basitUsul = typeof isFirmaBasitUsul === 'function' ? isFirmaBasitUsul(kazanan.ad, referans) : false;
+  const kdvOrani = basitUsul ? 0 : (parseFloat(proje.kdvOrani) || 20);
   const kdv = buHakedis * kdvOrani / 100;
   const tahakkuk = buHakedis + kdv;
 

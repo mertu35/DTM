@@ -4000,7 +4000,8 @@ function renderProjeOzetPage() {
     const miktar = parseFloat(kalemler[i]?.miktar) || 1;
     return t + (parseFloat(f) || 0) * miktar;
   }, 0) : 0;
-  const kdvTutar = sozlesmeKdvsiz * (p.kdvOrani / 100);
+  const basitUsul = kazananFirma && typeof isFirmaBasitUsul === 'function' ? isFirmaBasitUsul(kazananFirma.ad, referans) : false;
+  const kdvTutar = basitUsul ? 0 : sozlesmeKdvsiz * (p.kdvOrani / 100);
   const sozlesmeToplamKdvli = sozlesmeKdvsiz + kdvTutar;
 
   const satir = (label, value) => value ? `<tr><td style="color:#6b7280;padding:8px 12px;font-size:13px;width:45%">${label}</td><td style="padding:8px 12px;font-size:13px;font-weight:500">${value}</td></tr>` : '';
@@ -4077,9 +4078,9 @@ function renderProjeOzetPage() {
         </table>`) : ''}
 
       ${kart('💰 Mali Özet', `<table style="width:100%;border-collapse:collapse">
-        ${satir('Sözleşme Tutarı (KDV Hariç)', sozlesmeKdvsiz > 0 ? formatCurrency(sozlesmeKdvsiz) + ' TL' : '')}
-        ${satir('KDV Tutarı (%' + p.kdvOrani + ')', kdvTutar > 0 ? formatCurrency(kdvTutar) + ' TL' : '')}
-        ${satir('Sözleşme Tutarı (KDV Dahil)', sozlesmeToplamKdvli > 0 ? formatCurrency(sozlesmeToplamKdvli) + ' TL' : '')}
+        ${satir(basitUsul ? 'Sözleşme Tutarı' : 'Sözleşme Tutarı (KDV Hariç)', sozlesmeKdvsiz > 0 ? formatCurrency(sozlesmeKdvsiz) + ' TL' : '')}
+        ${!basitUsul ? satir('KDV Tutarı (%' + p.kdvOrani + ')', kdvTutar > 0 ? formatCurrency(kdvTutar) + ' TL' : '') : ''}
+        ${!basitUsul ? satir('Sözleşme Tutarı (KDV Dahil)', sozlesmeToplamKdvli > 0 ? formatCurrency(sozlesmeToplamKdvli) + ' TL' : '') : ''}
       </table>`)}
 
       ${currentDTMUser?.role === 'gerceklestirmeci' ? (() => {
