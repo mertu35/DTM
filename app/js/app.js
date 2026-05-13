@@ -2343,6 +2343,7 @@ function renderVeriMerkeziPage() {
       <td><input type="text" value="${f.faks || ''}" placeholder="Faks" onchange="onRefChange('firmaList', ${i}, 'faks', this.value)"></td>
       <td><input type="text" value="${f.eposta || ''}" placeholder="E-Posta" onchange="onRefChange('firmaList', ${i}, 'eposta', this.value)"></td>
       <td><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('firmaList', ${i}, 'dogumTarihi', this.value)"></td>
+      <td style="text-align:center"><input type="checkbox" ${f.basitUsul ? 'checked' : ''} onchange="onRefChange('firmaList', ${i}, 'basitUsul', this.checked)"></td>
       <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('firmaList', ${i})">Sil</button></td>
     </tr>`).join('');
 
@@ -2382,10 +2383,10 @@ function renderVeriMerkeziPage() {
       </div>
       <div class="card-body">
         <table class="ref-table">
-          <thead><tr><th>Ad</th><th>Adres</th><th>Tur</th><th>Telefon</th><th>Faks</th><th>E-Posta</th><th>Doğum Tarihi</th><th></th></tr></thead>
+          <thead><tr><th>Ad</th><th>Adres</th><th>Tur</th><th>Telefon</th><th>Faks</th><th>E-Posta</th><th>Doğum Tarihi</th><th>Basit Usul</th><th></th></tr></thead>
           <tbody>${firmaRows}</tbody>
         </table>
-        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('firmaList', {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:''})">+ Ekle</button>
+        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('firmaList', {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:'', basitUsul:false})">+ Ekle</button>
       </div>
     </div>
     ` : ''}
@@ -3542,6 +3543,10 @@ function renderGerceklestirmeciVeriMerkeziPage() {
               <div class="form-group"><label>Faks</label><input type="text" value="${f.faks || ''}" onchange="onRefChange('yukleniciList', ${i}, 'faks', this.value)"></div>
               <div class="form-group"><label>E-Posta</label><input type="text" value="${f.eposta || ''}" onchange="onRefChange('yukleniciList', ${i}, 'eposta', this.value)"></div>
               <div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onRefChange('yukleniciList', ${i}, 'dogumTarihi', this.value)"></div>
+              <div class="form-group" style="grid-column: span 2; display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onRefChange('yukleniciList', ${i}, 'basitUsul', this.checked)">
+                <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:bold; color:var(--primary-color)">Bu Firma/Kişi Basit Usule Tabiidir</label>
+              </div>
             </div>
             <div style="margin-top:10px; text-align:right;">
               <button class="btn btn-danger btn-sm" onclick="onRefDelete('yukleniciList', ${i}); onYukleniciSelect(-1);">Firmayı Sil</button>
@@ -3562,7 +3567,7 @@ window.onYukleniciSelect = function(val) {
 
 window.onYukleniciEkle = function() {
   if(!referans.yukleniciList) referans.yukleniciList = [];
-  referans.yukleniciList.push({ad:'Yeni Firma', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:''});
+  referans.yukleniciList.push({ad:'Yeni Firma', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:'', basitUsul:false});
   dtmSeciliYukleniciIndex = referans.yukleniciList.length - 1;
   saveGlobalReferans(referans);
   document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();

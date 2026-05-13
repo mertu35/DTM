@@ -124,6 +124,20 @@ function normalizeProje(p) {
   return p;
 }
 
+function parseProje(jsonStr) {
+  return normalizeProje(JSON.parse(jsonStr));
+}
+
+function isFirmaBasitUsul(ad, referans) {
+  if (!ad || !referans) return false;
+  const isim = ad.trim().toLowerCase();
+  let found = (referans.yukleniciList || []).find(f => (f.ad||'').trim().toLowerCase() === isim);
+  if (!found) {
+    found = (referans.firmaList || []).find(f => (f.ad||'').trim().toLowerCase() === isim);
+  }
+  return found ? !!found.basitUsul : false;
+}
+
 function loadProje() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {

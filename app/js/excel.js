@@ -274,15 +274,18 @@ function exportTeklifTutanagiExcel(proje, referans) {
     const p1 = parseFloat(f1.fiyatlar[i]) || null;
     const p2 = parseFloat(f2.fiyatlar[i]) || null;
     const p3 = parseFloat(f3.fiyatlar[i]) || null;
+    const f1Basit = isFirmaBasitUsul(f1.ad, referans);
+    const f2Basit = isFirmaBasitUsul(f2.ad, referans);
+    const f3Basit = isFirmaBasitUsul(f3.ad, referans);
     teklifRows += `<tr>
       <td></td>
       <td class="center">${i + 1}</td>
       <td colspan="4">${k.ad || ''}</td>
       <td class="center">${mik ? mik.toLocaleString('tr-TR') : ''}</td>
       <td class="center">${k.birim || ''}</td>
-      ${tdRakam(p1)}<td class="center" style="font-size:8pt">+KDV</td>
-      ${tdRakam(p2)}<td class="center" style="font-size:8pt">+KDV</td>
-      ${tdRakam(p3)}<td class="center" style="font-size:8pt">+KDV</td>
+      ${tdRakam(p1)}<td class="center" style="font-size:8pt">${f1Basit ? '' : '+KDV'}</td>
+      ${tdRakam(p2)}<td class="center" style="font-size:8pt">${f2Basit ? '' : '+KDV'}</td>
+      ${tdRakam(p3)}<td class="center" style="font-size:8pt">${f3Basit ? '' : '+KDV'}</td>
       <td></td><td></td>
       <td></td>
     </tr>`;
@@ -294,6 +297,7 @@ function exportTeklifTutanagiExcel(proje, referans) {
     kalemler.forEach((k, i) => {
       const mik = parseFloat(k.miktar) || 0;
       const fiyat = parseFloat(kazananFirmaObj.fiyatlar[i]) || null;
+      const kazananBasit = isFirmaBasitUsul(kazanan.ad, referans);
       kazananRows += `<tr>
         <td></td>
         <td class="center">${i + 1}</td>
@@ -302,7 +306,7 @@ function exportTeklifTutanagiExcel(proje, referans) {
         <td class="center">${k.birim || ''}</td>
         <td class="center">${i === 0 ? (kazanan.ad || '') : ''}</td>
         <td></td>
-        ${tdRakam(fiyat)}<td class="center" style="font-size:8pt">+KDV</td>
+        ${tdRakam(fiyat)}<td class="center" style="font-size:8pt">${kazananBasit ? '' : '+KDV'}</td>
         <td colspan="2">${i === 0 ? (kazanan.adres || '') : ''}</td>
         <td></td>
       </tr>`;

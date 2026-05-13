@@ -170,6 +170,10 @@ function renderTeklifTutanagi(proje, referans) {
   const kazananTur = kazanan ? getFirmaTur(kazanan.ad) : 'Şirket';
   const kazananKisiMetni = kazananTur === 'Kişi' ? 'kişiden' : 'firmadan';
 
+  const f1Basit = isFirmaBasitUsul(f1.ad, referans);
+  const f2Basit = isFirmaBasitUsul(f2.ad, referans);
+  const f3Basit = isFirmaBasitUsul(f3.ad, referans);
+
   // İlk tablo - Teklif satırları
   let teklifRows = '';
   kalemler.forEach((k, i) => {
@@ -182,14 +186,15 @@ function renderTeklifTutanagi(proje, referans) {
       <td style="padding:6px 4px">${k.ad}</td>
       <td class="merkez">${miktar}</td>
       <td class="merkez">${k.birim}</td>
-      <td class="merkez">${bf1 > 0 ? formatCurrency(bf1) + ' +KDV' : ''}</td>
-      <td class="merkez">${bf2 > 0 ? formatCurrency(bf2) + ' +KDV' : ''}</td>
-      <td class="merkez">${bf3 > 0 ? formatCurrency(bf3) + ' +KDV' : ''}</td>
+      <td class="merkez">${bf1 > 0 ? formatCurrency(bf1) + (f1Basit ? '' : ' +KDV') : ''}</td>
+      <td class="merkez">${bf2 > 0 ? formatCurrency(bf2) + (f2Basit ? '' : ' +KDV') : ''}</td>
+      <td class="merkez">${bf3 > 0 ? formatCurrency(bf3) + (f3Basit ? '' : ' +KDV') : ''}</td>
     </tr>`;
   });
 
   // Kazanan firma bilgileri - tüm kalemler
   let kazananRows = '';
+  const kazananBasit = kazanan ? isFirmaBasitUsul(kazanan.ad, referans) : false;
   if (kazanan) {
     const kazananFirmaFiyatlar = proje.teklifFirmalar[kazananIdx]?.fiyatlar || [];
     kalemler.forEach((k, i) => {
@@ -202,7 +207,7 @@ function renderTeklifTutanagi(proje, referans) {
         <td class="merkez">${miktar}</td>
         <td class="merkez">${k.birim}</td>
         <td class="merkez">${i === 0 ? kazanan.ad : ''}</td>
-        <td class="merkez">${bf > 0 ? formatCurrency(bf) + ' + KDV' : ''}</td>
+        <td class="merkez">${bf > 0 ? formatCurrency(bf) + (kazananBasit ? '' : ' + KDV') : ''}</td>
         <td style="padding:6px 4px">${i === 0 ? kazanan.adres : ''}</td>
       </tr>`;
     });
@@ -644,7 +649,7 @@ function renderBittiTutanagi(proje, referans) {
         <tr><td style="border:none;width:35%;font-weight:bold;padding:1px 0">Yapılan İş / Hizmetin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:1px 0">Yüklenicinin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${kazanan.ad || '-'}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:1px 0">Sözleşme Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
-        <tr><td style="border:none;font-weight:bold;padding:1px 0">Sözleşme Bedeli</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatCurrency(kazanan.toplam)} TL (KDV Hariç)</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:1px 0">Sözleşme Bedeli</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatCurrency(kazanan.toplam)} TL${isFirmaBasitUsul(kazanan.ad, referans) ? '' : ' (KDV Hariç)'}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:1px 0">İş Süresi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${proje.isSuresi} Takvim Günü</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:1px 0">İşe Başlama Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:1px 0">İşin Bitim Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatDate(bitisT)}</td></tr>
