@@ -4135,7 +4135,7 @@ function renderProjeOzetPage() {
 
       ${kart('💰 Mali Özet', `<table style="width:100%;border-collapse:collapse">
         ${satir(basitUsul ? 'Sözleşme Tutarı' : 'Sözleşme Tutarı (KDV Hariç)', sozlesmeKdvsiz > 0 ? formatCurrency(sozlesmeKdvsiz) + ' TL' : '')}
-        ${!basitUsul ? satir('KDV Tutarı (%' + p.kdvOrani + ')', kdvTutar > 0 ? formatCurrency(kdvTutar) + ' TL' : '') : ''}
+        ${basitUsul ? satir('KDV Durumu', '<span style="color:#16a34a;font-weight:600">Basit Usul (KDV Muaf)</span>') : satir('KDV Tutarı (%' + p.kdvOrani + ')', kdvTutar > 0 ? formatCurrency(kdvTutar) + ' TL' : '0,00 TL')}
         ${!basitUsul ? satir('Sözleşme Tutarı (KDV Dahil)', sozlesmeToplamKdvli > 0 ? formatCurrency(sozlesmeToplamKdvli) + ' TL' : '') : ''}
       </table>`)}
 
