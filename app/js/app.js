@@ -4926,18 +4926,6 @@ async function renderHakkindaPage() {
             <li>&#9989; Şirketler için Doğum Tarihi alanı otomatik gizleme</li>
             <li>&#9989; Manuel Kaydet butonu ile veri güvenliği</li>
           </ul>
-        </div>
-      </div>
-
-      <!-- ACİL KURTAR: Firma Listesi -->
-      <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:12px;padding:16px 20px;margin-bottom:16px;">
-        <div style="font-weight:700;font-size:13px;color:#856404;margin-bottom:8px;">⚠️ Firma Listesi Kurtarma</div>
-        <p style="font-size:12px;color:#856404;margin:0 0 12px">Eğer firma listeniz boş görünüyorsa, aşağıdaki butona tıklayarak eski verilerinizi geri yükleyebilirsiniz.</p>
-        <button onclick="kurtarFirmaListesi()" style="padding:8px 18px;background:#f59e0b;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">
-          🔄 Firma Listesini Geri Yükle
-        </button>
-      </div>
-
     </div>`;
 
   // Sayfa açılınca otomatik kontrol et
