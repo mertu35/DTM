@@ -173,8 +173,8 @@ function saveReferans(ref) {
   localStorage.setItem(REF_STORAGE_KEY, JSON.stringify(userRef));
   if (typeof saveReferansToCloud === 'function') {
     saveReferansToCloud(userRef).catch(e => {
-      console.warn('[referans] Buluta kaydedilemedi:', e?.code, e?.message);
-      if (typeof showToast === 'function') showToast('Kişisel verileriniz buluta kaydedilemedi (Yetki Hatası olabilir): ' + e?.message, 'error');
+      console.warn('[Kişisel Referans] Buluta kaydedilemedi:', e?.code, e?.message);
+      if (typeof showToast === 'function') showToast('KİŞİSEL verileriniz buluta kaydedilemedi: ' + e?.message, 'error');
     });
   }
 }
@@ -185,8 +185,8 @@ function saveGlobalReferans(ref) {
   localStorage.setItem(GLOBAL_REF_KEY, JSON.stringify(globalData));
   if (typeof saveGlobalReferansToCloud === 'function') {
     saveGlobalReferansToCloud(globalData).catch(e => {
-      console.warn('[globalReferans] Buluta kaydedilemedi:', e?.code, e?.message);
-      if (typeof showToast === 'function') showToast('Global veriler buluta kaydedilemedi (Yetki Hatası olabilir): ' + e?.message, 'error');
+      console.warn('[Global Referans] Buluta kaydedilemedi:', e?.code, e?.message);
+      if (typeof showToast === 'function') showToast('GLOBAL veriler buluta kaydedilemedi: ' + e?.message, 'error');
     });
   }
 }
