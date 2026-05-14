@@ -2934,7 +2934,13 @@ async function gonderiOnayla(projeId, btn) {
   if (!uid) { showToast('Lütfen bir gerçekleştirmeci seçin.', 'warning'); return; }
   await butonKilitli(btn, 'Gönderiliyor...', async () => {
     try {
-      await gonderiProje(projeId, uid, ad);
+      // Kazanan firmanın basit usul durumunu yakala
+      const p = proje;
+      const kIdx = p.kazananFirmaIndex >= 0 ? p.kazananFirmaIndex : hesaplaKazananFirma(p);
+      const kFirma = p.teklifFirmalar[kIdx];
+      const basitUsul = kFirma ? isFirmaBasitUsul(kFirma.ad, referans) : false;
+
+      await gonderiProje(projeId, uid, ad, basitUsul);
       document.getElementById('gonderiModal')?.remove();
       if (currentCloudProjeId === projeId) currentProjeKilitli = true;
       renderPage();
@@ -4056,7 +4062,7 @@ function renderProjeOzetPage() {
     const miktar = parseFloat(kalemler[i]?.miktar) || 1;
     return t + (parseFloat(f) || 0) * miktar;
   }, 0) : 0;
-  const basitUsul = kazananFirma && typeof isFirmaBasitUsul === 'function' ? isFirmaBasitUsul(kazananFirma.ad, referans) : false;
+  const basitUsul = p.kazananBasitUsul === true || (kazananFirma && typeof isFirmaBasitUsul === 'function' ? isFirmaBasitUsul(kazananFirma.ad, referans) : false);
   const kdvTutar = basitUsul ? 0 : sozlesmeKdvsiz * (p.kdvOrani / 100);
   const sozlesmeToplamKdvli = sozlesmeKdvsiz + kdvTutar;
 

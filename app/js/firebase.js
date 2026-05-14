@@ -151,13 +151,14 @@ async function saveProjeToCloud(projeData) {
 }
 
 // Projeyi gerçekleştirmeciye gönder
-async function gonderiProje(projeId, gerceklestirmeciUid, gerceklestirmeciAd) {
+async function gonderiProje(projeId, gerceklestirmeciUid, gerceklestirmeciAd, kazananBasitUsul = false) {
   await db.collection('projeler').doc(projeId).update({
     status: 'gonderildi',
     gonderildiAt: firebase.firestore.FieldValue.serverTimestamp(),
     gonderildiBy: currentDTMUser?.displayName || '',
     atananGerceklestirmeciUid: gerceklestirmeciUid,
-    atananGerceklestirmeciAd: gerceklestirmeciAd
+    atananGerceklestirmeciAd: gerceklestirmeciAd,
+    kazananBasitUsul: kazananBasitUsul
   });
 }
 

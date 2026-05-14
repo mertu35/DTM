@@ -163,7 +163,7 @@ function loadProje() {
   return getDefaultProje();
 }
 
-const GLOBAL_REF_FIELDS = ['onaylayanList', 'idareList', 'mudurlukler', 'ilceler', 'dtSinirlari', 'yukleniciList', 'firmaList'];
+const GLOBAL_REF_FIELDS = ['onaylayanList', 'idareList', 'mudurlukler', 'ilceler', 'dtSinirlari', 'yukleniciList'];
 const GLOBAL_REF_KEY = 'dtm_global_referans';
 
 function saveReferans(ref) {
