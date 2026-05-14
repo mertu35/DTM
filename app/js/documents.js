@@ -706,7 +706,7 @@ function renderDogrudanTeminOnayBelgesi(proje) {
 
       <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
         ${satir('ALIMI YAPAN İDARENİN ADI', `${proje.idareAdi} (${proje.mudurluk})`)}
-        ${satir('BELGE TARİH VE SAYISI', `${formatDate(proje.dtOnayTarihi)} / ${proje.dtOnayNo ? Number(proje.dtOnayNo).toLocaleString('tr-TR') : '-'}`)}
+        ${satir('BELGE TARİH VE SAYISI', `${formatDate(proje.dtOnayTarihi)} / ${proje.dtOnayNo || '-'}`)}
       </table>
 
       <div style="border:1px solid #000;padding:5px 8px;font-weight:700;font-size:10pt;margin-top:10px;background:#f0f0f0">
@@ -746,7 +746,7 @@ function renderDogrudanTeminOnayBelgesi(proje) {
         <div style="flex:1;padding:10px 14px;text-align:center">
           <div style="font-weight:bold">Uygundur. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</div>
           <div style="margin-top:16px"><strong>${proje.onaylayanAmir.ad}</strong></div>
-          <div style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</div>
+          <div style="font-size:9.5pt;font-weight:bold">${proje.onaylayanAmir.unvan}</div>
         </div>
       </div>
     </div>
