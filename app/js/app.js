@@ -2549,9 +2549,9 @@ function onFirmaFieldChange(list, index, field, value) {
 
 window.kaydetFirmaFormu = function() {
   const isSuperAdmin = currentDTMUser?.role === 'superadmin';
-  if (!isSuperAdmin) {
-    saveReferans(referans);
-  } else {
+  // Firma listesi her zaman private/kullanıcı bazlı olduğu için daima saveReferans çağrılmalı
+  saveReferans(referans);
+  if (isSuperAdmin) {
     saveGlobalReferans(referans);
   }
   showToast("Firma / Kişi bilgileri başarıyla kaydedildi.", "success");
