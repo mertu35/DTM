@@ -4929,6 +4929,15 @@ async function renderHakkindaPage() {
         </div>
       </div>
 
+      <!-- ACİL KURTAR: Firma Listesi -->
+      <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:12px;padding:16px 20px;margin-bottom:16px;">
+        <div style="font-weight:700;font-size:13px;color:#856404;margin-bottom:8px;">⚠️ Firma Listesi Kurtarma</div>
+        <p style="font-size:12px;color:#856404;margin:0 0 12px">Eğer firma listeniz boş görünüyorsa, aşağıdaki butona tıklayarak eski verilerinizi geri yükleyebilirsiniz.</p>
+        <button onclick="kurtarFirmaListesi()" style="padding:8px 18px;background:#f59e0b;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">
+          🔄 Firma Listesini Geri Yükle
+        </button>
+      </div>
+
     </div>`;
 
   // Sayfa açılınca otomatik kontrol et
@@ -4972,3 +4981,38 @@ window.uygulamaGuncelle = function() {
   }, 800);
 };
 
+// ===== ACİL KURTAR: Global'e taşınan firmaList'i kullanıcıya geri yaz =====
+async function kurtarFirmaListesi() {
+  try {
+    const globalSnap = await db.collection('globalReferans').doc('default').get();
+    if (!globalSnap.exists) {
+      showToast('globalReferans bulunamadı.', 'error'); return;
+    }
+    const globalData = globalSnap.data();
+    const firmaListKurtar = globalData.firmaList;
+    if (!firmaListKurtar || firmaListKurtar.length === 0) {
+      showToast('globalReferans içinde firmaList boş veya yok.', 'warning'); return;
+    }
+
+    // Kullanıcının mevcut referansını çek
+    const user = auth.currentUser;
+    const userSnap = await db.collection('referans').doc(user.uid).get();
+    const userData = userSnap.exists ? userSnap.data() : {};
+
+    // firmaList'i kullanıcı referansına ekle
+    await db.collection('referans').doc(user.uid).set({
+      ...userData,
+      firmaList: firmaListKurtar,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Bellekteki referansı da güncelle
+    referans.firmaList = firmaListKurtar;
+
+    showToast(`✅ ${firmaListKurtar.length} firma başarıyla geri yüklendi!`, 'success', 4000);
+    renderPage();
+  } catch(e) {
+    showToast('Kurtarma hatası: ' + (e?.message || e), 'error');
+    console.error('[kurtarFirmaListesi]', e);
+  }
+}
