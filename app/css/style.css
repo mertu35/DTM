@@ -868,6 +868,70 @@ body {
 .stat-card.primary .stat-value { color: var(--primary); }
 .stat-card.warning .stat-value { color: var(--warning); }
 
+/* Ana Sayfa (Home) */
+.home-role-card {
+  background: #f0f7ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.home-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.home-action-card {
+  border-radius: 12px;
+  padding: 28px 24px;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: var(--shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.home-action-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+.home-action-card.primary {
+  background: var(--primary);
+  color: #fff;
+}
+.home-action-card.outline {
+  background: #fff;
+  border: 2px solid var(--gray-200);
+}
+.home-action-card.outline:hover {
+  border-color: var(--primary);
+}
+
+.home-recent-card {
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.home-recent-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  margin: 0 -12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.home-recent-row:hover {
+  background: var(--gray-50);
+  color: var(--primary);
+}
+
 /* Veri Merkezi */
 .ref-table {
   width: 100%;
@@ -1833,6 +1897,20 @@ body.dark textarea::placeholder {
 
 /* Card default */
 body.dark .card {
+  background: var(--dtm-surface);
+  border-color: var(--dtm-border);
+}
+
+/* Ana Sayfa (Home) */
+body.dark .home-role-card {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--dtm-border);
+}
+body.dark .home-action-card.outline {
+  background: var(--dtm-surface);
+  border-color: var(--dtm-border);
+}
+body.dark .home-recent-card {
   background: var(--dtm-surface);
   border-color: var(--dtm-border);
 }

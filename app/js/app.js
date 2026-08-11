@@ -717,24 +717,24 @@ async function renderAnaSayfaPage() {
       </div>
 
       ${roleInfo ? `
-      <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:12px;padding:28px 24px;text-align:center;margin-bottom:32px">
+      <div class="home-role-card" style="margin-bottom:32px">
         <div style="font-size:42px;margin-bottom:12px">${roleInfo.icon}</div>
         <p style="color:var(--gray-700);font-size:14px;line-height:1.6">${roleInfo.mesaj}</p>
       </div>` : `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
-        <div onclick="yeniProjeBaslat()" style="background:var(--primary);color:#fff;border-radius:12px;padding:28px 24px;cursor:pointer;transition:opacity 0.15s;text-align:center" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+      <div class="home-action-grid">
+        <div class="home-action-card primary" onclick="yeniProjeBaslat()">
           <div style="font-size:36px;margin-bottom:10px">📋</div>
           <div style="font-weight:700;font-size:16px;margin-bottom:4px">Yeni Proje</div>
           <div style="font-size:12px;opacity:0.85">Yeni bir proje oluştur</div>
         </div>
-        <div onclick="projeAcSayfasinaGit()" style="background:#fff;border:2px solid var(--gray-200);border-radius:12px;padding:28px 24px;cursor:pointer;transition:border-color 0.15s;text-align:center" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--gray-200)'">
+        <div class="home-action-card outline" onclick="projeAcSayfasinaGit()">
           <div style="font-size:36px;margin-bottom:10px">📂</div>
           <div style="font-weight:700;font-size:16px;margin-bottom:4px;color:var(--gray-800)">Proje Aç</div>
           <div style="font-size:12px;color:var(--gray-500)">Kayıtlı projeleri görüntüle</div>
         </div>
       </div>
 
-      <div style="background:#fff;border:1px solid var(--gray-200);border-radius:12px;overflow:hidden">
+      <div class="home-recent-card">
         <div style="padding:16px 20px;border-bottom:1px solid var(--gray-100);font-weight:600;font-size:14px;color:var(--gray-700)">
           ⏱ Son Projeler
         </div>
@@ -822,7 +822,7 @@ async function renderAnaSayfaPage() {
       const son5 = projeler.slice(0, 5);
       listEl.innerHTML = son5.map(p => {
         const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
-        return `<div onclick="cloudProjeAc('${p.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100);cursor:pointer" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
+        return `<div class="home-recent-row" onclick="cloudProjeAc('${p.id}')" style="border-bottom:1px solid var(--gray-100)">
           <span style="font-weight:500;font-size:13px">${p.locked ? '🔒 ' : ''}${escHtml(p.isAdi || '(İsimsiz)')}</span>
           <span style="font-size:12px;color:var(--gray-400)">${tarih}</span>
         </div>`;
