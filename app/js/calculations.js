@@ -1,14 +1,5 @@
 // ===================== CALCULATIONS.JS =====================
 
-function getAktifKalemSayisi(proje) {
-  if (proje.isTuru === 'Yapım İşi') return 1;
-  let count = 0;
-  for (const k of proje.isKalemleri) {
-    if (k.ad && k.miktar) count++;
-  }
-  return Math.max(count, 1);
-}
-
 function getKalemler(proje) {
   if (proje.isTuru === 'Yapım İşi') {
     return [{ ad: proje.isAdi, miktar: 1, birim: '***' }];
@@ -27,12 +18,15 @@ function hesaplaYMFirmaToplam(firma, kalemler) {
   return toplam;
 }
 
+// Kalem bazlı ortalamaların toplamı olarak hesaplanır (hesaplaYMKalemOrtalama ile aynı yöntem),
+// böylece tutanakta basılan TOPLAM satırı, kendi üstündeki kalem satırlarının toplamına eşit olur.
 function hesaplaYaklasikMaliyet(proje) {
   const kalemler = getKalemler(proje);
-  const toplamlar = proje.ymFirmalar.map(f => hesaplaYMFirmaToplam(f, kalemler));
-  const gecerliToplamlar = toplamlar.filter(t => t > 0);
-  if (gecerliToplamlar.length === 0) return 0;
-  return gecerliToplamlar.reduce((a, b) => a + b, 0) / gecerliToplamlar.length;
+  let toplam = 0;
+  for (let i = 0; i < kalemler.length; i++) {
+    toplam += hesaplaYMKalemOrtalama(proje, i);
+  }
+  return toplam;
 }
 
 function hesaplaYMKalemOrtalama(proje, kalemIndex) {

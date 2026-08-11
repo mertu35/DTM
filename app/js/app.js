@@ -7,6 +7,7 @@ let projeAktif = false;
 let currentProjeKilitli = false;
 let currentProjeBaskaKullanici = false;
 let currentProjeStatus = 'taslak';
+let currentProjeKazananBasitUsul = false; // gönderim anında dondurulan Basit Usul (KDV muafiyet) durumu
 let okunmamiDuyuruSayisi = 0;
 let currentBelgelerProjeId = null;
 let currentGerceklestirmeciBelgelerProjeId = null;
@@ -1089,7 +1090,7 @@ function renderVeriGirisPage() {
           </div>
           <div class="form-group full-width">
             <label>Yapılan İş / Hizmet Adı</label>
-            <input type="text" id="isAdi" value="${proje.isAdi}" onchange="onFieldChange('isAdi', this.value)">
+            <input type="text" id="isAdi" value="${escAttr(proje.isAdi)}" onchange="onFieldChange('isAdi', this.value)">
           </div>
           <div class="form-group full-width" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:16px">
             <div class="form-group">
@@ -1109,7 +1110,7 @@ function renderVeriGirisPage() {
             </div>
             <div class="form-group">
               <label>Şehir</label>
-              <input type="text" id="sehir" value="${proje.sehir}" onchange="onFieldChange('sehir', this.value)">
+              <input type="text" id="sehir" value="${escAttr(proje.sehir)}" onchange="onFieldChange('sehir', this.value)">
             </div>
             <div class="form-group">
               <label>İlçe</label>
@@ -1146,7 +1147,7 @@ function renderVeriGirisPage() {
           </div>
           <div class="form-group">
             <label>Onay Sayısı</label>
-            <input type="text" id="ymOnayNo" value="${proje.ymOnayNo}" onchange="onFieldChange('ymOnayNo', this.value)">
+            <input type="text" id="ymOnayNo" value="${escAttr(proje.ymOnayNo)}" onchange="onFieldChange('ymOnayNo', this.value)">
           </div>
           <div class="form-group" style="grid-column:1/-1">
             <label>Y.M. Tutanak Tarihi</label>
@@ -1187,7 +1188,7 @@ function renderVeriGirisPage() {
           </div>
           <div class="form-group">
             <label>Onay Sayısı</label>
-            <input type="text" id="dtOnayNo" value="${proje.dtOnayNo}" onchange="onFieldChange('dtOnayNo', this.value)">
+            <input type="text" id="dtOnayNo" value="${escAttr(proje.dtOnayNo)}" onchange="onFieldChange('dtOnayNo', this.value)">
           </div>
           <div class="form-group" style="grid-column:1/-1">
             <label>Teklif Tutanağı Tarihi</label>
@@ -1219,15 +1220,15 @@ function renderVeriGirisPage() {
           </div>
           <div class="form-group">
             <label>Yatırım Proje Numarası</label>
-            <input type="text" id="yatirimProjeNo" value="${proje.yatirimProjeNo}" oninput="onFieldChange('yatirimProjeNo', this.value)" placeholder="Varsa giriniz">
+            <input type="text" id="yatirimProjeNo" value="${escAttr(proje.yatirimProjeNo)}" oninput="onFieldChange('yatirimProjeNo', this.value)" placeholder="Varsa giriniz">
           </div>
           <div class="form-group">
             <label>Bütçe Tertibi</label>
-            <input type="text" id="butceTertibi" value="${proje.butceTertibi}" oninput="onFieldChange('butceTertibi', this.value)" placeholder="Örn: 09.1.2.00.000/05/03.8">
+            <input type="text" id="butceTertibi" value="${escAttr(proje.butceTertibi)}" oninput="onFieldChange('butceTertibi', this.value)" placeholder="Örn: 09.1.2.00.000/05/03.8">
           </div>
           <div class="form-group">
             <label>İşin Miktarı</label>
-            <input type="text" id="isMiktari" value="${proje.isTuru === 'Yapım İşi' ? '1 Adet' : (proje.isMiktari || '')}"
+            <input type="text" id="isMiktari" value="${proje.isTuru === 'Yapım İşi' ? '1 Adet' : escAttr(proje.isMiktari || '')}"
               ${proje.isTuru === 'Yapım İşi' ? 'readonly style="background:#f3f4f6"' : ''}
               oninput="onFieldChange('isMiktari', this.value)" placeholder="Örn: 5 Adet">
           </div>
@@ -1264,12 +1265,12 @@ function renderVeriGirisPage() {
         <div class="form-grid">
           <div class="form-group">
             <label>Adı Soyadı</label>
-            <input type="text" id="gerceklestirmeAd" value="${proje.gerceklestirmeGorevlisi?.ad||''}"
+            <input type="text" id="gerceklestirmeAd" value="${escAttr(proje.gerceklestirmeGorevlisi?.ad||'')}"
               oninput="onFieldChange('gerceklestirmeGorevlisi', {ad:this.value,unvan:document.getElementById('gerceklestirmeUnvan').value})">
           </div>
           <div class="form-group">
             <label>Ünvanı</label>
-            <input type="text" id="gerceklestirmeUnvan" value="${proje.gerceklestirmeGorevlisi?.unvan||'Gerçekleştirme Görevlisi'}"
+            <input type="text" id="gerceklestirmeUnvan" value="${escAttr(proje.gerceklestirmeGorevlisi?.unvan||'Gerçekleştirme Görevlisi')}"
               oninput="onFieldChange('gerceklestirmeGorevlisi', {ad:document.getElementById('gerceklestirmeAd').value,unvan:this.value})">
           </div>
         </div>
@@ -1287,12 +1288,12 @@ function renderVeriGirisPage() {
             <label>Amir Adı</label>
             <select id="onaylayanAmir" onchange="onAmirChange(this)">
               <option value="">-- Seçin --</option>
-              ${referans.onaylayanList.filter(o=>o.ad).map(o => `<option value="${o.ad}" ${proje.onaylayanAmir.ad === o.ad ? 'selected' : ''}>${o.ad}</option>`).join('')}
+              ${referans.onaylayanList.filter(o=>o.ad).map(o => `<option value="${escAttr(o.ad)}" ${proje.onaylayanAmir.ad === o.ad ? 'selected' : ''}>${escHtml(o.ad)}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
             <label>Ünvanı</label>
-            <input type="text" id="onaylayanUnvan" value="${proje.onaylayanAmir.unvan}" readonly>
+            <input type="text" id="onaylayanUnvan" value="${escAttr(proje.onaylayanAmir.unvan)}" readonly>
           </div>
         </div>
       </div>
@@ -2043,9 +2044,9 @@ async function readPdfText(file) {
 }
 
 function parseTLTutar(str) {
-  let s = str.replace(/[TLtl\s₺,]/g, ''); // virgülü de kaldır
-  // Türkçe format: "95.000" → nokta binler ayırıcısı (son grup 3 hane)
-  if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  let s = str.replace(/[TLtl\s₺]/g, '');
+  // Türkçe format: nokta binler ayırıcısı, virgül ondalık ayırıcısı → "12.500,00" = 12500.00
+  s = s.replace(/\./g, '').replace(',', '.');
   return parseFloat(s) || 0;
 }
 
@@ -2265,6 +2266,7 @@ async function belgelerProjeAc(projeId) {
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
     currentProjeStatus = doc.status || 'taslak';
+    currentProjeKazananBasitUsul = doc.kazananBasitUsul === true;
     currentBelgelerProjeId = projeId;
     currentBelge = 'yaklasik-maliyet';
     renderPage();
@@ -2816,6 +2818,7 @@ async function dashboardProjeAc(projeId) {
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
     currentProjeStatus = doc.status || 'taslak';
+    currentProjeKazananBasitUsul = doc.kazananBasitUsul === true;
     currentProjeKilitli = true;
     currentProjeBaskaKullanici = false;
     saveProje(proje);
@@ -2836,6 +2839,7 @@ async function cloudProjeAc(projeId) {
     currentCloudProjeId = projeId;
     currentProjeBaskaKullanici = ['admin','superadmin'].includes(currentDTMUser?.role) && doc.userId !== currentDTMUser.uid;
     currentProjeStatus = doc.status || 'taslak';
+    currentProjeKazananBasitUsul = doc.kazananBasitUsul === true;
     const gonderildi = doc.status === 'gonderildi' || doc.status === 'onaylandi';
     currentProjeKilitli = doc.locked === true || currentProjeBaskaKullanici || gonderildi;
     saveProje(proje);
@@ -2934,8 +2938,9 @@ async function gonderiOnayla(projeId, btn) {
   if (!uid) { showToast('Lütfen bir gerçekleştirmeci seçin.', 'warning'); return; }
   await butonKilitli(btn, 'Gönderiliyor...', async () => {
     try {
-      // Kazanan firmanın basit usul durumunu yakala
-      const p = proje;
+      // Kazanan firmanın basit usul durumunu, gönderilen projeye ait veriden yakala
+      const projeDoc = await getProjeFromCloud(projeId);
+      const p = Object.assign(getDefaultProje(), projeDoc.data);
       const kIdx = p.kazananFirmaIndex >= 0 ? p.kazananFirmaIndex : hesaplaKazananFirma(p);
       const kFirma = p.teklifFirmalar[kIdx];
       const basitUsul = kFirma ? isFirmaBasitUsul(kFirma.ad, referans) : false;
@@ -3234,7 +3239,7 @@ async function renderKullaniciYonetimiPage() {
                 <tr>
                   <td>${escHtml(u.displayName || '-')}</td>
                   <td>${escHtml(u.username || '-')}</td>
-                  <td><span class="password-mask" style="font-family:monospace;background:var(--gray-100);padding:3px 6px;border-radius:4px;cursor:pointer;font-size:13px;user-select:none" onclick="this.textContent = this.textContent === '••••••••' ? '${escHtml(u.sifre || 'Bilinmiyor')}' : '••••••••'" title="Görmek için tıkla">••••••••</span></td>
+                  <td><span class="password-mask" style="font-family:monospace;background:var(--gray-100);padding:3px 6px;border-radius:4px;cursor:pointer;font-size:13px;user-select:none" onclick="this.textContent = this.textContent === '••••••••' ? '${escAttr(u.sifre || 'Bilinmiyor')}' : '••••••••'" title="Görmek için tıkla">••••••••</span></td>
                   <td>${u.uid !== currentDTMUser.uid ? `
                     <select onchange="kullaniciRolDegistir('${u.uid}', this.value)" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer">
                       <option value="user" ${u.role === 'user' ? 'selected' : ''}>Kullanıcı</option>
@@ -3303,6 +3308,7 @@ async function kullaniciRolDegistir(uid, yeniRol) {
 async function kullaniciSil(uid, ad) {
   if (!await showConfirm(`"${escHtml(ad)}" kullanıcısı kalıcı olarak silinecek. Emin misiniz?`, 'Sil')) return;
   try {
+    await db.collection('users').doc(uid).collection('secret').doc('info').delete();
     await db.collection('users').doc(uid).delete();
     renderKullaniciYonetimiPage();
   } catch(e) {
@@ -3708,17 +3714,9 @@ function btGuncelle(i, alan, deger) {
 async function renderGerceklestirmeciBelgelerPage() {
   const main = document.getElementById('mainContent');
 
-  // Proje seçiliyse tab'a göre görünümü belirle
+  // Proje seçiliyse belgeler görünümünü göster
   if (currentGerceklestirmeciBelgelerProjeId) {
-    // Onaylı/arşivlenmiş projeler için her zaman belgeler görünümü
-    if (['onaylandi', 'arsivlendi'].includes(currentProjeStatus)) {
-      currentGerceklestirmeciTab = 'belgeler';
-    }
-    if (currentGerceklestirmeciTab === 'belgeler') {
-      renderGerceklestirmeciBelgelerView(main);
-    } else {
-      renderGerceklestirmeciProjeDetay(main);
-    }
+    renderGerceklestirmeciBelgelerView(main);
     return;
   }
 
@@ -3781,123 +3779,6 @@ async function renderGerceklestirmeciBelgelerPage() {
     const listEl = document.getElementById('gerceklestirmeciBelgeList');
     if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${e.message}</div>`;
   }
-}
-
-function renderGerceklestirmeciProjeDetay(main) {
-  // Gerçekleştirme görevlisini oturum açan kullanıcıdan otomatik doldur
-  if (!proje.gerceklestirmeGorevlisi?.ad) {
-    proje.gerceklestirmeGorevlisi = {
-      ad: currentDTMUser?.displayName || currentDTMUser?.username || '',
-      unvan: currentDTMUser?.unvan || 'Gerçekleştirme Görevlisi'
-    };
-  }
-
-  const isMiktariReadonly = proje.isTuru === 'Yapım İşi';
-  const tutar = Number(proje.tahminiMaliyet || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 });
-
-  main.innerHTML = `
-    <div class="page-header" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-      <button onclick="currentGerceklestirmeciBelgelerProjeId=null;renderPage();"
-        style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px;color:var(--gray-600);white-space:nowrap;margin-top:4px">
-        ← Proje Listesi
-      </button>
-      <div>
-        <h2>📋 Proje Detayı</h2>
-        <p style="display:flex;align-items:center;gap:8px">${escHtml(proje.isAdi || '')} ${getStatusBadge(proje.status)}</p>
-      </div>
-    </div>
-
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-header" onclick="toggleCard(this)">
-        <h3>Proje Özeti</h3>
-        <span class="toggle-icon">&#9660;</span>
-      </div>
-      <div class="card-body">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>İş Adı</label>
-            <input type="text" value="${proje.isAdi || ''}" readonly style="background:#f9fafb">
-          </div>
-          <div class="form-group">
-            <label>İş Türü</label>
-            <input type="text" value="${proje.isTuru || ''}" readonly style="background:#f9fafb">
-          </div>
-          <div class="form-group">
-            <label>Tahmini Maliyet (TL)</label>
-            <input type="text" value="${tutar}" readonly style="background:#f9fafb">
-          </div>
-          <div class="form-group">
-            <label>Birim</label>
-            <input type="text" value="${proje.birim || ''}" readonly style="background:#f9fafb">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" style="margin-bottom:80px">
-      <div class="card-header" onclick="toggleCard(this)">
-        <h3>Onay Belgesi Bilgileri</h3>
-        <span class="toggle-icon">&#9660;</span>
-      </div>
-      <div class="card-body">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Kullanılabilir Ödenek Tutarı (TL)</label>
-            <input type="number" id="gc_odenek" value="${proje.odenek || ''}" placeholder="0.00">
-          </div>
-          <div class="form-group">
-            <label>Yatırım Proje Numarası</label>
-            <input type="text" id="gc_yatirimProjeNo" value="${proje.yatirimProjeNo || ''}" placeholder="Varsa giriniz">
-          </div>
-          <div class="form-group">
-            <label>Bütçe Tertibi</label>
-            <select id="gc_butceTertibi">
-              <option value="">-- Seçin --</option>
-              ${(referans.butceTertibiList || []).map(bt => { const no = typeof bt === 'string' ? bt : bt.no; const ac = typeof bt === 'string' ? '' : bt.aciklama; return `<option value="${no}" ${proje.butceTertibi === no ? 'selected' : ''}>${no}${ac ? ' — ' + ac : ''}</option>`; }).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label>İşin Miktarı</label>
-            <input type="text" id="gc_isMiktari" value="${isMiktariReadonly ? '1 Adet' : (proje.isMiktari || '')}"
-              ${isMiktariReadonly ? 'readonly style="background:#f3f4f6"' : ''} placeholder="Örn: 5 Adet">
-          </div>
-          <div class="form-group">
-            <label>Avans Verilecek mi</label>
-            <select id="gc_avansVar">
-              <option value="Hayır" ${(proje.avansVar || 'Hayır') === 'Hayır' ? 'selected' : ''}>Hayır</option>
-              <option value="Evet" ${proje.avansVar === 'Evet' ? 'selected' : ''}>Evet</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Fiyat Farkı Uygulanacak mı</label>
-            <select id="gc_fiyatFarkiVar">
-              <option value="Hayır" ${(proje.fiyatFarkiVar || 'Hayır') === 'Hayır' ? 'selected' : ''}>Hayır</option>
-              <option value="Evet" ${proje.fiyatFarkiVar === 'Evet' ? 'selected' : ''}>Evet</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Şartname Düzenlenecek mi</label>
-            <select id="gc_sartnameVar">
-              <option value="Düzenlenecek" ${(proje.sartnameVar || 'Düzenlenecek') === 'Düzenlenecek' ? 'selected' : ''}>Düzenlenecek</option>
-              <option value="Düzenlenmeyecek" ${proje.sartnameVar === 'Düzenlenmeyecek' ? 'selected' : ''}>Düzenlenmeyecek</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Sözleşme Düzenlenecek mi</label>
-            <select id="gc_sozlesmeVar">
-              <option value="Düzenlenecek" ${(proje.sozlesmeVar || 'Düzenlenecek') === 'Düzenlenecek' ? 'selected' : ''}>Düzenlenecek</option>
-              <option value="Düzenlenmeyecek" ${proje.sozlesmeVar === 'Düzenlenmeyecek' ? 'selected' : ''}>Düzenlenmeyecek</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid #e5e7eb;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:100;box-shadow:0 -2px 8px rgba(0,0,0,0.06)">
-      <button class="btn btn-primary" onclick="gcOnayBilgiKaydet()">💾 Kaydet</button>
-      <button class="btn btn-secondary" onclick="currentGerceklestirmeciTab='belgeler';renderPage();">📄 Belgeleri Görüntüle →</button>
-    </div>
-  `;
 }
 
 function renderGerceklestirmeciBelgelerView(main) {
@@ -4001,6 +3882,7 @@ async function gerceklestirmeciBelgelerProjeAc(projeId, readOnly = false) {
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
     currentProjeStatus = doc.status || 'onaylandi';
+    currentProjeKazananBasitUsul = doc.kazananBasitUsul === true;
     currentGerceklestirmeciBelgelerProjeId = projeId;
     currentGerceklestirmeciBelge = 'dt-onay-belgesi';
     currentGerceklestirmeciReadOnly = readOnly;
@@ -4062,7 +3944,7 @@ function renderProjeOzetPage() {
     const miktar = parseFloat(kalemler[i]?.miktar) || 1;
     return t + (parseFloat(f) || 0) * miktar;
   }, 0) : 0;
-  const basitUsul = p.kazananBasitUsul === true || (kazananFirma && typeof isFirmaBasitUsul === 'function' ? isFirmaBasitUsul(kazananFirma.ad, referans) : false);
+  const basitUsul = currentProjeKazananBasitUsul === true || (kazananFirma && typeof isFirmaBasitUsul === 'function' ? isFirmaBasitUsul(kazananFirma.ad, referans) : false);
   const kdvTutar = basitUsul ? 0 : sozlesmeKdvsiz * (p.kdvOrani / 100);
   const sozlesmeToplamKdvli = sozlesmeKdvsiz + kdvTutar;
 
@@ -4473,6 +4355,7 @@ async function onayliBelgelerProjeAc(projeId) {
     proje = Object.assign(getDefaultProje(), doc.data);
     currentCloudProjeId = projeId;
     currentProjeStatus = doc.status || 'onaylandi';
+    currentProjeKazananBasitUsul = doc.kazananBasitUsul === true;
     currentOnayliBelgelerProjeId = projeId;
     renderPage();
   } catch(e) {

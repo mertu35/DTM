@@ -49,9 +49,9 @@ async function createDTMUser(username, password, displayName, role) {
       username: username.toLowerCase().trim(),
       displayName,
       role: role || 'user',
-      sifre: password,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    await db.collection('users').doc(cred.user.uid).collection('secret').doc('info').set({ sifre: password });
     await secondaryApp.auth().signOut();
     return cred.user.uid;
   } finally {
@@ -59,10 +59,15 @@ async function createDTMUser(username, password, displayName, role) {
   }
 }
 
-// Tüm kullanıcıları getir (admin)
+// Tüm kullanıcıları getir (admin) - şifreler ayrı korumalı alt-koleksiyondan birleştirilir
 async function getAllUsers() {
   const snap = await db.collection('users').orderBy('displayName').get();
-  return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+  const users = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+  await Promise.all(users.map(async u => {
+    const secretSnap = await db.collection('users').doc(u.uid).collection('secret').doc('info').get();
+    u.sifre = secretSnap.data()?.sifre;
+  }));
+  return users;
 }
 
 // Kullanıcı şifresini güncelle (admin)
@@ -85,7 +90,7 @@ async function changePassword(mevcutSifre, yeniSifre) {
   const credential = firebase.auth.EmailAuthProvider.credential(user.email, mevcutSifre);
   await user.reauthenticateWithCredential(credential);
   await user.updatePassword(yeniSifre);
-  await db.collection('users').doc(user.uid).update({ sifre: yeniSifre });
+  await db.collection('users').doc(user.uid).collection('secret').doc('info').set({ sifre: yeniSifre });
 }
 
 // Son giriş tarihini Firestore'a kaydet
