@@ -117,12 +117,13 @@ body {
   border: 1px solid var(--gray-600);
   color: var(--gray-400);
   border-radius: 6px;
-  padding: 5px 9px;
+  padding: 6px;
   cursor: pointer;
-  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   transition: all 0.15s;
-  transform: rotate(90deg);
 }
 .btn-logout:hover {
   background: var(--danger);
@@ -532,8 +533,14 @@ body {
 
 .nav-item .nav-icon {
   width: 20px;
-  text-align: center;
-  font-size: 16px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.nav-item .nav-icon svg {
+  display: block;
 }
 
 /* Main content */

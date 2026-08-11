@@ -37,10 +37,10 @@ function getStatusBadge(status) {
 // ===== TOAST BİLDİRİM SİSTEMİ =====
 function showToast(mesaj, tip = 'success', sure = 3000) {
   const renkler = {
-    success: { bg: '#065f46', border: '#059669', icon: '✓' },
-    error:   { bg: '#991b1b', border: '#dc2626', icon: '✕' },
-    warning: { bg: '#92400e', border: '#d97706', icon: '⚠' },
-    info:    { bg: '#1e3a5f', border: '#1a56db', icon: 'ℹ' }
+    success: { bg: '#065f46', border: '#059669', icon: typeof getIcon === 'function' ? getIcon('check', 16) : '✓' },
+    error:   { bg: '#991b1b', border: '#dc2626', icon: typeof getIcon === 'function' ? getIcon('x', 16) : '✕' },
+    warning: { bg: '#92400e', border: '#d97706', icon: typeof getIcon === 'function' ? getIcon('alertTriangle', 16) : '⚠' },
+    info:    { bg: '#1e3a5f', border: '#1a56db', icon: typeof getIcon === 'function' ? getIcon('info', 16) : 'ℹ' }
   };
   const r = renkler[tip] || renkler.success;
 
@@ -702,9 +702,9 @@ async function renderAnaSayfaPage() {
 
   const userRole = currentDTMUser?.role;
   const roleInfoMap = {
-    gerceklestirmeci: { icon: '📋', mesaj: 'Sol menüden <strong>Gönderilen Projeler</strong> bölümüne giderek size iletilen projeleri görüntüleyebilirsiniz.' },
-    admin: { icon: '📁', mesaj: 'Sol menüden <strong>Proje Arşivi</strong> bölümüne giderek onaylanmış tüm projeleri görüntüleyebilirsiniz.' },
-    superadmin: { icon: '⚙️', mesaj: 'Sol menüden <strong>Kullanıcı Yönetimi</strong> bölümüne giderek sistemi yönetebilirsiniz.' }
+    gerceklestirmeci: { icon: typeof getIcon === 'function' ? getIcon('clipboardCheck', 40) : '📋', mesaj: 'Sol menüden <strong>Gönderilen Projeler</strong> bölümüne giderek size iletilen projeleri görüntüleyebilirsiniz.' },
+    admin: { icon: typeof getIcon === 'function' ? getIcon('archive', 40) : '📁', mesaj: 'Sol menüden <strong>Proje Arşivi</strong> bölümüne giderek onaylanmış tüm projeleri görüntüleyebilirsiniz.' },
+    superadmin: { icon: typeof getIcon === 'function' ? getIcon('database', 40) : '⚙️', mesaj: 'Sol menüden <strong>Kullanıcı Yönetimi</strong> bölümüne giderek sistemi yönetebilirsiniz.' }
   };
   const roleInfo = roleInfoMap[userRole];
 
@@ -718,25 +718,25 @@ async function renderAnaSayfaPage() {
 
       ${roleInfo ? `
       <div class="home-role-card" style="margin-bottom:32px">
-        <div style="font-size:42px;margin-bottom:12px">${roleInfo.icon}</div>
+        <div style="margin-bottom:12px;color:var(--primary);display:flex;justify-content:center">${roleInfo.icon}</div>
         <p style="color:var(--gray-700);font-size:14px;line-height:1.6">${roleInfo.mesaj}</p>
       </div>` : `
       <div class="home-action-grid">
         <div class="home-action-card primary" onclick="yeniProjeBaslat()">
-          <div style="font-size:36px;margin-bottom:10px">📋</div>
+          <div style="margin-bottom:10px;display:flex;justify-content:center">${typeof getIcon === 'function' ? getIcon('plusCircle', 36) : '📋'}</div>
           <div style="font-weight:700;font-size:16px;margin-bottom:4px">Yeni Proje</div>
           <div style="font-size:12px;opacity:0.85">Yeni bir proje oluştur</div>
         </div>
         <div class="home-action-card outline" onclick="projeAcSayfasinaGit()">
-          <div style="font-size:36px;margin-bottom:10px">📂</div>
+          <div style="margin-bottom:10px;display:flex;justify-content:center;color:var(--primary)">${typeof getIcon === 'function' ? getIcon('folder', 36) : '📂'}</div>
           <div style="font-weight:700;font-size:16px;margin-bottom:4px;color:var(--gray-800)">Proje Aç</div>
           <div style="font-size:12px;color:var(--gray-500)">Kayıtlı projeleri görüntüle</div>
         </div>
       </div>
 
       <div class="home-recent-card">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--gray-100);font-weight:600;font-size:14px;color:var(--gray-700)">
-          ⏱ Son Projeler
+        <div style="padding:16px 20px;border-bottom:1px solid var(--gray-100);font-weight:600;font-size:14px;color:var(--gray-700);display:flex;align-items:center;gap:8px">
+          ${typeof getIcon === 'function' ? getIcon('calendar', 16) : '⏱'} Son Projeler
         </div>
         <div id="sonProjelerList" style="padding:16px 20px;color:var(--gray-400);font-size:13px;text-align:center">
           Yükleniyor...
