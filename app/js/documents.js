@@ -550,32 +550,32 @@ function renderSozlesme(proje, referans) {
 
       <div class="madde">
         <p><strong>Madde 11- Montaj, İşletmeye Alma, Eğitim, Bakım-Onarım, Yedek Parça Gibi Destek Hizmetlerine Ait Şartlar</strong></p>
-        <p>x</p>
+        <p>${escHtml(proje.sozlesmeOzelMaddeleri?.madde11 || 'x')}</p>
       </div>
 
       <div class="madde">
         <p><strong>Madde 12- Kesin Teminat Miktarı Ve İadesine İlişkin Şartlar</strong></p>
-        <p>x</p>
+        <p>${escHtml(proje.sozlesmeOzelMaddeleri?.madde12 || 'x')}</p>
       </div>
 
       <div class="madde">
         <p><strong>Madde 13- Garanti Ve Bakım, Onarım</strong></p>
-        <p>x</p>
+        <p>${escHtml(proje.sozlesmeOzelMaddeleri?.madde13 || 'x')}</p>
       </div>
 
       <div class="madde">
         <p><strong>Madde 14- Teslim Etme Ve Teslim Alma Şekil Ve Şartları</strong></p>
-        <p>x</p>
+        <p>${escHtml(proje.sozlesmeOzelMaddeleri?.madde14 || 'x')}</p>
       </div>
 
       <div class="madde">
         <p><strong>Madde 15- Gecikme Halinde Alınacak Cezalar</strong></p>
-        <p>İdare tarafından sözleşmenin 17 nci maddesinde belirtilen süre uzatımı halleri hariç, iş zamanında bitirilmediği/mal teslim edilmediği takdirde geçen her takvim günü için Yükleniciye yapılacak ödemelerden sözleşme bedeli üzerinden binde 3 oranında gecikme cezası kesilecektir. Kesilecek toplam ceza tutarı hiçbir şekilde ihale bedelini aşamaz. Gecikme cezası Yükleniciye ayrıca protesto çekmeye gerek kalmaksızın ödemelerden kesilir. Bu cezanın ödemelerden karşılanamaması halinde Yükleniciden ayrıca tahsil edilir. Bu gecikme ihtarın Yükleniciye tebliğinden itibaren 20 günü geçtiği takdirde İdare Sözleşmeyi fesih edecektir.</p>
+        <p>${escHtml(proje.sozlesmeOzelMaddeleri?.madde15 || 'İdare tarafından sözleşmenin 17 nci maddesinde belirtilen süre uzatımı halleri hariç, iş zamanında bitirilmediği/mal teslim edilmediği takdirde geçen her takvim günü için Yükleniciye yapılacak ödemelerden sözleşme bedeli üzerinden binde 3 oranında gecikme cezası kesilecektir. Kesilecek toplam ceza tutarı hiçbir şekilde ihale bedelini aşamaz. Gecikme cezası Yükleniciye ayrıca protesto çekmeye gerek kalmaksızın ödemelerden kesilir. Bu cezanın ödemelerden karşılanamaması halinde Yükleniciden ayrıca tahsil edilir. Bu gecikme ihtarın Yükleniciye tebliğinden itibaren 20 günü geçtiği takdirde İdare Sözleşmeyi fesih edecektir.')}</p>
       </div>
 
       <div class="madde">
         <p><strong>Madde 16- Mücbir Sebepler Ve Süre Uzatımı Verilebilme Şartları</strong></p>
-        <p>Mücbir sebepler dışında yüklenici süre uzatımı talebinde bulunamaz. Mücbir sebepler 4735 sayılı Kamu İhale sözleşmeleri Kanunu'nun 10.Maddesinde belirtilen sebeplerdir.</p>
+        <p>Mücbir sebepler dışında yüklenici süre uzatımı talebinde bulunamaz. Mücbir sebepler 4735 sayılı Kamu İhale sözleşmeleri Kanunu\'nun 10.Maddesinde belirtilen sebeplerdir.</p>
       </div>
 
       <div class="madde">
@@ -595,7 +595,7 @@ function renderSozlesme(proje, referans) {
 
       <div class="madde">
         <p><strong>Madde 20- Diğer Hususlar</strong></p>
-        <p>x</p>
+        <p>${escHtml(proje.sozlesmeOzelMaddeleri?.madde20 || 'x')}</p>
       </div>
 
       <div class="madde">
@@ -744,6 +744,80 @@ function renderBittiTutanagi(proje, referans) {
 
       <div style="margin-top:50px">
         <p style="font-weight:bold;margin-bottom:20px;text-align:left">${dtGorevliler.length === 1 ? 'KONTROL GÖREVLİSİ' : 'KONTROL GÖREVLİLERİ'}</p>
+        <table style="width:100%;border-collapse:collapse">
+          <tr>${gorevliImzalar}</tr>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderMuayeneKabulTutanagi(proje, referans) {
+  const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
+  const kazanan = kazananIdx >= 0 ? getKazananFirma(proje, referans) : { ad: '', toplam: 0 };
+  const bitisT = proje.fiiliBitimTarihi || calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi);
+  const dtGorevliler = getAktifGorevliler(proje.dtGorevliler);
+  const tekGorevli = dtGorevliler.length === 1;
+  const kalemler = getKalemler(proje);
+
+  const gorevliImzalar = dtGorevliler.map(g =>
+    `<td style="border:none;text-align:center;padding-top:0;width:${100 / dtGorevliler.length}%">
+      <strong>${escHtml(g.ad)}</strong><br>
+      <span style="font-size:10pt">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</span>
+    </td>`
+  ).join('');
+
+  let kalemRows = '';
+  kalemler.forEach((k, i) => {
+    const mik = parseFloat(k.miktar) || 0;
+    kalemRows += `<tr>
+      <td class="merkez" style="width:35px">${i + 1}</td>
+      <td>${escHtml(k.ad || '')}</td>
+      <td class="merkez" style="width:70px">${mik ? mik.toLocaleString('tr-TR') : ''}</td>
+      <td class="merkez" style="width:70px">${escHtml(k.birim || '')}</td>
+    </tr>`;
+  });
+
+  return `
+    <div class="belge tutanak" style="font-size:10.5pt">
+      <div style="text-align:center;margin-bottom:10px;line-height:1.4">
+        <p>T.C.<br><strong>${escHtml(proje.idareAdi || 'KARAMAN İL ÖZEL İDARESİ')}</strong><br>${escHtml((proje.mudurluk || '').toLocaleUpperCase('tr-TR'))}</p>
+      </div>
+
+      <h2 class="belge-baslik" style="font-size:13pt;text-align:center;margin-bottom:14px">MUAYENE VE KABUL KOMİSYONU TUTANAĞI</h2>
+
+      <table style="width:100%;border-collapse:collapse;margin:10px 0;font-size:10.5pt">
+        <tr><td style="border:none;width:32%;font-weight:bold;padding:2px 0">İşin / Mal / Hizmetin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${escHtml((proje.isAdi || '').toLocaleUpperCase('tr-TR'))}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:2px 0">Yüklenici Firma / Kişi</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${escHtml(kazanan.ad || '-')}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:2px 0">Sözleşme / Sipariş Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:2px 0">Sözleşme / Sipariş Bedeli</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${formatCurrency(kazanan.toplam)} TL${isFirmaBasitUsul(kazanan.ad, referans) ? '' : ' (KDV Hariç)'}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:2px 0">Teslim Edilme / Bitiş Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${formatDate(bitisT)}</td></tr>
+      </table>
+
+      ${kalemler.length > 0 ? `
+      <div style="margin:12px 0">
+        <p style="font-weight:bold;margin-bottom:4px;font-size:10pt">TESLİM ALINAN MAL / HİZMET KALEMLERİ:</p>
+        <table class="veri-tablo" style="font-size:9pt;margin-bottom:0">
+          <thead>
+            <tr>
+              <th style="width:35px">S.NO</th>
+              <th>MAL / HİZMETİN ADI VE NİTELİĞİ</th>
+              <th style="width:70px">MİKTARI</th>
+              <th style="width:70px">BİRİMİ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${kalemRows}
+          </tbody>
+        </table>
+      </div>` : ''}
+
+      <div style="margin:20px 0;text-align:justify;line-height:1.6;font-size:10.5pt;text-indent:2em">
+        Yukarıda niteliği ve miktarı belirtilen mal / hizmet, yüklenici tarafından süresi içerisinde idaremize eksiksiz ve teknik şartnamesine, sözleşmesine / siparişine uygun olarak teslim edilmiş olup, ${formatDate(bitisT)} tarihinde yerinde yapılan muayene, kontrol ve incelemeler sonucunda KABULÜNE ${tekGorevli ? 'tarafımca' : 'tarafımızca'} karar verilerek iş bu Muayene ve Kabul Tutanağı tanzim edilmiştir.
+      </div>
+
+      <div style="margin-top:35px;page-break-inside:avoid">
+        <p style="font-weight:bold;margin-bottom:15px;text-align:left">${tekGorevli ? 'MUAYENE VE KABUL GÖREVLİSİ' : 'MUAYENE VE KABUL KOMİSYONU'}</p>
         <table style="width:100%;border-collapse:collapse">
           <tr>${gorevliImzalar}</tr>
         </table>

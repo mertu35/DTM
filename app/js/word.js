@@ -2,7 +2,7 @@
 // Word çıktısı: HTML-to-DOC yöntemi
 // HTML formatındaki metni Microsoft Word belgesi olarak (.doc) indirir.
 
-const WORD_DESTEKLI_BELGELER = ['sozlesme', 'teknik-sartname', 'hakedis-raporu', 'bitti-tutanagi'];
+const WORD_DESTEKLI_BELGELER = ['sozlesme', 'teknik-sartname', 'hakedis-raporu', 'bitti-tutanagi', 'muayene-kabul'];
 
 // ── HTML tablosunu/metnini .doc olarak indir ──
 function htmlIndirDoc(htmlStr, dosyaAdi) {
@@ -116,6 +116,10 @@ function belgeIdindenWordUret(belgeId, proje, referans) {
     case 'bitti-tutanagi':
       icerik = renderBittiTutanagi(proje, referans);
       dosyaAdi = `Bitti Tutanağı - ${proje.isAdi || 'Proje'}`;
+      break;
+    case 'muayene-kabul':
+      icerik = renderMuayeneKabulTutanagi(proje, referans);
+      dosyaAdi = `Muayene ve Kabul Tutanağı - ${proje.isAdi || 'Proje'}`;
       break;
     default:
       return false;

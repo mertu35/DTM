@@ -100,6 +100,7 @@ function getDefaultProje() {
     sartnameVar: 'Düzenlenecek',
     teknikSartnameMetni: '',
     sozlesmeVar: 'Düzenlenecek',
+    sozlesmeOzelMaddeleri: {},
     gerceklestirmeGorevlisi: { ad: '', unvan: 'Gerçekleştirme Görevlisi' },
     oncekiHakedisTutar: 0,
     fiyatFarki: 0,

@@ -138,12 +138,16 @@ function acBelgeIndirModal() {
   const mevcut = document.getElementById('dtmBelgeIndirModal');
   if (mevcut) mevcut.remove();
 
+  const isMalVeyaHizmet = proje.isTuru === 'Mal Alımı' || proje.isTuru === 'Hizmet Alımı' || proje.isTuru === 'Danışmanlık';
+  const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
+  const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
+
   const belgeler = [
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
     { id: 'teknik-sartname', ad: 'Teknik Şartname', excel: false, word: true },
     { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true },
-    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false, word: true },
+    { id: sonTutanakId, ad: sonTutanakAd, excel: false, word: true },
     { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
   ];
 
@@ -219,7 +223,7 @@ function acBelgeIndirModal() {
     const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')]
       .filter(cb => cb.dataset.word === 'true')
       .map(cb => cb.value);
-    if (!secilen.length) { showToast('Word desteği olan belge seçilmedi (Sözleşme veya Hakediş Raporu)', 'warning'); return; }
+    if (!secilen.length) { showToast('Word desteği olan belge seçilmedi', 'warning'); return; }
     overlay.remove();
     secilen.forEach(belgeId => belgeIdindenWordUret(belgeId, proje, referans));
     showToast(`${secilen.length} belge Word olarak indirildi.`, 'success');
@@ -235,6 +239,7 @@ async function cokluBelgeIndir(secilen) {
     'teknik-sartname':  { render: () => renderTeknikSartname(proje, referans), landscape: false },
     'sozlesme':         { render: () => renderSozlesme(proje, referans), landscape: false, sozlesme: true },
     'bitti-tutanagi':   { render: () => renderBittiTutanagi(proje, referans), landscape: false },
+    'muayene-kabul':    { render: () => renderMuayeneKabulTutanagi(proje, referans), landscape: false },
     'hakedis-raporu':   { render: () => renderHakedisRaporu(proje, referans), landscape: false }
   };
 
@@ -314,13 +319,17 @@ function acGerceklestirmeciIndirModal() {
   const mevcut = document.getElementById('dtmBelgeIndirModal');
   if (mevcut) mevcut.remove();
 
+  const isMalVeyaHizmet = proje.isTuru === 'Mal Alımı' || proje.isTuru === 'Hizmet Alımı' || proje.isTuru === 'Danışmanlık';
+  const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
+  const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
+
   const belgeler = [
     { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi', excel: false, word: false },
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
     { id: 'teknik-sartname', ad: 'Teknik Şartname', excel: false, word: true },
     { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true },
-    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false, word: true },
+    { id: sonTutanakId, ad: sonTutanakAd, excel: false, word: true },
     { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
   ];
 
@@ -390,7 +399,7 @@ function acGerceklestirmeciIndirModal() {
     const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')]
       .filter(cb => cb.dataset.word === 'true')
       .map(cb => cb.value);
-    if (!secilen.length) { showToast('Word desteği olan belge seçilmedi (Sözleşme veya Hakediş Raporu)', 'warning'); return; }
+    if (!secilen.length) { showToast('Word desteği olan belge seçilmedi', 'warning'); return; }
     overlay.remove();
     secilen.forEach(belgeId => belgeIdindenWordUret(belgeId, proje, referans));
     showToast(`${secilen.length} belge Word olarak indirildi.`, 'success');
@@ -407,6 +416,7 @@ function cokluGerceklestirmeciBelgeIndir(secilen) {
     'teknik-sartname':  { render: () => renderTeknikSartname(proje, referans), landscape: false },
     'sozlesme':         { render: () => renderSozlesme(proje, referans), landscape: false },
     'bitti-tutanagi':   { render: () => renderBittiTutanagi(proje, referans), landscape: false },
+    'muayene-kabul':    { render: () => renderMuayeneKabulTutanagi(proje, referans), landscape: false },
     'hakedis-raporu':   { render: () => renderHakedisRaporu(proje, referans), landscape: false }
   };
 
@@ -2223,14 +2233,21 @@ async function renderBelgelerPage() {
   }
 
   // DURUM 2: Proje seçili → belge tab'larını göster
+  const isMalVeyaHizmet = proje.isTuru === 'Mal Alımı' || proje.isTuru === 'Hizmet Alımı' || proje.isTuru === 'Danışmanlık';
+  const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
+  const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
+
   const belgeler = [
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
     { id: 'teknik-sartname', ad: 'Teknik Şartname' },
     { id: 'sozlesme', ad: 'Sözleşme' },
-    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı' },
+    { id: sonTutanakId, ad: sonTutanakAd },
     { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
   ];
+
+  if (currentBelge === 'bitti-tutanagi' && isMalVeyaHizmet) currentBelge = 'muayene-kabul';
+  if (currentBelge === 'muayene-kabul' && !isMalVeyaHizmet) currentBelge = 'bitti-tutanagi';
 
   const tabs = belgeler.map(b =>
     `<div class="belge-tab ${currentBelge === b.id ? 'active' : ''}" onclick="currentBelge='${b.id}'; renderPage();">${b.ad}</div>`
@@ -2243,6 +2260,7 @@ async function renderBelgelerPage() {
     case 'teknik-sartname': belgeHTML = renderTeknikSartname(proje, referans); break;
     case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
     case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
+    case 'muayene-kabul': belgeHTML = renderMuayeneKabulTutanagi(proje, referans); break;
     case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
   }
 
@@ -2266,6 +2284,14 @@ async function renderBelgelerPage() {
           onmouseover="this.style.background='#d97706'" onmouseout="this.style.background='#f59e0b'">
           <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           Şartname Metnini Düzenle
+        </button>
+      ` : ''}
+      ${currentBelge === 'sozlesme' ? `
+        <button onclick="acSozlesmeMaddeleriDuzenleModal()"
+          style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
+          onmouseover="this.style.background='#d97706'" onmouseout="this.style.background='#f59e0b'">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Sözleşme Maddelerini Düzenle
         </button>
       ` : ''}
       <button onclick="yazdirBelge()"
@@ -2299,6 +2325,92 @@ async function belgelerProjeAc(projeId) {
   } catch(e) {
     showToast('Proje yüklenemedi: ' + e.message, 'error');
   }
+}
+
+function acSozlesmeMaddeleriDuzenleModal() {
+  if (!proje) return;
+  if (!proje.sozlesmeOzelMaddeleri) proje.sozlesmeOzelMaddeleri = {};
+  const o = proje.sozlesmeOzelMaddeleri;
+
+  const mevcut = document.getElementById('dtmSozlesmeModal');
+  if (mevcut) mevcut.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'dtmSozlesmeModal';
+  overlay.className = 'dtm-modal-overlay';
+  overlay.innerHTML = `
+    <div class="dtm-modal" style="max-width:720px;width:95%">
+      <div class="dtm-modal-header" style="display:flex;justify-content:space-between;align-items:center">
+        <h3>✏️ Sözleşme Maddelerini Düzenle</h3>
+        <button type="button" class="btn btn-ghost btn-sm" id="dtmSozlesmeKapatX" style="font-size:18px">&times;</button>
+      </div>
+      <div class="dtm-modal-body" style="padding:16px 20px;max-height:75vh;overflow-y:auto">
+        <p style="font-size:12px;color:var(--gray-500);margin-bottom:14px">
+          Sözleşmedeki özel şartları ve ilgili maddeleri ihtiyacınıza göre düzenleyebilirsiniz. (Boş bırakılan veya 'x' olan maddeler standart kalır).
+        </p>
+
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="font-weight:600;font-size:13px;display:block;margin-bottom:4px">Madde 11 - Montaj, İşletmeye Alma, Eğitim, Bakım-Onarım Şartları</label>
+          <input type="text" id="sz_m11" value="${escAttr(o.madde11 || 'x')}" style="width:100%;padding:8px;border:1px solid var(--gray-300);border-radius:6px">
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="font-weight:600;font-size:13px;display:block;margin-bottom:4px">Madde 12 - Kesin Teminat Miktarı Ve İadesine İlişkin Şartlar</label>
+          <input type="text" id="sz_m12" value="${escAttr(o.madde12 || 'x')}" style="width:100%;padding:8px;border:1px solid var(--gray-300);border-radius:6px">
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="font-weight:600;font-size:13px;display:block;margin-bottom:4px">Madde 13 - Garanti Ve Bakım, Onarım</label>
+          <input type="text" id="sz_m13" value="${escAttr(o.madde13 || 'x')}" style="width:100%;padding:8px;border:1px solid var(--gray-300);border-radius:6px">
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="font-weight:600;font-size:13px;display:block;margin-bottom:4px">Madde 14 - Teslim Etme Ve Teslim Alma Şekil Ve Şartları</label>
+          <input type="text" id="sz_m14" value="${escAttr(o.madde14 || 'x')}" style="width:100%;padding:8px;border:1px solid var(--gray-300);border-radius:6px">
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="font-weight:600;font-size:13px;display:block;margin-bottom:4px">Madde 15 - Gecikme Halinde Alınacak Cezalar</label>
+          <textarea id="sz_m15" style="width:100%;height:90px;padding:8px;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;font-size:12.5px;line-height:1.5">${escHtml(o.madde15 || 'İdare tarafından sözleşmenin 17 nci maddesinde belirtilen süre uzatımı halleri hariç, iş zamanında bitirilmediği/mal teslim edilmediği takdirde geçen her takvim günü için Yükleniciye yapılacak ödemelerden sözleşme bedeli üzerinden binde 3 oranında gecikme cezası kesilecektir. Kesilecek toplam ceza tutarı hiçbir şekilde ihale bedelini aşamaz. Gecikme cezası Yükleniciye ayrıca protesto çekmeye gerek kalmaksızın ödemelerden kesilir. Bu cezanın ödemelerden karşılanamaması halinde Yükleniciden ayrıca tahsil edilir. Bu gecikme ihtarın Yükleniciye tebliğinden itibaren 20 günü geçtiği takdirde İdare Sözleşmeyi fesih edecektir.')}</textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="font-weight:600;font-size:13px;display:block;margin-bottom:4px">Madde 20 - Diğer Hususlar</label>
+          <textarea id="sz_m20" style="width:100%;height:70px;padding:8px;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;font-size:12.5px;line-height:1.5">${escHtml(o.madde20 || 'x')}</textarea>
+        </div>
+      </div>
+      <div class="dtm-modal-footer" style="padding:14px 20px;display:flex;justify-content:flex-end;gap:10px">
+        <button id="dtmSozlesmeIptalBtn" class="btn btn-outline">İptal</button>
+        <button id="dtmSozlesmeKaydetBtn" class="btn btn-primary">Kaydet & Güncelle</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const kapat = () => overlay.remove();
+  document.getElementById('dtmSozlesmeKapatX').onclick = kapat;
+  document.getElementById('dtmSozlesmeIptalBtn').onclick = kapat;
+
+  document.getElementById('dtmSozlesmeKaydetBtn').onclick = async () => {
+    proje.sozlesmeOzelMaddeleri = {
+      madde11: document.getElementById('sz_m11').value.trim() || 'x',
+      madde12: document.getElementById('sz_m12').value.trim() || 'x',
+      madde13: document.getElementById('sz_m13').value.trim() || 'x',
+      madde14: document.getElementById('sz_m14').value.trim() || 'x',
+      madde15: document.getElementById('sz_m15').value.trim(),
+      madde20: document.getElementById('sz_m20').value.trim() || 'x'
+    };
+    saveProje(proje);
+    if (currentCloudProjeId) {
+      try {
+        await saveProjeToCloud(currentCloudProjeId, proje, currentProjeStatus);
+      } catch(e) {
+        console.warn('Buluta kaydedilemedi:', e);
+      }
+    }
+    showToast("Sözleşme maddeleri başarıyla güncellendi.", "success");
+    kapat();
+    renderPage();
+  };
 }
 
 function acTeknikSartnameDuzenleModal() {
@@ -2375,6 +2487,7 @@ function yazdirBelge() {
     case 'teknik-sartname': html = renderTeknikSartname(proje, referans); break;
     case 'sozlesme': html = renderSozlesme(proje, referans); belgeYazdir(html, false, true); return;
     case 'bitti-tutanagi': html = renderBittiTutanagi(proje, referans); break;
+    case 'muayene-kabul': html = renderMuayeneKabulTutanagi(proje, referans); break;
     case 'hakedis-raporu': html = renderHakedisRaporu(proje, referans); break;
   }
   belgeYazdir(html, landscape);
@@ -2387,6 +2500,7 @@ function pdfIndirBelge() {
     'teknik-sartname': 'Teknik Şartname',
     'sozlesme': 'Sözleşme',
     'bitti-tutanagi': 'Bitti Tutanağı',
+    'muayene-kabul': 'Muayene ve Kabul Tutanağı',
     'hakedis-raporu': 'Hakediş Raporu'
   };
   let html = '';
@@ -2398,6 +2512,7 @@ function pdfIndirBelge() {
     case 'teknik-sartname':  html = renderTeknikSartname(proje, referans);  break;
     case 'sozlesme':         html = renderSozlesme(proje, referans);        sozlesme = true;  break;
     case 'bitti-tutanagi':   html = renderBittiTutanagi(proje, referans);   break;
+    case 'muayene-kabul':    html = renderMuayeneKabulTutanagi(proje, referans); break;
     case 'hakedis-raporu':   html = renderHakedisRaporu(proje, referans);   break;
   }
   const dosyaAdi = `${proje.isAdi || 'Belge'} - ${belgeAdlari[currentBelge] || currentBelge}`;
