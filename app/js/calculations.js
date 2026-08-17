@@ -2,9 +2,18 @@
 
 function getKalemler(proje) {
   if (proje.isTuru === 'Yapım İşi') {
-    return [{ ad: proje.isAdi, miktar: 1, birim: '***' }];
+    return [{ ad: proje.isAdi || 'Yapım İşi', miktar: 1, birim: '***' }];
   }
-  return proje.isKalemleri.filter(k => k.ad && k.miktar);
+  const doldurulanlar = (proje.isKalemleri || []).filter(k => k && (k.ad?.trim() || k.miktar));
+  if (doldurulanlar.length > 0) {
+    return doldurulanlar.map(k => ({
+      ad: k.ad || proje.isAdi || 'Kalem',
+      miktar: parseFloat(k.miktar) || 1,
+      birim: k.birim || 'Adet'
+    }));
+  }
+  // Eğer kullanıcı kalem girmemişse işin adını 1 Adet kalem olarak kabul et
+  return [{ ad: proje.isAdi || 'Mal / Hizmet Alımı', miktar: 1, birim: 'Adet' }];
 }
 
 // Yaklaşık maliyet hesaplama

@@ -1601,8 +1601,11 @@ function onAmirChange(el) {
 function onKalemChange(el) {
   const idx = parseInt(el.dataset.index);
   const sub = el.dataset.sub;
+  if (!proje.isKalemleri) proje.isKalemleri = [];
+  if (!proje.isKalemleri[idx]) proje.isKalemleri[idx] = { ad: '', miktar: '', birim: '' };
   proje.isKalemleri[idx][sub] = el.value;
   autoSave();
+  renderPage();
 }
 
 function onBittiEkChange(el) {
