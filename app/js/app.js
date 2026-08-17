@@ -146,7 +146,7 @@ function acBelgeIndirModal() {
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
     { id: 'teknik-sartname', ad: 'Teknik Şartname', excel: false, word: true },
-    { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true },
+    ...(isMalVeyaHizmet ? [] : [{ id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true }]),
     { id: sonTutanakId, ad: sonTutanakAd, excel: false, word: true },
     { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
   ];
@@ -328,7 +328,7 @@ function acGerceklestirmeciIndirModal() {
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
     { id: 'teknik-sartname', ad: 'Teknik Şartname', excel: false, word: true },
-    { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true },
+    ...(isMalVeyaHizmet ? [] : [{ id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true }]),
     { id: sonTutanakId, ad: sonTutanakAd, excel: false, word: true },
     { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
   ];
@@ -1340,6 +1340,7 @@ function renderVeriGirisPage() {
       </div>
     </div>
 
+    ${proje.isTuru === 'Yapım İşi' ? `
     <!-- TARİHLER -->
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
@@ -1368,7 +1369,7 @@ function renderVeriGirisPage() {
             <input type="date" id="fiiliBitimTarihi" value="${proje.fiiliBitimTarihi}" onchange="onFieldChange('fiiliBitimTarihi', this.value)">
           </div>
           <div class="form-group">
-            <label>${proje.isTuru === 'Yapım İşi' ? 'Bitti Tutanağı Ekleri' : 'Muayene Kabul Ekleri'} <span style="font-weight:400;color:var(--gray-400);font-size:11px">(opsiyonel)</span></label>
+            <label>Bitti Tutanağı Ekleri <span style="font-weight:400;color:var(--gray-400);font-size:11px">(opsiyonel)</span></label>
             <div id="bittiEkleriList">
               ${(Array.isArray(proje.bittiEkleri) ? proje.bittiEkleri : proje.bittiEkleri ? [proje.bittiEkleri] : []).map((ek, i) => `
                 <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
@@ -1386,7 +1387,7 @@ function renderVeriGirisPage() {
           </div>
         </div>
       </div>
-    </div>
+    </div>` : ''}
 
     ${proje.isTuru !== 'Yapım İşi' ? `
     <!-- MUAYENE VE KABUL KOMİSYONU / HEYETİ -->
@@ -2288,13 +2289,14 @@ async function renderBelgelerPage() {
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
     { id: 'teknik-sartname', ad: 'Teknik Şartname' },
-    { id: 'sozlesme', ad: 'Sözleşme' },
+    ...(isMalVeyaHizmet ? [] : [{ id: 'sozlesme', ad: 'Sözleşme' }]),
     { id: sonTutanakId, ad: sonTutanakAd },
     { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
   ];
 
   if (currentBelge === 'bitti-tutanagi' && isMalVeyaHizmet) currentBelge = 'muayene-kabul';
   if (currentBelge === 'muayene-kabul' && !isMalVeyaHizmet) currentBelge = 'bitti-tutanagi';
+  if (currentBelge === 'sozlesme' && isMalVeyaHizmet) currentBelge = 'yaklasik-maliyet';
 
   const tabs = belgeler.map(b =>
     `<div class="belge-tab ${currentBelge === b.id ? 'active' : ''}" onclick="currentBelge='${b.id}'; renderPage();">${b.ad}</div>`
