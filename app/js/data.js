@@ -98,6 +98,7 @@ function getDefaultProje() {
     avansVar: 'Hayır',
     fiyatFarkiVar: 'Hayır',
     sartnameVar: 'Düzenlenecek',
+    teknikSartnameMetni: '',
     sozlesmeVar: 'Düzenlenecek',
     gerceklestirmeGorevlisi: { ad: '', unvan: 'Gerçekleştirme Görevlisi' },
     oncekiHakedisTutar: 0,

@@ -139,11 +139,12 @@ function acBelgeIndirModal() {
   if (mevcut) mevcut.remove();
 
   const belgeler = [
-    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: false, word: false },
-    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: false, word: false },
-    { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: false },
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
+    { id: 'teknik-sartname', ad: 'Teknik Şartname', excel: false, word: true },
+    { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true },
     { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false, word: true },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: false }
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
   ];
 
   const checkboxler = belgeler.map(b => `
@@ -231,6 +232,7 @@ async function cokluBelgeIndir(secilen) {
   const belgeMap = {
     'yaklasik-maliyet': { render: () => renderYaklasikMaliyet(proje, referans), landscape: true },
     'teklif-tutanagi':  { render: () => renderTeklifTutanagi(proje, referans), landscape: true },
+    'teknik-sartname':  { render: () => renderTeknikSartname(proje, referans), landscape: false },
     'sozlesme':         { render: () => renderSozlesme(proje, referans), landscape: false, sozlesme: true },
     'bitti-tutanagi':   { render: () => renderBittiTutanagi(proje, referans), landscape: false },
     'hakedis-raporu':   { render: () => renderHakedisRaporu(proje, referans), landscape: false }
@@ -314,11 +316,12 @@ function acGerceklestirmeciIndirModal() {
 
   const belgeler = [
     { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi', excel: false, word: false },
-    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: false, word: false },
-    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: false, word: false },
-    { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: false },
+    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
+    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
+    { id: 'teknik-sartname', ad: 'Teknik Şartname', excel: false, word: true },
+    { id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true },
     { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı', excel: false, word: true },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: false }
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
   ];
 
   const checkboxler = belgeler.map(b => `
@@ -401,6 +404,7 @@ function cokluGerceklestirmeciBelgeIndir(secilen) {
     'dt-onay-belgesi':  { render: () => renderDogrudanTeminOnayBelgesi(proje), landscape: false },
     'yaklasik-maliyet': { render: () => renderYaklasikMaliyet(proje, referans), landscape: true },
     'teklif-tutanagi':  { render: () => renderTeklifTutanagi(proje, referans), landscape: true },
+    'teknik-sartname':  { render: () => renderTeknikSartname(proje, referans), landscape: false },
     'sozlesme':         { render: () => renderSozlesme(proje, referans), landscape: false },
     'bitti-tutanagi':   { render: () => renderBittiTutanagi(proje, referans), landscape: false },
     'hakedis-raporu':   { render: () => renderHakedisRaporu(proje, referans), landscape: false }
@@ -2222,6 +2226,7 @@ async function renderBelgelerPage() {
   const belgeler = [
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
+    { id: 'teknik-sartname', ad: 'Teknik Şartname' },
     { id: 'sozlesme', ad: 'Sözleşme' },
     { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı' },
     { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
@@ -2235,6 +2240,7 @@ async function renderBelgelerPage() {
   switch (currentBelge) {
     case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
     case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
+    case 'teknik-sartname': belgeHTML = renderTeknikSartname(proje, referans); break;
     case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
     case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
     case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
@@ -2253,7 +2259,15 @@ async function renderBelgelerPage() {
       </div>
     </div>
     <div class="belge-tabs">${tabs}</div>
-    <div class="action-bar">
+    <div class="action-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      ${currentBelge === 'teknik-sartname' ? `
+        <button onclick="acTeknikSartnameDuzenleModal()"
+          style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
+          onmouseover="this.style.background='#d97706'" onmouseout="this.style.background='#f59e0b'">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Şartname Metnini Düzenle
+        </button>
+      ` : ''}
       <button onclick="yazdirBelge()"
         style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
         onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
@@ -2287,6 +2301,64 @@ async function belgelerProjeAc(projeId) {
   }
 }
 
+function acTeknikSartnameDuzenleModal() {
+  if (!proje) return;
+  const mevcutMetin = (proje.teknikSartnameMetni && proje.teknikSartnameMetni.trim()) 
+    ? proje.teknikSartnameMetni 
+    : getDefaultTeknikSartnameMetni(proje);
+
+  const mevcut = document.getElementById('dtmTeknikSartnameModal');
+  if (mevcut) mevcut.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'dtmTeknikSartnameModal';
+  overlay.className = 'dtm-modal-overlay';
+  overlay.innerHTML = `
+    <div class="dtm-modal" style="max-width:680px;width:95%">
+      <div class="dtm-modal-header" style="display:flex;justify-content:space-between;align-items:center">
+        <h3>✏️ Teknik Şartname Maddelerini Düzenle</h3>
+        <button type="button" class="btn btn-ghost btn-sm" id="dtmSartnameKapatX" style="font-size:18px">&times;</button>
+      </div>
+      <div class="dtm-modal-body" style="padding:16px 20px">
+        <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px">
+          Şartnameye eklenecek teknik hükümleri, malzeme standartlarını veya özel şartları aşağıda maddeler halinde düzenleyebilirsiniz.
+        </p>
+        <textarea id="dtmSartnameTextarea" style="width:100%;height:320px;padding:12px;border:1.5px solid var(--gray-300);border-radius:8px;font-family:inherit;font-size:13px;line-height:1.6;box-sizing:border-box;resize:vertical">${escHtml(mevcutMetin)}</textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <button type="button" class="btn btn-outline btn-sm" id="dtmSartnameSifirlaBtn">Varsayılan Şablona Dön</button>
+        </div>
+      </div>
+      <div class="dtm-modal-footer" style="padding:14px 20px;display:flex;justify-content:flex-end;gap:10px">
+        <button id="dtmSartnameIptalBtn" class="btn btn-outline">İptal</button>
+        <button id="dtmSartnameKaydetBtn" class="btn btn-primary">Kaydet & Güncelle</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const textarea = document.getElementById('dtmSartnameTextarea');
+  document.getElementById('dtmSartnameSifirlaBtn').onclick = () => {
+    textarea.value = getDefaultTeknikSartnameMetni(proje);
+  };
+
+  const kapat = () => overlay.remove();
+  document.getElementById('dtmSartnameKapatX').onclick = kapat;
+  document.getElementById('dtmSartnameIptalBtn').onclick = kapat;
+
+  document.getElementById('dtmSartnameKaydetBtn').onclick = async () => {
+    proje.teknikSartnameMetni = textarea.value.trim();
+    saveProje(proje);
+    if (currentCloudProjeId) {
+      try {
+        await saveProjeToCloud(currentCloudProjeId, proje, currentProjeStatus);
+      } catch(e) {
+        console.warn('Buluta kaydedilemedi:', e);
+      }
+    }
+    showToast("Teknik Şartname metni başarıyla güncellendi.", "success");
+    kapat();
+    renderPage();
+  };
+}
 
 function yazdirBelge() {
   let html = '';
@@ -2300,6 +2372,7 @@ function yazdirBelge() {
       html = renderTeklifTutanagi(proje, referans);
       landscape = true;
       break;
+    case 'teknik-sartname': html = renderTeknikSartname(proje, referans); break;
     case 'sozlesme': html = renderSozlesme(proje, referans); belgeYazdir(html, false, true); return;
     case 'bitti-tutanagi': html = renderBittiTutanagi(proje, referans); break;
     case 'hakedis-raporu': html = renderHakedisRaporu(proje, referans); break;
@@ -2311,6 +2384,7 @@ function pdfIndirBelge() {
   const belgeAdlari = {
     'yaklasik-maliyet': 'Yaklaşık Maliyet Tutanağı',
     'teklif-tutanagi': 'Teklif Tutanağı',
+    'teknik-sartname': 'Teknik Şartname',
     'sozlesme': 'Sözleşme',
     'bitti-tutanagi': 'Bitti Tutanağı',
     'hakedis-raporu': 'Hakediş Raporu'
@@ -2321,6 +2395,7 @@ function pdfIndirBelge() {
   switch (currentBelge) {
     case 'yaklasik-maliyet': html = renderYaklasikMaliyet(proje, referans); landscape = true; break;
     case 'teklif-tutanagi':  html = renderTeklifTutanagi(proje, referans);  landscape = true; break;
+    case 'teknik-sartname':  html = renderTeknikSartname(proje, referans);  break;
     case 'sozlesme':         html = renderSozlesme(proje, referans);        sozlesme = true;  break;
     case 'bitti-tutanagi':   html = renderBittiTutanagi(proje, referans);   break;
     case 'hakedis-raporu':   html = renderHakedisRaporu(proje, referans);   break;
@@ -3914,6 +3989,7 @@ function renderGerceklestirmeciBelgelerView(main) {
     { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi' },
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
+    { id: 'teknik-sartname', ad: 'Teknik Şartname' },
     { id: 'sozlesme', ad: 'Sözleşme' },
     { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı' },
     { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
@@ -3929,6 +4005,7 @@ function renderGerceklestirmeciBelgelerView(main) {
     case 'dt-onay-belgesi': belgeHTML = renderDogrudanTeminOnayBelgesi(proje); break;
     case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
     case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
+    case 'teknik-sartname': belgeHTML = renderTeknikSartname(proje, referans); break;
     case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
     case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
     case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
@@ -3947,7 +4024,15 @@ function renderGerceklestirmeciBelgelerView(main) {
       </div>
     </div>
     <div class="belge-tabs">${tabs}</div>
-    <div class="action-bar">
+    <div class="action-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      ${currentGerceklestirmeciBelge === 'teknik-sartname' && !currentGerceklestirmeciReadOnly ? `
+        <button onclick="acTeknikSartnameDuzenleModal()"
+          style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
+          onmouseover="this.style.background='#d97706'" onmouseout="this.style.background='#f59e0b'">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Şartname Metnini Düzenle
+        </button>
+      ` : ''}
       <button onclick="gerceklestirmeciBelgeYazdir()"
         style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
         onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
@@ -4021,6 +4106,7 @@ function gerceklestirmeciBelgeYazdir() {
     case 'dt-onay-belgesi': html = renderDogrudanTeminOnayBelgesi(proje); break;
     case 'yaklasik-maliyet': html = renderYaklasikMaliyet(proje, referans); landscape = true; break;
     case 'teklif-tutanagi': html = renderTeklifTutanagi(proje, referans); landscape = true; break;
+    case 'teknik-sartname': html = renderTeknikSartname(proje, referans); break;
     case 'sozlesme': html = renderSozlesme(proje, referans); belgeYazdir(html, false, true); return;
     case 'bitti-tutanagi': html = renderBittiTutanagi(proje, referans); break;
     case 'hakedis-raporu': html = renderHakedisRaporu(proje, referans); break;
@@ -4033,6 +4119,7 @@ function gerceklestirmeciBelgePdfIndir() {
     'dt-onay-belgesi': 'DT Onay Belgesi',
     'yaklasik-maliyet': 'Yaklaşık Maliyet Tutanağı',
     'teklif-tutanagi': 'Teklif Tutanağı',
+    'teknik-sartname': 'Teknik Şartname',
     'sozlesme': 'Sözleşme',
     'bitti-tutanagi': 'Bitti Tutanağı',
     'hakedis-raporu': 'Hakediş Raporu'
@@ -4044,6 +4131,7 @@ function gerceklestirmeciBelgePdfIndir() {
     case 'dt-onay-belgesi':  html = renderDogrudanTeminOnayBelgesi(proje);  break;
     case 'yaklasik-maliyet': html = renderYaklasikMaliyet(proje, referans); landscape = true; break;
     case 'teklif-tutanagi':  html = renderTeklifTutanagi(proje, referans);  landscape = true; break;
+    case 'teknik-sartname':  html = renderTeknikSartname(proje, referans);  break;
     case 'sozlesme':         html = renderSozlesme(proje, referans);        sozlesme = true;  break;
     case 'bitti-tutanagi':   html = renderBittiTutanagi(proje, referans);   break;
     case 'hakedis-raporu':   html = renderHakedisRaporu(proje, referans);   break;
