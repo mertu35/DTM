@@ -5091,7 +5091,7 @@ async function duyuruSil(duyuruId) {
 }
 
 // ===================== HAKKINDA SAYFASI =====================
-const APP_CURRENT_VERSION = '1.4.0';
+const APP_CURRENT_VERSION = '2.0.0';
 
 async function checkForUpdates(showLoading = false) {
   try {
@@ -5172,18 +5172,20 @@ async function renderHakkindaPage() {
         </div>
       </div>
 
-      <!-- v1.4.0 Değişiklikler -->
+      <!-- v2.0.0 Değişiklikler -->
       <div class="card">
-        <div class="card-header"><h3>&#128221; v1.4.0 Sürüm Notları</h3></div>
+        <div class="card-header"><h3>&#128221; v2.0.0 Büyük Sürüm Notları</h3></div>
         <div class="card-body">
           <ul style="margin:0;padding-left:20px;font-size:14px;line-height:2;">
-            <li>&#9989; Basit Usul mükellefiyet desteği tam entegrasyon</li>
-            <li>&#9989; Teklif, Karar ve Hakediş belgelerinde KDV muafiyeti</li>
-            <li>&#9989; Veri Merkezi firma listesi açılır liste yapısına geçiş</li>
-            <li>&#9989; Firma listesi alfabetik sıralama</li>
-            <li>&#9989; Şirketler için Doğum Tarihi alanı otomatik gizleme</li>
-            <li>&#9989; Manuel Kaydet butonu ile veri güvenliği</li>
+            <li>&#9989; <strong>Teknik Şartname Modülü:</strong> Özel şablon, modal ile madde düzenleme ve otomatik Y.M. görevlileri imza bloğu</li>
+            <li>&#9989; <strong>Muayene ve Kabul Komisyonu Tutanağı:</strong> Mal/Hizmet alımları için dinamik komisyon heyeti, atama oluru ve resmi kabul şablonu</li>
+            <li>&#9989; <strong>Akıllı İş Türü Ayrımı:</strong> Mal/Hizmet alımı ve Yapım İşi için otomatik değişen form alanları ve belge sekmeleri</li>
+            <li>&#9989; <strong>Sözleşme Maddelerini Düzenleme:</strong> Madde 11, 12, 13, 14, 15 ve 20 için dinamik özelleştirme modalı</li>
+            <li>&#9989; <strong>Yazdırma & Ölçekleme Optimizasyonu:</strong> Çıktıların tek sayfaya tam sığması için %95 zoom ve kenar boşluğu ince ayarı</li>
+            <li>&#9989; <strong>Word (.doc) ve PDF İndirme:</strong> Tüm yeni belgelerde tam uyumlu dışa aktarım desteği</li>
           </ul>
+        </div>
+      </div>
     </div>`;
 
   // Sayfa açılınca otomatik kontrol et
