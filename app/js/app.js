@@ -5199,8 +5199,21 @@ window.guncellemeyiKontrolEt = async function() {
     durumEl.style.background = 'var(--gray-50)';
     durumEl.style.borderColor = 'var(--gray-200)';
     durumEl.style.color = 'var(--gray-500)';
-    durumEl.textContent = '⏳ Kontrol ediliyor...';
+    durumEl.textContent = '⏳ Önbellek temizleniyor ve sunucu denetleniyor...';
   }
+
+  try {
+    // Service Worker update'ini tetikle
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const reg of registrations) {
+        await reg.update();
+      }
+    }
+  } catch(e) {
+    console.warn('SW güncelleme hatası:', e);
+  }
+
   const { latestVersion, hasUpdate } = await checkForUpdates(true);
   if (durumEl) {
     if (hasUpdate) {
@@ -5213,20 +5226,41 @@ window.guncellemeyiKontrolEt = async function() {
       durumEl.style.background = '#f0fdf4';
       durumEl.style.borderColor = '#86efac';
       durumEl.style.color = '#166534';
-      durumEl.innerHTML = `&#9989; Uygulamanız güncel! <strong>v${APP_CURRENT_VERSION}</strong> en son sürümdür.`;
-      if (btnUygula) btnUygula.style.display = 'none';
+      durumEl.innerHTML = `&#9989; <strong>Uygulamanız güncel: v${APP_CURRENT_VERSION}</strong><br><span style="font-size:12px;color:var(--gray-500)">Yine de önbelleği sıfırlayıp baştan yüklemek isterseniz aşağıdaki butonu kullanabilirsiniz.</span>`;
+      if (btnUygula) {
+        btnUygula.style.display = 'inline-flex';
+        btnUygula.innerHTML = '🔄 Önbelleği Temizle & Yeniden Yükle';
+      }
     }
   }
 };
 
-window.uygulamaGuncelle = function() {
-  showToast('Güncelleme uygulanıyor, sayfa yenileniyor...', 'success');
-  setTimeout(() => {
+window.uygulamaGuncelle = async function() {
+  showToast('Önbellek temizleniyor, uygulama güncelleniyor...', 'info');
+  
+  try {
+    // 1. Tüm Cache Storage'ı sil
     if ('caches' in window) {
-      caches.keys().then(names => { names.forEach(n => caches.delete(n)); });
+      const names = await caches.keys();
+      await Promise.all(names.map(n => caches.delete(n)));
     }
-    window.location.reload(true);
-  }, 800);
+    // 2. Service worker unregister
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const reg of registrations) {
+        await reg.unregister();
+      }
+    }
+  } catch(e) {
+    console.warn('Cache temizleme hatası:', e);
+  }
+
+  // 3. Tarayıcıyı zorla network'ten yeniden yükle
+  setTimeout(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('t', Date.now());
+    window.location.href = url.toString();
+  }, 500);
 };
 
 // ===== ACİL KURTAR: Global'e taşınan firmaList'i kullanıcıya geri yaz =====
