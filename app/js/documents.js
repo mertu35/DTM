@@ -630,7 +630,7 @@ function renderSozlesme(proje, referans) {
 
 function getDefaultTeknikSartnameMetni(proje) {
   return `1. İŞİN KONUSU VE NİTELİĞİ:
-Bu teknik şartname; ${proje.idareAdi || 'Karaman İl Özel İdaresi'} ${proje.mudurluk || 'Yatırım ve İnşaat Müdürlüğü'} tarafından doğrudan temin usulüyle yaptırılacak olan "${(proje.isAdi || '').toLocaleUpperCase('tr-TR')}" işine ait teknik esasları, malzeme standartlarını ve uygulama şartlarını kapsar.
+Bu teknik şartname; ${proje.idareAdi || 'KARAMAN İL ÖZEL İDARESİ'} ${proje.mudurluk || 'Yatırım ve İnşaat Müdürlüğü'} tarafından doğrudan temin usulüyle yaptırılacak olan "${(proje.isAdi || '').toLocaleUpperCase('tr-TR')}" işine ait teknik esasları, malzeme standartlarını ve uygulama şartlarını kapsar.
 
 2. GENEL TEKNİK ŞARTLAR VE STANDARTLAR:
 2.1. İhale konusu işte kullanılacak tüm malzeme ve ekipmanlar 1. sınıf kalitede ve yürürlükteki Türk Standartları Enstitüsü (TSE) veya uluslararası standartlara (CE, ISO) uygun olacaktır.
@@ -640,31 +640,22 @@ Bu teknik şartname; ${proje.idareAdi || 'Karaman İl Özel İdaresi'} ${proje.m
 3. İŞ SAĞLIĞI VE GÜVENLİĞİ:
 Yüklenici, işin yürütülmesi sırasında 6331 sayılı İş Sağlığı ve Güvenliği Kanunu uyarınca gerekli her türlü emniyet tedbirlerini almakla yükümlüdür. Doğabilecek her türlü kaza ve zarardan Yüklenici doğrudan sorumludur.
 
-4. İŞİN SÜRESİ, TESLİMAT VE KABUL:
-4.1. İşin süresi sözleşme / sipariş tarihinden itibaren ${proje.isSuresi || '30'} takvim günüdür.
-4.2. İmalat veya montaj tamamlandıktan sonra İdarece görevlendirilen Kontrol/Kabul Görevlileri tarafından yerinde gerekli inceleme ve denetimler yapılacak, şartnameye uygun bulunan işler için kabul tutanağı tanzim edilecektir. Uygun bulunmayan kusurlu işler bedelsiz olarak Yüklenici tarafından derhal düzeltilecektir.`;
+4. YAPILACAK İŞLER LİSTESİ:
+
+
+5. İŞİN SÜRESİ, TESLİMAT VE KABUL:
+5.1. İşin süresi sözleşme / sipariş tarihinden itibaren ${proje.isSuresi || '30'} takvim günüdür.
+5.2. İmalat veya montaj tamamlandıktan sonra İdarece görevlendirilen Kontrol/Kabul Görevlileri tarafından yerinde gerekli inceleme ve denetimler yapılacak, şartnameye uygun bulunan işler için kabul tutanağı tanzim edilecektir. Uygun bulunmayan kusurlu işler bedelsiz olarak Yüklenici tarafından derhal düzeltilecektir.`;
 }
 
 function renderTeknikSartname(proje, referans) {
-  const kalemler = getKalemler(proje);
-  const dtGorevliler = getAktifGorevliler(proje.dtGorevliler);
+  const ymGorevliler = getAktifGorevliler(proje.ymGorevliler);
   const metin = (proje.teknikSartnameMetni && proje.teknikSartnameMetni.trim()) 
     ? proje.teknikSartnameMetni 
     : getDefaultTeknikSartnameMetni(proje);
 
-  let kalemRows = '';
-  kalemler.forEach((k, i) => {
-    const mik = parseFloat(k.miktar) || 0;
-    kalemRows += `<tr>
-      <td class="merkez" style="width:35px">${i + 1}</td>
-      <td>${escHtml(k.ad || '')}</td>
-      <td class="merkez" style="width:70px">${mik ? mik.toLocaleString('tr-TR') : ''}</td>
-      <td class="merkez" style="width:70px">${escHtml(k.birim || '')}</td>
-    </tr>`;
-  });
-
-  const gorevliImzalar = dtGorevliler.map(g =>
-    `<div style="text-align:center;flex:1;padding-top:10px">
+  const gorevliImzalar = ymGorevliler.map(g =>
+    `<div style="text-align:left;min-width:180px;padding-top:10px">
       <strong>${escHtml(g.ad)}</strong><br>
       <span style="font-size:9.5pt">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</span>
     </div>`
@@ -701,29 +692,10 @@ function renderTeknikSartname(proje, referans) {
         </tr>
       </table>
 
-      ${kalemler.length > 0 ? `
-      <div style="margin-bottom:14px">
-        <p style="font-weight:bold;margin-bottom:6px">MALZEME / İŞ KALEMLERİ LİSTESİ:</p>
-        <table class="veri-tablo" style="font-size:9pt;margin-bottom:0">
-          <thead>
-            <tr>
-              <th style="width:35px">S.NO</th>
-              <th>İŞ / MAL / HİZMETİN ADI VE NİTELİĞİ</th>
-              <th style="width:70px">MİKTARI</th>
-              <th style="width:70px">BİRİMİ</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${kalemRows}
-          </tbody>
-        </table>
-      </div>` : ''}
-
       <div style="margin-top:14px;line-height:1.6;text-align:justify;white-space:pre-wrap;font-family:inherit">${escHtml(metin)}</div>
 
       <div style="margin-top:40px;page-break-inside:avoid">
-        <p style="font-weight:bold;text-align:center;margin-bottom:10px">TEKNİK ŞARTNAMEYİ HAZIRLAYANLAR</p>
-        <div style="display:flex;justify-content:space-around;gap:20px">
+        <div style="display:flex;justify-content:flex-start;gap:40px;flex-wrap:wrap">
           ${gorevliImzalar}
         </div>
       </div>
