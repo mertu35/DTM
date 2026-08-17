@@ -73,6 +73,10 @@ function getDefaultProje() {
     isSuresi: '',
     fiiliBitimTarihi: '',
     bittiEkleri: [],
+    mkGorevliler: [{ ad: '', unvan: '' }, { ad: '', unvan: '' }, { ad: '', unvan: '' }],
+    mkGorevliSayisi: 1,
+    mkAtamaTarihi: '',
+    mkAtamaSayisi: '',
     isKalemleri: [
       { ad: '', miktar: '', birim: '' },
       { ad: '', miktar: '', birim: '' },

@@ -960,6 +960,24 @@ function renderVeriGirisPage() {
     </div>`).join('');
   const dtEkleBtn = dtSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('dt')" style="margin-top:6px;">+ D.T. Görevlisi Ekle</button>` : '';
 
+  if (!proje.mkGorevliler) proje.mkGorevliler = [{ad:'', unvan:''}, {ad:'', unvan:''}, {ad:'', unvan:''}];
+  const mkSayisi = proje.mkGorevliSayisi || 1;
+  const mkGorevliRows = proje.mkGorevliler.slice(0, mkSayisi).map((g, i) => `
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Muayene Kabul Görevlisi ${i + 1}</label>
+        <select data-field="mkGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'mk')">
+          <option value="">-- Seçin --</option>
+          ${referans.muhendisList.map(m => `<option value="${m.ad}" ${g.ad === m.ad ? 'selected' : ''}>${m.ad}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Ünvanı</label>
+        <input type="text" value="${g.unvan || getUnvanByAd(g.ad, referans)}" readonly>
+      </div>
+    </div>`).join('');
+  const mkEkleBtn = mkSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('mk')" style="margin-top:6px;">+ Muayene Kabul Görevlisi Ekle</button>` : '';
+
   const kalemler = proje.isTuru === 'Yapım İşi' ? '' : proje.isKalemleri.map((k, i) => `
     <tr>
       <td class="merkez">${i + 1}</td>
@@ -1350,7 +1368,7 @@ function renderVeriGirisPage() {
             <input type="date" id="fiiliBitimTarihi" value="${proje.fiiliBitimTarihi}" onchange="onFieldChange('fiiliBitimTarihi', this.value)">
           </div>
           <div class="form-group">
-            <label>Bitti Tutanağı Ekleri <span style="font-weight:400;color:var(--gray-400);font-size:11px">(opsiyonel)</span></label>
+            <label>${proje.isTuru === 'Yapım İşi' ? 'Bitti Tutanağı Ekleri' : 'Muayene Kabul Ekleri'} <span style="font-weight:400;color:var(--gray-400);font-size:11px">(opsiyonel)</span></label>
             <div id="bittiEkleriList">
               ${(Array.isArray(proje.bittiEkleri) ? proje.bittiEkleri : proje.bittiEkleri ? [proje.bittiEkleri] : []).map((ek, i) => `
                 <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
@@ -1369,6 +1387,29 @@ function renderVeriGirisPage() {
         </div>
       </div>
     </div>
+
+    ${proje.isTuru !== 'Yapım İşi' ? `
+    <!-- MUAYENE VE KABUL KOMİSYONU / HEYETİ -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h3>Muayene ve Kabul Komisyonu (Heyeti)</h3>
+        <span class="toggle-icon">&#9660;</span>
+      </div>
+      <div class="card-body">
+        ${mkGorevliRows}
+        ${mkEkleBtn}
+        <div class="form-grid" style="margin-top:14px">
+          <div class="form-group">
+            <label>Komisyon Atama Tarihi</label>
+            <input type="date" id="mkAtamaTarihi" value="${proje.mkAtamaTarihi || ''}" onchange="onFieldChange('mkAtamaTarihi', this.value)">
+          </div>
+          <div class="form-group">
+            <label>Komisyon Atama Olur / Karar Sayısı</label>
+            <input type="text" id="mkAtamaSayisi" value="${escAttr(proje.mkAtamaSayisi || '')}" oninput="onFieldChange('mkAtamaSayisi', this.value)" placeholder="Örn: E-12345678-xxx-987">
+          </div>
+        </div>
+      </div>
+    </div>` : ''}
 
     <!-- İŞ KALEMLERİ -->
     <div class="card">
@@ -1519,8 +1560,10 @@ function onFieldChange(field, value) {
 function onGorevliEkle(tip) {
   if (tip === 'ym') {
     proje.ymGorevliSayisi = Math.min((proje.ymGorevliSayisi || 1) + 1, 3);
-  } else {
+  } else if (tip === 'dt') {
     proje.dtGorevliSayisi = Math.min((proje.dtGorevliSayisi || 1) + 1, 3);
+  } else if (tip === 'mk') {
+    proje.mkGorevliSayisi = Math.min((proje.mkGorevliSayisi || 1) + 1, 3);
   }
   saveProje(proje);
   renderPage();
@@ -1532,8 +1575,11 @@ function onGorevliChange(el, type) {
   const unvan = getUnvanByAd(ad, referans);
   if (type === 'ym') {
     proje.ymGorevliler[idx] = { ad, unvan };
-  } else {
+  } else if (type === 'dt') {
     proje.dtGorevliler[idx] = { ad, unvan };
+  } else if (type === 'mk') {
+    if (!proje.mkGorevliler) proje.mkGorevliler = [{ad:'', unvan:''}, {ad:'', unvan:''}, {ad:'', unvan:''}];
+    proje.mkGorevliler[idx] = { ad, unvan };
   }
   autoSave();
   renderPage();

@@ -756,12 +756,17 @@ function renderMuayeneKabulTutanagi(proje, referans) {
   const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
   const kazanan = kazananIdx >= 0 ? getKazananFirma(proje, referans) : { ad: '', toplam: 0 };
   const bitisT = proje.fiiliBitimTarihi || calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi);
-  const dtGorevliler = getAktifGorevliler(proje.dtGorevliler);
-  const tekGorevli = dtGorevliler.length === 1;
+  
+  // Muayene kabul görevlileri tanımlıysa onları al, yoksa dtGorevliler'e fallback yap
+  const mkGorevlilerRaw = (proje.mkGorevliler && proje.mkGorevliler.some(g => g.ad)) 
+    ? proje.mkGorevliler.slice(0, proje.mkGorevliSayisi || 1)
+    : proje.dtGorevliler;
+  const mkGorevliler = getAktifGorevliler(mkGorevlilerRaw);
+  const tekGorevli = mkGorevliler.length === 1;
   const kalemler = getKalemler(proje);
 
-  const gorevliImzalar = dtGorevliler.map(g =>
-    `<td style="border:none;text-align:center;padding-top:0;width:${100 / dtGorevliler.length}%">
+  const gorevliImzalar = mkGorevliler.map(g =>
+    `<td style="border:none;text-align:center;padding-top:0;width:${100 / mkGorevliler.length}%">
       <strong>${escHtml(g.ad)}</strong><br>
       <span style="font-size:10pt">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</span>
     </td>`
@@ -778,6 +783,10 @@ function renderMuayeneKabulTutanagi(proje, referans) {
     </tr>`;
   });
 
+  const atamaMetni = (proje.mkAtamaTarihi || proje.mkAtamaSayisi) 
+    ? `İdaremizin ${proje.mkAtamaTarihi ? formatDate(proje.mkAtamaTarihi) : '...'} tarihli ve ${escHtml(proje.mkAtamaSayisi || '...')} sayılı görevlendirme oluru gereğince teşekkül eden komisyonumuzca, `
+    : '';
+
   return `
     <div class="belge tutanak" style="font-size:10.5pt">
       <div style="text-align:center;margin-bottom:10px;line-height:1.4">
@@ -792,6 +801,9 @@ function renderMuayeneKabulTutanagi(proje, referans) {
         <tr><td style="border:none;font-weight:bold;padding:2px 0">Sözleşme / Sipariş Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:2px 0">Sözleşme / Sipariş Bedeli</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${formatCurrency(kazanan.toplam)} TL${isFirmaBasitUsul(kazanan.ad, referans) ? '' : ' (KDV Hariç)'}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:2px 0">Teslim Edilme / Bitiş Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${formatDate(bitisT)}</td></tr>
+        ${(proje.mkAtamaTarihi || proje.mkAtamaSayisi) ? `
+        <tr><td style="border:none;font-weight:bold;padding:2px 0">Komisyon Atama Oluru</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${proje.mkAtamaTarihi ? formatDate(proje.mkAtamaTarihi) + ' Tarihli' : ''} ${proje.mkAtamaSayisi ? 've ' + escHtml(proje.mkAtamaSayisi) + ' Sayılı' : ''}</td></tr>
+        ` : ''}
       </table>
 
       ${kalemler.length > 0 ? `
@@ -813,7 +825,7 @@ function renderMuayeneKabulTutanagi(proje, referans) {
       </div>` : ''}
 
       <div style="margin:20px 0;text-align:justify;line-height:1.6;font-size:10.5pt;text-indent:2em">
-        Yukarıda niteliği ve miktarı belirtilen mal / hizmet, yüklenici tarafından süresi içerisinde idaremize eksiksiz ve teknik şartnamesine, sözleşmesine / siparişine uygun olarak teslim edilmiş olup, ${formatDate(bitisT)} tarihinde yerinde yapılan muayene, kontrol ve incelemeler sonucunda KABULÜNE ${tekGorevli ? 'tarafımca' : 'tarafımızca'} karar verilerek iş bu Muayene ve Kabul Tutanağı tanzim edilmiştir.
+        ${atamaMetni}Yukarıda niteliği ve miktarı belirtilen mal / hizmet, yüklenici tarafından süresi içerisinde idaremize eksiksiz ve teknik şartnamesine, sözleşmesine / siparişine uygun olarak teslim edilmiş olup, ${formatDate(bitisT)} tarihinde yerinde yapılan muayene, kontrol ve incelemeler sonucunda KABULÜNE ${tekGorevli ? 'tarafımca' : 'tarafımızca'} karar verilerek iş bu Muayene ve Kabul Tutanağı tanzim edilmiştir.
       </div>
 
       <div style="margin-top:35px;page-break-inside:avoid">
