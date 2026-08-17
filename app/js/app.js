@@ -2374,7 +2374,7 @@ function renderVeriMerkeziPage() {
         <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
           <select style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--gray-300);" onchange="onFirmaListeSelect(this.value)">
             <option value="-1">-- Firma Seçin veya Yeni Ekleyin --</option>
-            ${sortedFirms.map(item => `<option value="${item.i}" ${dtmSeciliFirmaIndex === item.i ? 'selected' : ''}>${item.f.ad}</option>`).join('')}
+            ${sortedFirms.map(item => `<option value="${item.i}" ${dtmSeciliFirmaIndex === item.i ? 'selected' : ''}>${escHtml(item.f.ad || '(İsimsiz Firma)')}</option>`).join('')}
           </select>
           <button class="btn btn-outline" onclick="onFirmaListeEkle()">+ Yeni Ekle</button>
         </div>
@@ -2385,23 +2385,23 @@ function renderVeriMerkeziPage() {
           return `
           <div style="background:var(--gray-50); padding:15px; border-radius:8px; border:1px solid var(--gray-200);">
             <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-              <div class="form-group"><label>Ad</label><input type="text" value="${f.ad}" onchange="onFirmaFieldChange('firmaList', ${i}, 'ad', this.value)"></div>
-              <div class="form-group"><label>Tür</label><select onchange="onFirmaFieldChange('firmaList', ${i}, 'tur', this.value); renderPage('veri-merkezi');">
+              <div class="form-group"><label>Ad <span style="color:var(--danger)">*</span></label><input type="text" id="firmaInputAd_${i}" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" onchange="onFirmaFieldChange('firmaList', ${i}, 'ad', this.value)" oninput="onFirmaFieldChange('firmaList', ${i}, 'ad', this.value)"></div>
+              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select id="firmaInputTur_${i}" onchange="onFirmaFieldChange('firmaList', ${i}, 'tur', this.value); renderPage('veri-merkezi');">
                   <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
-              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${f.adres}" onchange="onFirmaFieldChange('firmaList', ${i}, 'adres', this.value)"></div>
-              <div class="form-group"><label>Telefon</label><input type="text" value="${f.tel}" onchange="onFirmaFieldChange('firmaList', ${i}, 'tel', this.value)"></div>
-              <div class="form-group"><label>Faks</label><input type="text" value="${f.faks || ''}" onchange="onFirmaFieldChange('firmaList', ${i}, 'faks', this.value)"></div>
-              <div class="form-group"><label>E-Posta</label><input type="text" value="${f.eposta || ''}" onchange="onFirmaFieldChange('firmaList', ${i}, 'eposta', this.value)"></div>
-              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onFirmaFieldChange('firmaList', ${i}, 'dogumTarihi', this.value)"></div>`}
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${escAttr(f.adres || '')}" placeholder="Adres giriniz" onchange="onFirmaFieldChange('firmaList', ${i}, 'adres', this.value)"></div>
+              <div class="form-group"><label>Telefon</label><input type="text" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" onchange="onFirmaFieldChange('firmaList', ${i}, 'tel', this.value)"></div>
+              <div class="form-group"><label>Faks</label><input type="text" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" onchange="onFirmaFieldChange('firmaList', ${i}, 'faks', this.value)"></div>
+              <div class="form-group"><label>E-Posta</label><input type="text" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" onchange="onFirmaFieldChange('firmaList', ${i}, 'eposta', this.value)"></div>
+              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${escAttr(f.dogumTarihi || '')}" onchange="onFirmaFieldChange('firmaList', ${i}, 'dogumTarihi', this.value)"></div>`}
               <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
                 <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('firmaList', ${i}, 'basitUsul', this.checked)">
                 <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:bold; color:var(--primary-color)">Bu Firma/Kişi Basit Usule Tabiidir</label>
               </div>
             </div>
             <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
-              <button class="btn btn-primary" onclick="kaydetFirmaFormu()">Kaydet</button>
+              <button class="btn btn-primary" onclick="kaydetFirmaFormu(${i})">Kaydet</button>
               <button class="btn btn-danger btn-sm" onclick="onRefDelete('firmaList', ${i}); onFirmaListeSelect(-1);">Firmayı Sil</button>
             </div>
           </div>
@@ -2549,7 +2549,16 @@ function onFirmaFieldChange(list, index, field, value) {
   }
 }
 
-window.kaydetFirmaFormu = function() {
+window.kaydetFirmaFormu = function(index) {
+  const i = index !== undefined ? index : dtmSeciliFirmaIndex;
+  const f = referans.firmaList && referans.firmaList[i];
+  if (!f || !f.ad || !f.ad.trim()) {
+    showToast("Firma / Kişi Adı boş bırakılamaz!", "error");
+    const inputAd = document.getElementById(`firmaInputAd_${i}`);
+    if (inputAd) markError(inputAd);
+    return;
+  }
+
   const isSuperAdmin = currentDTMUser?.role === 'superadmin';
   // Firma listesi her zaman private/kullanıcı bazlı olduğu için daima saveReferans çağrılmalı
   saveReferans(referans);
@@ -2557,6 +2566,7 @@ window.kaydetFirmaFormu = function() {
     saveGlobalReferans(referans);
   }
   showToast("Firma / Kişi bilgileri başarıyla kaydedildi.", "success");
+  renderPage('veri-merkezi');
 };
 
 function onRefDelete(list, index) {
@@ -3570,7 +3580,7 @@ function renderGerceklestirmeciVeriMerkeziPage() {
         <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
           <select style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--gray-300);" onchange="onYukleniciSelect(this.value)">
             <option value="-1">-- Firma Seçin veya Yeni Ekleyin --</option>
-            ${(referans.yukleniciList || []).map((f, i) => ({f, i})).sort((a, b) => (a.f.ad || '').localeCompare(b.f.ad || '', 'tr-TR')).map(item => `<option value="${item.i}" ${dtmSeciliYukleniciIndex === item.i ? 'selected' : ''}>${item.f.ad}</option>`).join('')}
+            ${(referans.yukleniciList || []).map((f, i) => ({f, i})).sort((a, b) => (a.f.ad || '').localeCompare(b.f.ad || '', 'tr-TR')).map(item => `<option value="${item.i}" ${dtmSeciliYukleniciIndex === item.i ? 'selected' : ''}>${escHtml(item.f.ad || '(İsimsiz Firma)')}</option>`).join('')}
           </select>
           <button class="btn btn-outline" onclick="onYukleniciEkle()">+ Yeni Ekle</button>
         </div>
@@ -3581,23 +3591,23 @@ function renderGerceklestirmeciVeriMerkeziPage() {
           return `
           <div style="background:var(--gray-50); padding:15px; border-radius:8px; border:1px solid var(--gray-200);">
             <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-              <div class="form-group"><label>Ad</label><input type="text" value="${f.ad}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'ad', this.value)"></div>
-              <div class="form-group"><label>Tür</label><select onchange="onFirmaFieldChange('yukleniciList', ${i}, 'tur', this.value); document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();">
+              <div class="form-group"><label>Ad <span style="color:var(--danger)">*</span></label><input type="text" id="yukleniciInputAd_${i}" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'ad', this.value)" oninput="onFirmaFieldChange('yukleniciList', ${i}, 'ad', this.value)"></div>
+              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select id="yukleniciInputTur_${i}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'tur', this.value); document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();">
                   <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
-              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${f.adres}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'adres', this.value)"></div>
-              <div class="form-group"><label>Telefon</label><input type="text" value="${f.tel}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'tel', this.value)"></div>
-              <div class="form-group"><label>Faks</label><input type="text" value="${f.faks || ''}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'faks', this.value)"></div>
-              <div class="form-group"><label>E-Posta</label><input type="text" value="${f.eposta || ''}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'eposta', this.value)"></div>
-              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${f.dogumTarihi || ''}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'dogumTarihi', this.value)"></div>`}
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${escAttr(f.adres || '')}" placeholder="Adres giriniz" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'adres', this.value)"></div>
+              <div class="form-group"><label>Telefon</label><input type="text" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'tel', this.value)"></div>
+              <div class="form-group"><label>Faks</label><input type="text" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'faks', this.value)"></div>
+              <div class="form-group"><label>E-Posta</label><input type="text" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'eposta', this.value)"></div>
+              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${escAttr(f.dogumTarihi || '')}" onchange="onFirmaFieldChange('yukleniciList', ${i}, 'dogumTarihi', this.value)"></div>`}
               <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
                 <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('yukleniciList', ${i}, 'basitUsul', this.checked)">
                 <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:bold; color:var(--primary-color)">Bu Firma/Kişi Basit Usule Tabiidir</label>
               </div>
             </div>
             <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
-              <button class="btn btn-primary" onclick="kaydetYukleniciFormu()">Kaydet</button>
+              <button class="btn btn-primary" onclick="kaydetYukleniciFormu(${i})">Kaydet</button>
               <button class="btn btn-danger btn-sm" onclick="onRefDelete('yukleniciList', ${i}); onYukleniciSelect(-1);">Firmayı Sil</button>
             </div>
           </div>
@@ -3616,15 +3626,28 @@ window.onYukleniciSelect = function(val) {
 
 window.onYukleniciEkle = function() {
   if(!referans.yukleniciList) referans.yukleniciList = [];
-  referans.yukleniciList.push({ad:'Yeni Firma', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:'', basitUsul:false});
+  referans.yukleniciList.push({ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:'', basitUsul:false});
   dtmSeciliYukleniciIndex = referans.yukleniciList.length - 1;
-  saveGlobalReferans(referans);
   document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();
+  setTimeout(() => {
+    const el = document.getElementById(`yukleniciInputAd_${dtmSeciliYukleniciIndex}`);
+    if (el) el.focus();
+  }, 50);
 };
 
-window.kaydetYukleniciFormu = function() {
+window.kaydetYukleniciFormu = function(index) {
+  const i = index !== undefined ? index : dtmSeciliYukleniciIndex;
+  const f = referans.yukleniciList && referans.yukleniciList[i];
+  if (!f || !f.ad || !f.ad.trim()) {
+    showToast("Firma / Kişi Adı boş bırakılamaz!", "error");
+    const inputAd = document.getElementById(`yukleniciInputAd_${i}`);
+    if (inputAd) markError(inputAd);
+    return;
+  }
+
   saveGlobalReferans(referans);
   showToast("Firma / Kişi bilgileri başarıyla kaydedildi.", "success");
+  document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();
 };
 
 let dtmSeciliFirmaIndex = -1;
@@ -3635,10 +3658,13 @@ window.onFirmaListeSelect = function(val) {
 
 window.onFirmaListeEkle = function() {
   if(!referans.firmaList) referans.firmaList = [];
-  referans.firmaList.push({ad:'Yeni Firma', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:'', basitUsul:false});
+  referans.firmaList.push({ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:'', basitUsul:false});
   dtmSeciliFirmaIndex = referans.firmaList.length - 1;
-  saveReferans(referans);
   renderPage('veri-merkezi');
+  setTimeout(() => {
+    const el = document.getElementById(`firmaInputAd_${dtmSeciliFirmaIndex}`);
+    if (el) el.focus();
+  }, 50);
 };
 
 async function renderGerceklestirmeciVeriMerkeziPageLoader() {
