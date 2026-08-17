@@ -753,13 +753,35 @@ function renderBittiTutanagi(proje, referans) {
 }
 
 function renderMuayeneKabulTutanagi(proje, referans) {
+  // 1. Kazanan firma ve bedel tespiti (Teklif firmaları veya YM firmaları üzerinden)
+  const kalemler = getKalemler(proje);
   const kazananIdx = (proje.kazananFirmaIndex !== undefined && proje.kazananFirmaIndex >= 0)
     ? proje.kazananFirmaIndex 
     : hesaplaKazananFirma(proje);
-  const kazananObj = kazananIdx >= 0 ? getKazananFirma(proje, referans) : null;
-  const kazananAd = kazananObj?.ad || (kazananIdx >= 0 && proje.teklifFirmalar?.[kazananIdx]?.ad) || '';
-  const kazananToplam = kazananObj?.toplam || (kazananIdx >= 0 && proje.teklifFirmalar?.[kazananIdx] ? hesaplaTeklifFirmaToplam(proje.teklifFirmalar[kazananIdx], getKalemler(proje)) : 0);
-  const bitisT = proje.fiiliBitimTarihi || calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi);
+
+  let kazananAd = '';
+  let kazananToplam = 0;
+
+  if (kazananIdx >= 0 && proje.teklifFirmalar?.[kazananIdx]?.ad) {
+    kazananAd = proje.teklifFirmalar[kazananIdx].ad;
+    kazananToplam = hesaplaTeklifFirmaToplam(proje.teklifFirmalar[kazananIdx], kalemler);
+  } else {
+    // Fallback: teklifFirmalar'daki ilk geçerli firma, ya da ymFirmalar'daki en uygun firma
+    const gecerliTeklif = (proje.teklifFirmalar || []).find(f => f.ad && f.ad.trim());
+    if (gecerliTeklif) {
+      kazananAd = gecerliTeklif.ad;
+      kazananToplam = hesaplaTeklifFirmaToplam(gecerliTeklif, kalemler);
+    } else {
+      const gecerliYm = (proje.ymFirmalar || []).find(f => f.ad && f.ad.trim());
+      if (gecerliYm) {
+        kazananAd = gecerliYm.ad;
+        kazananToplam = hesaplaYMFirmaToplam(gecerliYm, kalemler);
+      }
+    }
+  }
+
+  // Muayene Kabul Tarihi
+  const kabulTarihi = proje.mkKabulTarihi || proje.fiiliBitimTarihi || calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi);
   
   // Muayene kabul görevlileri tanımlıysa onları al, yoksa dtGorevliler'e fallback yap
   const mkGorevlilerRaw = (proje.mkGorevliler && proje.mkGorevliler.some(g => g.ad)) 
@@ -767,7 +789,6 @@ function renderMuayeneKabulTutanagi(proje, referans) {
     : proje.dtGorevliler;
   const mkGorevliler = getAktifGorevliler(mkGorevlilerRaw);
   const tekGorevli = mkGorevliler.length === 1;
-  const kalemler = getKalemler(proje);
 
   const gorevliImzalar = mkGorevliler.map(g =>
     `<td style="border:none;text-align:center;padding-top:0;width:${100 / mkGorevliler.length}%">
@@ -787,9 +808,19 @@ function renderMuayeneKabulTutanagi(proje, referans) {
     </tr>`;
   });
 
-  const atamaMetni = (proje.mkAtamaTarihi || proje.mkAtamaSayisi) 
-    ? `İdaremizin ${proje.mkAtamaTarihi ? formatDate(proje.mkAtamaTarihi) : '...'} tarihli ve ${escHtml(proje.mkAtamaSayisi || '...')} sayılı görevlendirme oluru gereğince teşekkül eden komisyonumuzca, `
-    : '';
+  // İşin Adı - sonuna İŞİ ibaresi ekleme
+  let tamIsAdi = (proje.isAdi || '').trim().toLocaleUpperCase('tr-TR');
+  if (tamIsAdi && !tamIsAdi.endsWith('İŞİ') && !tamIsAdi.endsWith('ISI')) {
+    tamIsAdi += ' İŞİ';
+  }
+
+  // Komisyon atama oluru metni
+  let atamaMetni = '';
+  if (proje.mkAtamaTarihi || proje.mkAtamaSayisi) {
+    const t = proje.mkAtamaTarihi ? formatDate(proje.mkAtamaTarihi) : '...';
+    const s = escHtml(proje.mkAtamaSayisi || '...');
+    atamaMetni = `İdaremizin ${t} tarihli ve ${s} sayılı Olur'u gereğince teşekkül eden komisyonumuzca, `;
+  }
 
   return `
     <div class="belge tutanak" style="font-size:10.5pt">
@@ -800,12 +831,11 @@ function renderMuayeneKabulTutanagi(proje, referans) {
       <h2 class="belge-baslik" style="font-size:13pt;text-align:center;margin-bottom:14px">MUAYENE VE KABUL KOMİSYONU TUTANAĞI</h2>
 
       <table style="width:100%;border-collapse:collapse;margin:10px 0;font-size:10.5pt">
-        <tr><td style="border:none;width:32%;font-weight:bold;padding:2px 0">İşin / Mal / Hizmetin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${escHtml((proje.isAdi || '').toLocaleUpperCase('tr-TR'))}</td></tr>
+        <tr><td style="border:none;width:32%;font-weight:bold;padding:2px 0">İşin / Mal / Hizmetin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0"><strong>${escHtml(tamIsAdi)}</strong></td></tr>
         <tr><td style="border:none;font-weight:bold;padding:2px 0">Yüklenici Firma / Kişi</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0"><strong>${escHtml(kazananAd || '-')}</strong></td></tr>
-        <tr><td style="border:none;font-weight:bold;padding:2px 0">Sözleşme Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:2px 0">Sözleşme Bedeli</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0"><strong>${kazananToplam > 0 ? formatCurrency(kazananToplam) + ' TL' + (isFirmaBasitUsul(kazananAd, referans) ? '' : ' (KDV Hariç)') : '-'}</strong></td></tr>
         ${(proje.mkAtamaTarihi || proje.mkAtamaSayisi) ? `
-        <tr><td style="border:none;font-weight:bold;padding:2px 0">Komisyon Atama Oluru</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${proje.mkAtamaTarihi ? formatDate(proje.mkAtamaTarihi) + ' Tarihli' : ''} ${proje.mkAtamaSayisi ? 've ' + escHtml(proje.mkAtamaSayisi) + ' Sayılı' : ''}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:2px 0">Komisyon Atama Oluru</td><td style="border:none;width:14px;vertical-align:top;padding:2px 0">:</td><td style="border:none;padding:2px 0">${proje.mkAtamaTarihi ? formatDate(proje.mkAtamaTarihi) + ' Tarihli' : ''} ${proje.mkAtamaSayisi ? 've ' + escHtml(proje.mkAtamaSayisi) + ' Sayılı Olur' : 'Olur'}</td></tr>
         ` : ''}
       </table>
 
@@ -828,7 +858,7 @@ function renderMuayeneKabulTutanagi(proje, referans) {
       </div>` : ''}
 
       <div style="margin:20px 0;text-align:justify;line-height:1.6;font-size:10.5pt;text-indent:2em">
-        ${atamaMetni}Yukarıda niteliği ve miktarı belirtilen mal / hizmet, yüklenici tarafından süresi içerisinde idaremize eksiksiz ve teknik şartnamesine, sözleşmesine uygun olarak teslim edilmiş olup, ${formatDate(bitisT)} tarihinde yerinde yapılan muayene, kontrol ve incelemeler sonucunda KABULÜNE ${tekGorevli ? 'tarafımca' : 'tarafımızca'} karar verilerek iş bu Muayene ve Kabul Tutanağı tanzim edilmiştir.
+        ${atamaMetni}Yukarıda niteliği ve miktarı belirtilen mal / hizmet, yüklenici tarafından süresi içerisinde idaremize eksiksiz ve teknik şartnamesine uygun olarak teslim edilmiş olup, ${formatDate(kabulTarihi)} tarihinde yerinde yapılan muayene, kontrol ve incelemeler sonucunda KABULÜNE ${tekGorevli ? 'tarafımca' : 'tarafımızca'} karar verilerek iş bu Muayene ve Kabul Tutanağı tanzim edilmiştir.
       </div>
 
       <div style="margin-top:35px;page-break-inside:avoid">

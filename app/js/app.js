@@ -1400,6 +1400,10 @@ function renderVeriGirisPage() {
         ${mkEkleBtn}
         <div class="form-grid" style="margin-top:14px">
           <div class="form-group">
+            <label>Muayene Kabul Tarihi</label>
+            <input type="date" id="mkKabulTarihi" value="${proje.mkKabulTarihi || ''}" onchange="onFieldChange('mkKabulTarihi', this.value)">
+          </div>
+          <div class="form-group">
             <label>Komisyon Atama Tarihi</label>
             <input type="date" id="mkAtamaTarihi" value="${proje.mkAtamaTarihi || ''}" onchange="onFieldChange('mkAtamaTarihi', this.value)">
           </div>

@@ -77,6 +77,7 @@ function getDefaultProje() {
     mkGorevliSayisi: 1,
     mkAtamaTarihi: '',
     mkAtamaSayisi: '',
+    mkKabulTarihi: '',
     isKalemleri: [
       { ad: '', miktar: '', birim: '' },
       { ad: '', miktar: '', birim: '' },
