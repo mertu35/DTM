@@ -843,12 +843,12 @@ function renderHakedisRaporu(proje, referans) {
 function belgeYazdir(html, landscape = false, sozlesme = false) {
   const win = window.open('', '_blank');
   const pageSize = landscape
-    ? 'size: A4 landscape; margin: 10mm 15mm;'
+    ? 'size: A4 landscape; margin: 8mm 10mm;'
     : sozlesme
-      ? 'size: A4; margin: 10mm 15mm;'
-      : 'size: A4; margin: 15mm 20mm;';
-  const maxWidth = landscape ? '277mm' : '210mm';
-  const bodyPadding = landscape ? '10mm 15mm' : '15mm 20mm';
+      ? 'size: A4 portrait; margin: 8mm 12mm;'
+      : 'size: A4 portrait; margin: 10mm 15mm;';
+  const maxWidth = landscape ? '280mm' : '210mm';
+  const bodyPadding = landscape ? '8mm 10mm' : '10mm 15mm';
 
   win.document.write(`<!DOCTYPE html>
 <html lang="tr">
@@ -859,46 +859,51 @@ function belgeYazdir(html, landscape = false, sozlesme = false) {
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Noto Serif', 'Times New Roman', serif; font-size: 9.5pt; color: #000; padding: ${bodyPadding}; }
+    body { font-family: 'Noto Serif', 'Times New Roman', serif; font-size: 9pt; color: #000; padding: ${bodyPadding}; }
     .belge { max-width: ${maxWidth}; margin: 0 auto; }
-    .belge-ust { text-align: center; margin-bottom: 15px; }
-    .belge-baslik { text-align: center; font-size: 13.5pt; margin: 10px 0; font-weight: bold; }
-    .bilgi-tablo { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-    .bilgi-tablo td { padding: 2px 6px; vertical-align: top; }
+    .belge-ust { text-align: center; margin-bottom: 10px; }
+    .belge-baslik { text-align: center; font-size: 13pt; margin: 8px 0; font-weight: bold; }
+    .bilgi-tablo { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    .bilgi-tablo td { padding: 2px 5px; vertical-align: top; }
     .bilgi-tablo .etiket { font-weight: bold; }
-    .veri-tablo { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 0.5mm solid #000; }
-    .veri-tablo th, .veri-tablo td { border: 0.5mm solid #000; padding: 2px 4px; text-align: left; font-size: 9.5pt; }
+    .veri-tablo { width: 100%; border-collapse: collapse; margin-bottom: 8px; border: 0.5mm solid #000; }
+    .veri-tablo th, .veri-tablo td { border: 0.5mm solid #000; padding: 2px 4px; text-align: left; font-size: 9pt; }
     .veri-tablo th { background: #f0f0f0; text-align: center; font-weight: bold; }
     .rakam { text-align: right !important; }
     .merkez { text-align: center !important; }
     .bold { font-weight: bold; }
     .toplam-satir td { font-weight: bold; background: #f9f9f9; }
-    .aciklama-metin { margin: 15px 0; line-height: 1.6; text-align: justify; }
+    .aciklama-metin { margin: 12px 0; line-height: 1.5; text-align: justify; }
     .imzalar-yan { display: flex; justify-content: space-around; gap: 30px; }
     .imza-kutu, .imza-kutu-inline { text-align: center; min-width: 150px; }
-    .imza-ad { font-weight: bold; margin-top: 40px; }
-    .imza-unvan { font-size: 9.5pt; }
-    .madde { margin-bottom: 12px; line-height: 1.5; page-break-inside: avoid; break-inside: avoid; }
-    .madde p { margin-top: 5px; text-align: justify; }
-    .sozlesme .madde p, .sozlesme .madde { font-size: 12pt; }
-    .sozlesme .madde { margin-bottom: 7px; line-height: 1.35; page-break-inside: avoid; break-inside: avoid; }
-    .sozlesme .madde p { margin-top: 3px; }
-    .sozlesme-imza { margin-top: 20px; }
+    .imza-ad { font-weight: bold; margin-top: 30px; }
+    .imza-unvan { font-size: 9pt; }
+    .madde { margin-bottom: 10px; line-height: 1.45; page-break-inside: avoid; break-inside: avoid; }
+    .madde p { margin-top: 4px; text-align: justify; }
+    .sozlesme .madde p, .sozlesme .madde { font-size: 11pt; }
+    .sozlesme .madde { margin-bottom: 6px; line-height: 1.3; page-break-inside: avoid; break-inside: avoid; }
+    .sozlesme .madde p { margin-top: 2px; }
+    .sozlesme-imza { margin-top: 15px; }
     .hakedis-tablo td:first-child { width: 30px; text-align: center; font-weight: bold; }
-    small { font-size: 8.5pt; }
+    small { font-size: 8pt; }
     .sozlesme-sayfa-tablo { width: 100%; border-collapse: collapse; }
     .sozlesme-sayfa-tablo > tbody > tr > td { padding: 0; }
     .sozlesme-sayfa-header {
       display: block;
       text-align: center;
       font-weight: bold;
-      font-size: 10pt;
-      line-height: 1.5;
-      padding: 4px 0 6px;
-      margin-bottom: 6px;
+      font-size: 9.5pt;
+      line-height: 1.4;
+      padding: 3px 0 5px;
+      margin-bottom: 4px;
     }
     @media print {
-      body { padding: 0; }
+      body { 
+        padding: 0 !important; 
+        zoom: 0.95;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
       @page { ${pageSize} }
       .sozlesme-sayfa-tablo thead { display: table-header-group; }
       .sozlesme-sayfa-tablo tbody { display: table-row-group; }
