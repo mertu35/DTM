@@ -4,13 +4,16 @@ function getKalemler(proje) {
   if (proje.isTuru === 'Yapım İşi') {
     return [{ ad: proje.isAdi || 'Yapım İşi', miktar: 1, birim: '***' }];
   }
-  const doldurulanlar = (proje.isKalemleri || []).filter(k => k && (k.ad?.trim() || k.miktar));
+  const doldurulanlar = (proje.isKalemleri || []).filter(k => k && (k.ad?.trim() || (k.miktar !== '' && k.miktar !== undefined && k.miktar !== null)));
   if (doldurulanlar.length > 0) {
-    return doldurulanlar.map(k => ({
-      ad: k.ad || proje.isAdi || 'Kalem',
-      miktar: parseFloat(k.miktar) || 1,
-      birim: k.birim || 'Adet'
-    }));
+    return doldurulanlar.map(k => {
+      const parsed = parseFloat(k.miktar);
+      return {
+        ad: k.ad || proje.isAdi || 'Kalem',
+        miktar: isNaN(parsed) ? 1 : parsed,
+        birim: k.birim || 'Adet'
+      };
+    });
   }
   // Eğer kullanıcı kalem girmemişse işin adını 1 Adet kalem olarak kabul et
   return [{ ad: proje.isAdi || 'Mal / Hizmet Alımı', miktar: 1, birim: 'Adet' }];

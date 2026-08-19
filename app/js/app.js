@@ -933,12 +933,12 @@ function renderVeriGirisPage() {
         <label>Y.M. Görevlisi ${i + 1}</label>
         <select data-field="ymGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'ym')">
           <option value="">-- Seçin --</option>
-          ${referans.muhendisList.map(m => `<option value="${m.ad}" ${g.ad === m.ad ? 'selected' : ''}>${m.ad}</option>`).join('')}
+          ${referans.muhendisList.map(m => `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''}>${escHtml(m.ad)}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
         <label>Ünvanı</label>
-        <input type="text" value="${g.unvan || getUnvanByAd(g.ad, referans)}" readonly>
+        <input type="text" value="${escAttr(g.unvan || getUnvanByAd(g.ad, referans))}" readonly>
       </div>
     </div>`).join('');
   const ymEkleBtn = ymSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('ym')" style="margin-top:6px;">+ Y.M. Görevlisi Ekle</button>` : '';
@@ -950,12 +950,12 @@ function renderVeriGirisPage() {
         <label>D.T. Görevlisi ${i + 1}</label>
         <select data-field="dtGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'dt')">
           <option value="">-- Seçin --</option>
-          ${referans.muhendisList.map(m => `<option value="${m.ad}" ${g.ad === m.ad ? 'selected' : ''}>${m.ad}</option>`).join('')}
+          ${referans.muhendisList.map(m => `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''}>${escHtml(m.ad)}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
         <label>Ünvanı</label>
-        <input type="text" value="${g.unvan || getUnvanByAd(g.ad, referans)}" readonly>
+        <input type="text" value="${escAttr(g.unvan || getUnvanByAd(g.ad, referans))}" readonly>
       </div>
     </div>`).join('');
   const dtEkleBtn = dtSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('dt')" style="margin-top:6px;">+ D.T. Görevlisi Ekle</button>` : '';
@@ -968,12 +968,12 @@ function renderVeriGirisPage() {
         <label>Muayene Kabul Görevlisi ${i + 1}</label>
         <select data-field="mkGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'mk')">
           <option value="">-- Seçin --</option>
-          ${referans.muhendisList.map(m => `<option value="${m.ad}" ${g.ad === m.ad ? 'selected' : ''}>${m.ad}</option>`).join('')}
+          ${referans.muhendisList.map(m => `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''}>${escHtml(m.ad)}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
         <label>Ünvanı</label>
-        <input type="text" value="${g.unvan || getUnvanByAd(g.ad, referans)}" readonly>
+        <input type="text" value="${escAttr(g.unvan || getUnvanByAd(g.ad, referans))}" readonly>
       </div>
     </div>`).join('');
   const mkEkleBtn = mkSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('mk')" style="margin-top:6px;">+ Muayene Kabul Görevlisi Ekle</button>` : '';
@@ -2580,15 +2580,15 @@ function renderVeriMerkeziPage() {
 
   const muhendisRows = referans.muhendisList.map((m, i) => `
     <tr>
-      <td><input type="text" value="${m.ad}" onchange="onRefChange('muhendisList', ${i}, 'ad', this.value)"></td>
-      <td><input type="text" value="${m.unvan}" onchange="onRefChange('muhendisList', ${i}, 'unvan', this.value)"></td>
+      <td><input type="text" value="${escAttr(m.ad)}" onchange="onRefChange('muhendisList', ${i}, 'ad', this.value)"></td>
+      <td><input type="text" value="${escAttr(m.unvan)}" onchange="onRefChange('muhendisList', ${i}, 'unvan', this.value)"></td>
       <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('muhendisList', ${i})">Sil</button></td>
     </tr>`).join('');
 
   const onaylayanRows = referans.onaylayanList.map((o, i) => `
     <tr>
-      <td><input type="text" value="${o.ad}" onchange="onRefChange('onaylayanList', ${i}, 'ad', this.value)"></td>
-      <td><input type="text" value="${o.unvan}" onchange="onRefChange('onaylayanList', ${i}, 'unvan', this.value)"></td>
+      <td><input type="text" value="${escAttr(o.ad)}" onchange="onRefChange('onaylayanList', ${i}, 'ad', this.value)"></td>
+      <td><input type="text" value="${escAttr(o.unvan)}" onchange="onRefChange('onaylayanList', ${i}, 'unvan', this.value)"></td>
       <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('onaylayanList', ${i})">Sil</button></td>
     </tr>`).join('');
 
@@ -4155,15 +4155,23 @@ function renderGerceklestirmeciBelgelerView(main) {
     };
   }
 
+  const isMalVeyaHizmet = proje.isTuru === 'Mal Alımı' || proje.isTuru === 'Hizmet Alımı' || proje.isTuru === 'Danışmanlık';
+  const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
+  const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
+
   const belgeler = [
     { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi' },
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı' },
     { id: 'teknik-sartname', ad: 'Teknik Şartname' },
-    { id: 'sozlesme', ad: 'Sözleşme' },
-    { id: 'bitti-tutanagi', ad: 'Bitti Tutanağı' },
+    ...(isMalVeyaHizmet ? [] : [{ id: 'sozlesme', ad: 'Sözleşme' }]),
+    { id: sonTutanakId, ad: sonTutanakAd },
     { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
   ];
+
+  if (currentGerceklestirmeciBelge === 'bitti-tutanagi' && isMalVeyaHizmet) currentGerceklestirmeciBelge = 'muayene-kabul';
+  if (currentGerceklestirmeciBelge === 'muayene-kabul' && !isMalVeyaHizmet) currentGerceklestirmeciBelge = 'bitti-tutanagi';
+  if (currentGerceklestirmeciBelge === 'sozlesme' && isMalVeyaHizmet) currentGerceklestirmeciBelge = 'dt-onay-belgesi';
 
   const tabs = belgeler.map(b =>
     `<div class="belge-tab ${currentGerceklestirmeciBelge === b.id ? 'active' : ''}"
@@ -4178,6 +4186,7 @@ function renderGerceklestirmeciBelgelerView(main) {
     case 'teknik-sartname': belgeHTML = renderTeknikSartname(proje, referans); break;
     case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
     case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
+    case 'muayene-kabul': belgeHTML = renderMuayeneKabulTutanagi(proje, referans); break;
     case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
   }
 
@@ -4279,6 +4288,7 @@ function gerceklestirmeciBelgeYazdir() {
     case 'teknik-sartname': html = renderTeknikSartname(proje, referans); break;
     case 'sozlesme': html = renderSozlesme(proje, referans); belgeYazdir(html, false, true); return;
     case 'bitti-tutanagi': html = renderBittiTutanagi(proje, referans); break;
+    case 'muayene-kabul': html = renderMuayeneKabulTutanagi(proje, referans); break;
     case 'hakedis-raporu': html = renderHakedisRaporu(proje, referans); break;
   }
   belgeYazdir(html, landscape);
@@ -4292,6 +4302,7 @@ function gerceklestirmeciBelgePdfIndir() {
     'teknik-sartname': 'Teknik Şartname',
     'sozlesme': 'Sözleşme',
     'bitti-tutanagi': 'Bitti Tutanağı',
+    'muayene-kabul': 'Muayene ve Kabul Tutanağı',
     'hakedis-raporu': 'Hakediş Raporu'
   };
   let html = '';
@@ -4304,6 +4315,7 @@ function gerceklestirmeciBelgePdfIndir() {
     case 'teknik-sartname':  html = renderTeknikSartname(proje, referans);  break;
     case 'sozlesme':         html = renderSozlesme(proje, referans);        sozlesme = true;  break;
     case 'bitti-tutanagi':   html = renderBittiTutanagi(proje, referans);   break;
+    case 'muayene-kabul':    html = renderMuayeneKabulTutanagi(proje, referans); break;
     case 'hakedis-raporu':   html = renderHakedisRaporu(proje, referans);   break;
   }
   const dosyaAdi = `${proje.isAdi || 'Belge'} - ${belgeAdlari[currentGerceklestirmeciBelge] || currentGerceklestirmeciBelge}`;
