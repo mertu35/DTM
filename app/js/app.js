@@ -970,6 +970,7 @@ function projeAcSayfasinaGit() {
 // ===================== VERİ GİRİŞ SAYFASI =====================
 function renderVeriGirisPage() {
   const ymSayisi = proje.ymGorevliSayisi || 1;
+  const ymSeciliAdlar = (proje.ymGorevliler || []).slice(0, ymSayisi).map(g => g.ad).filter(Boolean);
   const ymGorevliRows = proje.ymGorevliler.slice(0, ymSayisi).map((g, i) => `
     <div class="form-grid" style="position:relative">
       <div class="form-group">
@@ -979,7 +980,10 @@ function renderVeriGirisPage() {
         </div>
         <select data-field="ymGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'ym')">
           <option value="">-- Seçin --</option>
-          ${referans.muhendisList.map(m => `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''}>${escHtml(m.ad)}</option>`).join('')}
+          ${referans.muhendisList.map(m => {
+            const baskaSecili = g.ad !== m.ad && ymSeciliAdlar.includes(m.ad);
+            return `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''} ${baskaSecili ? 'disabled style="color:#9ca3af"' : ''}>${escHtml(m.ad)}${baskaSecili ? ' (Seçildi)' : ''}</option>`;
+          }).join('')}
         </select>
       </div>
       <div class="form-group">
@@ -990,6 +994,7 @@ function renderVeriGirisPage() {
   const ymEkleBtn = ymSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('ym')" style="margin-top:6px;">+ Y.M. Görevlisi Ekle</button>` : '';
 
   const dtSayisi = proje.dtGorevliSayisi || 1;
+  const dtSeciliAdlar = (proje.dtGorevliler || []).slice(0, dtSayisi).map(g => g.ad).filter(Boolean);
   const dtGorevliRows = proje.dtGorevliler.slice(0, dtSayisi).map((g, i) => `
     <div class="form-grid" style="position:relative">
       <div class="form-group">
@@ -999,7 +1004,10 @@ function renderVeriGirisPage() {
         </div>
         <select data-field="dtGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'dt')" ${proje.dtGorevlilerYmIleAyni ? 'disabled style="background:#f8fafc;cursor:not-allowed"' : ''}>
           <option value="">-- Seçin --</option>
-          ${referans.muhendisList.map(m => `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''}>${escHtml(m.ad)}</option>`).join('')}
+          ${referans.muhendisList.map(m => {
+            const baskaSecili = g.ad !== m.ad && dtSeciliAdlar.includes(m.ad);
+            return `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''} ${baskaSecili ? 'disabled style="color:#9ca3af"' : ''}>${escHtml(m.ad)}${baskaSecili ? ' (Seçildi)' : ''}</option>`;
+          }).join('')}
         </select>
       </div>
       <div class="form-group">
@@ -1011,6 +1019,7 @@ function renderVeriGirisPage() {
 
   if (!proje.mkGorevliler) proje.mkGorevliler = [{ad:'', unvan:''}, {ad:'', unvan:''}, {ad:'', unvan:''}];
   const mkSayisi = proje.mkGorevliSayisi || 1;
+  const mkSeciliAdlar = (proje.mkGorevliler || []).slice(0, mkSayisi).map(g => g.ad).filter(Boolean);
   const mkGorevliRows = proje.mkGorevliler.slice(0, mkSayisi).map((g, i) => `
     <div class="form-grid" style="position:relative">
       <div class="form-group">
@@ -1020,7 +1029,10 @@ function renderVeriGirisPage() {
         </div>
         <select data-field="mkGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'mk')">
           <option value="">-- Seçin --</option>
-          ${referans.muhendisList.map(m => `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''}>${escHtml(m.ad)}</option>`).join('')}
+          ${referans.muhendisList.map(m => {
+            const baskaSecili = g.ad !== m.ad && mkSeciliAdlar.includes(m.ad);
+            return `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''} ${baskaSecili ? 'disabled style="color:#9ca3af"' : ''}>${escHtml(m.ad)}${baskaSecili ? ' (Seçildi)' : ''}</option>`;
+          }).join('')}
         </select>
       </div>
       <div class="form-group">
@@ -1678,6 +1690,22 @@ function onGorevliChange(el, type) {
   const idx = parseInt(el.dataset.index);
   const ad = el.value;
   const unvan = getUnvanByAd(ad, referans);
+
+  // Aynı komisyon/liste içinde mükerrer kişi kontrolü
+  if (ad) {
+    let mevcutlar = [];
+    if (type === 'ym') mevcutlar = (proje.ymGorevliler || []).slice(0, proje.ymGorevliSayisi || 1);
+    else if (type === 'dt') mevcutlar = (proje.dtGorevliler || []).slice(0, proje.dtGorevliSayisi || 1);
+    else if (type === 'mk') mevcutlar = (proje.mkGorevliler || []).slice(0, proje.mkGorevliSayisi || 1);
+
+    const digerIndex = mevcutlar.findIndex((g, i) => i !== idx && g.ad === ad);
+    if (digerIndex >= 0) {
+      showToast(`"${ad}" zaten bu komisyonda seçilmiş. Aynı kişiyi tekrar ekleyemezsiniz.`, 'warning');
+      el.value = (type === 'ym' ? proje.ymGorevliler[idx]?.ad : type === 'dt' ? proje.dtGorevliler[idx]?.ad : proje.mkGorevliler[idx]?.ad) || '';
+      return;
+    }
+  }
+
   if (type === 'ym') {
     proje.ymGorevliler[idx] = { ad, unvan };
     if (proje.dtGorevlilerYmIleAyni) {
