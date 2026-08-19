@@ -971,9 +971,12 @@ function projeAcSayfasinaGit() {
 function renderVeriGirisPage() {
   const ymSayisi = proje.ymGorevliSayisi || 1;
   const ymGorevliRows = proje.ymGorevliler.slice(0, ymSayisi).map((g, i) => `
-    <div class="form-grid">
+    <div class="form-grid" style="position:relative">
       <div class="form-group">
-        <label>Y.M. Görevlisi ${i + 1}</label>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <label style="margin-bottom:0">Y.M. Görevlisi ${i + 1}</label>
+          ${i > 0 ? `<button type="button" onclick="onGorevliSil('ym', ${i})" title="Bu görevliyi kaldır" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕ Sil</button>` : ''}
+        </div>
         <select data-field="ymGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'ym')">
           <option value="">-- Seçin --</option>
           ${referans.muhendisList.map(m => `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''}>${escHtml(m.ad)}</option>`).join('')}
@@ -988,9 +991,12 @@ function renderVeriGirisPage() {
 
   const dtSayisi = proje.dtGorevliSayisi || 1;
   const dtGorevliRows = proje.dtGorevliler.slice(0, dtSayisi).map((g, i) => `
-    <div class="form-grid">
+    <div class="form-grid" style="position:relative">
       <div class="form-group">
-        <label>D.T. Görevlisi ${i + 1} ${proje.dtGorevlilerYmIleAyni ? '<span style="font-weight:400;color:var(--primary);font-size:11px">(Y.M. Görevlisi ' + (i+1) + ')</span>' : ''}</label>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <label style="margin-bottom:0">D.T. Görevlisi ${i + 1} ${proje.dtGorevlilerYmIleAyni ? '<span style="font-weight:400;color:var(--primary);font-size:11px">(Y.M. Görevlisi ' + (i+1) + ')</span>' : ''}</label>
+          ${i > 0 && !proje.dtGorevlilerYmIleAyni ? `<button type="button" onclick="onGorevliSil('dt', ${i})" title="Bu görevliyi kaldır" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕ Sil</button>` : ''}
+        </div>
         <select data-field="dtGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'dt')" ${proje.dtGorevlilerYmIleAyni ? 'disabled style="background:#f8fafc;cursor:not-allowed"' : ''}>
           <option value="">-- Seçin --</option>
           ${referans.muhendisList.map(m => `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''}>${escHtml(m.ad)}</option>`).join('')}
@@ -1006,9 +1012,12 @@ function renderVeriGirisPage() {
   if (!proje.mkGorevliler) proje.mkGorevliler = [{ad:'', unvan:''}, {ad:'', unvan:''}, {ad:'', unvan:''}];
   const mkSayisi = proje.mkGorevliSayisi || 1;
   const mkGorevliRows = proje.mkGorevliler.slice(0, mkSayisi).map((g, i) => `
-    <div class="form-grid">
+    <div class="form-grid" style="position:relative">
       <div class="form-group">
-        <label>Muayene Kabul Görevlisi ${i + 1}</label>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <label style="margin-bottom:0">Muayene Kabul Görevlisi ${i + 1}</label>
+          ${i > 0 ? `<button type="button" onclick="onGorevliSil('mk', ${i})" title="Bu görevliyi kaldır" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕ Sil</button>` : ''}
+        </div>
         <select data-field="mkGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'mk')">
           <option value="">-- Seçin --</option>
           ${referans.muhendisList.map(m => `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''}>${escHtml(m.ad)}</option>`).join('')}
@@ -1619,13 +1628,49 @@ function onFieldChange(field, value) {
 
 function onGorevliEkle(tip) {
   if (tip === 'ym') {
-    proje.ymGorevliSayisi = Math.min((proje.ymGorevliSayisi || 1) + 1, 3);
+    const yeniSayi = Math.min((proje.ymGorevliSayisi || 1) + 1, 3);
+    proje.ymGorevliSayisi = yeniSayi;
+    if (!proje.ymGorevliler[yeniSayi - 1]) proje.ymGorevliler[yeniSayi - 1] = { ad: '', unvan: '' };
+    if (proje.dtGorevlilerYmIleAyni) {
+      proje.dtGorevliSayisi = yeniSayi;
+      proje.dtGorevliler = JSON.parse(JSON.stringify(proje.ymGorevliler));
+    }
   } else if (tip === 'dt') {
-    proje.dtGorevliSayisi = Math.min((proje.dtGorevliSayisi || 1) + 1, 3);
+    const yeniSayi = Math.min((proje.dtGorevliSayisi || 1) + 1, 3);
+    proje.dtGorevliSayisi = yeniSayi;
+    if (!proje.dtGorevliler[yeniSayi - 1]) proje.dtGorevliler[yeniSayi - 1] = { ad: '', unvan: '' };
   } else if (tip === 'mk') {
-    proje.mkGorevliSayisi = Math.min((proje.mkGorevliSayisi || 1) + 1, 3);
+    if (!proje.mkGorevliler) proje.mkGorevliler = [{ad:'', unvan:''}, {ad:'', unvan:''}, {ad:'', unvan:''}];
+    const yeniSayi = Math.min((proje.mkGorevliSayisi || 1) + 1, 3);
+    proje.mkGorevliSayisi = yeniSayi;
+    if (!proje.mkGorevliler[yeniSayi - 1]) proje.mkGorevliler[yeniSayi - 1] = { ad: '', unvan: '' };
   }
-  saveProje(proje);
+  autoSave();
+  renderPage();
+}
+
+function onGorevliSil(tip, idx) {
+  if (tip === 'ym') {
+    if (proje.ymGorevliSayisi <= 1) return;
+    proje.ymGorevliler.splice(idx, 1);
+    proje.ymGorevliler.push({ ad: '', unvan: '' });
+    proje.ymGorevliSayisi = Math.max(1, proje.ymGorevliSayisi - 1);
+    if (proje.dtGorevlilerYmIleAyni) {
+      proje.dtGorevliSayisi = proje.ymGorevliSayisi;
+      proje.dtGorevliler = JSON.parse(JSON.stringify(proje.ymGorevliler));
+    }
+  } else if (tip === 'dt') {
+    if (proje.dtGorevliSayisi <= 1) return;
+    proje.dtGorevliler.splice(idx, 1);
+    proje.dtGorevliler.push({ ad: '', unvan: '' });
+    proje.dtGorevliSayisi = Math.max(1, proje.dtGorevliSayisi - 1);
+  } else if (tip === 'mk') {
+    if (proje.mkGorevliSayisi <= 1) return;
+    proje.mkGorevliler.splice(idx, 1);
+    proje.mkGorevliler.push({ ad: '', unvan: '' });
+    proje.mkGorevliSayisi = Math.max(1, proje.mkGorevliSayisi - 1);
+  }
+  autoSave();
   renderPage();
 }
 
