@@ -15,6 +15,15 @@ let currentGerceklestirmeciBelge = 'dt-onay-belgesi'; // varsayılan: D.T. Onay 
 let currentGerceklestirmeciTab = 'projeler';
 let currentGerceklestirmeciReadOnly = false;
 let currentOnayliBelgelerProjeId = null;
+let lastSavedProjeSnapshot = null;
+
+function hasUnsavedChanges() {
+  if (currentPage !== 'veri-giris' || !proje || currentProjeKilitli) return false;
+  // Eğer proje henüz boşsa (iş adı vs girilmemişse) uyarı verme
+  if (!proje.isAdi?.trim() && !proje.isKalemleri?.some(k => k.ad?.trim())) return false;
+  if (!lastSavedProjeSnapshot) return true;
+  return JSON.stringify(proje) !== lastSavedProjeSnapshot;
+}
 
 // ===== ROL YARDIMCISI =====
 function getRoleLabel(role) {
@@ -670,10 +679,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Sayfa kapatılırken veya yenilenirken veri kaybını önle
+  // Sayfa kapatılırken veya yenilenirken tarayıcı uyarısı göster
   window.addEventListener('beforeunload', (e) => {
-    if (currentPage === 'veri-giris' && proje && (proje.isAdi?.trim() || proje.isKalemleri?.some(k=>k.ad))) {
-      saveProje(proje);
+    if (hasUnsavedChanges()) {
+      e.preventDefault();
+      e.returnValue = 'Girdiğiniz verileri henüz kaydetmediniz. Çıkmak istediğinize emin misiniz?';
+      return e.returnValue;
     }
   });
 });
@@ -698,9 +709,13 @@ function init() {
       const targetPage = item.dataset.page;
       if (currentPage === targetPage) return;
 
-      // Eğer Proje Girişi sayfasındaysak ve veri girilmişse/değişmişse otomatik localStorage'a kaydet
-      if (currentPage === 'veri-giris' && proje) {
-        saveProje(proje);
+      // Eğer kaydedilmemiş değişiklikler varsa kullanıcıyı uyar
+      if (hasUnsavedChanges()) {
+        const onay = await showConfirm(
+          '⚠️ <strong>Kaydedilmemiş Değişiklikler Var!</strong><br><br>Girdiğiniz bilgileri henüz kaydetmediniz. Başka bir sayfaya geçerseniz son değişiklikler kaybolabilir.<br><br>Yine de devam etmek istiyor musunuz?',
+          'Sayfadan Ayrıl'
+        );
+        if (!onay) return;
       }
 
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -935,6 +950,7 @@ function yeniProjeOlustur() {
   currentCloudProjeId = null;
   currentProjeKilitli = false;
   currentProjeBaskaKullanici = false;
+  lastSavedProjeSnapshot = JSON.stringify(proje);
   document.getElementById('yeniProjeModal').style.display = 'none';
   projeAktif = true;
   currentPage = 'veri-giris';
@@ -3162,9 +3178,11 @@ async function cloudKaydet() {
         currentProjeStatus = 'taslak';
       }
       await db.collection('projeler').doc(currentCloudProjeId).update(extraUpdate).catch(e => console.warn('[proje] Durum güncellenemedi:', e?.code, e?.message));
+      lastSavedProjeSnapshot = JSON.stringify(proje);
       showToast('Proje başarıyla kaydedildi!');
     } else {
       currentCloudProjeId = await saveProjeToCloud(proje);
+      lastSavedProjeSnapshot = JSON.stringify(proje);
       showToast('Proje başarıyla kaydedildi!');
     }
     renderPage();
@@ -3182,6 +3200,7 @@ async function dashboardProjeAc(projeId) {
     currentProjeKazananBasitUsul = doc.kazananBasitUsul === true;
     currentProjeKilitli = true;
     currentProjeBaskaKullanici = false;
+    lastSavedProjeSnapshot = JSON.stringify(proje);
     saveProje(proje);
     projeAktif = true;
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -3203,6 +3222,7 @@ async function cloudProjeAc(projeId) {
     currentProjeKazananBasitUsul = doc.kazananBasitUsul === true;
     const gonderildi = doc.status === 'gonderildi' || doc.status === 'onaylandi';
     currentProjeKilitli = doc.locked === true || currentProjeBaskaKullanici || gonderildi;
+    lastSavedProjeSnapshot = JSON.stringify(proje);
     saveProje(proje);
     projeAktif = true;
     // Gerçekleştirmeci özet ekranına git, diğerleri veri girişe
