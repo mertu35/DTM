@@ -70,19 +70,6 @@ async function getAllUsers() {
   return users;
 }
 
-// Kullanıcı şifresini güncelle (admin)
-async function updateUserPassword(username, newPassword) {
-  const secondaryApp = firebase.initializeApp(firebaseConfig, 'pwupdate_' + Date.now());
-  try {
-    const cred = await secondaryApp.auth().signInWithEmailAndPassword(
-      usernameToEmail(username), newPassword
-    );
-    await cred.user.updatePassword(newPassword);
-    await secondaryApp.auth().signOut();
-  } finally {
-    await secondaryApp.delete();
-  }
-}
 
 // Şifre değiştir (mevcut şifre ile yeniden auth gerekli)
 async function changePassword(mevcutSifre, yeniSifre) {
