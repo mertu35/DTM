@@ -34,6 +34,18 @@ function getStatusBadge(status) {
   return `<span style="font-size:11px;background:${s.bg};color:${s.color};padding:2px 7px;border-radius:4px;font-weight:600">${s.label}</span>`;
 }
 
+function getIsTuruBadge(isTuru) {
+  const tur = isTuru || 'Yapım İşi';
+  const map = {
+    'Yapım İşi':    { label: 'Yapım İşi',    bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' },
+    'Mal Alımı':    { label: 'Mal Alımı',    bg: '#f0fdf4', color: '#166534', border: '#bbf7d0' },
+    'Hizmet Alımı': { label: 'Hizmet Alımı', bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
+    'Danışmanlık':  { label: 'Danışmanlık',  bg: '#f3e8ff', color: '#6b21a8', border: '#e9d5ff' }
+  };
+  const t = map[tur] || map['Yapım İşi'];
+  return `<span style="font-size:11px;background:${t.bg};color:${t.color};border:1px solid ${t.border};padding:2px 8px;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:3px">🏷️ ${t.label}</span>`;
+}
+
 // ===== TOAST BİLDİRİM SİSTEMİ =====
 function showToast(mesaj, tip = 'success', sure = 3000) {
   const renkler = {
@@ -2270,7 +2282,7 @@ async function renderBelgelerPage() {
               <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
               <div class="ky-proje-meta">
                 <span class="ky-proje-date">&#128197; ${tarih}</span>
-                ${getStatusBadge(p.status || 'taslak')}
+                ${getIsTuruBadge(p.isTuru)}
               </div>
             </div>
             <div class="ky-proje-actions">
@@ -3674,6 +3686,7 @@ async function renderProjelerimPage() {
           </div>
           <div class="ky-proje-meta">
             <span class="ky-proje-date">📅 ${tarih}</span>
+            ${getIsTuruBadge(p.isTuru)}
             ${p.atananGerceklestirmeciAd ? `<span class="ky-proje-user">👷 ${p.atananGerceklestirmeciAd}</span>` : ''}
           </div>
           ${durmBilgisi}
@@ -3769,6 +3782,7 @@ async function renderGonderilenProjelerPage() {
           <div class="ky-proje-meta">
             <span class="ky-proje-user">👤 ${escHtml(p.userDisplayName || '-')}</span>
             <span class="ky-proje-date">📅 ${tarih}</span>
+            ${getIsTuruBadge(p.isTuru)}
             ${getStatusBadge(p.status)}
           </div>
           ${p.geriGonderNot ? `
@@ -4113,6 +4127,7 @@ async function renderGerceklestirmeciBelgelerPage() {
           <div class="ky-proje-meta">
             <span class="ky-proje-user">&#128100; ${escHtml(p.userDisplayName || '-')}</span>
             <span class="ky-proje-date">&#128197; ${tarih}</span>
+            ${getIsTuruBadge(p.isTuru)}
             ${getStatusBadge(p.status)}
           </div>
         </div>
@@ -4646,6 +4661,7 @@ async function renderOnayliBelgelerPage() {
               <span class="ky-proje-user">&#128100; ${escHtml(p.userDisplayName||'-')}</span>
               <span class="ky-proje-user" style="color:#0f766e">&#9989; ${escHtml(p.atananGerceklestirmeciAd||p.onaylandiBy||'-')}</span>
               <span class="ky-proje-date">&#128197; ${tarihStr}</span>
+              ${getIsTuruBadge(p.isTuru)}
               ${getStatusBadge(p.status)}
             </div>
           </div>

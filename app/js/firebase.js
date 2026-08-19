@@ -134,6 +134,7 @@ async function saveProjeToCloud(projeData) {
     userId: user.uid,
     userDisplayName: currentDTMUser?.displayName || '',
     isAdi: projeData.isAdi || '(İsimsiz)',
+    isTuru: projeData.isTuru || 'Yapım İşi',
     data: projeData,
     status: 'taslak',
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -183,6 +184,7 @@ async function onaylaProje(projeId) {
 async function updateProjeInCloud(projeId, projeData) {
   await db.collection('projeler').doc(projeId).update({
     isAdi: projeData.isAdi || '(İsimsiz)',
+    isTuru: projeData.isTuru || 'Yapım İşi',
     data: projeData,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   });
@@ -206,7 +208,14 @@ async function getUserProjeler() {
   if (snap.size === PROJE_LIMIT) {
     console.warn(`[projeler] Limit (${PROJE_LIMIT}) doldu — eski projeler gösterilmeyebilir.`);
   }
-  const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const docs = snap.docs.map(d => {
+    const data = d.data();
+    return {
+      id: d.id,
+      ...data,
+      isTuru: data.isTuru || data.data?.isTuru || 'Yapım İşi'
+    };
+  });
   // Index gerektirmemek için client tarafında sırala
   return docs.sort((a, b) => {
     const tA = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : 0;
