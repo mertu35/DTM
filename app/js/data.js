@@ -64,6 +64,7 @@ function getDefaultProje() {
     ymTutanakTarihi: '',
     dtGorevliler: [{ ad: '', unvan: '' }, { ad: '', unvan: '' }, { ad: '', unvan: '' }],
     dtGorevliSayisi: 1,
+    dtGorevlilerYmIleAyni: false,
     dtOnayTarihi: '',
     dtOnayNo: '',
     dtTutanakTarihiAyni: true,

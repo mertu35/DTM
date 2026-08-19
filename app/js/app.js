@@ -959,15 +959,15 @@ function renderVeriGirisPage() {
   const dtGorevliRows = proje.dtGorevliler.slice(0, dtSayisi).map((g, i) => `
     <div class="form-grid">
       <div class="form-group">
-        <label>D.T. Görevlisi ${i + 1}</label>
-        <select data-field="dtGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'dt')">
+        <label>D.T. Görevlisi ${i + 1} ${proje.dtGorevlilerYmIleAyni ? '<span style="font-weight:400;color:var(--primary);font-size:11px">(Y.M. Görevlisi ' + (i+1) + ')</span>' : ''}</label>
+        <select data-field="dtGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'dt')" ${proje.dtGorevlilerYmIleAyni ? 'disabled style="background:#f8fafc;cursor:not-allowed"' : ''}>
           <option value="">-- Seçin --</option>
           ${referans.muhendisList.map(m => `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''}>${escHtml(m.ad)}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
         <label>Ünvanı</label>
-        <input type="text" value="${escAttr(g.unvan || getUnvanByAd(g.ad, referans))}" readonly>
+        <input type="text" value="${escAttr(g.unvan || getUnvanByAd(g.ad, referans))}" readonly ${proje.dtGorevlilerYmIleAyni ? 'style="background:#f8fafc"' : ''}>
       </div>
     </div>`).join('');
   const dtEkleBtn = dtSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('dt')" style="margin-top:6px;">+ D.T. Görevlisi Ekle</button>` : '';
@@ -1235,8 +1235,17 @@ function renderVeriGirisPage() {
             <input type="file" accept=".pdf" style="display:none" onchange="parseDTOluru(this.files[0]);this.value=''">
           </label>
         </div>
+
+        <div style="margin-bottom:14px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#1e293b;user-select:none">
+            <input type="checkbox" id="dtGorevliAyniCb" ${proje.dtGorevlilerYmIleAyni ? 'checked' : ''} onchange="onDtGorevliAyniToggle(this.checked)" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
+            <span>👥 Yaklaşık Maliyet Görevlileri ile aynı kişiler</span>
+          </label>
+          ${proje.dtGorevlilerYmIleAyni ? '<p style="margin:4px 0 0 24px;font-size:12px;color:#64748b">Y.M. görevlilerinde yapılan değişiklikler otomatik olarak buraya yansıtılır.</p>' : ''}
+        </div>
+
         ${dtGorevliRows}
-        ${dtEkleBtn}
+        ${!proje.dtGorevlilerYmIleAyni ? dtEkleBtn : ''}
         <div class="form-grid" style="margin-top:12px">
           <div class="form-group">
             <label>D.T. Onay Tarihi</label>
@@ -1595,11 +1604,25 @@ function onGorevliChange(el, type) {
   const unvan = getUnvanByAd(ad, referans);
   if (type === 'ym') {
     proje.ymGorevliler[idx] = { ad, unvan };
+    if (proje.dtGorevlilerYmIleAyni) {
+      proje.dtGorevliler[idx] = { ad, unvan };
+      proje.dtGorevliSayisi = proje.ymGorevliSayisi;
+    }
   } else if (type === 'dt') {
     proje.dtGorevliler[idx] = { ad, unvan };
   } else if (type === 'mk') {
     if (!proje.mkGorevliler) proje.mkGorevliler = [{ad:'', unvan:''}, {ad:'', unvan:''}, {ad:'', unvan:''}];
     proje.mkGorevliler[idx] = { ad, unvan };
+  }
+  autoSave();
+  renderPage();
+}
+
+function onDtGorevliAyniToggle(checked) {
+  proje.dtGorevlilerYmIleAyni = checked;
+  if (checked) {
+    proje.dtGorevliSayisi = proje.ymGorevliSayisi || 1;
+    proje.dtGorevliler = JSON.parse(JSON.stringify(proje.ymGorevliler || [{ad:'', unvan:''}, {ad:'', unvan:''}, {ad:'', unvan:''}]));
   }
   autoSave();
   renderPage();
