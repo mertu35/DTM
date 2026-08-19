@@ -669,6 +669,13 @@ document.addEventListener('DOMContentLoaded', () => {
       onAuthReady(null);
     }
   });
+
+  // Sayfa kapatılırken veya yenilenirken veri kaybını önle
+  window.addEventListener('beforeunload', (e) => {
+    if (currentPage === 'veri-giris' && proje && (proje.isAdi?.trim() || proje.isKalemleri?.some(k=>k.ad))) {
+      saveProje(proje);
+    }
+  });
 });
 
 // Proje gerektiren menüler
@@ -687,10 +694,18 @@ function updateNavLock() {
 
 function init() {
   document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', () => {
+    item.addEventListener('click', async (e) => {
+      const targetPage = item.dataset.page;
+      if (currentPage === targetPage) return;
+
+      // Eğer Proje Girişi sayfasındaysak ve veri girilmişse/değişmişse otomatik localStorage'a kaydet
+      if (currentPage === 'veri-giris' && proje) {
+        saveProje(proje);
+      }
+
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       item.classList.add('active');
-      currentPage = item.dataset.page;
+      currentPage = targetPage;
       currentOnayliBelgelerProjeId = null;
       renderPage();
       updateNavLock();
