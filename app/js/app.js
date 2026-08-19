@@ -3659,9 +3659,10 @@ async function renderProjelerimPage() {
     if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
 
     const bolumler = [
-      { keys: ['taslak'],                    baslik: '📂 Devam Edenler',     renk: '#f9fafb', kenar: '#e5e7eb', yaziRenk: '#374151' },
-      { keys: ['geri_gonderildi'],           baslik: '⏳ İşlem Bekleyenler', renk: '#fef2f2', kenar: '#fecaca', yaziRenk: '#991b1b' },
-      { keys: ['gonderildi', 'onaylandi'],   baslik: '✅ Onaylananlar',       renk: '#f0fdf4', kenar: '#bbf7d0', yaziRenk: '#15803d' }
+      { keys: ['taslak'],          baslik: '📂 Devam Edenler (Taslak)',   renk: '#f9fafb', kenar: '#e5e7eb', yaziRenk: '#374151' },
+      { keys: ['geri_gonderildi'], baslik: '⏳ İşlem Bekleyenler',        renk: '#fef2f2', kenar: '#fecaca', yaziRenk: '#991b1b' },
+      { keys: ['gonderildi'],      baslik: '📤 Gönderilenler',            renk: '#eff6ff', kenar: '#bfdbfe', yaziRenk: '#1e40af' },
+      { keys: ['onaylandi'],       baslik: '✅ Onaylananlar',              renk: '#f0fdf4', kenar: '#bbf7d0', yaziRenk: '#15803d' }
     ];
 
     const projeKart = (p) => {
