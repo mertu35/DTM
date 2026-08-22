@@ -940,35 +940,142 @@ body {
 }
 
 /* Veri Merkezi */
+.vm-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow);
+}
+.vm-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.vm-header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.vm-header-title h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 2px;
+}
+.vm-header-title p {
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
 .ref-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 13px;
 }
 
 .ref-table th {
   background: var(--gray-50);
-  padding: 8px 10px;
+  padding: 10px 14px;
   text-align: left;
   font-weight: 600;
   font-size: 12px;
-  border-bottom: 2px solid var(--gray-200);
+  color: var(--gray-600);
+  border-bottom: 1.5px solid var(--gray-200);
+  letter-spacing: 0.3px;
 }
 
 .ref-table td {
-  padding: 6px 10px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--gray-100);
+  vertical-align: middle;
 }
 
-.ref-table input {
+.ref-table tr:hover td {
+  background: #fafbff;
+}
+
+.ref-input {
   width: 100%;
-  padding: 4px 6px;
-  border: 1px solid var(--gray-200);
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--gray-800);
+  background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.ref-table .btn-sm { padding: 3px 8px; font-size: 11px; }
+.ref-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
+}
+
+.btn-icon-danger {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--gray-400);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-icon-danger:hover {
+  background: #fee2e2;
+  color: var(--danger);
+  border-color: #fca5a5;
+}
+
+.ref-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px;
+  padding: 6px 12px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-700);
+  transition: all 0.15s ease;
+}
+.ref-tag-pill:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+.ref-tag-pill button {
+  background: none;
+  border: none;
+  color: var(--gray-400);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 2px;
+  transition: color 0.15s ease;
+}
+.ref-tag-pill button:hover {
+  color: var(--danger);
+}
 
 /* Action bar */
 .action-bar {

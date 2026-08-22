@@ -2719,16 +2719,24 @@ function renderVeriMerkeziPage() {
 
   const muhendisRows = referans.muhendisList.map((m, i) => `
     <tr>
-      <td><input type="text" value="${escAttr(m.ad)}" onchange="onRefChange('muhendisList', ${i}, 'ad', this.value)"></td>
-      <td><input type="text" value="${escAttr(m.unvan)}" onchange="onRefChange('muhendisList', ${i}, 'unvan', this.value)"></td>
-      <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('muhendisList', ${i})">Sil</button></td>
+      <td style="width:46%"><input type="text" class="ref-input" value="${escAttr(m.ad)}" placeholder="Ad Soyad giriniz" onchange="onRefChange('muhendisList', ${i}, 'ad', this.value)"></td>
+      <td style="width:46%"><input type="text" class="ref-input" value="${escAttr(m.unvan)}" placeholder="Ünvan (Örn: İnşaat Mühendisi)" onchange="onRefChange('muhendisList', ${i}, 'unvan', this.value)"></td>
+      <td style="width:8%; text-align:center;">
+        <button class="btn-icon-danger" onclick="onRefDelete('muhendisList', ${i})" title="Görevliyi Sil">
+          ${typeof getIcon === 'function' ? getIcon('trash', 16) : '✕'}
+        </button>
+      </td>
     </tr>`).join('');
 
   const onaylayanRows = referans.onaylayanList.map((o, i) => `
     <tr>
-      <td><input type="text" value="${escAttr(o.ad)}" onchange="onRefChange('onaylayanList', ${i}, 'ad', this.value)"></td>
-      <td><input type="text" value="${escAttr(o.unvan)}" onchange="onRefChange('onaylayanList', ${i}, 'unvan', this.value)"></td>
-      <td><button class="btn btn-danger btn-sm" onclick="onRefDelete('onaylayanList', ${i})">Sil</button></td>
+      <td style="width:46%"><input type="text" class="ref-input" value="${escAttr(o.ad)}" placeholder="Ad Soyad giriniz" onchange="onRefChange('onaylayanList', ${i}, 'ad', this.value)"></td>
+      <td style="width:46%"><input type="text" class="ref-input" value="${escAttr(o.unvan)}" placeholder="Ünvan (Örn: Şube Müdürü)" onchange="onRefChange('onaylayanList', ${i}, 'unvan', this.value)"></td>
+      <td style="width:8%; text-align:center;">
+        <button class="btn-icon-danger" onclick="onRefDelete('onaylayanList', ${i})" title="Amiri Sil">
+          ${typeof getIcon === 'function' ? getIcon('trash', 16) : '✕'}
+        </button>
+      </td>
     </tr>`).join('');
 
   // Geçmişte kaydedilmiş boş/isimsiz firmaları otomatik temizle
@@ -2742,47 +2750,75 @@ function renderVeriMerkeziPage() {
 
   const sortedFirms = (referans.firmaList || []).map((f, i) => ({f, i})).sort((a, b) => (a.f.ad || '').localeCompare(b.f.ad || '', 'tr-TR'));
   const ilceRows = referans.ilceler.map((il, i) => `
-    <span style="display:inline-flex;align-items:center;gap:4px;margin:3px;padding:4px 8px;background:var(--gray-100);border-radius:4px;">
-      ${il} <button class="btn btn-danger btn-sm" onclick="onRefDelete('ilceler', ${i})" style="padding:1px 5px">&times;</button>
+    <span class="ref-tag-pill">
+      ${escHtml(il)} 
+      <button onclick="onRefDelete('ilceler', ${i})" title="İlçeyi Sil">
+        ${typeof getIcon === 'function' ? getIcon('x', 14) : '×'}
+      </button>
     </span>`).join('');
 
   return `
-    <div class="page-header">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <h2>Veri Merkezi</h2>
-          <p>Dropdown listelerini ve referans verilerini yönetin.</p>
+    <div class="vm-page-header">
+      <div class="vm-header-title">
+        <div class="vm-header-icon">
+          ${typeof getIcon === 'function' ? getIcon('database', 22) : '⚙️'}
         </div>
-        ${isSuperAdmin ? `<button class="btn btn-primary" onclick="forceMergeYukleniciHavuzu()">Tüm Firmaları Havuza Çek (Senkronize Et)</button>` : ''}
+        <div>
+          <h2>Veri Merkezi & Tanımlamalar</h2>
+          <p>Projelerde ve resmi belgelerde kullanılan personel, kurum ve firma rehberini yönetin.</p>
+        </div>
       </div>
+      ${isSuperAdmin ? `<button class="btn btn-primary" onclick="forceMergeYukleniciHavuzu()" style="display:flex;align-items:center;gap:6px">${typeof getIcon === 'function' ? getIcon('sliders', 16) : '🔄'} Tüm Firmaları Havuza Çek</button>` : ''}
     </div>
 
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
-        <h3>Mühendis / Görevli Listesi</h3><span class="toggle-icon">&#9660;</span>
+        <h3 style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('users', 18) : ''}</span>
+          Mühendis / Görevli Listesi
+          <span style="font-size:11px;background:#e8eefb;color:var(--primary);padding:2px 8px;border-radius:12px;font-weight:600;margin-left:4px">${referans.muhendisList.length} Personel</span>
+        </h3>
+        <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
         <table class="ref-table">
-          <thead><tr><th>Ad Soyad</th><th>Ünvan</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>Ad Soyad</th>
+              <th>Ünvan</th>
+              <th style="text-align:center;width:80px">İşlem</th>
+            </tr>
+          </thead>
           <tbody>${muhendisRows}</tbody>
         </table>
-        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('muhendisList', {ad:'', unvan:''})">+ Ekle</button>
+        <div style="margin-top:14px">
+          <button class="btn btn-outline btn-sm" style="display:inline-flex;align-items:center;gap:6px" onclick="onRefAdd('muhendisList', {ad:'', unvan:''})">
+            ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Görevli Ekle
+          </button>
+        </div>
       </div>
     </div>
 
     ${!isSuperAdmin ? `
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
-        <h3>Firma Listesi</h3><span class="toggle-icon">&#9660;</span>
+        <h3 style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('building', 18) : ''}</span>
+          Firma & Yüklenici Rehberi
+          <span style="font-size:11px;background:#e8eefb;color:var(--primary);padding:2px 8px;border-radius:12px;font-weight:600;margin-left:4px">${sortedFirms.length} Kayıtlı</span>
+        </h3>
+        <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
         <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
-          <select style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--gray-300);" onchange="onFirmaListeSelect(this.value)">
-            <option value="-1">-- Firma Seçin veya Yeni Ekleyin --</option>
+          <select class="ref-input" style="flex:1; padding:9px 12px;" onchange="onFirmaListeSelect(this.value)">
+            <option value="-1">-- Firma / Kişi Seçin veya Yeni Ekleyin --</option>
             ${dtmYeniEklenenFirma ? `<option value="NEW" selected>➕ Yeni Firma (Kaydedilmedi)</option>` : ''}
             ${sortedFirms.map(item => `<option value="${item.i}" ${!dtmYeniEklenenFirma && dtmSeciliFirmaIndex === item.i ? 'selected' : ''}>${escHtml(item.f.ad)}</option>`).join('')}
           </select>
-          <button class="btn btn-outline" onclick="onFirmaListeEkle()">+ Yeni Ekle</button>
+          <button class="btn btn-outline" style="display:inline-flex;align-items:center;gap:6px" onclick="onFirmaListeEkle()">
+            ${typeof getIcon === 'function' ? getIcon('plus', 16) : '+'} Yeni Firma Ekle
+          </button>
         </div>
         
         ${(dtmYeniEklenenFirma || (dtmSeciliFirmaIndex >= 0 && referans.firmaList && referans.firmaList[dtmSeciliFirmaIndex])) ? (() => {
@@ -2790,29 +2826,33 @@ function renderVeriMerkeziPage() {
           const f = isNew ? dtmYeniEklenenFirma : referans.firmaList[dtmSeciliFirmaIndex];
           const i = isNew ? 'NEW' : dtmSeciliFirmaIndex;
           return `
-          <div style="background:var(--gray-50); padding:15px; border-radius:8px; border:1px solid var(--gray-200);">
-            <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-              <div class="form-group"><label>Ad <span style="color:var(--danger)">*</span></label><input type="text" id="firmaInputAd" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" onchange="onFirmaFieldChange('firmaList', '${i}', 'ad', this.value)" oninput="onFirmaFieldChange('firmaList', '${i}', 'ad', this.value)"></div>
-              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select id="firmaInputTur" onchange="onFirmaFieldChange('firmaList', '${i}', 'tur', this.value); renderPage('veri-merkezi');">
+          <div style="background:var(--gray-50); padding:18px 20px; border-radius:12px; border:1px solid var(--gray-200);">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:14px;">
+              <div class="form-group"><label>Firma / Kişi Adı <span style="color:var(--danger)">*</span></label><input type="text" class="ref-input" id="firmaInputAd" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" onchange="onFirmaFieldChange('firmaList', '${i}', 'ad', this.value)" oninput="onFirmaFieldChange('firmaList', '${i}', 'ad', this.value)"></div>
+              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select class="ref-input" id="firmaInputTur" onchange="onFirmaFieldChange('firmaList', '${i}', 'tur', this.value); renderPage('veri-merkezi');">
                   <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
-              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${escAttr(f.adres || '')}" placeholder="Adres giriniz" onchange="onFirmaFieldChange('firmaList', '${i}', 'adres', this.value)"></div>
-              <div class="form-group"><label>Telefon</label><input type="text" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" onchange="onFirmaFieldChange('firmaList', '${i}', 'tel', this.value)"></div>
-              <div class="form-group"><label>Faks</label><input type="text" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" onchange="onFirmaFieldChange('firmaList', '${i}', 'faks', this.value)"></div>
-              <div class="form-group"><label>E-Posta</label><input type="text" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" onchange="onFirmaFieldChange('firmaList', '${i}', 'eposta', this.value)"></div>
-              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${escAttr(f.dogumTarihi || '')}" onchange="onFirmaFieldChange('firmaList', '${i}', 'dogumTarihi', this.value)"></div>`}
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" onchange="onFirmaFieldChange('firmaList', '${i}', 'adres', this.value)"></div>
+              <div class="form-group"><label>Telefon</label><input type="text" class="ref-input" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" onchange="onFirmaFieldChange('firmaList', '${i}', 'tel', this.value)"></div>
+              <div class="form-group"><label>Faks</label><input type="text" class="ref-input" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" onchange="onFirmaFieldChange('firmaList', '${i}', 'faks', this.value)"></div>
+              <div class="form-group"><label>E-Posta</label><input type="text" class="ref-input" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" onchange="onFirmaFieldChange('firmaList', '${i}', 'eposta', this.value)"></div>
+              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" class="ref-input" value="${escAttr(f.dogumTarihi || '')}" onchange="onFirmaFieldChange('firmaList', '${i}', 'dogumTarihi', this.value)"></div>`}
               <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
                 <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('firmaList', '${i}', 'basitUsul', this.checked)">
-                <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:bold; color:var(--primary-color)">Bu Firma/Kişi Basit Usule Tabiidir</label>
+                <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:600; color:var(--primary)">Bu Firma / Kişi Basit Usule Tabiidir</label>
               </div>
             </div>
-            <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
-              <button class="btn btn-primary" onclick="kaydetFirmaFormu('${i}')">Kaydet</button>
+            <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--gray-200); display:flex; justify-content:space-between; align-items:center;">
+              <button class="btn btn-primary" onclick="kaydetFirmaFormu('${i}')" style="display:inline-flex;align-items:center;gap:6px">
+                ${typeof getIcon === 'function' ? getIcon('check', 16) : '✓'} Bilgileri Kaydet
+              </button>
               ${isNew ? `
                 <button class="btn btn-outline btn-sm" onclick="vazgecFirmaFormu()">Vazgeç</button>
               ` : `
-                <button class="btn btn-danger btn-sm" onclick="onRefDelete('firmaList', ${i}); onFirmaListeSelect(-1);">Firmayı Sil</button>
+                <button class="btn btn-danger btn-sm" style="display:inline-flex;align-items:center;gap:4px" onclick="onRefDelete('firmaList', ${i}); onFirmaListeSelect(-1);">
+                  ${typeof getIcon === 'function' ? getIcon('trash', 14) : ''} Firmayı Sil
+                </button>
               `}
             </div>
           </div>
@@ -2825,75 +2865,118 @@ function renderVeriMerkeziPage() {
     ${isSuperAdmin ? `
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
-        <h3>Onaylayan Amir Listesi</h3><span class="toggle-icon">&#9660;</span>
+        <h3 style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('userCheck', 18) : ''}</span>
+          Onaylayan Amir Listesi
+          <span style="font-size:11px;background:#e8eefb;color:var(--primary);padding:2px 8px;border-radius:12px;font-weight:600;margin-left:4px">${referans.onaylayanList.length} Amir</span>
+        </h3>
+        <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
         <table class="ref-table">
-          <thead><tr><th>Ad Soyad</th><th>Ünvan</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>Ad Soyad</th>
+              <th>Ünvan</th>
+              <th style="text-align:center;width:80px">İşlem</th>
+            </tr>
+          </thead>
           <tbody>${onaylayanRows}</tbody>
         </table>
-        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="onRefAdd('onaylayanList', {ad:'', unvan:''})">+ Ekle</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
-        <h3>İdare Listesi</h3><span class="toggle-icon">&#9660;</span>
-      </div>
-      <div class="card-body">
-        ${referans.idareList.map((il, i) => `
-          <span style="display:inline-flex;align-items:center;gap:4px;margin:3px;padding:4px 8px;background:var(--gray-100);border-radius:4px;">
-            ${il} <button class="btn btn-danger btn-sm" onclick="onRefDelete('idareList', ${i})" style="padding:1px 5px">&times;</button>
-          </span>`).join('')}
-        <div style="margin-top:8px;display:flex;gap:6px">
-          <input type="text" id="yeniIdare" placeholder="Yeni idare adı" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px;flex:1">
-          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniIdare').value;if(v){referans.idareList.push(v);saveGlobalReferans(referans);renderPage();}">Ekle</button>
+        <div style="margin-top:14px">
+          <button class="btn btn-outline btn-sm" style="display:inline-flex;align-items:center;gap:6px" onclick="onRefAdd('onaylayanList', {ad:'', unvan:''})">
+            ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Amir Ekle
+          </button>
         </div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
-        <h3>Müdürlük Listesi</h3><span class="toggle-icon">&#9660;</span>
+        <h3 style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('home', 18) : ''}</span>
+          İdare Tanımları
+        </h3>
+        <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
-        ${referans.mudurlukler.map((m, i) => `
-          <span style="display:inline-flex;align-items:center;gap:4px;margin:3px;padding:4px 8px;background:var(--gray-100);border-radius:4px;">
-            ${m} <button class="btn btn-danger btn-sm" onclick="onRefDelete('mudurlukler', ${i})" style="padding:1px 5px">&times;</button>
-          </span>`).join('')}
-        <div style="margin-top:8px;display:flex;gap:6px">
-          <input type="text" id="yeniMudurluk" placeholder="Yeni müdürlük adı" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px;flex:1">
-          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniMudurluk').value;if(v){referans.mudurlukler.push(v);saveGlobalReferans(referans);renderPage();}">Ekle</button>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">
+          ${referans.idareList.map((il, i) => `
+            <span class="ref-tag-pill">
+              ${escHtml(il)} 
+              <button onclick="onRefDelete('idareList', ${i})" title="Sil">
+                ${typeof getIcon === 'function' ? getIcon('x', 14) : '×'}
+              </button>
+            </span>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px;max-width:480px">
+          <input type="text" class="ref-input" id="yeniIdare" placeholder="Yeni idare adı giriniz">
+          <button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="const v=document.getElementById('yeniIdare').value;if(v){referans.idareList.push(v);saveGlobalReferans(referans);renderPage();}">+ Ekle</button>
         </div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
-        <h3>İlçeler</h3><span class="toggle-icon">&#9660;</span>
+        <h3 style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('briefcase', 18) : ''}</span>
+          Müdürlük Tanımları
+        </h3>
+        <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
-        ${ilceRows}
-        <div style="margin-top:8px;display:flex;gap:6px">
-          <input type="text" id="yeniIlce" placeholder="Yeni ilçe adı" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px">
-          <button class="btn btn-outline btn-sm" onclick="const v=document.getElementById('yeniIlce').value;if(v){referans.ilceler.push(v);saveGlobalReferans(referans);renderPage();}">Ekle</button>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">
+          ${referans.mudurlukler.map((m, i) => `
+            <span class="ref-tag-pill">
+              ${escHtml(m)} 
+              <button onclick="onRefDelete('mudurlukler', ${i})" title="Sil">
+                ${typeof getIcon === 'function' ? getIcon('x', 14) : '×'}
+              </button>
+            </span>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px;max-width:480px">
+          <input type="text" class="ref-input" id="yeniMudurluk" placeholder="Yeni müdürlük adı giriniz">
+          <button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="const v=document.getElementById('yeniMudurluk').value;if(v){referans.mudurlukler.push(v);saveGlobalReferans(referans);renderPage();}">+ Ekle</button>
         </div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
-        <h3>D.T. Sınır Tutarları</h3><span class="toggle-icon">&#9660;</span>
+        <h3 style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('mapPin', 18) : ''}</span>
+          İlçe Tanımları
+        </h3>
+        <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
-        <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px">Yıllara göre Doğrudan Temin sınır tutarlarını girin (KDV hariç, TL).</p>
-        <table class="ref-table">
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">
+          ${ilceRows}
+        </div>
+        <div style="display:flex;gap:8px;max-width:480px">
+          <input type="text" class="ref-input" id="yeniIlce" placeholder="Yeni ilçe adı giriniz">
+          <button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="const v=document.getElementById('yeniIlce').value;if(v){referans.ilceler.push(v);saveGlobalReferans(referans);renderPage();}">+ Ekle</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h3 style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('chart', 18) : ''}</span>
+          D.T. Yıllık Sınır Tutarları
+        </h3>
+        <span class="toggle-icon">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:14px">Yıllara göre KİK Doğrudan Temin parasal sınır tutarlarını girin (KDV hariç, TL).</p>
+        <table class="ref-table" style="max-width:420px">
           <thead><tr><th>Yıl</th><th>Sınır Tutarı (TL)</th></tr></thead>
           <tbody>
             ${(referans.dtSinirlari || []).map((s, i) => `
               <tr>
-                <td style="font-weight:600">${s.yil}</td>
-                <td><input type="number" value="${s.sinir}" min="0" placeholder="0" onchange="onRefChange('dtSinirlari', ${i}, 'sinir', parseFloat(this.value)||0)"></td>
+                <td style="font-weight:600;padding-left:14px">${s.yil}</td>
+                <td><input type="number" class="ref-input" value="${s.sinir}" min="0" placeholder="0" onchange="onRefChange('dtSinirlari', ${i}, 'sinir', parseFloat(this.value)||0)"></td>
               </tr>`).join('')}
           </tbody>
         </table>
@@ -2902,7 +2985,11 @@ function renderVeriMerkeziPage() {
 
     <div class="card" id="visionUsageCard">
       <div class="card-header" onclick="toggleCard(this)">
-        <h3>📷 Vision API Kullanımı</h3><span class="toggle-icon">&#9660;</span>
+        <h3 style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('fileText', 18) : ''}</span>
+          Vision API Belge Tarama Kotası
+        </h3>
+        <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
         <div id="visionUsageIcerik" style="font-size:13px;color:var(--gray-600)">Yükleniyor...</div>
@@ -3988,9 +4075,13 @@ function renderGerceklestirmeciVeriMerkeziPage() {
   );
   const rows = liste.map((bt, i) => `
     <tr>
-      <td style="width:40%"><input type="text" value="${bt.no || ''}" onchange="btGuncelle(${i},'no',this.value)" style="width:100%"></td>
-      <td><input type="text" value="${bt.aciklama || ''}" onchange="btGuncelle(${i},'aciklama',this.value)" style="width:100%" placeholder="Açıklama (ör: Yapım İşleri)"></td>
-      <td style="width:60px;text-align:center"><button class="btn btn-danger btn-sm" onclick="onRefDelete('butceTertibiList', ${i})">Sil</button></td>
+      <td style="width:40%"><input type="text" class="ref-input" value="${escAttr(bt.no || '')}" onchange="btGuncelle(${i},'no',this.value)" placeholder="Tertip No"></td>
+      <td><input type="text" class="ref-input" value="${escAttr(bt.aciklama || '')}" onchange="btGuncelle(${i},'aciklama',this.value)" placeholder="Açıklama (Örn: Yapım İşleri)"></td>
+      <td style="width:60px;text-align:center">
+        <button class="btn-icon-danger" onclick="onRefDelete('butceTertibiList', ${i})" title="Sil">
+          ${typeof getIcon === 'function' ? getIcon('trash', 16) : '✕'}
+        </button>
+      </td>
     </tr>`).join('');
 
   // Geçmişte kaydedilmiş boş/isimsiz yüklenicileri otomatik temizle
@@ -4005,23 +4096,35 @@ function renderGerceklestirmeciVeriMerkeziPage() {
   const sortedYuklenici = (referans.yukleniciList || []).map((f, i) => ({f, i})).sort((a, b) => (a.f.ad || '').localeCompare(b.f.ad || '', 'tr-TR'));
 
   return `
-    <div class="page-header">
-      <h2>Veri Merkezi</h2>
-      <p>Bütçe tertiplerini yönetin.</p>
+    <div class="vm-page-header">
+      <div class="vm-header-title">
+        <div class="vm-header-icon">
+          ${typeof getIcon === 'function' ? getIcon('database', 22) : '⚙️'}
+        </div>
+        <div>
+          <h2>Veri Merkezi & Tanımlamalar</h2>
+          <p>Projelerde ve belgelerde kullanılan bütçe tertiplerini ve ortak yüklenici havuzunu yönetin.</p>
+        </div>
+      </div>
     </div>
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
-        <h3>Bütçe Tertibi Listesi</h3><span class="toggle-icon">&#9660;</span>
+        <h3 style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('chart', 18) : ''}</span>
+          Bütçe Tertibi Listesi
+          <span style="font-size:11px;background:#e8eefb;color:var(--primary);padding:2px 8px;border-radius:12px;font-weight:600;margin-left:4px">${liste.length} Tertip</span>
+        </h3>
+        <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
         <table class="ref-table">
-          <thead><tr><th style="width:40%">Bütçe Tertibi No</th><th>Açıklama</th><th></th></tr></thead>
+          <thead><tr><th style="width:40%">Bütçe Tertibi No</th><th>Açıklama</th><th style="text-align:center;width:60px">İşlem</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
-        <div style="margin-top:8px;display:flex;gap:6px">
-          <input type="text" id="yeniBtNo" placeholder="Örn: 09.1.2.00.000/05/03.8" style="padding:6px 10px;border:1px solid var(--gray-300);border-radius:6px;flex:1;font-size:14px">
-          <input type="text" id="yeniBtAciklama" placeholder="Açıklama" style="padding:6px 10px;border:1px solid var(--gray-300);border-radius:6px;flex:1;font-size:14px">
-          <button class="btn btn-outline btn-sm" onclick="
+        <div style="margin-top:14px;display:flex;gap:8px;max-width:600px">
+          <input type="text" class="ref-input" id="yeniBtNo" placeholder="Örn: 09.1.2.00.000/05/03.8" style="flex:1">
+          <input type="text" class="ref-input" id="yeniBtAciklama" placeholder="Açıklama (Örn: Yol Yapım)" style="flex:1">
+          <button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="
             const no=document.getElementById('yeniBtNo').value.trim();
             const ac=document.getElementById('yeniBtAciklama').value.trim();
             if(no){if(!referans.butceTertibiList)referans.butceTertibiList=[];referans.butceTertibiList.push({no,aciklama:ac});saveReferans(referans);renderPage();}
@@ -4032,16 +4135,23 @@ function renderGerceklestirmeciVeriMerkeziPage() {
 
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
-        <h3>Yüklenici / Firma Listesi</h3><span class="toggle-icon">&#9660;</span>
+        <h3 style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('building', 18) : ''}</span>
+          Ortak Yüklenici & Firma Havuzu
+          <span style="font-size:11px;background:#e8eefb;color:var(--primary);padding:2px 8px;border-radius:12px;font-weight:600;margin-left:4px">${sortedYuklenici.length} Kayıtlı</span>
+        </h3>
+        <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
         <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
-          <select style="flex:1; padding:8px; border-radius:5px; border:1px solid var(--gray-300);" onchange="onYukleniciSelect(this.value)">
-            <option value="-1">-- Firma Seçin veya Yeni Ekleyin --</option>
+          <select class="ref-input" style="flex:1; padding:9px 12px;" onchange="onYukleniciSelect(this.value)">
+            <option value="-1">-- Firma / Kişi Seçin veya Yeni Ekleyin --</option>
             ${dtmYeniEklenenYuklenici ? `<option value="NEW_YUKLENICI" selected>➕ Yeni Firma (Kaydedilmedi)</option>` : ''}
             ${sortedYuklenici.map(item => `<option value="${item.i}" ${!dtmYeniEklenenYuklenici && dtmSeciliYukleniciIndex === item.i ? 'selected' : ''}>${escHtml(item.f.ad)}</option>`).join('')}
           </select>
-          <button class="btn btn-outline" onclick="onYukleniciEkle()">+ Yeni Ekle</button>
+          <button class="btn btn-outline" style="display:inline-flex;align-items:center;gap:6px" onclick="onYukleniciEkle()">
+            ${typeof getIcon === 'function' ? getIcon('plus', 16) : '+'} Yeni Ekle
+          </button>
         </div>
         
         ${(dtmYeniEklenenYuklenici || (dtmSeciliYukleniciIndex >= 0 && referans.yukleniciList && referans.yukleniciList[dtmSeciliYukleniciIndex])) ? (() => {
@@ -4049,29 +4159,33 @@ function renderGerceklestirmeciVeriMerkeziPage() {
           const f = isNew ? dtmYeniEklenenYuklenici : referans.yukleniciList[dtmSeciliYukleniciIndex];
           const i = isNew ? 'NEW_YUKLENICI' : dtmSeciliYukleniciIndex;
           return `
-          <div style="background:var(--gray-50); padding:15px; border-radius:8px; border:1px solid var(--gray-200);">
-            <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-              <div class="form-group"><label>Ad <span style="color:var(--danger)">*</span></label><input type="text" id="yukleniciInputAd" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'ad', this.value)" oninput="onFirmaFieldChange('yukleniciList', '${i}', 'ad', this.value)"></div>
-              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select id="yukleniciInputTur" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'tur', this.value); document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();">
+          <div style="background:var(--gray-50); padding:18px 20px; border-radius:12px; border:1px solid var(--gray-200);">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:14px;">
+              <div class="form-group"><label>Firma / Kişi Adı <span style="color:var(--danger)">*</span></label><input type="text" class="ref-input" id="yukleniciInputAd" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'ad', this.value)" oninput="onFirmaFieldChange('yukleniciList', '${i}', 'ad', this.value)"></div>
+              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select class="ref-input" id="yukleniciInputTur" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'tur', this.value); document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();">
                   <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
-              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" value="${escAttr(f.adres || '')}" placeholder="Adres giriniz" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'adres', this.value)"></div>
-              <div class="form-group"><label>Telefon</label><input type="text" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'tel', this.value)"></div>
-              <div class="form-group"><label>Faks</label><input type="text" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'faks', this.value)"></div>
-              <div class="form-group"><label>E-Posta</label><input type="text" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'eposta', this.value)"></div>
-              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" value="${escAttr(f.dogumTarihi || '')}" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'dogumTarihi', this.value)"></div>`}
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'adres', this.value)"></div>
+              <div class="form-group"><label>Telefon</label><input type="text" class="ref-input" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'tel', this.value)"></div>
+              <div class="form-group"><label>Faks</label><input type="text" class="ref-input" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'faks', this.value)"></div>
+              <div class="form-group"><label>E-Posta</label><input type="text" class="ref-input" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'eposta', this.value)"></div>
+              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" class="ref-input" value="${escAttr(f.dogumTarihi || '')}" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'dogumTarihi', this.value)"></div>`}
               <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
                 <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('yukleniciList', '${i}', 'basitUsul', this.checked)">
-                <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:bold; color:var(--primary-color)">Bu Firma/Kişi Basit Usule Tabiidir</label>
+                <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:600; color:var(--primary)">Bu Firma / Kişi Basit Usule Tabiidir</label>
               </div>
             </div>
-            <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
-              <button class="btn btn-primary" onclick="kaydetYukleniciFormu('${i}')">Kaydet</button>
+            <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--gray-200); display:flex; justify-content:space-between; align-items:center;">
+              <button class="btn btn-primary" onclick="kaydetYukleniciFormu('${i}')" style="display:inline-flex;align-items:center;gap:6px">
+                ${typeof getIcon === 'function' ? getIcon('check', 16) : '✓'} Bilgileri Kaydet
+              </button>
               ${isNew ? `
                 <button class="btn btn-outline btn-sm" onclick="vazgecYukleniciFormu()">Vazgeç</button>
               ` : `
-                <button class="btn btn-danger btn-sm" onclick="onRefDelete('yukleniciList', ${i}); onYukleniciSelect(-1);">Firmayı Sil</button>
+                <button class="btn btn-danger btn-sm" style="display:inline-flex;align-items:center;gap:4px" onclick="onRefDelete('yukleniciList', ${i}); onYukleniciSelect(-1);">
+                  ${typeof getIcon === 'function' ? getIcon('trash', 14) : ''} Firmayı Sil
+                </button>
               `}
             </div>
           </div>
