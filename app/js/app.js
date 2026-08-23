@@ -2735,10 +2735,11 @@ const DTM_DISIPLIN_LISTESI = [
 function renderVeriMerkeziPage() {
   const isSuperAdmin = currentDTMUser?.role === 'superadmin';
 
-  // Geçmişte kaydedilmiş boş/isimsiz mühendis ve personelleri otomatik temizle
+  // Geçmişte kaydedilmiş boş/isimsiz mühendis ve personelleri otomatik temizle ve alfabetik sırala
   if (referans.muhendisList && Array.isArray(referans.muhendisList)) {
     const oncekiAdet = referans.muhendisList.length;
     referans.muhendisList = referans.muhendisList.filter(m => m && m.ad && m.ad.trim());
+    referans.muhendisList.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
     if (referans.muhendisList.length !== oncekiAdet) {
       saveReferans(referans);
     }
@@ -2842,7 +2843,7 @@ function renderVeriMerkeziPage() {
           Kayıtlı görevli personel bulunamadı. Yeni personel eklemek için aşağıdaki butonu kullanın.
         </div>`}
         <div style="margin-top:16px">
-          <button class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px" onclick="acMuhendisModal()">
+          <button class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-weight:600;" onclick="acMuhendisModal()">
             ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Görevli Ekle
           </button>
         </div>
@@ -2860,14 +2861,14 @@ function renderVeriMerkeziPage() {
         <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
-        <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
-          <select class="ref-input" style="flex:1; padding:9px 12px;" onchange="onFirmaListeSelect(this.value)">
-            <option value="-1">-- Firma / Kişi Seçin veya Yeni Ekleyin --</option>
+        <div style="display:flex; gap:10px; margin-bottom:16px; align-items:center;">
+          <select class="ref-input" style="flex:1; height:40px; padding:0 12px; font-size:13px; border-radius:8px;" onchange="onFirmaListeSelect(this.value)">
+            <option value="-1">🔍 Kayıtlı firmalardan seçin veya düzenleyin...</option>
             ${dtmYeniEklenenFirma ? `<option value="NEW" selected>➕ Yeni Firma (Kaydedilmedi)</option>` : ''}
             ${sortedFirms.map(item => `<option value="${item.i}" ${!dtmYeniEklenenFirma && dtmSeciliFirmaIndex === item.i ? 'selected' : ''}>${escHtml(item.f.ad)}</option>`).join('')}
           </select>
-          <button class="btn btn-outline" style="display:inline-flex;align-items:center;gap:6px" onclick="onFirmaListeEkle()">
-            ${typeof getIcon === 'function' ? getIcon('plus', 16) : '+'} Yeni Firma Ekle
+          <button class="btn-icon-primary" style="height:40px; padding:0 14px; font-size:13px; font-weight:600; border-radius:8px; white-space:nowrap;" onclick="onFirmaListeEkle()">
+            ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Firma
           </button>
         </div>
         
@@ -4193,14 +4194,14 @@ function renderGerceklestirmeciVeriMerkeziPage() {
         <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
-        <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
-          <select class="ref-input" style="flex:1; padding:9px 12px;" onchange="onYukleniciSelect(this.value)">
-            <option value="-1">-- Firma / Kişi Seçin veya Yeni Ekleyin --</option>
+        <div style="display:flex; gap:10px; margin-bottom:16px; align-items:center;">
+          <select class="ref-input" style="flex:1; height:40px; padding:0 12px; font-size:13px; border-radius:8px;" onchange="onYukleniciSelect(this.value)">
+            <option value="-1">🔍 Kayıtlı firmalardan seçin veya düzenleyin...</option>
             ${dtmYeniEklenenYuklenici ? `<option value="NEW_YUKLENICI" selected>➕ Yeni Firma (Kaydedilmedi)</option>` : ''}
             ${sortedYuklenici.map(item => `<option value="${item.i}" ${!dtmYeniEklenenYuklenici && dtmSeciliYukleniciIndex === item.i ? 'selected' : ''}>${escHtml(item.f.ad)}</option>`).join('')}
           </select>
-          <button class="btn btn-outline" style="display:inline-flex;align-items:center;gap:6px" onclick="onYukleniciEkle()">
-            ${typeof getIcon === 'function' ? getIcon('plus', 16) : '+'} Yeni Ekle
+          <button class="btn-icon-primary" style="height:40px; padding:0 14px; font-size:13px; font-weight:600; border-radius:8px; white-space:nowrap;" onclick="onYukleniciEkle()">
+            ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Firma
           </button>
         </div>
         
