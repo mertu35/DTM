@@ -3156,95 +3156,189 @@ function onRefAdd(list, item) {
 async function renderDashboardPage() {
   const main = document.getElementById('mainContent');
   main.innerHTML = `
-    <div class="page-header">
-      <h2>&#128202; Dashboard</h2>
-      <p>Projelerinizin genel özeti.</p>
+    <div class="vm-page-header">
+      <div class="vm-header-title">
+        <div class="vm-header-icon">
+          ${typeof getIcon === 'function' ? getIcon('chart', 22) : '📊'}
+        </div>
+        <div>
+          <h2>Dashboard & Harcama İstatistikleri</h2>
+          <p>Projelerin genel durumu, finansal gerçekleşme oranları ve iş türü dağılımı.</p>
+        </div>
+      </div>
     </div>
     <div style="text-align:center;padding:60px;color:var(--gray-400)">
-      <div style="font-size:32px;margin-bottom:12px">&#128202;</div>
-      Yükleniyor...
+      <div style="font-size:32px;margin-bottom:12px">⏳</div>
+      İstatistikler hesaplanıyor...
     </div>`;
 
   try {
     const projeler = await getUserProjeler();
 
+    let toplamOnaylananTutar = 0;
+    let toplamBekleyenTutar = 0;
     const toplamSayi     = projeler.length;
     const onaylananSayi  = projeler.filter(p => p.status === 'onaylandi').length;
     const bekleyenSayi   = projeler.filter(p => p.status === 'taslak' || p.status === 'gonderildi').length;
     const geriGonderSayi = projeler.filter(p => p.status === 'geri_gonderildi').length;
 
+    const turStats = {
+      'Yapım İşi': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'hammer', color: '#ea580c', bg: '#fff7ed' },
+      'Mal Alımı': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'package', color: '#0284c7', bg: '#f0f9ff' },
+      'Hizmet Alımı': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'briefcase', color: '#16a34a', bg: '#f0fdf4' },
+      'Danışmanlık': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'fileText', color: '#9333ea', bg: '#faf5ff' }
+    };
+
     const onaylananlar = projeler.filter(p => p.status === 'onaylandi');
+
+    projeler.forEach(p => {
+      const projData = p.data ? Object.assign(getDefaultProje(), p.data) : getDefaultProje();
+      const kalemler = getKalemler(projData);
+      const ym = hesaplaYaklasikMaliyet(projData);
+      const kazananIdx = projData.kazananFirmaIndex >= 0 ? projData.kazananFirmaIndex : hesaplaKazananFirma(projData);
+      const kazananFirma = kazananIdx >= 0 && projData.teklifFirmalar ? projData.teklifFirmalar[kazananIdx] : null;
+      const kazananToplam = kazananFirma ? hesaplaTeklifFirmaToplam(kazananFirma, kalemler) : 0;
+      
+      const tutar = p.status === 'onaylandi' && kazananToplam > 0 ? kazananToplam : (ym > 0 ? ym : 0);
+      const tur = projData.isTuru && turStats[projData.isTuru] ? projData.isTuru : 'Yapım İşi';
+
+      if (p.status === 'onaylandi') {
+        toplamOnaylananTutar += tutar;
+        turStats[tur].onayliAdet += 1;
+      } else if (p.status === 'taslak' || p.status === 'gonderildi') {
+        toplamBekleyenTutar += (ym > 0 ? ym : 0);
+      }
+
+      turStats[tur].adet += 1;
+      turStats[tur].tutar += tutar;
+    });
+
+    const toplamHacimTutar = toplamOnaylananTutar + toplamBekleyenTutar;
 
     const onayliSatirlar = onaylananlar.map(p => {
       const projData = p.data ? Object.assign(getDefaultProje(), p.data) : getDefaultProje();
       const kalemler = getKalemler(projData);
       const ym = hesaplaYaklasikMaliyet(projData);
       const kazananIdx = projData.kazananFirmaIndex >= 0 ? projData.kazananFirmaIndex : hesaplaKazananFirma(projData);
-      const kazananFirma = kazananIdx >= 0 ? projData.teklifFirmalar[kazananIdx] : null;
+      const kazananFirma = kazananIdx >= 0 && projData.teklifFirmalar ? projData.teklifFirmalar[kazananIdx] : null;
       const kazananToplam = kazananFirma ? hesaplaTeklifFirmaToplam(kazananFirma, kalemler) : 0;
-      const tasarruf = ym > 0 && kazananToplam > 0 ? ym - kazananToplam : 0;
-      const tasarrufOran = ym > 0 && tasarruf > 0 ? (tasarruf / ym * 100).toFixed(1) : null;
+      const isTuru = projData.isTuru || 'Yapım İşi';
       const tarih = p.onaylandiAt?.toDate
         ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR')
         : (p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-');
       return `<tr onclick="dashboardProjeAc('${p.id}')" style="cursor:pointer"
         onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
-        <td style="font-weight:500">${escHtml(p.isAdi || '(İsimsiz)')}</td>
-        <td>${tarih}</td>
-        <td class="rakam">${ym > 0 ? formatCurrencyInt(ym) + ' TL' : '-'}</td>
-        <td class="rakam">${kazananFirma ? kazananFirma.ad : '-'}</td>
-        <td class="rakam">${kazananToplam > 0 ? formatCurrencyInt(kazananToplam) + ' TL' : '-'}</td>
-        <td class="rakam" style="color:${tasarruf > 0 ? '#065f46' : 'inherit'};font-weight:${tasarruf > 0 ? '600' : 'normal'}">
-          ${tasarrufOran ? '%' + tasarrufOran : '-'}
+        <td style="font-weight:600;color:var(--gray-900)">${escHtml(p.isAdi || '(İsimsiz)')}</td>
+        <td>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;color:var(--gray-700);padding:3px 8px;border-radius:6px;font-size:11.5px;font-weight:500;">
+            ${escHtml(isTuru)}
+          </span>
         </td>
+        <td>${tarih}</td>
+        <td class="rakam" style="font-weight:500">${ym > 0 ? formatCurrency(ym) + ' TL' : '-'}</td>
+        <td>${kazananFirma ? escHtml(kazananFirma.ad) : '<span style="color:var(--gray-400)">-</span>'}</td>
+        <td class="rakam" style="font-weight:700;color:var(--primary)">${kazananToplam > 0 ? formatCurrency(kazananToplam) + ' TL' : '-'}</td>
       </tr>`;
     }).join('');
 
     main.innerHTML = `
-      <div class="page-header">
-        <h2>&#128202; Dashboard</h2>
-        <p>Projelerinizin genel özeti.</p>
+      <div class="vm-page-header">
+        <div class="vm-header-title">
+          <div class="vm-header-icon">
+            ${typeof getIcon === 'function' ? getIcon('chart', 22) : '📊'}
+          </div>
+          <div>
+            <h2>Dashboard & Harcama İstatistikleri</h2>
+            <p>Projelerin genel durumu, finansal gerçekleşme oranları ve iş türü dağılımı.</p>
+          </div>
+        </div>
       </div>
 
-      <div class="stat-grid">
-        <div class="stat-card primary">
-          <div class="stat-label">Toplam Proje</div>
-          <div class="stat-value">${toplamSayi}</div>
-          <div class="stat-sub">Tüm projeler</div>
+      <div class="stat-grid" style="margin-bottom:24px;">
+        <div class="stat-card success" style="border-left:4px solid var(--success, #16a34a);">
+          <div class="stat-label">Gerçekleşen Harcama</div>
+          <div class="stat-value" style="font-size:22px;">${toplamOnaylananTutar > 0 ? formatCurrencyInt(toplamOnaylananTutar) + ' TL' : '0 TL'}</div>
+          <div class="stat-sub" style="font-weight:600;color:#16a34a;">${onaylananSayi} Onaylanan Proje</div>
         </div>
-        <div class="stat-card success">
-          <div class="stat-label">Onaylanan</div>
-          <div class="stat-value">${onaylananSayi}</div>
-          <div class="stat-sub">Tamamlanan</div>
+        <div class="stat-card warning" style="border-left:4px solid var(--warning, #eab308);">
+          <div class="stat-label">Süreçteki Tutar (Bekleyen)</div>
+          <div class="stat-value" style="font-size:22px;">${toplamBekleyenTutar > 0 ? formatCurrencyInt(toplamBekleyenTutar) + ' TL' : '0 TL'}</div>
+          <div class="stat-sub" style="font-weight:600;color:#d97706;">${bekleyenSayi} Taslak & Gönderildi</div>
         </div>
-        <div class="stat-card warning">
-          <div class="stat-label">Bekleyen</div>
-          <div class="stat-value">${bekleyenSayi}</div>
-          <div class="stat-sub">Taslak + Gönderildi</div>
+        <div class="stat-card primary" style="border-left:4px solid var(--primary, #1a56db);">
+          <div class="stat-label">Toplam Proje Sayısı</div>
+          <div class="stat-value" style="font-size:22px;">${toplamSayi}</div>
+          <div class="stat-sub">Sistemdeki tüm dosyalar</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-label">Geri Gönderilen</div>
-          <div class="stat-value">${geriGonderSayi}</div>
-          <div class="stat-sub">Revizyon bekliyor</div>
+        <div class="stat-card" style="border-left:4px solid var(--gray-400);">
+          <div class="stat-label">Revizyon Bekleyen</div>
+          <div class="stat-value" style="font-size:22px;color:var(--danger, #dc2626);">${geriGonderSayi}</div>
+          <div class="stat-sub">Geri gönderilen işlemler</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:24px;">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <h3 style="display:flex;align-items:center;gap:8px;font-size:15px;margin:0;">
+            <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('sliders', 18) : ''}</span>
+            İş Türü & Kategori Dağılımı
+          </h3>
+          <span style="font-size:12px;color:var(--gray-500);font-weight:500;">${toplamSayi} Toplam Dosya</span>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:16px;">
+            ${Object.keys(turStats).map(turKey => {
+              const item = turStats[turKey];
+              const yuzde = toplamHacimTutar > 0 ? ((item.tutar / toplamHacimTutar) * 100).toFixed(1) : '0.0';
+              return `
+              <div style="background:${item.bg};border:1px solid rgba(0,0,0,0.06);border-radius:12px;padding:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                  <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:${item.color};">
+                    <span style="display:inline-flex">${typeof getIcon === 'function' ? getIcon(item.icon, 18) : ''}</span>
+                    ${turKey}
+                  </div>
+                  <span style="font-size:11px;font-weight:700;background:#fff;color:${item.color};padding:2px 8px;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,0.05);">${item.adet} Dosya</span>
+                </div>
+                <div style="font-size:18px;font-weight:800;color:var(--gray-900);margin-bottom:4px;">
+                  ${item.tutar > 0 ? formatCurrencyInt(item.tutar) + ' TL' : '0 TL'}
+                </div>
+                <div style="font-size:11.5px;color:var(--gray-600);margin-bottom:8px;">
+                  ${item.onayliAdet} onaylanan işlem
+                </div>
+                <div style="background:rgba(0,0,0,0.06);height:6px;border-radius:3px;overflow:hidden;">
+                  <div style="background:${item.color};width:${yuzde}%;height:100%;border-radius:3px;"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray-500);margin-top:4px;">
+                  <span>Hacim Payı</span>
+                  <span style="font-weight:600;color:${item.color}">%${yuzde}</span>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h3>&#10003; Onaylanan Projeler (${onaylananSayi})</h3></div>
+        <div class="card-header">
+          <h3 style="display:flex;align-items:center;gap:8px;font-size:15px;margin:0;">
+            <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('clipboardCheck', 18) : ''}</span>
+            Onaylanan Projeler & Sözleşme Bedelleri (${onaylananSayi})
+          </h3>
+        </div>
         <div class="card-body">
           ${onaylananlar.length === 0
             ? `<div style="text-align:center;padding:40px;color:var(--gray-400);font-size:13px">
-                 Henüz onaylanmış proje yok.
+                 Henüz onaylanmış bir proje bulunmamaktadır.
                </div>`
             : `<table class="data-table">
                  <thead>
                    <tr>
-                     <th>Proje Adı</th>
-                     <th>Onay Tarihi</th>
-                     <th>Yaklaşık Maliyet</th>
-                     <th>Kazanan Firma</th>
-                     <th>Kazanan Teklif</th>
-                     <th>Tasarruf %</th>
+                     <th style="width:35%">Proje / İş Adı</th>
+                     <th style="width:12%">İş Türü</th>
+                     <th style="width:12%">Onay Tarihi</th>
+                     <th style="width:14%;text-align:right">Yaklaşık Maliyet</th>
+                     <th style="width:14%">Yüklenici Firma</th>
+                     <th style="width:13%;text-align:right">Sözleşme / Teklif</th>
                    </tr>
                  </thead>
                  <tbody>${onayliSatirlar}</tbody>
@@ -3254,7 +3348,7 @@ async function renderDashboardPage() {
     `;
   } catch(e) {
     main.innerHTML = `
-      <div class="page-header"><h2>&#128202; Dashboard</h2></div>
+      <div class="page-header"><h2>Dashboard</h2></div>
       <div style="color:red;padding:20px">Hata: ${e.message}</div>`;
   }
 }
