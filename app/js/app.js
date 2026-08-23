@@ -2714,19 +2714,65 @@ function pdfIndirBelge() {
 }
 
 // ===================== VERİ MERKEZİ SAYFASI =====================
+const DTM_DISIPLIN_LISTESI = [
+  'İnşaat Mühendisi',
+  'Elektrik Elektronik Mühendisi',
+  'Makine Mühendisi',
+  'Harita Mühendisi',
+  'Jeoloji Mühendisi',
+  'Çevre Mühendisi',
+  'Maden Mühendisi',
+  'Ziraat Mühendisi',
+  'Şehir Plancısı',
+  'İnşaat Teknikeri',
+  'Elektrik Teknikeri',
+  'Makine Teknikeri',
+  'Harita Teknikeri',
+  'Tekniker',
+  'Teknisyen'
+];
+
 function renderVeriMerkeziPage() {
   const isSuperAdmin = currentDTMUser?.role === 'superadmin';
 
-  const muhendisRows = referans.muhendisList.map((m, i) => `
+  // Geçmişte kaydedilmiş boş/isimsiz mühendis ve personelleri otomatik temizle
+  if (referans.muhendisList && Array.isArray(referans.muhendisList)) {
+    const oncekiAdet = referans.muhendisList.length;
+    referans.muhendisList = referans.muhendisList.filter(m => m && m.ad && m.ad.trim());
+    if (referans.muhendisList.length !== oncekiAdet) {
+      saveReferans(referans);
+    }
+  }
+
+  const muhendisRows = (referans.muhendisList || []).map((m, i) => {
+    const initials = (m.ad || '').split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'GP';
+    return `
     <tr>
-      <td style="width:46%"><input type="text" class="ref-input" value="${escAttr(m.ad)}" placeholder="Ad Soyad giriniz" onchange="onRefChange('muhendisList', ${i}, 'ad', this.value)"></td>
-      <td style="width:46%"><input type="text" class="ref-input" value="${escAttr(m.unvan)}" placeholder="Ünvan (Örn: İnşaat Mühendisi)" onchange="onRefChange('muhendisList', ${i}, 'unvan', this.value)"></td>
-      <td style="width:8%; text-align:center;">
-        <button class="btn-icon-danger" onclick="onRefDelete('muhendisList', ${i})" title="Görevliyi Sil">
-          ${typeof getIcon === 'function' ? getIcon('trash', 16) : '✕'}
-        </button>
+      <td style="font-weight:600;color:var(--gray-900)">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:34px;height:34px;border-radius:50%;background:#e8eefb;color:var(--primary);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(26,86,219,0.15)">
+            ${initials}
+          </div>
+          <span style="font-size:14px">${escHtml(m.ad)}</span>
+        </div>
       </td>
-    </tr>`).join('');
+      <td>
+        <span style="display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;color:var(--gray-700);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;border:1px solid #e2e8f0">
+          ${escHtml(m.unvan || 'Belirtilmedi')}
+        </span>
+      </td>
+      <td style="text-align:right">
+        <div style="display:inline-flex;gap:6px;justify-content:flex-end">
+          <button class="btn-icon-primary" onclick="acMuhendisModal(${i})" title="Düzenle">
+            ${typeof getIcon === 'function' ? getIcon('edit', 14) : '✏️'} Düzenle
+          </button>
+          <button class="btn-icon-danger" onclick="onRefDelete('muhendisList', ${i})" title="Sil">
+            ${typeof getIcon === 'function' ? getIcon('trash', 14) : '🗑️'}
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
 
   const onaylayanRows = referans.onaylayanList.map((o, i) => `
     <tr>
@@ -2781,18 +2827,22 @@ function renderVeriMerkeziPage() {
         <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
+        ${(referans.muhendisList && referans.muhendisList.length > 0) ? `
         <table class="ref-table">
           <thead>
             <tr>
-              <th>Ad Soyad</th>
-              <th>Ünvan</th>
-              <th style="text-align:center;width:80px">İşlem</th>
+              <th style="width:50%">Ad Soyad</th>
+              <th style="width:35%">Disiplin / Ünvan</th>
+              <th style="text-align:right;width:15%">İşlem</th>
             </tr>
           </thead>
           <tbody>${muhendisRows}</tbody>
-        </table>
-        <div style="margin-top:14px">
-          <button class="btn btn-outline btn-sm" style="display:inline-flex;align-items:center;gap:6px" onclick="onRefAdd('muhendisList', {ad:'', unvan:''})">
+        </table>` : `
+        <div style="text-align:center;padding:24px;color:var(--gray-500);font-size:13px">
+          Kayıtlı görevli personel bulunamadı. Yeni personel eklemek için aşağıdaki butonu kullanın.
+        </div>`}
+        <div style="margin-top:16px">
+          <button class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px" onclick="acMuhendisModal()">
             ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Görevli Ekle
           </button>
         </div>
@@ -4264,6 +4314,105 @@ window.onFirmaListeEkle = function() {
     const el = document.getElementById('firmaInputAd');
     if (el) el.focus();
   }, 50);
+};
+
+window.acMuhendisModal = function(index = null) {
+  const isEdit = index !== null && index !== undefined && index >= 0;
+  const mevcut = isEdit ? referans.muhendisList[index] : { ad: '', unvan: DTM_DISIPLIN_LISTESI[0] };
+  
+  const modalId = 'muhendisEkleModal';
+  let modal = document.getElementById(modalId);
+  if (modal) modal.remove();
+
+  const unvanOptions = DTM_DISIPLIN_LISTESI.map(u => 
+    `<option value="${escAttr(u)}" ${mevcut.unvan === u ? 'selected' : ''}>${escHtml(u)}</option>`
+  ).join('');
+
+  modal = document.createElement('div');
+  modal.id = modalId;
+  modal.className = 'dtm-modal-overlay';
+  modal.innerHTML = `
+    <div class="dtm-modal" style="max-width:440px">
+      <div class="dtm-modal-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="display:flex;align-items:center;gap:8px;font-size:16px;margin:0;">
+          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('users', 18) : ''}</span>
+          ${isEdit ? 'Görevli Personeli Düzenle' : 'Yeni Görevli Personel Ekle'}
+        </h3>
+      </div>
+      <div class="dtm-modal-body" style="padding:18px 0 10px;">
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;">
+            Adı Soyadı <span style="color:var(--danger)">*</span>
+          </label>
+          <input type="text" id="muhendisModalAd" class="ref-input" value="${escAttr(mevcut.ad || '')}" 
+            placeholder="Örn: Aziz AÇIKGÖZ"
+            oninput="this.value = this.value.replace(/[^a-zA-ZçğıöşüÇĞİÖŞÜ\\s]/g, '');"
+            onkeydown="if(event.key==='Enter') kaydetMuhendisModal(${isEdit ? index : 'null'})">
+          <small style="color:var(--gray-500);font-size:11px;margin-top:4px;display:block;">Sadece harf ve boşluk girilebilir (Rakam kabul edilmez).</small>
+        </div>
+        <div class="form-group">
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;">
+            Disiplin / Ünvan <span style="color:var(--danger)">*</span>
+          </label>
+          <select id="muhendisModalUnvan" class="ref-input" style="padding:9px 12px;">
+            <option value="">-- Disiplin / Ünvan Seçiniz --</option>
+            ${unvanOptions}
+          </select>
+        </div>
+      </div>
+      <div class="dtm-modal-footer" style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:14px;border-top:1px solid var(--gray-200);">
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('${modalId}').remove()">Vazgeç</button>
+        <button class="btn btn-primary" onclick="kaydetMuhendisModal(${isEdit ? index : 'null'})" style="display:inline-flex;align-items:center;gap:6px;">
+          ${typeof getIcon === 'function' ? getIcon('check', 16) : '✓'} ${isEdit ? 'Güncelle' : 'Kaydet'}
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  setTimeout(() => {
+    const el = document.getElementById('muhendisModalAd');
+    if (el) el.focus();
+  }, 50);
+};
+
+window.kaydetMuhendisModal = function(index = null) {
+  const adEl = document.getElementById('muhendisModalAd');
+  const unvanEl = document.getElementById('muhendisModalUnvan');
+  const ad = (adEl?.value || '').trim();
+  const unvan = (unvanEl?.value || '').trim();
+
+  if (!ad) {
+    showToast('Lütfen personelin Adını ve Soyadını giriniz.', 'error');
+    if (adEl) markError(adEl);
+    return;
+  }
+
+  if (ad.length < 3 || ad.split(' ').filter(Boolean).length < 2) {
+    showToast('Lütfen en az Ad ve Soyad olarak tam isim giriniz.', 'warning');
+    if (adEl) markError(adEl);
+    return;
+  }
+
+  if (!unvan) {
+    showToast('Lütfen listeden bir disiplin/ünvan seçiniz.', 'error');
+    if (unvanEl) markError(unvanEl);
+    return;
+  }
+
+  if (!referans.muhendisList) referans.muhendisList = [];
+
+  if (index !== null && index !== undefined && index >= 0) {
+    referans.muhendisList[index] = { ad, unvan };
+    showToast('Görevli bilgileri güncellendi.', 'success');
+  } else {
+    referans.muhendisList.push({ ad, unvan });
+    showToast('Yeni görevli personel başarıyla eklendi.', 'success');
+  }
+
+  saveReferans(referans);
+  const modal = document.getElementById('muhendisEkleModal');
+  if (modal) modal.remove();
+  renderPage('veri-merkezi');
 };
 
 async function renderGerceklestirmeciVeriMerkeziPageLoader() {

@@ -210,6 +210,12 @@ const ICONS = {
       <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
     </svg>`,
 
+  edit: (size = 18, cls = '') => `
+    <svg width="${size}" height="${size}" class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+      <path d="m15 5 4 4"></path>
+    </svg>`,
+
   sliders: (size = 18, cls = '') => `
     <svg width="${size}" height="${size}" class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="4" y1="21" x2="4" y2="14"></line>

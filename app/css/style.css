@@ -1028,12 +1028,15 @@ body {
   background: transparent;
   border: 1px solid transparent;
   color: var(--gray-400);
-  padding: 6px;
+  padding: 6px 8px;
   border-radius: 6px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
   transition: all 0.15s ease;
 }
 
@@ -1041,6 +1044,29 @@ body {
   background: #fee2e2;
   color: var(--danger);
   border-color: #fca5a5;
+}
+
+.btn-icon-primary {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: var(--primary);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.btn-icon-primary:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 2px 6px rgba(26,86,219,0.2);
 }
 
 .ref-tag-pill {
