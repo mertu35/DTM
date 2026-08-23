@@ -2745,35 +2745,7 @@ function renderVeriMerkeziPage() {
     }
   }
 
-  const muhendisRows = (referans.muhendisList || []).map((m, i) => {
-    const initials = (m.ad || '').split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'GP';
-    return `
-    <tr>
-      <td style="font-weight:600;color:var(--gray-900)">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="width:34px;height:34px;border-radius:50%;background:#e8eefb;color:var(--primary);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(26,86,219,0.15)">
-            ${initials}
-          </div>
-          <span style="font-size:14px">${escHtml(m.ad)}</span>
-        </div>
-      </td>
-      <td>
-        <span style="display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;color:var(--gray-700);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;border:1px solid #e2e8f0">
-          ${escHtml(m.unvan || 'Belirtilmedi')}
-        </span>
-      </td>
-      <td style="text-align:right">
-        <div style="display:inline-flex;gap:6px;justify-content:flex-end">
-          <button class="btn-icon-primary" onclick="acMuhendisModal(${i})" title="Düzenle">
-            ${typeof getIcon === 'function' ? getIcon('edit', 14) : '✏️'} Düzenle
-          </button>
-          <button class="btn-icon-danger" onclick="onRefDelete('muhendisList', ${i})" title="Sil">
-            ${typeof getIcon === 'function' ? getIcon('trash', 14) : '🗑️'}
-          </button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+  const sortedMuhendis = (referans.muhendisList || []).map((m, i) => ({ m, i }));
 
   const onaylayanRows = referans.onaylayanList.map((o, i) => `
     <tr>
@@ -2822,31 +2794,52 @@ function renderVeriMerkeziPage() {
       <div class="card-header" onclick="toggleCard(this)">
         <h3 style="display:flex;align-items:center;gap:8px">
           <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('users', 18) : ''}</span>
-          Mühendis / Görevli Listesi
-          <span style="font-size:11px;background:#e8eefb;color:var(--primary);padding:2px 8px;border-radius:12px;font-weight:600;margin-left:4px">${referans.muhendisList.length} Personel</span>
+          Görevli Personel Rehberi
+          <span style="font-size:11px;background:#e8eefb;color:var(--primary);padding:2px 8px;border-radius:12px;font-weight:600;margin-left:4px">${sortedMuhendis.length} Personel</span>
         </h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
-        ${(referans.muhendisList && referans.muhendisList.length > 0) ? `
-        <table class="ref-table">
-          <thead>
-            <tr>
-              <th style="width:50%">Ad Soyad</th>
-              <th style="width:35%">Disiplin / Ünvan</th>
-              <th style="text-align:right;width:15%">İşlem</th>
-            </tr>
-          </thead>
-          <tbody>${muhendisRows}</tbody>
-        </table>` : `
-        <div style="text-align:center;padding:24px;color:var(--gray-500);font-size:13px">
-          Kayıtlı görevli personel bulunamadı. Yeni personel eklemek için aşağıdaki butonu kullanın.
-        </div>`}
-        <div style="margin-top:16px">
-          <button class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-weight:600;" onclick="acMuhendisModal()">
-            ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Görevli Ekle
+        <div style="display:flex; gap:10px; margin-bottom:16px; align-items:center;">
+          <select class="ref-input" style="flex:1; height:40px; padding:0 12px; font-size:13px; border-radius:8px;" onchange="onMuhendisSelect(this.value)">
+            <option value="-1">🔍 Kayıtlı personellerden seçin veya düzenleyin...</option>
+            ${sortedMuhendis.map(item => `<option value="${item.i}" ${dtmSeciliMuhendisIndex === item.i ? 'selected' : ''}>${escHtml(item.m.ad)} — ${escHtml(item.m.unvan || 'Belirtilmedi')}</option>`).join('')}
+          </select>
+          <button class="btn-icon-primary" style="height:40px; padding:0 14px; font-size:13px; font-weight:600; border-radius:8px; white-space:nowrap;" onclick="acMuhendisModal()">
+            ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Görevli
           </button>
         </div>
+
+        ${(dtmSeciliMuhendisIndex >= 0 && referans.muhendisList && referans.muhendisList[dtmSeciliMuhendisIndex]) ? (() => {
+          const m = referans.muhendisList[dtmSeciliMuhendisIndex];
+          const initials = (m.ad || '').split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'GP';
+          return `
+          <div style="background:var(--gray-50); padding:16px 20px; border-radius:12px; border:1px solid var(--gray-200); display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div style="width:44px; height:44px; border-radius:50%; background:#e8eefb; color:var(--primary); font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:inset 0 0 0 1px rgba(26,86,219,0.15)">
+                ${initials}
+              </div>
+              <div>
+                <div style="font-size:15px; font-weight:700; color:var(--gray-900);">${escHtml(m.ad)}</div>
+                <div style="display:inline-flex; align-items:center; gap:6px; margin-top:4px; background:#fff; color:var(--gray-700); padding:3px 10px; border-radius:6px; font-size:12px; font-weight:500; border:1px solid #e2e8f0;">
+                  ${escHtml(m.unvan || 'Belirtilmedi')}
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn-icon-primary" style="height:36px; padding:0 14px;" onclick="acMuhendisModal(${dtmSeciliMuhendisIndex})" title="Düzenle">
+                ${typeof getIcon === 'function' ? getIcon('edit', 14) : '✏️'} Bilgileri Düzenle
+              </button>
+              <button class="btn-icon-danger" style="height:36px; padding:0 12px;" onclick="onRefDelete('muhendisList', ${dtmSeciliMuhendisIndex}); onMuhendisSelect(-1);" title="Sil">
+                ${typeof getIcon === 'function' ? getIcon('trash', 14) : '🗑️'} Personeli Sil
+              </button>
+            </div>
+          </div>`;
+        })() : `
+          <div style="text-align:center; padding:16px 20px; background:var(--gray-50); border:1px dashed var(--gray-300); border-radius:10px; color:var(--gray-500); font-size:13px;">
+            Personel detayını görüntülemek veya düzenlemek için yukarıdaki listeden bir personel seçin ya da <strong>+ Yeni Görevli</strong> butonuna tıklayın.
+          </div>
+        `}
       </div>
     </div>
 
@@ -4317,6 +4310,12 @@ window.onFirmaListeEkle = function() {
   }, 50);
 };
 
+let dtmSeciliMuhendisIndex = -1;
+window.onMuhendisSelect = function(val) {
+  dtmSeciliMuhendisIndex = parseInt(val, 10);
+  renderPage('veri-merkezi');
+};
+
 window.acMuhendisModal = function(index = null) {
   const isEdit = index !== null && index !== undefined && index >= 0;
   const mevcut = isEdit ? referans.muhendisList[index] : { ad: '', unvan: DTM_DISIPLIN_LISTESI[0] };
@@ -4413,6 +4412,9 @@ window.kaydetMuhendisModal = function(index = null) {
     referans.muhendisList.push({ ad, unvan });
     showToast('Yeni görevli personel başarıyla eklendi.', 'success');
   }
+
+  referans.muhendisList.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
+  dtmSeciliMuhendisIndex = referans.muhendisList.findIndex(m => m.ad === ad);
 
   saveReferans(referans);
   const modal = document.getElementById('muhendisEkleModal');
