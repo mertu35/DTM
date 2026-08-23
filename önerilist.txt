@@ -1,0 +1,100 @@
+DTM — GELİŞTİRME ÖNERİLERİ
+==========================
+Son güncelleme: 23.08.2026
+
+
+ÖNCELİKLİ (GÜVENLİK / VERİ)
+---------------------------
+
+1. Hesaplama birim testleri
+   calculations.js'teki KDV %20, damga binde 9,48, KDV tevkifatı hesapları
+   resmi belgelere gidiyor. Yanlış hesap = hatalı tutanak. Bu fonksiyonlara
+   altın değer testleri (bilinen giriş -> çıktı çiftleri) en yüksek getirili
+   yatırım.
+
+2. Denetim izi (audit log)
+   Kamu kurumunda "bu projeyi kim ne zaman değiştirdi" sorusu kritik.
+   Projelere değişiklik geçmişi alanı eklemek (kullanıcı, tarih, eski -> yeni)
+   hem KVKK hem iç denetim için değerli.
+
+3. data.js'teki gerçek firma/kişi verilerini temizle
+   Hardcoded adres/telefonlar repo'da duruyor; globalReferans koleksiyonuna
+   taşınmalı.
+
+4. Vision API proxy'si
+   Cloud Function ile anahtarı sunucuda tutun (Blaze planı gerektirir) ya da
+   minimumda Google Cloud Console'da API anahtarına HTTP referrer kısıtı koyun.
+
+
+MİMARİ (SÜRDÜRÜLEBİLİRLİK)
+--------------------------
+
+5. Belge üreticisini tekilleştir
+   Aynı tutanak HTML'i documents.js ve excel.js'te iki kez yazılıyor.
+   Tek şablon motoru -> yazdır/PDF/Excel/Word hepsi aynı kaynaktan türesin.
+   Şablon değişikliği artık tek yerden yapılır.
+
+6. app.js'i böl
+   6.173 satır tek dosya yerine sayfa başına modül
+   (pages/kullanici-yonetimi.js gibi).
+
+7. CDN bağımlılıklarını vendor'a al
+   SheetJS ve PDF.js dosyalarını yerel tutun (html2pdf'te yapıldığı gibi).
+   Kurum ağı CDN'lere erişemezse uygulama açılmaz.
+
+8. GitHub Actions CI
+   Push'ta otomatik syntax check + test, sürüm etiketi ve SW cache adını
+   otomatik büyütme (elle v43, v44 taşımak hataya açık).
+
+
+ÖZELLİK FİKİRLERİ
+-----------------
+
+9.  Firestore offline persistence
+    PWA deneyimini tamamlar; sahadaki internet kesintilerinde form çalışmaya
+    devam eder.
+
+10. İlk kurulum sihirbazı
+    DT limitleri şu an default 0 geliyor (kontrol fiilen kapalı); yeni
+    kurulumda limitleri ve müdürlük bilgilerini soran bir sihirbaz.
+
+11. Durum bildirimleri
+    Proje gönderildi/onaylandı/geri gönderildiğinde sidebar badge'i zaten var;
+    buna e-posta bilgilendirmesi eklenebilir.
+
+12. Dashboard istatistikleri
+    Aylık/yıllık doğrudan temin adedi, toplam harcama, firma bazlı dağılım
+    grafikleri; yönetim raporu olarak Excel'e aktarılabilir.
+
+13. Şablon sürümleme
+    Sözleşme metni değiştiğinde eski projelerin eski şablonla üretilmiş
+    belgeleri bozulmasın; şablon versiyonu saklanmalı.
+
+14. Firebase Hosting'e geçiş
+    GitHub Pages yerine kendi Firebase projenize host ederseniz Authorized
+    domains derdi biter, ileride Cloud Functions'a geçiş kolaylaşır.
+
+
+AÇIK KONULAR (devam eden)
+-------------------------
+
+*  E-posta doğrulama akışı (verifyBeforeUpdateEmail)
+   Doğrulama linki her denemede "süresi dolmuş / zaten kullanılmış" veriyor,
+   e-posta hiç değişmiyor. En güçlü şüpheli: hesapların orijinal adresinin
+   @dtm.local (gerçek olmayan, yönlendirilemeyen alan adı) olması.
+   Öneri: bu akışı tamamen kaldırıp e-postayı yöneticinin kullanıcı açarken
+   girmesine bırakmak — bu yol zaten çalışıyor.
+
+*  Mevcut kullanıcıların e-postaları
+   Firebase Console kullanıcı e-postası düzenlemeye izin vermiyor.
+   scripts/eposta-guncelle.js hazır bekliyor; gereken: herkesin e-posta
+   adresi + Firebase servis hesabı anahtarı. Kullanım talimatı script'in
+   başında yazılı.
+
+*  Şifrelerin Firestore'da düz metin tutulması
+   Koruma altında (sadece sahibi + admin okuyabiliyor) ama hâlâ okunabilir
+   metin. Teknik zorunluluk değil, politika kararı.
+
+*  usernameEmailMap koleksiyonu herkese açık okunabilir
+   Giriş ekranı oturum açmadan okuyabilsin diye zorunluydu. Kullanıcı adını
+   tahmin eden biri o kişinin e-posta adresini görebilir.
