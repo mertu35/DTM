@@ -35,23 +35,33 @@ function maskEmail(email) {
   return `${visibleName}@${restDomain ? restDomain + '.' : ''}${tld}`;
 }
 
-// Kullanıcı adı → doğrulanmış e-posta eşlemesi. Giriş ekranı ve "Şifremi Unuttum"
-// akışı henüz oturum açılmadan bu eşlemeyi okuyabilmeli (users koleksiyonu auth ister),
-// bu yüzden sadece {email} tutan ayrı, herkese açık okunabilir bir dokümana yazılır.
-async function syncUsernameEmailMap(username, email) {
+// Kullanıcı adı → e-posta eşlemesi. Giriş ekranı ve "Şifremi Unuttum" akışı henüz
+// oturum açılmadan bu eşlemeyi okuyabilmeli (users koleksiyonu auth ister), bu yüzden
+// sadece {email, verified} tutan ayrı, herkese açık okunabilir bir dokümana yazılır.
+//
+// verified=false kayıt, e-posta değişikliği TALEP edildiği anda yazılır: doğrulama
+// linkine tıklanınca Firebase auth e-postasını değiştirip oturumu düşürdüğü için,
+// eşleme o an yazılamazsa kullanıcı kendi kullanıcı adıyla bir daha giriş yapamaz.
+async function syncUsernameEmailMap(username, email, verified) {
   if (!username || !email) return;
   try {
-    await db.collection('usernameEmailMap').doc(username.toLowerCase().trim()).set({ email: email.toLowerCase() });
+    await db.collection('usernameEmailMap').doc(username.toLowerCase().trim())
+      .set({ email: email.toLowerCase(), verified: Boolean(verified) });
   } catch(e) {
     console.warn('usernameEmailMap senkron hatası:', e);
   }
 }
 
-// Kullanıcı adından doğrulanmış e-postayı bulur (auth gerektirmez)
-async function getEmailByUsername(username) {
+// Kullanıcı adından e-postayı bulur (auth gerektirmez).
+// requireVerified: şifre sıfırlama gibi, linkin yanlış adrese gitmesinin hesap
+// devralınmasına yol açabileceği akışlarda yalnızca doğrulanmış adresi döndürür.
+async function getEmailByUsername(username, requireVerified = false) {
   try {
     const doc = await db.collection('usernameEmailMap').doc(username.toLowerCase().trim()).get();
-    return doc.exists ? (doc.data().email || null) : null;
+    if (!doc.exists) return null;
+    const data = doc.data();
+    if (requireVerified && !data.verified) return null;
+    return data.email || null;
   } catch(e) {
     console.warn('usernameEmailMap okuma hatası:', e);
     return null;
@@ -100,7 +110,7 @@ async function dtmLogin(identifier, password) {
       userData.emailVerified = isVerified;
       if (isVerified) userData.pendingEmail = null;
     }
-    if (isVerified && userData.username) syncUsernameEmailMap(userData.username, cred.user.email);
+    if (isVerified && userData.username) syncUsernameEmailMap(userData.username, cred.user.email, true);
   }
 
   currentDTMUser = { uid: cred.user.uid, ...userData };
@@ -227,6 +237,13 @@ async function epostaDogrulamaGonder(yeniEmail) {
     currentDTMUser.emailVerified = false;
   }
 
+  // Eşlemeyi ŞİMDİ yaz (doğrulanmamış olarak). Kullanıcı linke tıkladığında Firebase
+  // auth e-postasını değiştirip mevcut oturumun token'larını iptal ediyor; o andan
+  // sonra oturum içinden yazma şansımız kalmayabilir ve kullanıcı adıyla giriş
+  // kalıcı olarak bozulur. Şifre sıfırlama bu kaydı doğrulanana kadar kullanmaz.
+  const mapUsername = currentDTMUser?.username;
+  if (mapUsername) await syncUsernameEmailMap(mapUsername, cleanEmail, false);
+
   return cleanEmail;
 }
 
@@ -260,7 +277,7 @@ async function epostaDurumunuGuncelle() {
       currentDTMUser.emailVerified = true;
       currentDTMUser.pendingEmail = null;
     }
-    if (currentDTMUser?.username) syncUsernameEmailMap(currentDTMUser.username, authEmail);
+    if (currentDTMUser?.username) syncUsernameEmailMap(currentDTMUser.username, authEmail, true);
   }
 
   return {
@@ -282,7 +299,7 @@ async function sifreSifirlamaGonder(identifier) {
   } else {
     // Kullanıcı adı girildiyse eşleme dokümanından doğrulanmış e-postaya bak
     const cleanUsername = identifier.toLowerCase();
-    targetEmail = await getEmailByUsername(cleanUsername);
+    targetEmail = await getEmailByUsername(cleanUsername, true);
 
     if (!targetEmail) {
       throw new Error('Lütfen hesabınıza tanımlı e-posta adresinizi giriniz (örn: ornek@karaman.gov.tr).');
