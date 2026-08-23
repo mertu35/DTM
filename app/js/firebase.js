@@ -110,7 +110,11 @@ async function dtmLogin(identifier, password) {
       userData.emailVerified = isVerified;
       if (isVerified) userData.pendingEmail = null;
     }
-    if (isVerified && userData.username) syncUsernameEmailMap(userData.username, cred.user.email, true);
+    // Eşlemeyi doğrulanmamış hesaplar için de yaz: yönetici tarafından gerçek e-postayla
+    // açılan hesaplarda emailVerified false olur, ama kullanıcı adıyla giriş yine de
+    // çalışmalı. Giriş zaten şifre istediği için bu bir güvenlik gevşemesi değil;
+    // şifre sıfırlama yalnızca verified:true kaydı kullanmaya devam ediyor.
+    if (userData.username) syncUsernameEmailMap(userData.username, cred.user.email, isVerified);
   }
 
   currentDTMUser = { uid: cred.user.uid, ...userData };
@@ -147,6 +151,21 @@ async function createDTMUser(username, password, displayName, role, userEmail = 
 
     await db.collection('users').doc(cred.user.uid).set(userDocData);
     await db.collection('users').doc(cred.user.uid).collection('secret').doc('info').set({ sifre: password });
+
+    // Kullanıcı adı → e-posta eşlemesi. Bu yazılmazsa kullanıcı, kullanıcı adıyla
+    // giriş yapamaz: auth hesabı gerçek e-postayla açıldığı için `kullaniciadi@dtm.local`
+    // denemesi boşa gider ve eşleme olmadan gerçek adrese ulaşılamaz.
+    // Firestore kuralı yalnızca kişinin KENDİ kullanıcı adına yazmasına izin verdiği için
+    // bu kayıt, yönetici oturumuyla değil, yeni kullanıcının oturumuyla (secondaryApp) yazılır.
+    if (cleanEmail) {
+      try {
+        await secondaryApp.firestore().collection('usernameEmailMap').doc(cleanUsername)
+          .set({ email: cleanEmail, verified: false });
+      } catch (e) {
+        console.warn('usernameEmailMap (yeni kullanıcı) yazılamadı:', e);
+      }
+    }
+
     await secondaryApp.auth().signOut();
     return cred.user.uid;
   } finally {
