@@ -7,6 +7,17 @@ const db = firebase.firestore();
 const remoteConfig = firebase.remoteConfig();
 remoteConfig.settings.minimumFetchIntervalMillis = 3600000; // 1 saat cache
 
+// ===== E-POSTA AKSİYON BAĞLANTILARI (doğrulama / şifre sıfırlama) =====
+// Maildeki linke tıklanınca Firebase önce kendi handler'ını çalıştırır
+// (https://<proje>.firebaseapp.com/__/auth/action), ardından kullanıcı bu adrese döndürülür.
+// DİKKAT: Bu adresin alan adı Firebase Console > Authentication > Settings >
+// Authorized domains listesinde yoksa Firebase "geçersiz bağlantı" sayfası gösterir.
+// config.js üzerinden window.DTM_AUTH_CONTINUE_URL ile sabitlenebilir;
+// tanımlı değilse uygulamının çalıştığı dizin varsayılan alınır.
+const AUTH_ACTION_CONTINUE_URL =
+  (typeof window !== 'undefined' && window.DTM_AUTH_CONTINUE_URL) ||
+  window.location.origin + window.location.pathname.replace(/[^\/]*$/, '');
+
 let visionApiKey = null;
 
 async function loadVisionApiKey() {
@@ -195,8 +206,12 @@ async function epostaDogrulamaGonder(yeniEmail) {
   // Firebase Auth üzerinden e-posta güncelleme & doğrulama gönderimi
   auth.languageCode = 'tr';
   try {
-    // Firebase güvenlik politikası gereği e-posta değişikliği için zorunlu metot
-    await user.verifyBeforeUpdateEmail(cleanEmail);
+    // Firebase güvenlik politikası gereği e-posta değişikliği için zorunlu metot.
+    // url: doğrulama linkinden sonra dönülecek adres (Authorized domains ile uyumlu olmalı)
+    await user.verifyBeforeUpdateEmail(cleanEmail, {
+      url: AUTH_ACTION_CONTINUE_URL,
+      handleCodeInApp: false
+    });
   } catch (err) {
     if (err.code === 'auth/requires-recent-login') {
       throw new Error('Güvenlik nedeniyle e-posta güncellemek için lütfen oturumunuzu kapatıp tekrar giriş yapınız.');

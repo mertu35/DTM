@@ -719,8 +719,47 @@ try {
   if (kayitli === 'dark') document.documentElement.classList.add('dark-preload');
 } catch(e) {}
 
+// ===== E-POSTA DOĞRULAMA LİNKİ KARŞILAMA =====
+// Firebase action handler'dan uygulamaya ?mode=...&oobCode=... parametreleriyle dönülür.
+// Kod tek kullanımlıktır: kurumsal postadaki güvenlik tarayıcıları (Outlook SafeLinks vb.)
+// linke kullanıcıdan ÖNCE tıklayıp kodu tüketebilir; bu durumda doğrulama aslında
+// tamamlanmış olur, o yüzden hata anında auth durumu yeniden kontrol edilir.
+async function handleAuthActionRedirect() {
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('mode');
+  const oobCode = params.get('oobCode');
+  if (!oobCode || !['verifyEmail', 'verifyAndChangeEmail'].includes(mode)) return;
+
+  // URL'i hemen temizle: sayfa yenilenirse tek kullanımlık kod tekrar gönderilmesin
+  window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+
+  try {
+    await auth.applyActionCode(oobCode);
+    if (auth.currentUser) {
+      try { await auth.currentUser.reload(); } catch(e) {}
+      if (typeof epostaDurumunuGuncelle === 'function') await epostaDurumunuGuncelle().catch(() => {});
+    }
+    showToast('E-posta adresiniz başarıyla doğrulandı.', 'success', 6000);
+  } catch(e) {
+    // Geçersiz/kullanılmış kod: doğrulama tarayıcı tarafından zaten yapılmış olabilir
+    if (auth.currentUser) {
+      try { await auth.currentUser.reload(); } catch(e2) {}
+      if (auth.currentUser.emailVerified) {
+        if (typeof epostaDurumunuGuncelle === 'function') await epostaDurumunuGuncelle().catch(() => {});
+        showToast('E-posta adresiniz doğrulandı (bağlantı daha önce kullanılmıştı).', 'success', 6000);
+        return;
+      }
+    }
+    console.warn('[AuthAction] applyActionCode hatası:', e?.code, e?.message);
+    showToast('Doğrulama bağlantısı geçersiz veya süresi dolmuş. Profil sayfasındaki "🔄 Durumu Yenile" butonuyla kontrol edin.', 'warning', 8000);
+  }
+}
+
 // Enter tuşu ile login
 document.addEventListener('DOMContentLoaded', () => {
+  // Maildeki doğrulama linkinden döndüysek önce onu işle
+  handleAuthActionRedirect().catch(e => console.warn('[AuthAction]', e));
+
   try {
     const kayitli = localStorage.getItem('dtmTheme') || 'light';
     applyTheme(kayitli);
