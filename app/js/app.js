@@ -4332,37 +4332,41 @@ window.acMuhendisModal = function(index = null) {
   modal.id = modalId;
   modal.className = 'dtm-modal-overlay';
   modal.innerHTML = `
-    <div class="dtm-modal" style="max-width:440px">
-      <div class="dtm-modal-header" style="display:flex;justify-content:space-between;align-items:center;">
-        <h3 style="display:flex;align-items:center;gap:8px;font-size:16px;margin:0;">
-          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('users', 18) : ''}</span>
+    <div class="dtm-modal" style="max-width:520px; width:92%; padding:28px 32px; border-radius:14px;">
+      <div class="dtm-modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid var(--gray-200);">
+        <h3 style="display:flex; align-items:center; gap:10px; font-size:18px; font-weight:700; color:var(--gray-900); margin:0;">
+          <span style="color:var(--primary); display:inline-flex">${typeof getIcon === 'function' ? getIcon('users', 22) : ''}</span>
           ${isEdit ? 'Görevli Personeli Düzenle' : 'Yeni Görevli Personel Ekle'}
         </h3>
+        <button onclick="document.getElementById('${modalId}').remove()" style="background:none; border:none; color:var(--gray-400); cursor:pointer; font-size:18px; padding:4px;" title="Kapat">
+          ${typeof getIcon === 'function' ? getIcon('x', 18) : '✕'}
+        </button>
       </div>
-      <div class="dtm-modal-body" style="padding:18px 0 10px;">
-        <div class="form-group" style="margin-bottom:16px;">
-          <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;">
+      <div class="dtm-modal-body" style="padding:0;">
+        <div class="form-group" style="margin-bottom:20px;">
+          <label style="display:block; font-size:14px; font-weight:600; color:var(--gray-800); margin-bottom:8px;">
             Adı Soyadı <span style="color:var(--danger)">*</span>
           </label>
           <input type="text" id="muhendisModalAd" class="ref-input" value="${escAttr(mevcut.ad || '')}" 
             placeholder="Örn: Aziz AÇIKGÖZ"
+            style="padding:12px 16px; font-size:14px; border-radius:8px; width:100%; box-sizing:border-box;"
             oninput="this.value = this.value.replace(/[^a-zA-ZçğıöşüÇĞİÖŞÜ\\s]/g, '');"
             onkeydown="if(event.key==='Enter') kaydetMuhendisModal(${isEdit ? index : 'null'})">
-          <small style="color:var(--gray-500);font-size:11px;margin-top:4px;display:block;">Sadece harf ve boşluk girilebilir (Rakam kabul edilmez).</small>
+          <small style="color:var(--gray-500); font-size:12px; margin-top:6px; display:block;">Sadece harf ve boşluk girilebilir (Rakam kabul edilmez).</small>
         </div>
-        <div class="form-group">
-          <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;">
+        <div class="form-group" style="margin-bottom:8px;">
+          <label style="display:block; font-size:14px; font-weight:600; color:var(--gray-800); margin-bottom:8px;">
             Disiplin / Ünvan <span style="color:var(--danger)">*</span>
           </label>
-          <select id="muhendisModalUnvan" class="ref-input" style="padding:9px 12px;">
+          <select id="muhendisModalUnvan" class="ref-input" style="padding:12px 16px; font-size:14px; border-radius:8px; width:100%; box-sizing:border-box;">
             <option value="">-- Disiplin / Ünvan Seçiniz --</option>
             ${unvanOptions}
           </select>
         </div>
       </div>
-      <div class="dtm-modal-footer" style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:14px;border-top:1px solid var(--gray-200);">
-        <button class="btn btn-outline btn-sm" onclick="document.getElementById('${modalId}').remove()">Vazgeç</button>
-        <button class="btn btn-primary" onclick="kaydetMuhendisModal(${isEdit ? index : 'null'})" style="display:inline-flex;align-items:center;gap:6px;">
+      <div class="dtm-modal-footer" style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px; padding-top:16px; border-top:1px solid var(--gray-200);">
+        <button class="btn btn-outline" style="padding:10px 20px; font-size:14px; border-radius:8px;" onclick="document.getElementById('${modalId}').remove()">Vazgeç</button>
+        <button class="btn btn-primary" onclick="kaydetMuhendisModal(${isEdit ? index : 'null'})" style="display:inline-flex; align-items:center; gap:8px; padding:10px 24px; font-size:14px; font-weight:600; border-radius:8px;">
           ${typeof getIcon === 'function' ? getIcon('check', 16) : '✓'} ${isEdit ? 'Güncelle' : 'Kaydet'}
         </button>
       </div>
