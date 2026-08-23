@@ -80,8 +80,11 @@
             <input type="text" id="loginUsername" placeholder="Kullanıcı adınızı giriniz" autocomplete="username">
           </div>
         </div>
-        <div class="login-field">
-          <label>Şifre</label>
+        <div class="login-field" style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <label style="margin:0;">Şifre</label>
+            <a href="javascript:void(0)" onclick="sifremiUnuttumModalAc()" style="font-size:12px;color:var(--primary);text-decoration:none;font-weight:600;">Şifremi Unuttum?</a>
+          </div>
           <div class="login-input-wrap">
             <span class="login-input-icon">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -98,6 +101,42 @@
         </button>
         <div class="login-version-wrap">
           <span class="login-version">v2.1.0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Şifremi Unuttum Modal -->
+  <div id="sifremiUnuttumModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:99999;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;">
+    <div style="background:#fff;border-radius:16px;max-width:440px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#1e3a5f,#1a56db);padding:20px 24px;color:#fff;display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"></circle><path d="m21 2-9.6 9.6"></path><path d="m15.5 7.5 3 3L22 7l-3-3"></path></svg>
+          </div>
+          <div>
+            <h3 style="margin:0;font-size:16px;font-weight:700;">Şifre Sıfırlama</h3>
+            <p style="margin:2px 0 0;font-size:12px;opacity:0.85;">Doğrulanmış e-posta ile şifre yenileme</p>
+          </div>
+        </div>
+        <button onclick="sifremiUnuttumModalKapat()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:0.8;padding:4px;line-height:1;">&times;</button>
+      </div>
+      <div style="padding:24px;">
+        <p style="margin:0 0 16px;font-size:13.5px;color:var(--gray-600);line-height:1.5;">
+          Sisteme kayıtlı <strong>kullanıcı adınızı</strong> veya <strong>doğrulanmış e-posta adresinizi</strong> giriniz. Şifre sıfırlama bağlantısı posta kutunuza iletilecektir.
+        </p>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;">Kullanıcı Adı veya E-Posta</label>
+          <div style="position:relative;">
+            <input type="text" id="sifreSifirlamaInput" placeholder="örn: aziz.acikgoz veya mail@karaman.gov.tr" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-300);border-radius:8px;font-size:14px;box-sizing:border-box;">
+          </div>
+        </div>
+        <div id="sifreSifirlamaMsg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;line-height:1.4;"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="sifremiUnuttumModalKapat()">Vazgeç</button>
+          <button type="button" class="btn btn-primary" id="btnSifreSifirla" onclick="sifremiUnuttumGonder(this)" style="display:inline-flex;align-items:center;gap:6px;">
+            <span>Sıfırlama Bağlantısı Gönder</span>
+          </button>
         </div>
       </div>
     </div>
