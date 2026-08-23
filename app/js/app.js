@@ -5276,35 +5276,53 @@ function renderProfilPage() {
     : '-';
 
   return `
-    <div style="max-width:600px;margin:0 auto">
-      <div class="page-header">
-        <h2>Profilim</h2>
-        <p>Hesap bilgilerinizi görüntüleyin ve yönetin.</p>
+    <div style="max-width:860px;margin:0 auto">
+      <div class="vm-page-header">
+        <div class="vm-header-title">
+          <div class="vm-header-icon">
+            ${typeof getIcon === 'function' ? getIcon('userCheck', 22) : '👤'}
+          </div>
+          <div>
+            <h2>Profilim & Hesap Ayarları</h2>
+            <p>Kişisel hesap bilgilerinizi, profil avatarınızı ve güvenlik ayarlarınızı yönetin.</p>
+          </div>
+        </div>
       </div>
 
-      <!-- Profil Kartı -->
-      <div style="background:linear-gradient(135deg,#0f766e,#059669);border-radius:16px;padding:28px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden">
-        <div style="position:absolute;top:-40px;right:-40px;width:150px;height:150px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
-        <div style="display:flex;align-items:center;gap:20px">
+      <!-- Kurumsal Profil Başlık Banner -->
+      <div style="background:linear-gradient(135deg,#1e3a5f 0%,#1e40af 50%,#2563eb 100%);border-radius:16px;padding:28px 32px;color:#fff;margin-bottom:24px;position:relative;overflow:hidden;box-shadow:0 10px 25px -5px rgba(30,58,95,0.25);">
+        <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
+        <div style="position:absolute;bottom:-30px;right:80px;width:100px;height:100px;background:rgba(255,255,255,0.04);border-radius:50%"></div>
+        <div style="display:flex;align-items:center;gap:24px;position:relative;z-index:1;">
+          
           <!-- Avatar - hover ile düzenle -->
           <div onclick="openAvatarPicker()" title="Profil resmini değiştir"
                onmouseover="document.getElementById('avatarEditOverlay').style.opacity='1'"
                onmouseout="document.getElementById('avatarEditOverlay').style.opacity='0'"
-               style="position:relative;width:72px;height:72px;cursor:pointer;flex-shrink:0">
-            <div id="profilAvatarCircle" style="width:72px;height:72px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;border:2px solid rgba(255,255,255,0.3)">
+               style="position:relative;width:80px;height:80px;cursor:pointer;flex-shrink:0;border-radius:50%;box-shadow:0 4px 14px rgba(0,0,0,0.25);">
+            <div id="profilAvatarCircle" style="width:80px;height:80px;background:rgba(255,255,255,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;border:3px solid rgba(255,255,255,0.85);backdrop-filter:blur(4px);">
               ${u.avatar
                 ? `<img src="icons/avatars/${u.avatar}.png" style="width:100%;height:100%;object-fit:cover" />`
-                : '&#128100;'}
+                : (typeof getIcon === 'function' ? getIcon('user', 40) : '👤')}
             </div>
-            <div id="avatarEditOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;pointer-events:none">
-              <span style="font-size:20px">&#9998;</span>
+            <div id="avatarEditOverlay" style="position:absolute;inset:0;background:rgba(15,23,42,0.65);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:all 0.2s ease;pointer-events:none;color:#fff;">
+              ${typeof getIcon === 'function' ? getIcon('camera', 22) : '📷'}
+            </div>
+            <div style="position:absolute;bottom:0;right:0;background:var(--primary,#1a56db);color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+              ${typeof getIcon === 'function' ? getIcon('edit', 12) : '✎'}
             </div>
           </div>
+          
           <div>
-            <div style="font-size:22px;font-weight:700">${escHtml(u.displayName || '-')}</div>
-            <div style="font-size:14px;opacity:0.8;margin-top:4px">@${escHtml(u.username || '-')}</div>
-            <div style="margin-top:8px">
-              <span style="background:rgba(255,255,255,0.2);font-size:11px;font-weight:600;padding:3px 12px;border-radius:20px">
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px;display:flex;align-items:center;gap:10px;">
+              <span>${escHtml(u.displayName || '-')}</span>
+            </div>
+            <div style="font-size:14px;opacity:0.85;margin-top:4px;display:flex;align-items:center;gap:6px;">
+              <span>@${escHtml(u.username || '-')}</span>
+            </div>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+              <span style="background:rgba(255,255,255,0.2);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.3);font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;display:inline-flex;align-items:center;gap:6px;">
+                ${typeof getIcon === 'function' ? getIcon('shieldCheck', 14) : ''}
                 ${getRoleLabel(u.role)}
               </span>
             </div>
@@ -5313,57 +5331,108 @@ function renderProfilPage() {
       </div>
 
       <!-- Avatar Seçici Modal -->
-      <div id="avatarPickerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center">
-        <div style="background:#fff;border-radius:14px;padding:24px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <h3 style="font-size:15px;font-weight:700;color:#1f2937">&#128247; Profil Resmi Seç</h3>
-            <button onclick="closeAvatarPicker()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;padding:0 4px">&times;</button>
+      <div id="avatarPickerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);">
+        <div style="background:#fff;border-radius:16px;padding:24px;max-width:400px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;border-bottom:1px solid var(--gray-100);padding-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--gray-900);font-size:16px;">
+              <span style="color:var(--primary);display:inline-flex;">${typeof getIcon === 'function' ? getIcon('camera', 18) : '📷'}</span>
+              <span>Profil Resmi Seç</span>
+            </div>
+            <button onclick="closeAvatarPicker()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-400);line-height:1;padding:4px 8px;border-radius:6px;">&times;</button>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px">
+          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;">
             ${AVATARS.map(a => `
-              <div onclick="avatarSec('${a}')" style="cursor:pointer;border-radius:50%;overflow:hidden;width:48px;height:48px;border:3px solid ${u.avatar===a ? '#0f766e' : 'transparent'};transition:border-color .15s;margin:auto" id="avatarOpt_${a}">
-                <img src="icons/avatars/${a}.png" style="width:100%;height:100%" />
+              <div onclick="avatarSec('${a}')" style="cursor:pointer;border-radius:50%;overflow:hidden;width:48px;height:48px;border:3px solid ${u.avatar===a ? 'var(--primary, #1a56db)' : 'transparent'};transition:all .2s;box-shadow:${u.avatar===a ? '0 0 0 2px rgba(26,86,219,0.3)' : 'none'};margin:auto;" id="avatarOpt_${a}">
+                <img src="icons/avatars/${a}.png" style="width:100%;height:100%;object-fit:cover;" />
               </div>
             `).join('')}
           </div>
         </div>
       </div>
 
-      <!-- Bilgi Kartı -->
-      <div class="card" style="margin-bottom:20px">
-        <div class="card-header"><h3>&#128203; Hesap Bilgileri</h3></div>
-        <div class="card-body">
-          <table class="data-table">
-            <tbody>
-              <tr><td style="color:var(--gray-500);width:160px">Ad Soyad</td><td><strong>${u.displayName || '-'}</strong></td></tr>
-              <tr><td style="color:var(--gray-500)">Kullanıcı Adı</td><td>${u.username || '-'}</td></tr>
-              <tr><td style="color:var(--gray-500)">Rol</td><td>${getRoleLabel(u.role)}</td></tr>
-              <tr><td style="color:var(--gray-500)">Son Giriş</td><td>${lastLogin}</td></tr>
-              <tr><td style="color:var(--gray-500)">Hesap Oluşturma</td><td>${createdAt}</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <!-- 2 Kolonlu Kurumsal Grid -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:20px;">
+        
+        <!-- Sol Kolon: Hesap Bilgileri -->
+        <div class="card" style="margin:0;box-shadow:0 2px 10px rgba(0,0,0,0.04);border:1px solid var(--gray-200);">
+          <div class="card-header" style="display:flex;align-items:center;gap:8px;padding:16px 20px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">
+            <span style="color:var(--primary);display:inline-flex;">${typeof getIcon === 'function' ? getIcon('userCheck', 18) : ''}</span>
+            <h3 style="font-size:15px;margin:0;font-weight:700;color:var(--gray-900);">Hesap Bilgileri</h3>
+          </div>
+          <div class="card-body" style="padding:18px 20px;">
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              
+              <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--gray-100);">
+                <div style="display:flex;align-items:center;gap:8px;color:var(--gray-500);font-size:13.5px;">
+                  <span style="display:inline-flex;color:var(--gray-400);">${typeof getIcon === 'function' ? getIcon('user', 16) : ''}</span>
+                  <span>Ad Soyad</span>
+                </div>
+                <span style="font-weight:600;color:var(--gray-900);font-size:14px;">${escHtml(u.displayName || '-')}</span>
+              </div>
 
-      <!-- Şifre Değiştir -->
-      <div class="card">
-        <div class="card-header"><h3>&#128274; Şifre Değiştir</h3></div>
-        <div class="card-body">
-          <div class="form-group">
-            <label>Mevcut Şifre</label>
-            <input type="password" id="mevcutSifre" placeholder="Mevcut şifrenizi girin">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--gray-100);">
+                <div style="display:flex;align-items:center;gap:8px;color:var(--gray-500);font-size:13.5px;">
+                  <span style="display:inline-flex;color:var(--gray-400);">${typeof getIcon === 'function' ? getIcon('atSign', 16) : ''}</span>
+                  <span>Kullanıcı Adı</span>
+                </div>
+                <span style="font-family:monospace;font-weight:600;color:var(--gray-700);background:var(--gray-100);padding:2px 8px;border-radius:6px;font-size:13px;">${escHtml(u.username || '-')}</span>
+              </div>
+
+              <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--gray-100);">
+                <div style="display:flex;align-items:center;gap:8px;color:var(--gray-500);font-size:13.5px;">
+                  <span style="display:inline-flex;color:var(--gray-400);">${typeof getIcon === 'function' ? getIcon('shieldCheck', 16) : ''}</span>
+                  <span>Yetki Rolü</span>
+                </div>
+                <span class="ref-tag-pill" style="font-size:12px;">${getRoleLabel(u.role)}</span>
+              </div>
+
+              <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--gray-100);">
+                <div style="display:flex;align-items:center;gap:8px;color:var(--gray-500);font-size:13.5px;">
+                  <span style="display:inline-flex;color:var(--gray-400);">${typeof getIcon === 'function' ? getIcon('clock', 16) : ''}</span>
+                  <span>Son Giriş</span>
+                </div>
+                <span style="font-size:13px;color:var(--gray-700);font-weight:500;">${lastLogin}</span>
+              </div>
+
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:8px;color:var(--gray-500);font-size:13.5px;">
+                  <span style="display:inline-flex;color:var(--gray-400);">${typeof getIcon === 'function' ? getIcon('calendar', 16) : ''}</span>
+                  <span>Hesap Oluşturma</span>
+                </div>
+                <span style="font-size:13px;color:var(--gray-700);font-weight:500;">${createdAt}</span>
+              </div>
+
+            </div>
           </div>
-          <div class="form-group">
-            <label>Yeni Şifre</label>
-            <input type="password" id="yeniSifre" placeholder="En az 6 karakter">
-          </div>
-          <div class="form-group">
-            <label>Yeni Şifre (Tekrar)</label>
-            <input type="password" id="yeniSifreTekrar" placeholder="Yeni şifrenizi tekrar girin">
-          </div>
-          <div id="sifreMsg" style="font-size:13px;margin-bottom:10px"></div>
-          <button class="btn btn-primary" onclick="sifreDegistir()">Şifreyi Güncelle</button>
         </div>
+
+        <!-- Sağ Kolon: Şifre Değiştir -->
+        <div class="card" style="margin:0;box-shadow:0 2px 10px rgba(0,0,0,0.04);border:1px solid var(--gray-200);">
+          <div class="card-header" style="display:flex;align-items:center;gap:8px;padding:16px 20px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">
+            <span style="color:var(--primary);display:inline-flex;">${typeof getIcon === 'function' ? getIcon('key', 18) : ''}</span>
+            <h3 style="font-size:15px;margin:0;font-weight:700;color:var(--gray-900);">Şifre Değiştir</h3>
+          </div>
+          <div class="card-body" style="padding:20px;">
+            <div class="form-group" style="margin-bottom:14px;">
+              <label style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;display:block;">Mevcut Şifre</label>
+              <input type="password" id="mevcutSifre" placeholder="Mevcut şifrenizi girin" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:14px;box-sizing:border-box;">
+            </div>
+            <div class="form-group" style="margin-bottom:14px;">
+              <label style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;display:block;">Yeni Şifre</label>
+              <input type="password" id="yeniSifre" placeholder="En az 6 karakter" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:14px;box-sizing:border-box;">
+            </div>
+            <div class="form-group" style="margin-bottom:16px;">
+              <label style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;display:block;">Yeni Şifre (Tekrar)</label>
+              <input type="password" id="yeniSifreTekrar" placeholder="Yeni şifrenizi tekrar girin" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:14px;box-sizing:border-box;">
+            </div>
+            <div id="sifreMsg" style="font-size:13px;margin-bottom:12px;min-height:18px;"></div>
+            <button class="btn btn-primary" onclick="sifreDegistir()" style="width:100%;padding:11px 16px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;border-radius:8px;">
+              <span style="display:inline-flex;">${typeof getIcon === 'function' ? getIcon('shieldCheck', 16) : ''}</span>
+              <span>Şifreyi Güncelle</span>
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   `;
@@ -5389,7 +5458,7 @@ async function avatarSec(avatarName) {
     if (circle) circle.innerHTML = `<img src="icons/avatars/${avatarName}.png" style="width:100%;height:100%;object-fit:cover" />`;
     AVATARS.forEach(a => {
       const el = document.getElementById('avatarOpt_' + a);
-      if (el) el.style.borderColor = a === avatarName ? '#0f766e' : 'transparent';
+      if (el) el.style.borderColor = a === avatarName ? 'var(--primary, #1a56db)' : 'transparent';
     });
     closeAvatarPicker();
     updateSidebarAvatar();

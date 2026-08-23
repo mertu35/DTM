@@ -263,6 +263,31 @@ const ICONS = {
     <svg width="${size}" height="${size}" class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
       <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+    </svg>`,
+
+  key: (size = 18, cls = '') => `
+    <svg width="${size}" height="${size}" class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="7.5" cy="15.5" r="5.5"></circle>
+      <path d="m21 2-9.6 9.6"></path>
+      <path d="m15.5 7.5 3 3L22 7l-3-3"></path>
+    </svg>`,
+
+  clock: (size = 18, cls = '') => `
+    <svg width="${size}" height="${size}" class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>`,
+
+  atSign: (size = 18, cls = '') => `
+    <svg width="${size}" height="${size}" class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"></circle>
+      <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"></path>
+    </svg>`,
+
+  camera: (size = 18, cls = '') => `
+    <svg width="${size}" height="${size}" class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
+      <circle cx="12" cy="13" r="3"></circle>
     </svg>`
 };
 
