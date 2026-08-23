@@ -2,6 +2,7 @@
 // firebaseConfig, config.js dosyasından yükleniyor (gitignore'da)
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+auth.languageCode = 'tr'; // Firebase e-postaları ve doğrulama sayfaları Türkçe
 const db = firebase.firestore();
 const remoteConfig = firebase.remoteConfig();
 remoteConfig.settings.minimumFetchIntervalMillis = 3600000; // 1 saat cache
@@ -173,13 +174,23 @@ async function epostaDogrulamaGonder(yeniEmail) {
   }
 
   // Firebase Auth üzerinden e-posta güncelleme & doğrulama gönderimi
+  auth.languageCode = 'tr';
   try {
-    if (typeof user.verifyBeforeUpdateEmail === 'function') {
-      await user.verifyBeforeUpdateEmail(cleanEmail);
-    } else {
-      await user.updateEmail(cleanEmail);
-      await user.sendEmailVerification();
+    // 1. Kullanıcının Auth e-postasını yeni e-posta ile güncelle
+    if (user.email !== cleanEmail) {
+      try {
+        await user.updateEmail(cleanEmail);
+      } catch (updateErr) {
+        if (updateErr.code === 'auth/requires-recent-login' && typeof user.verifyBeforeUpdateEmail === 'function') {
+          await user.verifyBeforeUpdateEmail(cleanEmail);
+          return cleanEmail;
+        } else {
+          throw updateErr;
+        }
+      }
     }
+    // 2. Doğrulama bağlantısı gönder (Türkçe şablon ile)
+    await user.sendEmailVerification();
   } catch (err) {
     if (err.code === 'auth/requires-recent-login') {
       throw new Error('Güvenlik nedeniyle e-posta güncellemek için lütfen oturumunuzu kapatıp tekrar giriş yapınız.');
