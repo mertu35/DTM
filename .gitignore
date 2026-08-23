@@ -1,6 +1,17 @@
 # Firebase config - GitHub Pages için commit edildi
 # app/js/config.js
 
+# Firebase Admin SDK servis hesabı anahtarı — ASLA commit edilmemeli
+scripts/serviceAccountKey.json
+**/serviceAccountKey.json
+
+# Kullanıcıların gerçek e-posta adresleri (kişisel veri) — repoya girmemeli
+scripts/kullanicilar.json
+
+# Node
+node_modules/
+package-lock.json
+
 # OS
 .DS_Store
 Thumbs.db
