@@ -44,15 +44,10 @@ function getStatusBadge(status) {
 }
 
 function getIsTuruBadge(isTuru) {
-  const tur = isTuru || 'Yapım İşi';
-  const map = {
-    'Yapım İşi':    { label: 'Yapım İşi',    bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' },
-    'Mal Alımı':    { label: 'Mal Alımı',    bg: '#f0fdf4', color: '#166534', border: '#bbf7d0' },
-    'Hizmet Alımı': { label: 'Hizmet Alımı', bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
-    'Danışmanlık':  { label: 'Danışmanlık',  bg: '#f3e8ff', color: '#6b21a8', border: '#e9d5ff' }
-  };
-  const t = map[tur] || map['Yapım İşi'];
-  return `<span style="font-size:11px;background:${t.bg};color:${t.color};border:1px solid ${t.border};padding:2px 8px;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:3px">🏷️ ${t.label}</span>`;
+  // Renkler ve etiketler data.js'teki IS_TURLERI listesinden gelir
+  const tanim = getIsTuruTanim(isTuru) || IS_TURLERI[0];
+  const t = tanim.rozet;
+  return `<span style="font-size:11px;background:${t.bg};color:${t.color};border:1px solid ${t.border};padding:2px 8px;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:3px">🏷️ ${escHtml(tanim.ad)}</span>`;
 }
 
 // ===== TOAST BİLDİRİM SİSTEMİ =====
@@ -159,7 +154,7 @@ function acBelgeIndirModal() {
   const mevcut = document.getElementById('dtmBelgeIndirModal');
   if (mevcut) mevcut.remove();
 
-  const isMalVeyaHizmet = proje.isTuru === 'Mal Alımı' || proje.isTuru === 'Hizmet Alımı' || proje.isTuru === 'Danışmanlık';
+  const isMalVeyaHizmet = isMalVeyaHizmetTuru(proje.isTuru);
   const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
   const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
 
@@ -340,7 +335,7 @@ function acGerceklestirmeciIndirModal() {
   const mevcut = document.getElementById('dtmBelgeIndirModal');
   if (mevcut) mevcut.remove();
 
-  const isMalVeyaHizmet = proje.isTuru === 'Mal Alımı' || proje.isTuru === 'Hizmet Alımı' || proje.isTuru === 'Danışmanlık';
+  const isMalVeyaHizmet = isMalVeyaHizmetTuru(proje.isTuru);
   const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
   const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
 
@@ -1273,8 +1268,10 @@ function renderVeriGirisPage() {
               <label>İş Türü</label>
               <select id="isTuru" onchange="onFieldChange('isTuru', this.value); renderPage();">
                 ${referans.isTurleri.map(t => {
-                  const aktif = t === 'Yapım İşi' || t === 'Mal Alımı';
-                  return `<option value="${t}" ${proje.isTuru === t ? 'selected' : ''} ${!aktif ? 'disabled style="color:#9ca3af"' : ''}>${t}${!aktif ? ' (yakında)' : ''}</option>`;
+                  // Hangi türün seçilebilir olduğu data.js'teki IS_TURLERI listesinde tanımlı
+                  const tanim = getIsTuruTanim(t);
+                  const aktif = tanim ? tanim.aktif : false;
+                  return `<option value="${escAttr(t)}" ${proje.isTuru === t ? 'selected' : ''} ${!aktif ? 'disabled style="color:#9ca3af"' : ''}>${escHtml(t)}${!aktif ? ' (yakında)' : ''}</option>`;
                 }).join('')}
               </select>
             </div>
@@ -2494,7 +2491,7 @@ async function renderBelgelerPage() {
   }
 
   // DURUM 2: Proje seçili → belge tab'larını göster
-  const isMalVeyaHizmet = proje.isTuru === 'Mal Alımı' || proje.isTuru === 'Hizmet Alımı' || proje.isTuru === 'Danışmanlık';
+  const isMalVeyaHizmet = isMalVeyaHizmetTuru(proje.isTuru);
   const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
   const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
 
@@ -3250,12 +3247,15 @@ async function renderDashboardPage() {
     const bekleyenSayi   = projeler.filter(p => p.status === 'taslak' || p.status === 'gonderildi').length;
     const geriGonderSayi = projeler.filter(p => p.status === 'geri_gonderildi').length;
 
-    const turStats = {
-      'Yapım İşi': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'building', color: '#ea580c', bg: '#fff7ed' },
-      'Mal Alımı': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'box', color: '#0284c7', bg: '#f0f9ff' },
-      'Hizmet Alımı': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'briefcase', color: '#16a34a', bg: '#f0fdf4' },
-      'Danışmanlık': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'pieChart', color: '#9333ea', bg: '#faf5ff' }
-    };
+    // Kategori kartları data.js'teki IS_TURLERI listesinden üretilir;
+    // yeni bir iş türü eklendiğinde dashboard'a kendiliğinden gelir.
+    const turStats = {};
+    IS_TURLERI.forEach(t => {
+      turStats[t.ad] = {
+        adet: 0, tutar: 0, onayliAdet: 0,
+        icon: t.dashboard.icon, color: t.dashboard.color, bg: t.dashboard.bg
+      };
+    });
 
     const onaylananlar = projeler.filter(p => p.status === 'onaylandi');
 
@@ -4793,7 +4793,7 @@ function renderGerceklestirmeciBelgelerView(main) {
     };
   }
 
-  const isMalVeyaHizmet = proje.isTuru === 'Mal Alımı' || proje.isTuru === 'Hizmet Alımı' || proje.isTuru === 'Danışmanlık';
+  const isMalVeyaHizmet = isMalVeyaHizmetTuru(proje.isTuru);
   const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
   const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
 

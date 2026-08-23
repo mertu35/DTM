@@ -5,6 +5,59 @@ const STORAGE_KEY = 'dtm_proje';
 const REF_STORAGE_KEY = 'dtm_referans';
 const PROJECTS_LIST_KEY = 'dtm_projeler_listesi';
 
+// ===================== İŞ TÜRLERİ — TEK MERKEZ =====================
+// Yeni bir iş türü eklemek ya da mevcut birini açmak/kapatmak için
+// YALNIZCA bu liste düzenlenir. İş türü dropdown'ı, rozet renkleri,
+// dashboard kategori kartları ve "Mal/Hizmet grubu mu?" kontrolü
+// (Sözleşme yerine Muayene ve Kabul Tutanağı üretilmesi vb.)
+// hepsi buradan beslenir.
+//
+//   aktif         : dropdown'da seçilebilir mi (false ise "(yakında)" olarak kilitli)
+//   malVeyaHizmet : Mal/Hizmet grubundan mı (Yapım İşi'ne göre farklı belge seti)
+const IS_TURLERI = [
+  {
+    ad: 'Yapım İşi',
+    aktif: true,
+    malVeyaHizmet: false,
+    rozet:     { bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' },
+    dashboard: { icon: 'building', color: '#ea580c', bg: '#fff7ed' }
+  },
+  {
+    ad: 'Mal Alımı',
+    aktif: true,
+    malVeyaHizmet: true,
+    rozet:     { bg: '#f0fdf4', color: '#166534', border: '#bbf7d0' },
+    dashboard: { icon: 'box', color: '#0284c7', bg: '#f0f9ff' }
+  },
+  {
+    ad: 'Hizmet Alımı',
+    aktif: false,
+    malVeyaHizmet: true,
+    rozet:     { bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
+    dashboard: { icon: 'briefcase', color: '#16a34a', bg: '#f0fdf4' }
+  },
+  {
+    ad: 'Danışmanlık',
+    aktif: false,
+    malVeyaHizmet: true,
+    rozet:     { bg: '#f3e8ff', color: '#6b21a8', border: '#e9d5ff' },
+    dashboard: { icon: 'pieChart', color: '#9333ea', bg: '#faf5ff' }
+  }
+];
+
+const IS_TURU_ADLARI = IS_TURLERI.map(t => t.ad);
+
+// Tanımı bulur; bilinmeyen bir iş türü için null döner.
+function getIsTuruTanim(isTuru) {
+  return IS_TURLERI.find(t => t.ad === isTuru) || null;
+}
+
+// Mal/Hizmet grubundan mı? (bilinmeyen tür → Yapım İşi gibi davranır)
+function isMalVeyaHizmetTuru(isTuru) {
+  const t = getIsTuruTanim(isTuru);
+  return t ? t.malVeyaHizmet : false;
+}
+
 function getDefaultReferans() {
   return {
     muhendisList: [
@@ -29,7 +82,7 @@ function getDefaultReferans() {
     ],
     birimList: ['Adet', 'm²', 'm³', 'm', 'kg', 'ton', 'lt', 'takım', 'set', 'gün', 'ay', 'kW', 'göz', '***'],
     kdvOranlari: [1, 10, 20],
-    isTurleri: ['Yapım İşi', 'Mal Alımı', 'Hizmet Alımı', 'Danışmanlık'],
+    isTurleri: IS_TURU_ADLARI.slice(),
     sehir: 'Karaman',
     ilceler: ['Merkez', 'Ayrancı', 'Başyayla', 'Ermenek', 'Kazımkarabekir', 'Sarıveliler'],
     mudurlukler: [
