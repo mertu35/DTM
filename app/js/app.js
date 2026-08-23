@@ -3183,10 +3183,10 @@ async function renderDashboardPage() {
     const geriGonderSayi = projeler.filter(p => p.status === 'geri_gonderildi').length;
 
     const turStats = {
-      'Yapım İşi': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'hammer', color: '#ea580c', bg: '#fff7ed' },
-      'Mal Alımı': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'package', color: '#0284c7', bg: '#f0f9ff' },
+      'Yapım İşi': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'building', color: '#ea580c', bg: '#fff7ed' },
+      'Mal Alımı': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'box', color: '#0284c7', bg: '#f0f9ff' },
       'Hizmet Alımı': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'briefcase', color: '#16a34a', bg: '#f0fdf4' },
-      'Danışmanlık': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'fileText', color: '#9333ea', bg: '#faf5ff' }
+      'Danışmanlık': { adet: 0, tutar: 0, onayliAdet: 0, icon: 'pieChart', color: '#9333ea', bg: '#faf5ff' }
     };
 
     const onaylananlar = projeler.filter(p => p.status === 'onaylandi');
