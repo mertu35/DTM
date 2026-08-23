@@ -222,11 +222,11 @@ async function epostaDurumunuGuncelle() {
     console.warn('User reload hatası:', e);
   }
 
-  const isVerified = user.emailVerified;
   const authEmail = user.email;
   const isCustomEmail = authEmail && !authEmail.endsWith('@dtm.local');
+  const isVerified = Boolean(user.emailVerified || isCustomEmail);
 
-  if (isCustomEmail && isVerified) {
+  if (isCustomEmail) {
     await db.collection('users').doc(user.uid).update({
       email: authEmail,
       emailVerified: true,
