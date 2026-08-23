@@ -2066,8 +2066,22 @@ body.dark [style*="background: #f0f7ff"],
 body.dark [style*="background:#e8eefb"],
 body.dark [style*="background: #e8eefb"],
 body.dark [style*="background:#dbeafe"],
-body.dark [style*="background: #dbeafe"] {
+body.dark [style*="background: #dbeafe"],
+body.dark [style*="background:#fff7ed"],
+body.dark [style*="background: #fff7ed"],
+body.dark [style*="background:#f0f9ff"],
+body.dark [style*="background: #f0f9ff"],
+body.dark [style*="background:#f0fdf4"],
+body.dark [style*="background: #f0fdf4"],
+body.dark [style*="background:#faf5ff"],
+body.dark [style*="background: #faf5ff"] {
   background: rgba(59, 130, 246, 0.15) !important;
+}
+
+/* vm-page-header (Dashboard, Veri Merkezi vb. sayfa başlık kartları) */
+body.dark .vm-page-header {
+  background: var(--dtm-surface);
+  border-color: var(--dtm-border);
 }
 
 /* Tema toggle butonu */
