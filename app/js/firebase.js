@@ -176,21 +176,8 @@ async function epostaDogrulamaGonder(yeniEmail) {
   // Firebase Auth üzerinden e-posta güncelleme & doğrulama gönderimi
   auth.languageCode = 'tr';
   try {
-    // 1. Kullanıcının Auth e-postasını yeni e-posta ile güncelle
-    if (user.email !== cleanEmail) {
-      try {
-        await user.updateEmail(cleanEmail);
-      } catch (updateErr) {
-        if (updateErr.code === 'auth/requires-recent-login' && typeof user.verifyBeforeUpdateEmail === 'function') {
-          await user.verifyBeforeUpdateEmail(cleanEmail);
-          return cleanEmail;
-        } else {
-          throw updateErr;
-        }
-      }
-    }
-    // 2. Doğrulama bağlantısı gönder (Türkçe şablon ile)
-    await user.sendEmailVerification();
+    // Firebase güvenlik politikası gereği e-posta değişikliği için zorunlu metot
+    await user.verifyBeforeUpdateEmail(cleanEmail);
   } catch (err) {
     if (err.code === 'auth/requires-recent-login') {
       throw new Error('Güvenlik nedeniyle e-posta güncellemek için lütfen oturumunuzu kapatıp tekrar giriş yapınız.');
@@ -198,6 +185,8 @@ async function epostaDogrulamaGonder(yeniEmail) {
       throw new Error('Bu e-posta adresi başka bir hesap tarafından kullanılmaktadır.');
     } else if (err.code === 'auth/invalid-email') {
       throw new Error('Geçersiz bir e-posta adresi girdiniz.');
+    } else if (err.code === 'auth/too-many-requests') {
+      throw new Error('Çok fazla istek gönderildi. Lütfen birkaç dakika bekleyiniz.');
     } else {
       throw new Error('E-posta doğrulama gönderilemedi: ' + err.message);
     }
