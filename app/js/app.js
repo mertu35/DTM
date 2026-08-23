@@ -682,6 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Sayfa kapatılırken veya yenilenirken tarayıcı uyarısı göster
   window.addEventListener('beforeunload', (e) => {
     if (hasUnsavedChanges()) {
+      saveProje(proje); // debounce'un yetişemediği son anlık değişikliği de yerel depoya yaz
       e.preventDefault();
       e.returnValue = 'Girdiğiniz verileri henüz kaydetmediniz. Çıkmak istediğinize emin misiniz?';
       return e.returnValue;
@@ -711,6 +712,7 @@ function init() {
 
       // Eğer kaydedilmemiş değişiklikler varsa kullanıcıyı uyar
       if (hasUnsavedChanges()) {
+        saveProje(proje); // debounce'un yetişemediği son anlık değişikliği de yerel depoya yaz
         const onay = await showConfirm(
           '⚠️ <strong>Kaydedilmemiş Değişiklikler Var!</strong><br><br>Girdiğiniz bilgileri henüz kaydetmediniz. Başka bir sayfaya geçerseniz son değişiklikler kaybolabilir.<br><br>Yine de devam etmek istiyor musunuz?',
           'Sayfadan Ayrıl'
@@ -2817,7 +2819,7 @@ function renderVeriMerkeziPage() {
           <div style="background:var(--gray-50); padding:16px 20px; border-radius:12px; border:1px solid var(--gray-200); display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap;">
             <div style="display:flex; align-items:center; gap:14px;">
               <div style="width:44px; height:44px; border-radius:50%; background:#e8eefb; color:var(--primary); font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:inset 0 0 0 1px rgba(26,86,219,0.15)">
-                ${initials}
+                ${escHtml(initials)}
               </div>
               <div>
                 <div style="font-size:15px; font-weight:700; color:var(--gray-900);">${escHtml(m.ad)}</div>
