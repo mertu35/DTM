@@ -35,6 +35,29 @@ function maskEmail(email) {
   return `${visibleName}@${restDomain ? restDomain + '.' : ''}${tld}`;
 }
 
+// Kullanıcı adı → doğrulanmış e-posta eşlemesi. Giriş ekranı ve "Şifremi Unuttum"
+// akışı henüz oturum açılmadan bu eşlemeyi okuyabilmeli (users koleksiyonu auth ister),
+// bu yüzden sadece {email} tutan ayrı, herkese açık okunabilir bir dokümana yazılır.
+async function syncUsernameEmailMap(username, email) {
+  if (!username || !email) return;
+  try {
+    await db.collection('usernameEmailMap').doc(username.toLowerCase().trim()).set({ email: email.toLowerCase() });
+  } catch(e) {
+    console.warn('usernameEmailMap senkron hatası:', e);
+  }
+}
+
+// Kullanıcı adından doğrulanmış e-postayı bulur (auth gerektirmez)
+async function getEmailByUsername(username) {
+  try {
+    const doc = await db.collection('usernameEmailMap').doc(username.toLowerCase().trim()).get();
+    return doc.exists ? (doc.data().email || null) : null;
+  } catch(e) {
+    console.warn('usernameEmailMap okuma hatası:', e);
+    return null;
+  }
+}
+
 // Giriş yap (kullanıcı adı veya e-posta ile)
 async function dtmLogin(identifier, password) {
   identifier = (identifier || '').trim();
@@ -46,16 +69,11 @@ async function dtmLogin(identifier, password) {
   try {
     cred = await auth.signInWithEmailAndPassword(emailToAuth, password);
   } catch (err) {
-    // Eğer kullanıcı adı girilmişse ve kullanıcının auth emaili gerçek e-posta ile güncellenmişse Firestore'dan bak
+    // Eğer kullanıcı adı girilmişse ve kullanıcının auth emaili gerçek e-posta ile güncellenmişse eşleme dokümanından bak
     if (!identifier.includes('@') && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password')) {
-      const snap = await db.collection('users').where('username', '==', identifier.toLowerCase()).get();
-      if (!snap.empty) {
-        const userData = snap.docs[0].data();
-        if (userData.email && userData.email !== emailToAuth) {
-          cred = await auth.signInWithEmailAndPassword(userData.email, password);
-        } else {
-          throw err;
-        }
+      const gercekEmail = await getEmailByUsername(identifier);
+      if (gercekEmail && gercekEmail !== emailToAuth) {
+        cred = await auth.signInWithEmailAndPassword(gercekEmail, password);
       } else {
         throw err;
       }
@@ -82,6 +100,7 @@ async function dtmLogin(identifier, password) {
       userData.emailVerified = isVerified;
       if (isVerified) userData.pendingEmail = null;
     }
+    if (isVerified && userData.username) syncUsernameEmailMap(userData.username, cred.user.email);
   }
 
   currentDTMUser = { uid: cred.user.uid, ...userData };
@@ -224,9 +243,12 @@ async function epostaDurumunuGuncelle() {
 
   const authEmail = user.email;
   const isCustomEmail = authEmail && !authEmail.endsWith('@dtm.local');
-  const isVerified = Boolean(user.emailVerified || isCustomEmail);
+  // Sadece Firebase Auth'un kendi emailVerified bayrağına güvenilir — bir e-postanın
+  // @dtm.local olmaması onun doğrulandığı anlamına gelmez (admin, kullanıcı oluştururken
+  // hiç doğrulatmadan gerçek bir e-posta atamış olabilir).
+  const isVerified = isCustomEmail && Boolean(user.emailVerified);
 
-  if (isCustomEmail) {
+  if (isVerified) {
     await db.collection('users').doc(user.uid).update({
       email: authEmail,
       emailVerified: true,
@@ -238,11 +260,12 @@ async function epostaDurumunuGuncelle() {
       currentDTMUser.emailVerified = true;
       currentDTMUser.pendingEmail = null;
     }
+    if (currentDTMUser?.username) syncUsernameEmailMap(currentDTMUser.username, authEmail);
   }
 
   return {
     email: isCustomEmail ? authEmail : (currentDTMUser?.email || ''),
-    emailVerified: isVerified && isCustomEmail,
+    emailVerified: isVerified,
     pendingEmail: currentDTMUser?.pendingEmail || null
   };
 }
@@ -257,20 +280,9 @@ async function sifreSifirlamaGonder(identifier) {
   if (identifier.includes('@')) {
     targetEmail = identifier.toLowerCase();
   } else {
-    // Kullanıcı adı girildiyse Firestore'dan bakmayı dene
-    try {
-      const cleanUsername = identifier.toLowerCase();
-      const snap = await db.collection('users').where('username', '==', cleanUsername).get();
-      if (!snap.empty) {
-        const userData = snap.docs[0].data();
-        if (userData.email) {
-          targetEmail = userData.email;
-        }
-      }
-    } catch(e) {
-      // Unauthenticated Firestore read engellendiyse
-      console.warn('Username query skipped due to auth state:', e?.message);
-    }
+    // Kullanıcı adı girildiyse eşleme dokümanından doğrulanmış e-postaya bak
+    const cleanUsername = identifier.toLowerCase();
+    targetEmail = await getEmailByUsername(cleanUsername);
 
     if (!targetEmail) {
       throw new Error('Lütfen hesabınıza tanımlı e-posta adresinizi giriniz (örn: ornek@karaman.gov.tr).');
