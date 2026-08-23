@@ -566,6 +566,72 @@ function showLoginError(msg) {
   el.style.display = 'block';
 }
 
+// ===== ŞİFREMİ UNUTTUM MODAL HANDLERS =====
+window.sifremiUnuttumModalAc = function() {
+  const modal = document.getElementById('sifremiUnuttumModal');
+  const input = document.getElementById('sifreSifirlamaInput');
+  const msg = document.getElementById('sifreSifirlamaMsg');
+  const btn = document.getElementById('btnSifreSifirla');
+  const loginUser = document.getElementById('loginUsername')?.value.trim();
+  if (input) input.value = loginUser || '';
+  if (msg) { msg.style.display = 'none'; msg.textContent = ''; }
+  if (btn) { btn.style.display = 'inline-flex'; btn.disabled = false; btn.innerHTML = '<span>Sıfırlama Bağlantısı Gönder</span>'; }
+  if (modal) modal.style.display = 'flex';
+};
+
+window.sifremiUnuttumModalKapat = function() {
+  const modal = document.getElementById('sifremiUnuttumModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.sifremiUnuttumGonder = async function(btn) {
+  const input = document.getElementById('sifreSifirlamaInput');
+  const msg = document.getElementById('sifreSifirlamaMsg');
+  const val = (input?.value || '').trim();
+
+  if (!val) {
+    if (msg) {
+      msg.style.display = 'block';
+      msg.style.background = '#fef2f2';
+      msg.style.border = '1px solid #fecaca';
+      msg.style.color = '#991b1b';
+      msg.textContent = 'Lütfen kullanıcı adınızı veya e-posta adresinizi giriniz.';
+    }
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>Gönderiliyor...</span>';
+  }
+
+  try {
+    const masked = await sifreSifirlamaGonder(val);
+    if (msg) {
+      msg.style.display = 'block';
+      msg.style.background = '#f0fdf4';
+      msg.style.border = '1px solid #bbf7d0';
+      msg.style.color = '#166534';
+      msg.innerHTML = `✅ <strong>Şifre sıfırlama bağlantısı gönderildi!</strong><br><span style="font-size:12px;opacity:0.9">Bağlantı <strong>${escHtml(masked)}</strong> adresine iletildi. Lütfen gelen kutunuzu (ve spam klasörünü) kontrol ediniz.</span>`;
+    }
+    if (btn) {
+      btn.style.display = 'none';
+    }
+  } catch(e) {
+    if (msg) {
+      msg.style.display = 'block';
+      msg.style.background = '#fef2f2';
+      msg.style.border = '1px solid #fecaca';
+      msg.style.color = '#991b1b';
+      msg.textContent = e.message || 'Şifre sıfırlama talebi iletilemedi.';
+    }
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>Sıfırlama Bağlantısı Gönder</span>';
+    }
+  }
+};
+
 async function doLogout() {
   if (!await showConfirm('Çıkış yapmak istediğinize emin misiniz?', 'Çıkış Yap')) return;
   await dtmLogout();
@@ -3865,24 +3931,41 @@ async function renderKullaniciYonetimiPage() {
     return;
   }
   main.innerHTML = `
-    <div class="page-header">
-      <h2>Kullanıcı Yönetimi</h2>
-      <p>Sisteme erişim yetkisi olan kullanıcıları yönetin.</p>
+    <div class="vm-page-header">
+      <div class="vm-header-title">
+        <div class="vm-header-icon">
+          ${typeof getIcon === 'function' ? getIcon('users', 22) : '👥'}
+        </div>
+        <div>
+          <h2>Kullanıcı Yönetimi</h2>
+          <p>Sisteme erişim yetkisi olan kullanıcıları, rolleri ve e-posta durumlarını yönetin.</p>
+        </div>
+      </div>
     </div>
     <div style="text-align:center;padding:40px;color:var(--gray-400)">Kullanıcılar yükleniyor...</div>
   `;
   try {
     const users = await getAllUsers();
     main.innerHTML = `
-      <div class="page-header">
-        <h2>Kullanıcı Yönetimi</h2>
-        <p>Sisteme erişim yetkisi olan kullanıcıları yönetin.</p>
+      <div class="vm-page-header">
+        <div class="vm-header-title">
+          <div class="vm-header-icon">
+            ${typeof getIcon === 'function' ? getIcon('users', 22) : '👥'}
+          </div>
+          <div>
+            <h2>Kullanıcı Yönetimi</h2>
+            <p>Sisteme erişim yetkisi olan kullanıcıları, rolleri ve e-posta durumlarını yönetin.</p>
+          </div>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="card-header"><h3>&#128100; Yeni Kullanıcı Ekle</h3></div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header" style="display:flex;align-items:center;gap:8px;">
+          <span style="color:var(--primary);display:inline-flex;">${typeof getIcon === 'function' ? getIcon('userCheck', 18) : ''}</span>
+          <h3 style="font-size:15px;margin:0;font-weight:700;">Yeni Kullanıcı Ekle</h3>
+        </div>
         <div class="card-body">
-          <div class="form-grid" style="max-width:600px">
+          <div class="form-grid" style="max-width:720px">
             <div class="form-group">
               <label>Ad Soyad</label>
               <input type="text" id="yeniAd" placeholder="Ad Soyad">
@@ -3890,6 +3973,10 @@ async function renderKullaniciYonetimiPage() {
             <div class="form-group">
               <label>Kullanıcı Adı</label>
               <input type="text" id="yeniUsername" placeholder="kullaniciadi">
+            </div>
+            <div class="form-group">
+              <label>E-Posta (Opsiyonel)</label>
+              <input type="email" id="yeniEmail" placeholder="ornek@karaman.gov.tr">
             </div>
             <div class="form-group">
               <label>Şifre</label>
@@ -3911,15 +3998,50 @@ async function renderKullaniciYonetimiPage() {
       </div>
 
       <div class="card">
-        <div class="card-header"><h3>&#128101; Mevcut Kullanıcılar</h3></div>
-        <div class="card-body">
-          <table class="data-table">
-            <thead><tr><th>Ad Soyad</th><th>Kullanıcı Adı</th><th>Şifre</th><th>Rol</th><th></th></tr></thead>
+        <div class="card-header" style="display:flex;align-items:center;gap:8px;">
+          <span style="color:var(--primary);display:inline-flex;">${typeof getIcon === 'function' ? getIcon('users', 18) : ''}</span>
+          <h3 style="font-size:15px;margin:0;font-weight:700;">Mevcut Kullanıcılar & E-Posta Durumu (${users.length})</h3>
+        </div>
+        <div class="card-body" style="padding:0;overflow-x:auto;">
+          <table class="data-table" style="width:100%;margin:0;">
+            <thead>
+              <tr>
+                <th>Ad Soyad</th>
+                <th>Kullanıcı Adı</th>
+                <th>E-Posta & Doğrulama</th>
+                <th>Şifre</th>
+                <th>Rol</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
             <tbody>
               ${users.map(u => `
                 <tr>
-                  <td>${escHtml(u.displayName || '-')}</td>
-                  <td>${escHtml(u.username || '-')}</td>
+                  <td style="font-weight:600;color:var(--gray-900);">${escHtml(u.displayName || '-')}</td>
+                  <td><span style="font-family:monospace;background:var(--gray-100);padding:2px 6px;border-radius:4px;font-size:12.5px;">@${escHtml(u.username || '-')}</span></td>
+                  <td>
+                    ${u.email ? `
+                      <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:13px;color:var(--gray-800);">${escHtml(u.email)}</span>
+                        ${u.emailVerified ? `
+                          <span title="E-Posta Doğrulandı" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:10px;display:inline-flex;align-items:center;gap:3px;">
+                            ${typeof getIcon === 'function' ? getIcon('checkCircle', 12) : '✓'} Doğrulandı
+                          </span>
+                        ` : `
+                          <span title="Doğrulama Bekliyor" style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:10px;">
+                            ⏳ Bekliyor
+                          </span>
+                        `}
+                      </div>
+                    ` : (u.pendingEmail ? `
+                      <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:13px;color:var(--gray-500);">${escHtml(u.pendingEmail)}</span>
+                        <span title="Doğrulama Bekliyor" style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:10px;">⏳ Bekliyor</span>
+                      </div>
+                    ` : `
+                      <span style="color:var(--gray-400);font-size:12px;">(Tanımlanmadı)</span>
+                    `)}
+                  </td>
                   <td><span class="password-mask" style="font-family:monospace;background:var(--gray-100);padding:3px 6px;border-radius:4px;cursor:pointer;font-size:13px;user-select:none" onclick="this.textContent = this.textContent === '••••••••' ? '${escAttr(u.sifre || 'Bilinmiyor')}' : '••••••••'" title="Görmek için tıkla">••••••••</span></td>
                   <td>${u.uid !== currentDTMUser.uid ? `
                     <select onchange="kullaniciRolDegistir('${u.uid}', this.value)" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer">
@@ -3939,7 +4061,7 @@ async function renderKullaniciYonetimiPage() {
       </div>
     `;
   } catch(e) {
-    main.innerHTML = `<div class="page-header"><h2>Kullanıcı Yönetimi</h2></div>
+    main.innerHTML = `<div class="vm-page-header"><h2>Kullanıcı Yönetimi</h2></div>
       <div style="color:red;padding:20px">Hata: ${e.message}</div>`;
   }
 }
@@ -3947,31 +4069,34 @@ async function renderKullaniciYonetimiPage() {
 async function kullaniciEkle(btn) {
   const adEl = document.getElementById('yeniAd');
   const usernameEl = document.getElementById('yeniUsername');
+  const emailEl = document.getElementById('yeniEmail');
   const sifreEl = document.getElementById('yeniSifre');
   const ad = adEl.value.trim();
   const username = usernameEl.value.trim();
+  const email = emailEl ? emailEl.value.trim() : '';
   const sifre = sifreEl.value;
   const rol = document.getElementById('yeniRol').value;
   const msg = document.getElementById('kullaniciMsg');
 
   if (!ad || !username || !sifre) {
     markError(...[!ad && adEl, !username && usernameEl, !sifre && sifreEl].filter(Boolean));
-    msg.style.color = 'red'; msg.textContent = 'Tüm alanları doldurun.'; return;
+    msg.style.color = 'red'; msg.textContent = 'Tüm zorunlu alanları doldurun.'; return;
   }
   if (sifre.length < 6) { markError(sifreEl); msg.style.color = 'red'; msg.textContent = 'Şifre en az 6 karakter olmalı.'; return; }
 
   msg.style.color = 'var(--gray-500)'; msg.textContent = 'Kullanıcı oluşturuluyor...';
   await butonKilitli(btn, 'Oluşturuluyor...', async () => {
     try {
-      await createDTMUser(username, sifre, ad, rol);
+      await createDTMUser(username, sifre, ad, rol, email);
       msg.style.color = 'green'; msg.textContent = `✓ "${escHtml(ad)}" kullanıcısı başarıyla oluşturuldu.`;
       document.getElementById('yeniAd').value = '';
       document.getElementById('yeniUsername').value = '';
+      if (document.getElementById('yeniEmail')) document.getElementById('yeniEmail').value = '';
       document.getElementById('yeniSifre').value = '';
       renderKullaniciYonetimiPage();
     } catch(e) {
       msg.style.color = 'red';
-      if (e.code === 'auth/email-already-in-use') msg.textContent = 'Bu kullanıcı adı zaten kullanımda.';
+      if (e.code === 'auth/email-already-in-use') msg.textContent = 'Bu kullanıcı adı veya e-posta zaten kullanımda.';
       else msg.textContent = 'Hata: ' + hataMesaji(e);
     }
   });
@@ -5436,11 +5561,138 @@ function renderProfilPage() {
         </div>
 
       </div>
+
+      <!-- Alt Kart: E-Posta & Güvenlik Doğrulaması -->
+      <div class="card" style="margin-top:20px;box-shadow:0 2px 10px rgba(0,0,0,0.04);border:1px solid var(--gray-200);">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="color:var(--primary);display:inline-flex;">${typeof getIcon === 'function' ? getIcon('mail', 18) : ''}</span>
+            <h3 style="font-size:15px;margin:0;font-weight:700;color:var(--gray-900);">E-Posta & Güvenlik Doğrulaması</h3>
+          </div>
+          <button onclick="epostaDurumYenile(this)" title="Doğrulama durumunu sunucudan yenile" class="btn btn-sm btn-secondary" style="padding:5px 10px;font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <span>🔄 Durumu Yenile</span>
+          </button>
+        </div>
+        <div class="card-body" style="padding:20px;">
+          <div style="margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <label style="font-size:13px;font-weight:600;color:var(--gray-700);margin:0;">Kayıtlı E-Posta Adresiniz</label>
+              <div id="epostaDurumBadge">
+                ${u.email && u.emailVerified ? `
+                  <span style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:12px;font-weight:700;padding:3px 12px;border-radius:14px;display:inline-flex;align-items:center;gap:4px;">
+                    ${typeof getIcon === 'function' ? getIcon('checkCircle', 13) : '✓'} Doğrulandı
+                  </span>
+                ` : (u.pendingEmail ? `
+                  <span style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;font-size:12px;font-weight:600;padding:3px 12px;border-radius:14px;display:inline-flex;align-items:center;gap:4px;">
+                    ⏳ Onay Bekliyor
+                  </span>
+                ` : `
+                  <span style="background:var(--gray-100);color:var(--gray-600);border:1px solid var(--gray-200);font-size:12px;font-weight:600;padding:3px 12px;border-radius:14px;">
+                    ⚪ E-Posta Tanımsız
+                  </span>
+                `)}
+              </div>
+            </div>
+            <input type="email" id="profilEmailInput" value="${escAttr(u.email || u.pendingEmail || '')}" placeholder="örn: ad.soyad@karaman.gov.tr" style="width:100%;padding:11px 14px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:14px;box-sizing:border-box;">
+            <p style="font-size:12.5px;color:var(--gray-500);margin:8px 0 0;line-height:1.5;">
+              ℹ️ Şifrenizi unuttuğunuzda yeni şifre belirleme bağlantısı bu adrese iletilir. E-posta adresinizi girip butona bastığınızda posta kutunuza resmi bir doğrulama bağlantısı gönderilir.
+            </p>
+          </div>
+          <div id="epostaMsg" style="font-size:13px;margin-bottom:14px;min-height:16px;"></div>
+          <button class="btn btn-secondary" onclick="epostaDogrulamaIstegiGonder(this)" style="padding:11px 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;border-radius:8px;cursor:pointer;">
+            <span style="display:inline-flex;">${typeof getIcon === 'function' ? getIcon('send', 15) : ''}</span>
+            <span>Doğrulama Bağlantısı Gönder / E-Postayı Güncelle</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   `;
 }
 
-function bindProfil() {}
+function bindProfil() {
+  // Profil açılınca arka planda doğrulama durumunu senkronize et
+  epostaDurumunuGuncelle().catch(() => {});
+}
+
+window.epostaDogrulamaIstegiGonder = async function(btn) {
+  const input = document.getElementById('profilEmailInput');
+  const msg = document.getElementById('epostaMsg');
+  const val = (input?.value || '').trim();
+
+  if (!val) {
+    if (msg) {
+      msg.style.color = '#dc2626';
+      msg.textContent = 'Lütfen geçerli bir e-posta adresi giriniz.';
+    }
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>Doğrulama Gönderiliyor...</span>';
+  }
+  if (msg) {
+    msg.style.color = 'var(--gray-500)';
+    msg.textContent = 'İşleniyor, lütfen bekleyiniz...';
+  }
+
+  try {
+    await epostaDogrulamaGonder(val);
+    if (msg) {
+      msg.style.color = '#16a34a';
+      msg.innerHTML = `✅ <strong>Doğrulama bağlantısı ${escHtml(val)} adresine iletildi!</strong><br><span style="font-size:12px;color:var(--gray-600)">Lütfen gelen kutunuzdaki onay linkine tıklayınız. Ardından yukarıdaki "🔄 Durumu Yenile" butonuna basarak onaylayabilirsiniz.</span>`;
+    }
+    showToast('Doğrulama e-postası başarıyla gönderildi.', 'success');
+    const badge = document.getElementById('epostaDurumBadge');
+    if (badge) {
+      badge.innerHTML = `<span style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;font-size:12px;font-weight:600;padding:3px 12px;border-radius:14px;">⏳ Onay Bekliyor</span>`;
+    }
+  } catch(e) {
+    if (msg) {
+      msg.style.color = '#dc2626';
+      msg.textContent = 'Hata: ' + (e.message || 'E-posta doğrulama gönderilemedi.');
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<span>${typeof getIcon === 'function' ? getIcon('send', 15) : ''} Doğrulama Bağlantısı Gönder / E-Postayı Güncelle</span>`;
+    }
+  }
+};
+
+window.epostaDurumYenile = async function(btn) {
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳ Denetleniyor...</span>';
+  }
+  try {
+    const res = await epostaDurumunuGuncelle();
+    if (res?.emailVerified) {
+      showToast('Tebrikler! E-posta adresiniz başarıyla doğrulandı.', 'success');
+      const badge = document.getElementById('epostaDurumBadge');
+      if (badge) {
+        badge.innerHTML = `<span style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:12px;font-weight:700;padding:3px 12px;border-radius:14px;display:inline-flex;align-items:center;gap:4px;">${typeof getIcon === 'function' ? getIcon('checkCircle', 13) : '✓'} Doğrulandı</span>`;
+      }
+      const msg = document.getElementById('epostaMsg');
+      if (msg) {
+        msg.style.color = '#16a34a';
+        msg.textContent = '✓ E-posta adresiniz doğrulandı ve hesabınızla tam olarak eşleştirildi.';
+      }
+    } else if (res?.pendingEmail) {
+      showToast('E-posta henüz onaylanmamış. Lütfen gelen kutunuzdaki bağlantıya tıklayınız.', 'warning');
+    } else {
+      showToast('Tanımlı doğrulanmış bir e-posta bulunamadı.', 'info');
+    }
+  } catch(e) {
+    showToast('Durum kontrol hatası: ' + e.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>🔄 Durumu Yenile</span>';
+    }
+  }
+};
 
 function openAvatarPicker() {
   const modal = document.getElementById('avatarPickerModal');

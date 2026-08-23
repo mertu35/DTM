@@ -18,18 +18,72 @@ async function loadVisionApiKey() {
   }
 }
 
-let currentDTMUser = null; // { uid, username, displayName, role }
+let currentDTMUser = null; // { uid, username, displayName, role, email, emailVerified, pendingEmail }
 
 function usernameToEmail(username) {
   return `${username.toLowerCase().trim()}@dtm.local`;
 }
 
-// Giriş yap
-async function dtmLogin(username, password) {
-  const email = usernameToEmail(username);
-  const cred = await auth.signInWithEmailAndPassword(email, password);
-  const snap = await db.collection('users').doc(cred.user.uid).get();
-  currentDTMUser = { uid: cred.user.uid, ...snap.data() };
+function maskEmail(email) {
+  if (!email || !email.includes('@')) return email || '';
+  const [name, domain] = email.split('@');
+  const visibleName = name.length <= 2 ? name[0] + '*' : name.slice(0, 2) + '***';
+  const domainParts = domain.split('.');
+  const tld = domainParts.pop();
+  const restDomain = domainParts.map(p => p.length <= 2 ? p[0] + '*' : p[0] + '***').join('.');
+  return `${visibleName}@${restDomain ? restDomain + '.' : ''}${tld}`;
+}
+
+// Giriş yap (kullanıcı adı veya e-posta ile)
+async function dtmLogin(identifier, password) {
+  identifier = (identifier || '').trim();
+  if (!identifier) throw new Error('Kullanıcı adı veya e-posta giriniz.');
+
+  let emailToAuth = identifier.includes('@') ? identifier.toLowerCase() : usernameToEmail(identifier);
+  let cred;
+
+  try {
+    cred = await auth.signInWithEmailAndPassword(emailToAuth, password);
+  } catch (err) {
+    // Eğer kullanıcı adı girilmişse ve kullanıcının auth emaili gerçek e-posta ile güncellenmişse Firestore'dan bak
+    if (!identifier.includes('@') && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password')) {
+      const snap = await db.collection('users').where('username', '==', identifier.toLowerCase()).get();
+      if (!snap.empty) {
+        const userData = snap.docs[0].data();
+        if (userData.email && userData.email !== emailToAuth) {
+          cred = await auth.signInWithEmailAndPassword(userData.email, password);
+        } else {
+          throw err;
+        }
+      } else {
+        throw err;
+      }
+    } else {
+      throw err;
+    }
+  }
+
+  // Firestore profil verisini çek
+  const userDocRef = db.collection('users').doc(cred.user.uid);
+  const snap = await userDocRef.get();
+  let userData = snap.exists ? snap.data() : {};
+
+  // Auth e-posta doğrulama durumunu Firestore ile senkronize et
+  if (cred.user.email && !cred.user.email.endsWith('@dtm.local')) {
+    const isVerified = cred.user.emailVerified;
+    if (userData.email !== cred.user.email || userData.emailVerified !== isVerified) {
+      await userDocRef.update({
+        email: cred.user.email,
+        emailVerified: isVerified,
+        pendingEmail: isVerified ? null : (userData.pendingEmail || cred.user.email)
+      }).catch(e => console.warn('E-posta senkron hatası:', e));
+      userData.email = cred.user.email;
+      userData.emailVerified = isVerified;
+      if (isVerified) userData.pendingEmail = null;
+    }
+  }
+
+  currentDTMUser = { uid: cred.user.uid, ...userData };
   return currentDTMUser;
 }
 
@@ -40,17 +94,28 @@ async function dtmLogout() {
 }
 
 // Yeni kullanıcı oluştur (admin) - secondary app ile mevcut oturum korunur
-async function createDTMUser(username, password, displayName, role) {
+async function createDTMUser(username, password, displayName, role, userEmail = '') {
   const secondaryApp = firebase.initializeApp(firebaseConfig, 'secondary_' + Date.now());
   try {
-    const email = usernameToEmail(username);
-    const cred = await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
-    await db.collection('users').doc(cred.user.uid).set({
-      username: username.toLowerCase().trim(),
-      displayName,
+    const cleanUsername = username.toLowerCase().trim();
+    const cleanEmail = userEmail ? userEmail.toLowerCase().trim() : '';
+    // Auth hesabı oluştururken öncelik usernameToEmail
+    const emailToCreate = cleanEmail || usernameToEmail(cleanUsername);
+    const cred = await secondaryApp.auth().createUserWithEmailAndPassword(emailToCreate, password);
+    
+    const userDocData = {
+      username: cleanUsername,
+      displayName: displayName.trim(),
       role: role || 'user',
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+    if (cleanEmail) {
+      userDocData.email = cleanEmail;
+      userDocData.emailVerified = false;
+      userDocData.pendingEmail = cleanEmail;
+    }
+
+    await db.collection('users').doc(cred.user.uid).set(userDocData);
     await db.collection('users').doc(cred.user.uid).collection('secret').doc('info').set({ sifre: password });
     await secondaryApp.auth().signOut();
     return cred.user.uid;
@@ -59,7 +124,7 @@ async function createDTMUser(username, password, displayName, role) {
   }
 }
 
-// Tüm kullanıcıları getir (admin) - şifreler ayrı korumalı alt-koleksiyondan birleştirilir
+// Tüm kullanıcıları getir (admin) - e-posta ve doğrulama durumları dahil
 async function getAllUsers() {
   const snap = await db.collection('users').orderBy('displayName').get();
   const users = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
@@ -70,7 +135,6 @@ async function getAllUsers() {
   return users;
 }
 
-
 // Şifre değiştir (mevcut şifre ile yeniden auth gerekli)
 async function changePassword(mevcutSifre, yeniSifre) {
   const user = auth.currentUser;
@@ -78,6 +142,147 @@ async function changePassword(mevcutSifre, yeniSifre) {
   await user.reauthenticateWithCredential(credential);
   await user.updatePassword(yeniSifre);
   await db.collection('users').doc(user.uid).collection('secret').doc('info').set({ sifre: yeniSifre });
+}
+
+// ===================== E-POSTA DOĞRULAMA & ŞİFRE SIFIRLAMA =====================
+
+// Kullanıcı profili için e-posta doğrulama bağlantısı gönder
+async function epostaDogrulamaGonder(yeniEmail) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Oturum açık değil.');
+
+  const cleanEmail = (yeniEmail || '').toLowerCase().trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+    throw new Error('Lütfen geçerli bir e-posta adresi giriniz.');
+  }
+
+  // Farklı bir kullanıcının bu e-postayı kullanıp kullanmadığını kontrol et
+  const snap = await db.collection('users')
+    .where('email', '==', cleanEmail)
+    .get();
+  
+  const alreadyUsed = snap.docs.some(d => d.id !== user.uid && d.data().emailVerified);
+  if (alreadyUsed) {
+    throw new Error('Bu e-posta adresi sistemde başka bir kullanıcı tarafından doğrulanmış durumda.');
+  }
+
+  // Firebase Auth üzerinden e-posta güncelleme & doğrulama gönderimi
+  try {
+    if (typeof user.verifyBeforeUpdateEmail === 'function') {
+      await user.verifyBeforeUpdateEmail(cleanEmail);
+    } else {
+      await user.updateEmail(cleanEmail);
+      await user.sendEmailVerification();
+    }
+  } catch (err) {
+    if (err.code === 'auth/requires-recent-login') {
+      throw new Error('Güvenlik nedeniyle e-posta güncellemek için lütfen çıkış yapıp tekrar giriş yapınız.');
+    } else if (err.code === 'auth/email-already-in-use') {
+      throw new Error('Bu e-posta adresi başka bir hesapla ilişkilendirilmiş.');
+    } else {
+      throw new Error('E-posta doğrulama gönderilemedi: ' + err.message);
+    }
+  }
+
+  // Firestore kullanıcısına beklemede olarak kaydet
+  await db.collection('users').doc(user.uid).update({
+    pendingEmail: cleanEmail,
+    emailVerified: false,
+    emailUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  if (currentDTMUser) {
+    currentDTMUser.pendingEmail = cleanEmail;
+    currentDTMUser.emailVerified = false;
+  }
+
+  return cleanEmail;
+}
+
+// Profil açıldığında veya yenile dendiğinde doğrulama durumunu Firebase Auth ile eşitle
+async function epostaDurumunuGuncelle() {
+  const user = auth.currentUser;
+  if (!user) return null;
+
+  try {
+    await user.reload();
+  } catch(e) {
+    console.warn('User reload hatası:', e);
+  }
+
+  const isVerified = user.emailVerified;
+  const authEmail = user.email;
+  const isCustomEmail = authEmail && !authEmail.endsWith('@dtm.local');
+
+  if (isCustomEmail && isVerified) {
+    await db.collection('users').doc(user.uid).update({
+      email: authEmail,
+      emailVerified: true,
+      pendingEmail: null
+    }).catch(e => console.warn('Firestore email sync error:', e));
+
+    if (currentDTMUser) {
+      currentDTMUser.email = authEmail;
+      currentDTMUser.emailVerified = true;
+      currentDTMUser.pendingEmail = null;
+    }
+  }
+
+  return {
+    email: isCustomEmail ? authEmail : (currentDTMUser?.email || ''),
+    emailVerified: isVerified && isCustomEmail,
+    pendingEmail: currentDTMUser?.pendingEmail || null
+  };
+}
+
+// Giriş ekranı "Şifremi Unuttum" talebi
+async function sifreSifirlamaGonder(identifier) {
+  identifier = (identifier || '').trim();
+  if (!identifier) throw new Error('Kullanıcı adınızı veya e-posta adresinizi giriniz.');
+
+  let targetEmail = '';
+
+  if (identifier.includes('@')) {
+    // Doğrudan e-posta girildiyse
+    const cleanEmail = identifier.toLowerCase();
+    const snap = await db.collection('users').where('email', '==', cleanEmail).get();
+    if (snap.empty) {
+      throw new Error('Bu e-posta adresine kayıtlı bir kullanıcı bulunamadı.');
+    }
+    const userData = snap.docs[0].data();
+    if (!userData.emailVerified) {
+      throw new Error('Bu e-posta adresi henüz doğrulanmamış. Lütfen sistem yöneticinizle iletişime geçiniz.');
+    }
+    targetEmail = cleanEmail;
+  } else {
+    // Kullanıcı adı girildiyse
+    const cleanUsername = identifier.toLowerCase();
+    const snap = await db.collection('users').where('username', '==', cleanUsername).get();
+    if (snap.empty) {
+      throw new Error('Bu kullanıcı adına ait bir hesap bulunamadı.');
+    }
+    const userData = snap.docs[0].data();
+    if (!userData.email || !userData.emailVerified) {
+      throw new Error('Hesabınıza tanımlanmış doğrulanmış bir e-posta adresi bulunamadı. Lütfen sistem yöneticiniz (Süperadmin) ile iletişime geçiniz.');
+    }
+    targetEmail = userData.email;
+  }
+
+  // Firebase Auth üzerinden şifre sıfırlama bağlantısı gönder
+  try {
+    await auth.sendPasswordResetEmail(targetEmail);
+  } catch (err) {
+    if (err.code === 'auth/user-not-found') {
+      throw new Error('E-posta adresine ait oturum bulunamadı.');
+    } else if (err.code === 'auth/too-many-requests') {
+      throw new Error('Çok fazla sıfırlama talebinde bulunuldu. Lütfen biraz bekleyiniz.');
+    } else {
+      throw new Error('Şifre sıfırlama bağlantısı gönderilemedi: ' + err.message);
+    }
+  }
+
+  return maskEmail(targetEmail);
 }
 
 // Son giriş tarihini Firestore'a kaydet
