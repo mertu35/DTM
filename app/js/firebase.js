@@ -158,13 +158,18 @@ async function epostaDogrulamaGonder(yeniEmail) {
   }
 
   // Farklı bir kullanıcının bu e-postayı kullanıp kullanmadığını kontrol et
-  const snap = await db.collection('users')
-    .where('email', '==', cleanEmail)
-    .get();
-  
-  const alreadyUsed = snap.docs.some(d => d.id !== user.uid && d.data().emailVerified);
-  if (alreadyUsed) {
-    throw new Error('Bu e-posta adresi sistemde başka bir kullanıcı tarafından doğrulanmış durumda.');
+  try {
+    const snap = await db.collection('users')
+      .where('email', '==', cleanEmail)
+      .get();
+    
+    const alreadyUsed = snap.docs.some(d => d.id !== user.uid && d.data().emailVerified);
+    if (alreadyUsed) {
+      throw new Error('Bu e-posta adresi sistemde başka bir kullanıcı tarafından doğrulanmış durumda.');
+    }
+  } catch (err) {
+    if (err.message && err.message.includes('doğrulanmış durumda')) throw err;
+    console.warn('E-posta tekillik sorgusu atlandı:', err?.message);
   }
 
   // Firebase Auth üzerinden e-posta güncelleme & doğrulama gönderimi
@@ -177,20 +182,26 @@ async function epostaDogrulamaGonder(yeniEmail) {
     }
   } catch (err) {
     if (err.code === 'auth/requires-recent-login') {
-      throw new Error('Güvenlik nedeniyle e-posta güncellemek için lütfen çıkış yapıp tekrar giriş yapınız.');
+      throw new Error('Güvenlik nedeniyle e-posta güncellemek için lütfen oturumunuzu kapatıp tekrar giriş yapınız.');
     } else if (err.code === 'auth/email-already-in-use') {
-      throw new Error('Bu e-posta adresi başka bir hesapla ilişkilendirilmiş.');
+      throw new Error('Bu e-posta adresi başka bir hesap tarafından kullanılmaktadır.');
+    } else if (err.code === 'auth/invalid-email') {
+      throw new Error('Geçersiz bir e-posta adresi girdiniz.');
     } else {
       throw new Error('E-posta doğrulama gönderilemedi: ' + err.message);
     }
   }
 
   // Firestore kullanıcısına beklemede olarak kaydet
-  await db.collection('users').doc(user.uid).update({
-    pendingEmail: cleanEmail,
-    emailVerified: false,
-    emailUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  try {
+    await db.collection('users').doc(user.uid).update({
+      pendingEmail: cleanEmail,
+      emailVerified: false,
+      emailUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (err) {
+    console.warn('Firestore pendingEmail kaydedilemedi:', err?.message);
+  }
 
   if (currentDTMUser) {
     currentDTMUser.pendingEmail = cleanEmail;
@@ -244,29 +255,26 @@ async function sifreSifirlamaGonder(identifier) {
   let targetEmail = '';
 
   if (identifier.includes('@')) {
-    // Doğrudan e-posta girildiyse
-    const cleanEmail = identifier.toLowerCase();
-    const snap = await db.collection('users').where('email', '==', cleanEmail).get();
-    if (snap.empty) {
-      throw new Error('Bu e-posta adresine kayıtlı bir kullanıcı bulunamadı.');
-    }
-    const userData = snap.docs[0].data();
-    if (!userData.emailVerified) {
-      throw new Error('Bu e-posta adresi henüz doğrulanmamış. Lütfen sistem yöneticinizle iletişime geçiniz.');
-    }
-    targetEmail = cleanEmail;
+    targetEmail = identifier.toLowerCase();
   } else {
-    // Kullanıcı adı girildiyse
-    const cleanUsername = identifier.toLowerCase();
-    const snap = await db.collection('users').where('username', '==', cleanUsername).get();
-    if (snap.empty) {
-      throw new Error('Bu kullanıcı adına ait bir hesap bulunamadı.');
+    // Kullanıcı adı girildiyse Firestore'dan bakmayı dene
+    try {
+      const cleanUsername = identifier.toLowerCase();
+      const snap = await db.collection('users').where('username', '==', cleanUsername).get();
+      if (!snap.empty) {
+        const userData = snap.docs[0].data();
+        if (userData.email) {
+          targetEmail = userData.email;
+        }
+      }
+    } catch(e) {
+      // Unauthenticated Firestore read engellendiyse
+      console.warn('Username query skipped due to auth state:', e?.message);
     }
-    const userData = snap.docs[0].data();
-    if (!userData.email || !userData.emailVerified) {
-      throw new Error('Hesabınıza tanımlanmış doğrulanmış bir e-posta adresi bulunamadı. Lütfen sistem yöneticiniz (Süperadmin) ile iletişime geçiniz.');
+
+    if (!targetEmail) {
+      throw new Error('Lütfen hesabınıza tanımlı e-posta adresinizi giriniz (örn: ornek@karaman.gov.tr).');
     }
-    targetEmail = userData.email;
   }
 
   // Firebase Auth üzerinden şifre sıfırlama bağlantısı gönder
@@ -274,9 +282,11 @@ async function sifreSifirlamaGonder(identifier) {
     await auth.sendPasswordResetEmail(targetEmail);
   } catch (err) {
     if (err.code === 'auth/user-not-found') {
-      throw new Error('E-posta adresine ait oturum bulunamadı.');
+      throw new Error('Bu e-posta adresine ait bir kullanıcı hesabı bulunamadı.');
+    } else if (err.code === 'auth/invalid-email') {
+      throw new Error('Geçersiz bir e-posta adresi formatı girdiniz.');
     } else if (err.code === 'auth/too-many-requests') {
-      throw new Error('Çok fazla sıfırlama talebinde bulunuldu. Lütfen biraz bekleyiniz.');
+      throw new Error('Çok fazla sıfırlama talebinde bulunuldu. Lütfen birkaç dakika bekleyiniz.');
     } else {
       throw new Error('Şifre sıfırlama bağlantısı gönderilemedi: ' + err.message);
     }
