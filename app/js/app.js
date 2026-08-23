@@ -5618,7 +5618,7 @@ async function duyuruSil(duyuruId) {
 }
 
 // ===================== HAKKINDA SAYFASI =====================
-const APP_CURRENT_VERSION = '2.0.0';
+const APP_CURRENT_VERSION = '2.1.0';
 
 async function checkForUpdates(showLoading = false) {
   try {
@@ -5641,46 +5641,69 @@ async function checkForUpdates(showLoading = false) {
 async function renderHakkindaPage() {
   const main = document.getElementById('mainContent');
   main.innerHTML = `
-    <div class="page-header">
-      <h2>&#8505;&#65039; Hakkında</h2>
-      <p>Uygulama bilgileri ve güncelleme kontrolü.</p>
+    <div class="vm-page-header">
+      <div class="vm-header-title">
+        <div class="vm-header-icon">
+          ${typeof getIcon === 'function' ? getIcon('clipboardCheck', 22) : 'ℹ️'}
+        </div>
+        <div>
+          <h2>Hakkında & Sürüm Bilgileri</h2>
+          <p>Uygulama bilgileri, sistem durumu ve güncelleme denetimi.</p>
+        </div>
+      </div>
     </div>
-    <div style="max-width:600px;margin:0 auto;">
+    <div style="max-width:640px;margin:0 auto;">
 
       <!-- Uygulama Kartı -->
-      <div style="background:linear-gradient(135deg,#1e3a5f,#1a56db);border-radius:16px;padding:32px;color:#fff;margin-bottom:20px;text-align:center;position:relative;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#1e3a5f,#1a56db);border-radius:16px;padding:32px;color:#fff;margin-bottom:20px;text-align:center;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(26,86,219,0.2);">
         <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
-        <div style="font-size:52px;margin-bottom:12px;">&#128196;</div>
+        <div style="display:flex;justify-content:center;margin-bottom:12px;">
+          ${typeof getIcon === 'function' ? getIcon('fileText', 48) : '📄'}
+        </div>
         <div style="font-size:24px;font-weight:700;margin-bottom:4px;">Doğrudan Temin Modülü</div>
-        <div style="font-size:13px;opacity:0.75;margin-bottom:16px;">Karaman İl Özel İdaresi &middot; Yatırım ve İnşaat Müdürlüğü</div>
-        <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:20px;padding:6px 20px;font-size:15px;font-weight:700;letter-spacing:1px;">
+        <div style="font-size:13px;opacity:0.8;margin-bottom:16px;">Karaman İl Özel İdaresi &middot; Yatırım ve İnşaat Müdürlüğü</div>
+        <div style="display:inline-block;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:6px 22px;font-size:15px;font-weight:700;letter-spacing:1px;">
           v${APP_CURRENT_VERSION}
         </div>
       </div>
 
       <!-- Güncelleme Kontrol Kartı -->
       <div class="card" style="margin-bottom:16px;">
-        <div class="card-header"><h3>&#128260; Güncelleme Kontrolü</h3></div>
+        <div class="card-header"><h3 style="font-size:15px;">🔄 Güncelleme Kontrolü</h3></div>
         <div class="card-body">
           <div id="guncellemeDurum" style="margin-bottom:16px;padding:12px 16px;border-radius:8px;background:var(--gray-50);border:1px solid var(--gray-200);font-size:14px;color:var(--gray-600);">
             Güncelleme durumu kontrol ediliyor...
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn btn-primary" onclick="guncellemeyiKontrolEt()">&#128269; Güncellemeleri Denetle</button>
-            <button id="guncellemeyiUygulaBttn" class="btn btn-success" onclick="uygulamaGuncelle()" style="display:none;">&#128260; Güncellemeyi Uygula</button>
+            <button class="btn btn-primary" onclick="guncellemeyiKontrolEt()">🔍 Güncellemeleri Denetle</button>
+            <button id="guncellemeyiUygulaBttn" class="btn btn-success" onclick="uygulamaGuncelle()" style="display:none;">🔄 Güncellemeyi Uygula</button>
           </div>
+        </div>
+      </div>
+
+      <!-- v2.1.0 Yenilikler -->
+      <div class="card" style="margin-bottom:16px;border-left:4px solid var(--primary);">
+        <div class="card-header"><h3 style="font-size:15px;color:var(--primary);">🚀 v2.1.0 Sürüm Notları (En Son)</h3></div>
+        <div class="card-body">
+          <ul style="margin:0;padding-left:20px;font-size:13.5px;line-height:2;color:var(--gray-800);">
+            <li>✨ <strong>Modern Kurumsal SVG İkon Mimarisi:</strong> Tüm sistem Lucide/Heroicons vektörel SVG ikon setine geçirildi.</li>
+            <li>👥 <strong>Veri Merkezi & Personel Rehberi:</strong> Açılır liste (dropdown) + profil kartı mimarisi, klavye seviyesinde rakam engeli ve açılır listeden disiplin seçimi.</li>
+            <li>🔤 <strong>Akıllı Türkçe Alfabetik Sıralama:</strong> Tüm personel ve firma listeleri Türkçe karakter duyarlı otomatik sıralandı.</li>
+            <li>📊 <strong>Finansal Dashboard & Kategori Dağılımı:</strong> Gerçekleşen harcama (onaylı), süreçteki yük (bekleyen) ve Yapım/Mal/Hizmet/Danışmanlık hacim barları.</li>
+            <li>🧹 <strong>Otomatik Boşluk & Hayalet Satır Temizliği:</strong> Boşluk kirliliği ve isimsiz kayıtlar tamamen engellendi.</li>
+          </ul>
         </div>
       </div>
 
       <!-- Teknik Bilgiler -->
       <div class="card" style="margin-bottom:16px;">
-        <div class="card-header"><h3>&#128295; Teknik Bilgiler</h3></div>
+        <div class="card-header"><h3 style="font-size:15px;">🛠️ Teknik Bilgiler</h3></div>
         <div class="card-body" style="padding:0;">
           <table style="width:100%;font-size:14px;border-collapse:collapse;">
             <tbody>
               <tr style="border-bottom:1px solid var(--gray-100);">
                 <td style="padding:10px 16px;color:var(--gray-500);width:50%">Mevcut Sürüm</td>
-                <td style="padding:10px 16px;font-weight:600;">v${APP_CURRENT_VERSION}</td>
+                <td style="padding:10px 16px;font-weight:600;color:var(--primary);">v${APP_CURRENT_VERSION}</td>
               </tr>
               <tr style="border-bottom:1px solid var(--gray-100);">
                 <td style="padding:10px 16px;color:var(--gray-500)">Platform</td>
@@ -5701,15 +5724,15 @@ async function renderHakkindaPage() {
 
       <!-- v2.0.0 Değişiklikler -->
       <div class="card">
-        <div class="card-header"><h3>&#128221; v2.0.0 Büyük Sürüm Notları</h3></div>
+        <div class="card-header"><h3 style="font-size:15px;">📝 v2.0.0 Sürüm Notları</h3></div>
         <div class="card-body">
-          <ul style="margin:0;padding-left:20px;font-size:14px;line-height:2;">
-            <li>&#9989; <strong>Teknik Şartname Modülü:</strong> Özel şablon, modal ile madde düzenleme ve otomatik Y.M. görevlileri imza bloğu</li>
-            <li>&#9989; <strong>Muayene ve Kabul Komisyonu Tutanağı:</strong> Mal/Hizmet alımları için dinamik komisyon heyeti, atama oluru ve resmi kabul şablonu</li>
-            <li>&#9989; <strong>Akıllı İş Türü Ayrımı:</strong> Mal/Hizmet alımı ve Yapım İşi için otomatik değişen form alanları ve belge sekmeleri</li>
-            <li>&#9989; <strong>Sözleşme Maddelerini Düzenleme:</strong> Madde 11, 12, 13, 14, 15 ve 20 için dinamik özelleştirme modalı</li>
-            <li>&#9989; <strong>Yazdırma & Ölçekleme Optimizasyonu:</strong> Çıktıların tek sayfaya tam sığması için %95 zoom ve kenar boşluğu ince ayarı</li>
-            <li>&#9989; <strong>Word (.doc) ve PDF İndirme:</strong> Tüm yeni belgelerde tam uyumlu dışa aktarım desteği</li>
+          <ul style="margin:0;padding-left:20px;font-size:13.5px;line-height:2;color:var(--gray-600);">
+            <li>✅ <strong>Teknik Şartname Modülü:</strong> Özel şablon, modal ile madde düzenleme ve otomatik Y.M. görevlileri imza bloğu</li>
+            <li>✅ <strong>Muayene ve Kabul Komisyonu Tutanağı:</strong> Mal/Hizmet alımları için dinamik komisyon heyeti, atama oluru ve resmi kabul şablonu</li>
+            <li>✅ <strong>Akıllı İş Türü Ayrımı:</strong> Mal/Hizmet alımı ve Yapım İşi için otomatik değişen form alanları ve belge sekmeleri</li>
+            <li>✅ <strong>Sözleşme Maddelerini Düzenleme:</strong> Madde 11, 12, 13, 14, 15 ve 20 için dinamik özelleştirme modalı</li>
+            <li>✅ <strong>Yazdırma & Ölçekleme Optimizasyonu:</strong> Çıktıların tek sayfaya tam sığması için %95 zoom ve kenar boşluğu ince ayarı</li>
+            <li>✅ <strong>Word (.doc) ve PDF İndirme:</strong> Tüm yeni belgelerde tam uyumlu dışa aktarım desteği</li>
           </ul>
         </div>
       </div>
