@@ -78,6 +78,18 @@ MİMARİ (SÜRDÜRÜLEBİLİRLİK)
 SONRADAN EKLENENLER (01.09.2026)
 -------------------------------
 
+20. XSS: resmi belgelerde escHtml() eksikliği   [YAPILDI — 01.09.2026]
+    Genel bir kontrol taramasında documents.js'teki neredeyse tüm belge
+    render fonksiyonları (Sözleşme, Yaklaşık Maliyet, Teklif Tutanağı,
+    D.T. Onay Belgesi, Bitti Tutanağı, Hakediş Raporu) ve app.js'teki
+    gerçekleştirmeci inceleme panelinde firma/görevli/idare gibi serbest
+    metin alanlarının escHtml()/escAttr() ile kaçırılmadan HTML'e
+    basıldığı görüldü. Firma bilgileri kullanıcı tarafından serbestçe
+    girildiği ve o firma "kazanan" seçildiğinde belgeyi görüntüleyen
+    gerçekleştirmeci/admin'in oturumunda çalışabileceği için gerçek bir
+    risk. Tüm noktalar tek tek düzeltildi, node --check ile doğrulandı.
+    firestore.rules'a dokunmuyor, deploy gerekmiyor.
+
 15. Diğer belgelerin sayfa düzeni de resmi şablonla karşılaştırılmalı
     Sözleşme, kurumun Word şablonuna oturtuldu (A4, üst 10 / alt 20 /
     yan 25 mm, Times New Roman 11 pt, 1.15 satır aralığı). Yaklaşık
