@@ -86,19 +86,28 @@ SONRADAN EKLENENLER (01.09.2026)
     Kurumun resmi Word örnekleri varsa aynı karşılaştırma onlara da
     yapılmalı.
 
-16. "PDF İndir" ile "Yazdır" çıktıları hâlâ farklı (sözleşme dışında)
+16. "PDF İndir" ile "Yazdır" çıktıları hâlâ farklı (tek belge indirmede)   [KISMEN YAPILDI]
     Sözleşmenin PDF indirmesi tarayıcının yazdırma motoruna alındı,
-    böylece iki çıktı birebir aynı. Diğer belgeler hâlâ html2canvas
-    tabanlı html2pdf kullanıyor; bu motor CSS sayfalama özelliklerini
-    (table-header-group / table-footer-group) desteklemediği için çok
-    sayfalı bir belgede T.C. üstbilgisi 2. sayfada basılmıyor.
+    böylece iki çıktı birebir aynı — hem tek belge hem toplu indirmede
+    (01.09.2026, bkz. 17. madde). Ama Yaklaşık Maliyet, Teklif Tutanağı,
+    Hakediş gibi DİĞER belgelerin TEK BELGE "PDF İndir" yolu hâlâ
+    html2canvas tabanlı html2pdf kullanıyor; bu motor CSS sayfalama
+    özelliklerini (table-header-group / table-footer-group) desteklemediği
+    için çok sayfalı bir belgede T.C. üstbilgisi 2. sayfada basılmıyor.
     Ya hepsi yazdırma motoruna alınmalı ya da bu bilinçli kabul edilmeli.
 
-17. Yazdırma CSS'i dört ayrı kopyada duruyor
+17. Yazdırma CSS'i dört ayrı kopyada duruyor   [YAPILDI — 01.09.2026]
     Aynı stil bloğu app/css/style.css, app/js/documents.js ve
-    app/js/app.js (iki kez) içinde tekrarlanıyor. İmza hizası
-    değişikliğinde aynı satır dört yerde elle düzeltilmek zorunda kaldı.
-    5. maddedeki şablon motoru işinden ayrı ve daha küçük bir iş.
+    app/js/app.js (iki kez) içinde tekrarlanıyordu. İmza hizası
+    değişikliğinde aynı satır dört yerde elle düzeltilmek zorunda kalınmıştı.
+    documents.js'e eklenen belgeOrtakCSS()/belgeSayfalamaCSS() ile
+    belgeYazdir, cokluBelgeIndir ve cokluGerceklestirmeciBelgeIndir artık
+    tek kaynağı kullanıyor (üçü de yazdırma penceresi CSS'i — style.css'teki
+    .belge-preview ekran önizlemesi bilinçli olarak ayrı bırakıldı, çünkü
+    o farklı bir bağlam: ekranda okunabilirlik için daha geniş boşluklar
+    kullanıyor, yazdırmadaki gibi sıkışık olması istenmiyor).
+    Bu iş sırasında toplu indirmede sözleşmenin hâlâ eski (sıkışık, %95
+    ölçekli) düzende basıldığı fark edildi ve düzeltildi — bkz. 16. madde.
 
 18. appConfig kuralı firestore.rules'da tanımlı değil
     Hakkında sayfasındaki güncelleme kontrolü appConfig/version
