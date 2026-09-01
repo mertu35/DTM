@@ -170,9 +170,12 @@ okunamaz; yalnızca sıfırlanabilir.
      bulunmazsa alternatif, bu sorguyu sunucu tarafında (Cloud Function)
      yapmaktır; Blaze planı gerektirir.
 
-  4. users koleksiyonunun tüm kullanıcılara açık olması (2.1) — herkes
-     herkesin rolünü ve e-postasını görebiliyor. Gerçekleştirmeci
-     listesinin giriş ekranından okunabilmesi için genişti; daraltılabilir.
+  4. users koleksiyonunun tüm kullanıcılara açık olması (2.1) — [ÇÖZÜLDÜ,
+     01.09.2026] Sıradan kullanıcılar artık sadece kendi kaydını ve
+     gerceklestirmeci rolündeki kayıtları okuyabiliyor; admin/superadmin
+     hepsini okuyabiliyor. Deploy edildi ve test edildi.
 
-  5. appConfig kuralının eksikliği (2.9) — güncelleme kontrolü fiilen
-     çalışmıyor. Kural eklenirse özellik devreye girer.
+  5. appConfig kuralının eksikliği (2.9) — [ÇÖZÜLDÜ, 01.09.2026, DEPLOY
+     BEKLİYOR] firestore.rules'a kural eklendi (giriş yapmış herkes okur,
+     admin/superadmin yazar), Firestore Emulator'da test edildi. Deploy
+     edilene kadar özellik hâlâ fiilen çalışmıyor.

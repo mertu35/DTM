@@ -110,5 +110,14 @@ service cloud.firestore {
         request.resource.data.sayfaSayisi > resource.data.sayfaSayisi &&
         request.resource.data.sayfaSayisi - resource.data.sayfaSayisi <= 50;
     }
+
+    // Uygulama sürüm bilgisi ("Hakkında" sayfasındaki güncelleme kontrolü)
+    // Herkes okuyabilir, sadece admin/superadmin güncelleyebilir.
+    match /appConfig/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+    }
   }
 }
