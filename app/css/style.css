@@ -816,7 +816,7 @@ body {
 .belge-preview .gorevli-etiket { text-align: left; white-space: nowrap; }
 .belge-preview .gorevli-etiket .etiket { font-weight: bold; line-height: 1.6; }
 .belge-preview .gorevli-noktalar { line-height: 1.6; }
-.belge-preview .gorevli-kisiler { display: flex; gap: 30px; }
+.belge-preview .gorevli-kisiler { display: flex; gap: 70px; }
 .belge-preview .gorevli-kisi { text-align: center; line-height: 1.6; }
 
 /* Sözleşme: resmi Word şablonuyla eşitlenen tipografi (yazdırmadaki .sozlesme ile aynı) */

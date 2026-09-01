@@ -1071,7 +1071,7 @@ function belgeOrtakCSS() {
     .teklif-tutanagi .gorevli-etiket { text-align: left; white-space: nowrap; }
     .teklif-tutanagi .gorevli-etiket .etiket { font-weight: bold; line-height: 1.6; }
     .teklif-tutanagi .gorevli-noktalar { line-height: 1.6; }
-    .teklif-tutanagi .gorevli-kisiler { display: flex; gap: 24px; }
+    .teklif-tutanagi .gorevli-kisiler { display: flex; gap: 64px; }
     .teklif-tutanagi .gorevli-kisi { text-align: center; line-height: 1.6; }
     /* Sözleşme tipografisi — resmi Word şablonuyla eşitlendi:
        Times New Roman 11pt, 1.15 satır aralığı, madde öncesi 6pt boşluk */
@@ -1140,7 +1140,11 @@ function hizalaGorevliIsmi(root) {
     if (!kelimeRect.width && !kelimeRect.height) return;
 
     const mevcutMargin = parseFloat(getComputedStyle(kisiler).marginLeft) || 0;
-    const fark = (kelimeRect.left - kisilerRect.left) + mevcutMargin;
+    const fontPx = parseFloat(getComputedStyle(kisiler).fontSize) || 16;
+    // Kullanıcı geri bildirimiyle ince ayar: harf ortalama genişliği ~0.5em kabul
+    // edilip 10 harf kadar sola çekiliyor (kelimenin TAM başına değil, biraz önüne).
+    const harfGenisligi = fontPx * 0.5;
+    const fark = (kelimeRect.left - kisilerRect.left) + mevcutMargin - (harfGenisligi * 10);
     kisiler.style.marginLeft = Math.max(0, fark) + 'px';
   } catch (e) { /* hizalama kozmetik bir iyileştirme, hata belgeyi bozmasın */ }
 }
