@@ -236,13 +236,16 @@ function renderTeklifTutanagi(proje, referans) {
       </tbody>
     </table>` : '';
 
-  // Görevli imza bloğu - resmi belgedeki gibi etiketli (Adı Soyadı: / Ünvanı:), ortalı
-  const gorevliImzalar = dtGorevliler.map(g =>
-    `<table class="gorevli-etiket-tablo" style="margin:0 auto">
-      <tr><td class="etiket">Adı Soyadı</td><td>:</td><td class="deger">${escHtml(g.ad)}</td></tr>
-      <tr><td class="etiket">Ünvanı</td><td>:</td><td class="deger">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</td></tr>
-    </table>`
-  ).join('');
+  // Görevli imza bloğu - resmi belgedeki gibi etiketli (Adı Soyadı: / Ünvanı:).
+  // Etiket birden fazla görevli olsa da tek sefer yazılır; her görevlinin adı/unvanı
+  // aynı satırda yan yana sıralanır (resmi belgedeki birleştirilmiş hücre düzeni).
+  const gorevliAdHucreleri = dtGorevliler.map(g => `<td class="deger">${escHtml(g.ad)}</td>`).join('');
+  const gorevliUnvanHucreleri = dtGorevliler.map(g => `<td class="deger">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</td>`).join('');
+  const gorevliImzalar = `
+    <table class="gorevli-etiket-tablo" style="margin:0 auto">
+      <tr><td class="etiket">Adı Soyadı</td><td>:</td>${gorevliAdHucreleri}</tr>
+      <tr><td class="etiket">Ünvanı</td><td>:</td>${gorevliUnvanHucreleri}</tr>
+    </table>`;
 
   return `
     <div class="belge teklif-tutanagi">
@@ -1053,7 +1056,7 @@ function belgeOrtakCSS() {
     .teklif-tutanagi .veri-tablo th, .teklif-tutanagi .veri-tablo td { font-size: 12pt; }
     .teklif-tutanagi .gorevli-etiket-tablo td { padding: 1px 4px; }
     .teklif-tutanagi .gorevli-etiket-tablo .etiket { font-weight: bold; white-space: nowrap; }
-    .teklif-tutanagi .gorevli-etiket-tablo .deger { width: 210px; text-align: center; }
+    .teklif-tutanagi .gorevli-etiket-tablo .deger { min-width: 150px; text-align: center; }
     /* Sözleşme tipografisi — resmi Word şablonuyla eşitlendi:
        Times New Roman 11pt, 1.15 satır aralığı, madde öncesi 6pt boşluk */
     .sozlesme { font-family: 'Times New Roman', Times, serif; font-size: 11pt; }
