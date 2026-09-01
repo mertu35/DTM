@@ -1071,7 +1071,7 @@ function belgeOrtakCSS() {
     .teklif-tutanagi .gorevli-etiket { text-align: left; white-space: nowrap; }
     .teklif-tutanagi .gorevli-etiket .etiket { font-weight: bold; line-height: 1.6; }
     .teklif-tutanagi .gorevli-noktalar { line-height: 1.6; }
-    .teklif-tutanagi .gorevli-kisiler { display: flex; gap: 24px; }
+    .teklif-tutanagi .gorevli-kisiler { display: flex; gap: 24px; margin-left: 110px; }
     .teklif-tutanagi .gorevli-kisi { text-align: center; line-height: 1.6; }
     /* Sözleşme tipografisi — resmi Word şablonuyla eşitlendi:
        Times New Roman 11pt, 1.15 satır aralığı, madde öncesi 6pt boşluk */
