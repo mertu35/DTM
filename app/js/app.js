@@ -2440,11 +2440,12 @@ async function renderBelgelerPage() {
         </div>`;
       };
 
-      const renderBelgelerProjeGrid = (aramaMetni, durumFiltre) => {
+      const renderBelgelerProjeGrid = (aramaMetni, durumFiltre, siralamaAnahtari) => {
         const ara = aramaMetni.trim().toLocaleLowerCase('tr');
         let filtrelenen = projeler;
         if (durumFiltre !== 'hepsi') filtrelenen = filtrelenen.filter(p => (p.status || 'taslak') === durumFiltre);
         if (ara) filtrelenen = filtrelenen.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara));
+        filtrelenen = siralaProjeler(filtrelenen, siralamaAnahtari);
         if (filtrelenen.length === 0) {
           return `<div style="text-align:center;padding:30px;color:#9ca3af;font-size:13px">Arama/filtre ile eşleşen proje yok.</div>`;
         }
@@ -2464,13 +2465,21 @@ async function renderBelgelerPage() {
             <option value="onaylandi">Onaylandı</option>
             <option value="arsivlendi">Arşivlendi</option>
           </select>
+          <select id="belgelerProjeSirala" onchange="belgelerProjeFiltrele()"
+            style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
+            <option value="tarih-yeni">Tarihe göre (Yeni → Eski)</option>
+            <option value="tarih-eski">Tarihe göre (Eski → Yeni)</option>
+            <option value="isim-az">İsme göre (A → Z)</option>
+            <option value="isim-za">İsme göre (Z → A)</option>
+          </select>
         </div>
-        <div id="belgelerProjeGrid">${renderBelgelerProjeGrid('', 'hepsi')}</div>`;
+        <div id="belgelerProjeGrid">${renderBelgelerProjeGrid('', 'hepsi', 'tarih-yeni')}</div>`;
 
       window.belgelerProjeFiltrele = () => {
         const ara = document.getElementById('belgelerProjeArama').value;
         const durum = document.getElementById('belgelerProjeDurum').value;
-        document.getElementById('belgelerProjeGrid').innerHTML = renderBelgelerProjeGrid(ara, durum);
+        const sirala = document.getElementById('belgelerProjeSirala').value;
+        document.getElementById('belgelerProjeGrid').innerHTML = renderBelgelerProjeGrid(ara, durum, sirala);
       };
     } catch(e) {
       const listEl = document.getElementById('belgelerProjeList');
@@ -4186,12 +4195,13 @@ async function renderProjelerimPage() {
       </div>`;
     };
 
-    const renderProjelerimListe = (aramaMetni, durumFiltre) => {
+    const renderProjelerimListe = (aramaMetni, durumFiltre, siralamaAnahtari) => {
       const ara = aramaMetni.trim().toLocaleLowerCase('tr');
       return bolumler.map(b => {
         if (durumFiltre !== 'hepsi' && !b.keys.includes(durumFiltre)) return '';
         let grup = projeler.filter(p => b.keys.includes(p.status || 'taslak'));
         if (ara) grup = grup.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara));
+        grup = siralaProjeler(grup, siralamaAnahtari);
         return `<div class="ky-bolum-kart" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
           <div class="ky-bolum-baslik" style="padding:12px 16px;background:${b.renk};border-bottom:1px solid ${b.kenar};font-weight:700;font-size:13px;color:${b.yaziRenk}">
             ${b.baslik} (${grup.length})
@@ -4218,13 +4228,21 @@ async function renderProjelerimPage() {
           <option value="geri_gonderildi">İşlem Bekleyenler</option>
           <option value="gonderildi">Onaylananlar</option>
         </select>
+        <select id="projelerimSirala" onchange="projelerimFiltrele()"
+          style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
+          <option value="tarih-yeni">Tarihe göre (Yeni → Eski)</option>
+          <option value="tarih-eski">Tarihe göre (Eski → Yeni)</option>
+          <option value="isim-az">İsme göre (A → Z)</option>
+          <option value="isim-za">İsme göre (Z → A)</option>
+        </select>
       </div>
-      <div id="projelerimListe">${renderProjelerimListe('', 'hepsi')}</div>`;
+      <div id="projelerimListe">${renderProjelerimListe('', 'hepsi', 'tarih-yeni')}</div>`;
 
     window.projelerimFiltrele = () => {
       const ara = document.getElementById('projelerimArama').value;
       const durum = document.getElementById('projelerimDurum').value;
-      document.getElementById('projelerimListe').innerHTML = renderProjelerimListe(ara, durum);
+      const sirala = document.getElementById('projelerimSirala').value;
+      document.getElementById('projelerimListe').innerHTML = renderProjelerimListe(ara, durum, sirala);
     };
   } catch(e) {
     main.innerHTML = `<div class="page-header"><h2>Projelerim</h2></div><div style="color:red;padding:20px">Hata: ${e.message}</div>`;
@@ -4766,10 +4784,12 @@ async function renderGerceklestirmeciBelgelerPage() {
       return;
     }
 
-    const renderGrupHTML = (aramaMetni) => {
+    const renderGrupHTML = (aramaMetni, siralamaAnahtari) => {
       const ara = aramaMetni.trim().toLocaleLowerCase('tr');
-      const eslesenAktif = ara ? aktif.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara)) : aktif;
-      const eslesenOnaylanan = ara ? onaylananlar.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara)) : onaylananlar;
+      let eslesenAktif = ara ? aktif.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara)) : aktif;
+      let eslesenOnaylanan = ara ? onaylananlar.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara)) : onaylananlar;
+      eslesenAktif = siralaProjeler(eslesenAktif, siralamaAnahtari);
+      eslesenOnaylanan = siralaProjeler(eslesenOnaylanan, siralamaAnahtari);
       if (eslesenAktif.length === 0 && eslesenOnaylanan.length === 0) {
         return `<div style="text-align:center;padding:30px;color:#9ca3af;font-size:13px">Arama ile eşleşen proje yok.</div>`;
       }
@@ -4786,14 +4806,23 @@ async function renderGerceklestirmeciBelgelerPage() {
     };
 
     listEl.innerHTML = `
-      <div style="margin-bottom:16px">
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
         <input id="gcBelgeProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." oninput="gcBelgeProjeFiltrele()"
-          style="width:100%;max-width:400px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
+          style="flex:1;min-width:200px;max-width:400px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
+        <select id="gcBelgeProjeSirala" onchange="gcBelgeProjeFiltrele()"
+          style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
+          <option value="tarih-yeni">Tarihe göre (Yeni → Eski)</option>
+          <option value="tarih-eski">Tarihe göre (Eski → Yeni)</option>
+          <option value="isim-az">İsme göre (A → Z)</option>
+          <option value="isim-za">İsme göre (Z → A)</option>
+        </select>
       </div>
-      <div id="gcBelgeProjeGrup">${renderGrupHTML('')}</div>`;
+      <div id="gcBelgeProjeGrup">${renderGrupHTML('', 'tarih-yeni')}</div>`;
 
     window.gcBelgeProjeFiltrele = () => {
-      document.getElementById('gcBelgeProjeGrup').innerHTML = renderGrupHTML(document.getElementById('gcBelgeProjeArama').value);
+      const ara = document.getElementById('gcBelgeProjeArama').value;
+      const sirala = document.getElementById('gcBelgeProjeSirala').value;
+      document.getElementById('gcBelgeProjeGrup').innerHTML = renderGrupHTML(ara, sirala);
     };
   } catch(e) {
     const listEl = document.getElementById('gerceklestirmeciBelgeList');
