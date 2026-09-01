@@ -216,16 +216,7 @@ function renderTeklifTutanagi(proje, referans) {
   }
 
   const kazananHTML = kazanan ? `
-    <table class="veri-tablo" style="margin-top:0;border-top:none;font-size:9.5pt;table-layout:fixed">
-      <colgroup>
-        <col style="width:32px">
-        <col style="width:160px">
-        <col style="width:38px">
-        <col style="width:45px">
-        <col style="width:90px">
-        <col style="width:110px">
-        <col style="width:130px">
-      </colgroup>
+    <table class="veri-tablo" style="margin-top:0;border-top:none">
       <thead>
         <tr>
           <th rowspan="2">SIRA<br>NO</th>
@@ -245,16 +236,16 @@ function renderTeklifTutanagi(proje, referans) {
       </tbody>
     </table>` : '';
 
-  // Görevli imzaları - yaklaşık maliyet stiliyle (koyu ad, normal ünvan, ortalı)
+  // Görevli imza bloğu - resmi belgedeki gibi etiketli (Adı Soyadı: / Ünvanı:), ortalı
   const gorevliImzalar = dtGorevliler.map(g =>
-    `<div style="text-align:center;flex:1;padding-top:5px">
-      <strong>${escHtml(g.ad)}</strong><br>
-      <span style="font-size:9.5pt">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</span>
-    </div>`
+    `<table class="gorevli-etiket-tablo" style="margin:0 auto">
+      <tr><td class="etiket">Adı Soyadı</td><td>:</td><td>${escHtml(g.ad)}</td></tr>
+      <tr><td class="etiket">Ünvanı</td><td>:</td><td>${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</td></tr>
+    </table>`
   ).join('');
 
   return `
-    <div class="belge">
+    <div class="belge teklif-tutanagi">
       <div style="text-align:center;margin-bottom:8px;line-height:1.6">
         <p>T.C.<br><strong>${escHtml(proje.idareAdi)}</strong><br>${escHtml(proje.mudurluk.toLocaleUpperCase('tr-TR'))}</p>
       </div>
@@ -279,16 +270,7 @@ function renderTeklifTutanagi(proje, referans) {
         </tr>
       </table>
 
-      <table class="veri-tablo" style="font-size:9.5pt;table-layout:fixed">
-        <colgroup>
-          <col style="width:32px">
-          <col style="width:160px">
-          <col style="width:38px">
-          <col style="width:45px">
-          <col style="width:110px">
-          <col style="width:110px">
-          <col style="width:110px">
-        </colgroup>
+      <table class="veri-tablo">
         <thead>
           <tr>
             <th rowspan="3" style="padding:4px">SIRA<br>NO</th>
@@ -330,7 +312,7 @@ function renderTeklifTutanagi(proje, referans) {
           <div style="width:190px;text-align:center;padding-top:20px">
             <p style="font-weight:bold">UYGUNDUR</p>
             <p style="margin-top:30px"><strong>${escHtml(proje.onaylayanAmir.ad)}</strong></p>
-            <p style="font-size:9.5pt">${escHtml(proje.onaylayanAmir.unvan)}</p>
+            <p><strong>${escHtml(proje.onaylayanAmir.unvan)}</strong></p>
           </div>
         </div>
       </div>
@@ -1064,6 +1046,13 @@ function belgeOrtakCSS() {
     .imza-unvan { font-size: 9pt; }
     .madde { margin-bottom: 10px; line-height: 1.45; page-break-inside: avoid; break-inside: avoid; }
     .madde p { margin-top: 4px; text-align: justify; }
+    /* Teklif Tutanağı tipografisi — resmi Excel şablonuyla eşitlendi:
+       gerçek Times New Roman, üstbilgi/başlık 14pt kalın, gövde 12pt */
+    .teklif-tutanagi { font-family: 'Times New Roman', Times, serif; font-size: 12pt; }
+    .teklif-tutanagi .belge-baslik { font-size: 14pt; }
+    .teklif-tutanagi .veri-tablo th, .teklif-tutanagi .veri-tablo td { font-size: 12pt; }
+    .teklif-tutanagi .gorevli-etiket-tablo td { padding: 1px 4px; }
+    .teklif-tutanagi .gorevli-etiket-tablo .etiket { font-weight: bold; white-space: nowrap; }
     /* Sözleşme tipografisi — resmi Word şablonuyla eşitlendi:
        Times New Roman 11pt, 1.15 satır aralığı, madde öncesi 6pt boşluk */
     .sozlesme { font-family: 'Times New Roman', Times, serif; font-size: 11pt; }
