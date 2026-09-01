@@ -1036,7 +1036,9 @@ function renderHakedisRaporu(proje, referans) {
   `;
 }
 
-function belgeYazdir(html, landscape = false, sozlesme = false) {
+// dosyaAdi verilirse yazdırma penceresinin başlığı olur; tarayıcının
+// "PDF olarak kaydet" hedefinde dosya adı buradan otomatik dolar.
+function belgeYazdir(html, landscape = false, sozlesme = false, dosyaAdi = '') {
   const win = window.open('', '_blank');
   const pageSize = landscape
     ? 'size: A4 landscape; margin: 8mm 10mm;'
@@ -1051,7 +1053,7 @@ function belgeYazdir(html, landscape = false, sozlesme = false) {
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <title>Belge Yazdır</title>
+  <title>${escHtml(dosyaAdi) || 'Belge Yazdır'}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>

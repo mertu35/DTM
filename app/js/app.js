@@ -2775,6 +2775,14 @@ function pdfIndirBelge() {
     case 'hakedis-raporu':   html = renderHakedisRaporu(proje, referans);   break;
   }
   const dosyaAdi = `${proje.isAdi || 'Belge'} - ${belgeAdlari[currentBelge] || currentBelge}`;
+  // Sözleşme, sayfa başına tekrar eden üstbilgi/imza bloğu içerdiği için
+  // html2canvas tabanlı PDF motoruyla doğru üretilemiyor; tarayıcının kendi
+  // yazdırma motoruna yönlendiriliyor (çıktı "Yazdır" ile birebir aynı olur).
+  if (sozlesme) {
+    showToast('Yazdırma penceresinde Hedef olarak "PDF olarak kaydet" seçin.', 'info', 6000);
+    belgeYazdir(html, landscape, true, dosyaAdi);
+    return;
+  }
   belgePdfIndir(html, landscape, sozlesme, dosyaAdi);
 }
 
@@ -4957,6 +4965,14 @@ function gerceklestirmeciBelgePdfIndir() {
     case 'hakedis-raporu':   html = renderHakedisRaporu(proje, referans);   break;
   }
   const dosyaAdi = `${proje.isAdi || 'Belge'} - ${belgeAdlari[currentGerceklestirmeciBelge] || currentGerceklestirmeciBelge}`;
+  // Sözleşme, sayfa başına tekrar eden üstbilgi/imza bloğu içerdiği için
+  // html2canvas tabanlı PDF motoruyla doğru üretilemiyor; tarayıcının kendi
+  // yazdırma motoruna yönlendiriliyor (çıktı "Yazdır" ile birebir aynı olur).
+  if (sozlesme) {
+    showToast('Yazdırma penceresinde Hedef olarak "PDF olarak kaydet" seçin.', 'info', 6000);
+    belgeYazdir(html, landscape, true, dosyaAdi);
+    return;
+  }
   belgePdfIndir(html, landscape, sozlesme, dosyaAdi);
 }
 
