@@ -608,21 +608,23 @@ function renderSozlesme(proje, referans) {
         <p>İş bu sözleşme 22 Maddeden ibaret olup, İdare ve Yüklenici tarafından tam olarak okunup anlaşıldıktan sonra ${formatDate(proje.sozlesmeTarihi)} tarihinde 1 (Bir) nüsha olarak imza altına alınmıştır. Ayrıca İdare, Yüklenicinin talebi halinde sözleşmenin aslına uygun idarece onaylı suretini düzenleyip yükleniciye verecektir.</p>
       </div>
 
-      <div class="sozlesme-imza" style="margin-top:40px">
-        <div class="imzalar-yan">
-          <div class="imza-kutu">
-            <p class="bold">YÜKLENİCİ</p>
-            <div class="imza-ad" style="margin-top:60px"></div>
-          </div>
-          <div class="imza-kutu">
-            <p class="bold">İDARE</p>
-            <div class="imza-ad">${proje.onaylayanAmir.ad}</div>
-            <div class="imza-unvan">${proje.onaylayanAmir.unvan}</div>
-          </div>
-        </div>
-      </div>
     </div>
       </td></tr></tbody>
+      <tfoot><tr><td class="sozlesme-sayfa-footer">
+        <div class="sozlesme-imza">
+          <div class="imzalar-yan">
+            <div class="imza-kutu">
+              <p class="bold">YÜKLENİCİ</p>
+              <div class="imza-ad imza-bosluk"></div>
+            </div>
+            <div class="imza-kutu">
+              <p class="bold">İDARE</p>
+              <div class="imza-ad">${proje.onaylayanAmir.ad}</div>
+              <div class="imza-unvan">${proje.onaylayanAmir.unvan}</div>
+            </div>
+          </div>
+        </div>
+      </td></tr></tfoot>
     </table>
     </div>
   `;
@@ -1039,7 +1041,8 @@ function belgeYazdir(html, landscape = false, sozlesme = false) {
   const pageSize = landscape
     ? 'size: A4 landscape; margin: 8mm 10mm;'
     : sozlesme
-      ? 'size: A4 portrait; margin: 8mm 12mm;'
+      // Resmi Word sözleşme şablonuyla aynı sayfa düzeni (üst 10 / alt 20 / yan 25 mm)
+      ? 'size: A4 portrait; margin: 10mm 25mm 20mm 25mm;'
       : 'size: A4 portrait; margin: 10mm 15mm;';
   const maxWidth = landscape ? '280mm' : '210mm';
   const bodyPadding = landscape ? '8mm 10mm' : '10mm 15mm';
@@ -1074,10 +1077,15 @@ function belgeYazdir(html, landscape = false, sozlesme = false) {
     .imza-unvan { font-size: 9pt; }
     .madde { margin-bottom: 10px; line-height: 1.45; page-break-inside: avoid; break-inside: avoid; }
     .madde p { margin-top: 4px; text-align: justify; }
+    /* Sözleşme tipografisi — resmi Word şablonuyla eşitlendi:
+       Times New Roman 11pt, 1.15 satır aralığı, madde öncesi 6pt boşluk */
+    .sozlesme { font-family: 'Times New Roman', Times, serif; font-size: 11pt; }
     .sozlesme .madde p, .sozlesme .madde { font-size: 11pt; }
-    .sozlesme .madde { margin-bottom: 6px; line-height: 1.3; page-break-inside: avoid; break-inside: avoid; }
-    .sozlesme .madde p { margin-top: 2px; }
-    .sozlesme-imza { margin-top: 15px; }
+    .sozlesme .madde { margin-bottom: 6pt; line-height: 1.15; page-break-inside: avoid; break-inside: avoid; }
+    .sozlesme .madde p { margin-top: 2pt; }
+    .sozlesme-imza { margin-top: 10px; }
+    .sozlesme-sayfa-footer { padding-top: 6px; }
+    .imza-bosluk { margin-top: 55px; }
     .hakedis-tablo td:first-child { width: 30px; text-align: center; font-weight: bold; }
     small { font-size: 8pt; }
     .sozlesme-sayfa-tablo { width: 100%; border-collapse: collapse; }
@@ -1092,15 +1100,17 @@ function belgeYazdir(html, landscape = false, sozlesme = false) {
       margin-bottom: 4px;
     }
     @media print {
-      body { 
-        padding: 0 !important; 
-        zoom: 0.95;
+      body {
+        padding: 0 !important;
+        zoom: ${sozlesme ? 1 : 0.95};
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
       @page { ${pageSize} }
       .sozlesme-sayfa-tablo thead { display: table-header-group; }
       .sozlesme-sayfa-tablo tbody { display: table-row-group; }
+      /* İmza bloğu her basılı sayfanın altında tekrar etsin */
+      .sozlesme-sayfa-tablo tfoot { display: table-footer-group; }
     }
   </style>
 </head>
