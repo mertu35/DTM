@@ -4,7 +4,15 @@ service cloud.firestore {
 
     // Kullanıcılar
     match /users/{userId} {
-      allow read: if request.auth != null;
+      // Herkes kendi kaydını, admin/superadmin herkesi okuyabilir.
+      // Sıradan kullanıcılar için okuma yalnızca 'gerceklestirmeci' rolündeki
+      // kayıtlarla sınırlı — proje gönderim ekranı bu listeyi okuyabilmeli,
+      // ama kullanıcılar birbirinin rolünü/e-postasını görmemeli.
+      allow read: if request.auth != null &&
+        (request.auth.uid == userId ||
+         resource.data.role == 'gerceklestirmeci' ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']));
       allow write: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
