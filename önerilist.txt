@@ -90,13 +90,23 @@ SONRADAN EKLENENLER (01.09.2026)
     risk. Tüm noktalar tek tek düzeltildi, node --check ile doğrulandı.
     firestore.rules'a dokunmuyor, deploy gerekmiyor.
 
-15. Diğer belgelerin sayfa düzeni de resmi şablonla karşılaştırılmalı
+21. Belgeler ekranı proje seçiminde arama/filtre yoktu   [YAPILDI — 01.09.2026]
+    100 projesi olan bir kullanıcı senaryosu düşünülerek kontrol edildi.
+    "Projelerim" sayfasında arama+durum filtresi vardı ama "Belgeler"
+    sekmesindeki proje seçim ekranı (hem normal kullanıcı hem
+    gerçekleştirmeci tarafı) getUserProjeler()'ın döndürdüğü TÜM projeleri
+    filtresiz tek liste halinde gösteriyordu. Aynı arama/filtre deseni
+    oraya da eklendi, kartlara durum rozeti de eklendi.
+
+15. Diğer belgelerin sayfa düzeni de resmi şablonla karşılaştırılmalı   [KISMEN YAPILDI]
     Sözleşme, kurumun Word şablonuna oturtuldu (A4, üst 10 / alt 20 /
-    yan 25 mm, Times New Roman 11 pt, 1.15 satır aralığı). Yaklaşık
-    Maliyet, Teklif Tutanağı, Muayene ve Kabul, Bitti Tutanağı ve
-    Hakediş hâlâ eski dar düzende (12-15 mm kenar, %95 ölçek).
-    Kurumun resmi Word örnekleri varsa aynı karşılaştırma onlara da
-    yapılmalı.
+    yan 25 mm, Times New Roman 11 pt, 1.15 satır aralığı). Teklif Tutanağı
+    da gerçek bir resmi örnekle (.xls) karşılaştırılıp gerçek Times New
+    Roman'a, doğru puntoya (14/12pt) ve resmi görevli imza bloğu düzenine
+    (Adı Soyadı: / Ünvanı: etiketli, sola yaslı) geçirildi (01.09.2026).
+    Yaklaşık Maliyet, Muayene ve Kabul, Bitti Tutanağı ve Hakediş hâlâ eski
+    dar düzende (12-15 mm kenar, %95 ölçek, 9pt Noto Serif). Kurumun resmi
+    örnekleri varsa aynı karşılaştırma onlara da yapılmalı.
 
 16. "PDF İndir" ile "Yazdır" çıktıları hâlâ farklı (tek belge indirmede)   [KISMEN YAPILDI]
     Sözleşmenin PDF indirmesi tarayıcının yazdırma motoruna alındı,
@@ -107,6 +117,9 @@ SONRADAN EKLENENLER (01.09.2026)
     özelliklerini (table-header-group / table-footer-group) desteklemediği
     için çok sayfalı bir belgede T.C. üstbilgisi 2. sayfada basılmıyor.
     Ya hepsi yazdırma motoruna alınmalı ya da bu bilinçli kabul edilmeli.
+    (Ayrıca bu yolun hiç belgeOrtakCSS() enjekte etmediği, dolayısıyla
+    tüm belge türlerinde tablo/imza stillerinin PDF'e hiç yansımadığı
+    01.09.2026'da fark edildi ve düzeltildi.)
 
 17. Yazdırma CSS'i dört ayrı kopyada duruyor   [YAPILDI — 01.09.2026]
     Aynı stil bloğu app/css/style.css, app/js/documents.js ve
