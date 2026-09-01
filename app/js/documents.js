@@ -1036,30 +1036,15 @@ function renderHakedisRaporu(proje, referans) {
   `;
 }
 
-// dosyaAdi verilirse yazdırma penceresinin başlığı olur; tarayıcının
-// "PDF olarak kaydet" hedefinde dosya adı buradan otomatik dolar.
-function belgeYazdir(html, landscape = false, sozlesme = false, dosyaAdi = '') {
-  const win = window.open('', '_blank');
-  const pageSize = landscape
-    ? 'size: A4 landscape; margin: 8mm 10mm;'
-    : sozlesme
-      // Resmi Word sözleşme şablonuyla aynı sayfa düzeni (üst 10 / alt 20 / yan 25 mm)
-      ? 'size: A4 portrait; margin: 10mm 25mm 20mm 25mm;'
-      : 'size: A4 portrait; margin: 10mm 15mm;';
-  const maxWidth = landscape ? '280mm' : '210mm';
-  const bodyPadding = landscape ? '8mm 10mm' : '10mm 15mm';
-
-  win.document.write(`<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <title>${escHtml(dosyaAdi) || 'Belge Yazdır'}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Noto Serif', 'Times New Roman', serif; font-size: 9pt; color: #000; padding: ${bodyPadding}; }
-    .belge { max-width: ${maxWidth}; margin: 0 auto; }
+// Tüm yazdırma/PDF pencerelerinin (tek belge, toplu indirme) paylaştığı
+// tipografi kuralları. TEK KAYNAK: burayı değiştirmek, veri-tablo/madde/imza
+// gibi ortak stilleri kullanan her belge türünü ve her indirme yolunu
+// (belgeYazdir, cokluBelgeIndir, cokluGerceklestirmeciBelgeIndir) aynı anda
+// günceller. Sayfa boyutu, kenar boşluğu ve @page kuralları ortak değildir
+// (tek belge ile toplu indirmede farklı mekanizmalar kullanır) — bunlar
+// çağıran fonksiyonda ayrıca tanımlanır.
+function belgeOrtakCSS() {
+  return `
     .belge-ust { text-align: center; margin-bottom: 10px; }
     .belge-baslik { text-align: center; font-size: 13pt; margin: 8px 0; font-weight: bold; }
     .bilgi-tablo { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
@@ -1100,7 +1085,43 @@ function belgeYazdir(html, landscape = false, sozlesme = false, dosyaAdi = '') {
       line-height: 1.4;
       padding: 3px 0 5px;
       margin-bottom: 4px;
-    }
+    }`;
+}
+
+// Sözleşmenin sayfa başına tekrar eden üstbilgi/imza bloğunu (thead/tfoot)
+// yazdırmada aktif eden ortak @media print kuralları.
+function belgeSayfalamaCSS() {
+  return `
+    .sozlesme-sayfa-tablo thead { display: table-header-group; }
+    .sozlesme-sayfa-tablo tbody { display: table-row-group; }
+    .sozlesme-sayfa-tablo tfoot { display: table-footer-group; }`;
+}
+
+// dosyaAdi verilirse yazdırma penceresinin başlığı olur; tarayıcının
+// "PDF olarak kaydet" hedefinde dosya adı buradan otomatik dolar.
+function belgeYazdir(html, landscape = false, sozlesme = false, dosyaAdi = '') {
+  const win = window.open('', '_blank');
+  const pageSize = landscape
+    ? 'size: A4 landscape; margin: 8mm 10mm;'
+    : sozlesme
+      // Resmi Word sözleşme şablonuyla aynı sayfa düzeni (üst 10 / alt 20 / yan 25 mm)
+      ? 'size: A4 portrait; margin: 10mm 25mm 20mm 25mm;'
+      : 'size: A4 portrait; margin: 10mm 15mm;';
+  const maxWidth = landscape ? '280mm' : '210mm';
+  const bodyPadding = landscape ? '8mm 10mm' : '10mm 15mm';
+
+  win.document.write(`<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>${escHtml(dosyaAdi) || 'Belge Yazdır'}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Serif', 'Times New Roman', serif; font-size: 9pt; color: #000; padding: ${bodyPadding}; }
+    .belge { max-width: ${maxWidth}; margin: 0 auto; }
+    ${belgeOrtakCSS()}
     @media print {
       body {
         padding: 0 !important;
@@ -1109,10 +1130,7 @@ function belgeYazdir(html, landscape = false, sozlesme = false, dosyaAdi = '') {
         print-color-adjust: exact;
       }
       @page { ${pageSize} }
-      .sozlesme-sayfa-tablo thead { display: table-header-group; }
-      .sozlesme-sayfa-tablo tbody { display: table-row-group; }
-      /* İmza bloğu her basılı sayfanın altında tekrar etsin */
-      .sozlesme-sayfa-tablo tfoot { display: table-footer-group; }
+      ${belgeSayfalamaCSS()}
     }
   </style>
 </head>
