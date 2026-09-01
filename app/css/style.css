@@ -808,6 +808,17 @@ body {
 .belge-preview .hakedis-tablo td:first-child { width: 30px; text-align: center; font-weight: bold; }
 .belge-preview small { font-size: 8pt; }
 
+/* Teklif Tutanağı: resmi belgeyle eşitlenen tipografi ve görevli imza bloğu
+   (yazdırma penceresindeki belgeOrtakCSS() ile aynı yapı, ekran boşluklarıyla) */
+.belge-preview .teklif-tutanagi { font-size: 12pt; }
+.belge-preview .teklif-tutanagi .veri-tablo th, .belge-preview .teklif-tutanagi .veri-tablo td { font-size: 12pt; }
+.belge-preview .gorevli-blok { display: flex; align-items: flex-start; gap: 8px; }
+.belge-preview .gorevli-etiket { text-align: left; white-space: nowrap; }
+.belge-preview .gorevli-etiket .etiket { font-weight: bold; line-height: 1.6; }
+.belge-preview .gorevli-noktalar { line-height: 1.6; }
+.belge-preview .gorevli-kisiler { display: flex; gap: 30px; }
+.belge-preview .gorevli-kisi { text-align: center; line-height: 1.6; }
+
 /* Document tabs */
 .belge-tabs {
   display: flex;
