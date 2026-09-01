@@ -75,6 +75,47 @@ MİMARİ (SÜRDÜRÜLEBİLİRLİK)
     domains derdi biter, ileride Cloud Functions'a geçiş kolaylaşır.
 
 
+SONRADAN EKLENENLER (01.09.2026)
+-------------------------------
+
+15. Diğer belgelerin sayfa düzeni de resmi şablonla karşılaştırılmalı
+    Sözleşme, kurumun Word şablonuna oturtuldu (A4, üst 10 / alt 20 /
+    yan 25 mm, Times New Roman 11 pt, 1.15 satır aralığı). Yaklaşık
+    Maliyet, Teklif Tutanağı, Muayene ve Kabul, Bitti Tutanağı ve
+    Hakediş hâlâ eski dar düzende (12-15 mm kenar, %95 ölçek).
+    Kurumun resmi Word örnekleri varsa aynı karşılaştırma onlara da
+    yapılmalı.
+
+16. "PDF İndir" ile "Yazdır" çıktıları hâlâ farklı (sözleşme dışında)
+    Sözleşmenin PDF indirmesi tarayıcının yazdırma motoruna alındı,
+    böylece iki çıktı birebir aynı. Diğer belgeler hâlâ html2canvas
+    tabanlı html2pdf kullanıyor; bu motor CSS sayfalama özelliklerini
+    (table-header-group / table-footer-group) desteklemediği için çok
+    sayfalı bir belgede T.C. üstbilgisi 2. sayfada basılmıyor.
+    Ya hepsi yazdırma motoruna alınmalı ya da bu bilinçli kabul edilmeli.
+
+17. Yazdırma CSS'i dört ayrı kopyada duruyor
+    Aynı stil bloğu app/css/style.css, app/js/documents.js ve
+    app/js/app.js (iki kez) içinde tekrarlanıyor. İmza hizası
+    değişikliğinde aynı satır dört yerde elle düzeltilmek zorunda kaldı.
+    5. maddedeki şablon motoru işinden ayrı ve daha küçük bir iş.
+
+18. appConfig kuralı firestore.rules'da tanımlı değil
+    Hakkında sayfasındaki güncelleme kontrolü appConfig/version
+    dokümanını okuyor, ancak bu koleksiyon için kural yok. Firestore
+    kuralı olmayan yolu varsayılan olarak reddettiği için okuma hep
+    başarısız oluyor, hata sessizce yutuluyor ve uygulama her zaman
+    "güncel" görünüyor. Yani özellik fiilen çalışmıyor.
+    (Ayrıntı: veri-envanteri.txt, madde 2.9)
+
+19. Veri envanteri gözden geçirme başlıkları
+    veri-envanteri.txt oluşturuldu. İçindeki 5. bölümde karara bağlanması
+    gereken noktalar listelendi: düz metin şifreler, yüklenici doğum
+    tarihi/iletişim bilgilerinin herkese açık olması, usernameEmailMap'in
+    oturum açmadan okunabilmesi ve users koleksiyonunun tüm kullanıcılara
+    açık olması.
+
+
 AÇIK KONULAR (devam eden)
 -------------------------
 

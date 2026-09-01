@@ -1,0 +1,178 @@
+DTM — VERİ ENVANTERİ
+====================
+Son güncelleme: 01.09.2026
+Kaynak: firestore.rules ve app/js/*.js dosyalarından çıkarılmıştır.
+
+Bu belge, uygulamanın hangi verileri nerede sakladığını ve bu verilere kimin
+erişebildiğini özetler. Uygulama içinde bir ekran değildir; iç denetim, KVKK
+ve yeni geliştiriciye devir amaçlıdır.
+
+Roller: kullanıcı | gerçekleştirmeci | admin | superadmin
+
+
+1. FIREBASE AUTHENTICATION (kimlik sistemi)
+-------------------------------------------
+Firestore'dan ayrı, Google tarafından yönetilen kimlik deposu.
+
+  - E-posta adresi (kullaniciadi@dtm.local ya da gerçek adres)
+  - Şifre — Firebase tarafından hash'lenerek saklanır, GERİ OKUNAMAZ
+  - Kullanıcı kimliği (uid), e-posta doğrulama durumu, oluşturulma ve
+    son giriş zamanı
+
+Erişim: Firebase Console'a girebilen proje sahipleri. Şifreler burada
+okunamaz; yalnızca sıfırlanabilir.
+
+
+2. FIRESTORE KOLEKSİYONLARI
+---------------------------
+
+2.1  users/{uid}
+     İçerik : username, displayName, role, avatar, createdAt, lastLogin,
+              lastGonderilenVisit, lastOnayliVisit, okunanDuyurular,
+              gorulenProjeler, email, emailVerified, pendingEmail,
+              emailUpdatedAt
+     Okuma  : Giriş yapmış HERKES (rol ayrımı yok — herkes herkesin
+              adını, rolünü ve e-postasını görebilir)
+     Yazma  : admin, superadmin
+              Kişi kendi kaydında yalnızca şu alanları değiştirebilir:
+              avatar, okunanDuyurular, gorulenProjeler, lastLogin,
+              lastGonderilenVisit, lastOnayliVisit, email, emailVerified,
+              pendingEmail, emailUpdatedAt
+
+2.2  users/{uid}/secret/info                          [HASSAS]
+     İçerik : sifre — DÜZ METİN olarak kullanıcı şifresi
+     Okuma  : Kişinin kendisi + admin, superadmin
+     Yazma  : Aynı
+     Not    : Teknik zorunluluk değildir; yalnızca Kullanıcı Yönetimi
+              ekranında yöneticiye göstermek için tutulur.
+
+2.3  projeler/{id}
+     Üst seviye alanlar:
+              userId, userDisplayName, isAdi, isTuru, status, createdAt,
+              updatedAt, gonderildiAt, gonderildiBy, atananGerceklestirmeciUid,
+              atananGerceklestirmeciAd, onaylandiAt, onaylandiBy,
+              geriGonderNot, geriGonderAt, geriGonderBy, locked, lockedAt,
+              lockedBy, kazananBasitUsul
+     data alanı (projenin tamamı, ~50 alan):
+              - İş bilgileri: idare adı, müdürlük, iş adı, iş türü, şehir,
+                ilçe, iş kalemleri (ad/miktar/birim), iş miktarı
+              - Görevliler: Y.M., D.T. ve Muayene-Kabul görevlilerinin
+                ad ve unvanları; gerçekleştirme görevlisi; onaylayan amir
+              - Tarih ve sayılar: onay tarihleri/sayıları, tutanak
+                tarihleri, sözleşme tarihi, iş süresi, fiili bitiş
+              - Mali veriler: teklif veren firmalar ve verdikleri
+                fiyatlar, yaklaşık maliyet firmaları ve fiyatları,
+                kazanan firma, ödenek, bütçe tertibi, yatırım proje no
+              - Hakediş kalemleri: önceki hakediş, fiyat farkı, damga
+                vergisi, SGK kesintisi, vergi borcu, gecikme cezası,
+                avans mahsubu, teminat, geçici kabul noksanları
+              - Metinler: teknik şartname metni, sözleşme özel maddeleri
+     Okuma  : Proje sahibi + kendisine atanan gerçekleştirmeci +
+              admin, superadmin
+     Oluşturma : Kişi yalnızca kendi adına ve "taslak" durumunda
+     Güncelleme: admin/superadmin (tüm alanlar); atanan gerçekleştirmeci;
+              proje sahibi (ancak "onaylandi"/"arsivlendi" durumuna geçiremez)
+     Silme  : Yalnızca proje sahibi
+
+2.4  referans/{uid}   (kişiye özel referans listeleri)
+     İçerik : muhendisList (ad, unvan), onaylayanList (ad, unvan),
+              firmaList (ad, tür, adres, telefon, faks, e-posta,
+              doğum tarihi, basit usul), birimList, kdvOranlari,
+              isTurleri, sehir, ilceler, mudurlukler, idareList,
+              butceTertibiList, dtSinirlari
+     Okuma  : Kaydın sahibi + superadmin
+     Yazma  : Yalnızca kaydın sahibi
+
+2.5  globalReferans/{docId}   (kurum geneli paylaşılan listeler)
+     İçerik : onaylayanList, idareList, mudurlukler, ilceler,
+              dtSinirlari, yukleniciList (ad, tür, adres, telefon,
+              faks, e-posta, doğum tarihi)
+     Okuma  : Giriş yapmış HERKES
+     Yazma  : admin, superadmin, gerçekleştirmeci
+
+2.6  duyurular/{id}
+     İçerik : Duyuru başlığı/metni ve tarihi
+     Okuma  : Giriş yapmış herkes
+     Yazma  : admin, superadmin
+
+2.7  usernameEmailMap/{username}                       [DİKKAT]
+     İçerik : email, verified — kullanıcı adı ile e-posta eşlemesi
+     Okuma  : HERKES — giriş yapmadan, internetten erişilebilir
+     Yazma  : Yalnızca kişinin kendi kullanıcı adına ait kayıt
+     Neden  : Giriş ekranı ve "Şifremi Unuttum" akışı, kullanıcı adından
+              gerçek e-postayı oturum AÇMADAN bulabilmek zorunda; users
+              koleksiyonu giriş yapmayı gerektirdiği için ayrıldı.
+     Sonuç  : Kullanıcı adını tahmin eden biri (ad.soyad biçimi tahmin
+              edilebilir) o kişinin e-posta adresini öğrenebilir.
+
+2.8  visionUsage/{ay}
+     İçerik : sayfaSayisi — aylık Vision API kullanım sayacı
+     Okuma  : admin, superadmin
+     Yazma  : Giriş yapmış herkes (sayaç yalnızca artabilir, tek
+              istekte en fazla 50)
+
+2.9  appConfig/version
+     İçerik : latest — yayınlanan son sürüm numarası
+     Okuma  : firestore.rules'da bu koleksiyon için KURAL TANIMLI DEĞİL.
+              Firestore'da kuralı olmayan yol varsayılan olarak reddedilir;
+              dolayısıyla uygulamanın güncelleme kontrolü bu veriyi
+              okuyamıyor (hata sessizce yutuluyor ve "güncel" varsayılıyor).
+
+
+3. KİŞİSEL VERİ İÇEREN ALANLAR (KVKK)
+-------------------------------------
+  a) Personel: ad-soyad ve unvan
+     - referans/globalReferans içindeki mühendis ve onaylayan listeleri
+     - her projede Y.M. / D.T. / Muayene-Kabul görevlileri
+     Erişim: giriş yapmış herkes
+
+  b) Yüklenici / teklif veren gerçek kişiler
+     - ad, adres, telefon, faks, e-posta ve DOĞUM TARİHİ
+       (tür "Kişi" seçildiğinde doğum tarihi alanı doldurulabiliyor)
+     Erişim: globalReferans üzerinden giriş yapmış herkes
+
+  c) Kullanıcı e-posta adresleri
+     - users koleksiyonunda: giriş yapmış herkes
+     - usernameEmailMap'te: giriş yapmadan herkes
+
+  d) Kullanıcı şifreleri (düz metin)
+     - users/{uid}/secret/info: kişinin kendisi + admin/superadmin
+
+  e) Kullanım izleri
+     - son giriş zamanı, hangi duyuruların okunduğu, hangi projelerin
+       görüldüğü, projelerde kim ne zaman gönderdi/onayladı/geri gönderdi
+
+
+4. KULLANICININ TARAYICISINDA TUTULANLAR (Firebase'de değil)
+------------------------------------------------------------
+  localStorage:
+    dtm_proje              — o an açık projenin tam kopyası
+    dtm_referans           — referans listelerinin kopyası
+    dtm_projeler_listesi   — proje listesi önbelleği
+    dtmTheme               — açık/koyu tema tercihi
+
+  Service Worker önbelleği: uygulama dosyaları (HTML/CSS/JS)
+
+  Not: Ortak kullanılan bir bilgisayarda çıkış yapılsa bile localStorage
+  içindeki proje verisi tarayıcıda kalır.
+
+
+5. GÖZDEN GEÇİRİLMESİ ÖNERİLEN NOKTALAR
+---------------------------------------
+  1. Düz metin şifreler (2.2) — Firebase Auth zaten kimlik doğruluyor;
+     bu kopya teknik olarak gerekli değil. Kaldırılması bir politika kararı.
+
+  2. Yüklenici doğum tarihi ve iletişim bilgileri (3.b) — giriş yapmış
+     her kullanıcının görmesi gerekiyor mu? Gerekmiyorsa globalReferans
+     yerine daha dar erişimli bir yapıya taşınabilir.
+
+  3. usernameEmailMap'in herkese açık olması (2.7) — kabul edilebilir
+     bulunmazsa alternatif, bu sorguyu sunucu tarafında (Cloud Function)
+     yapmaktır; Blaze planı gerektirir.
+
+  4. users koleksiyonunun tüm kullanıcılara açık olması (2.1) — herkes
+     herkesin rolünü ve e-postasını görebiliyor. Gerçekleştirmeci
+     listesinin giriş ekranından okunabilmesi için genişti; daraltılabilir.
+
+  5. appConfig kuralının eksikliği (2.9) — güncelleme kontrolü fiilen
+     çalışmıyor. Kural eklenirse özellik devreye girer.
