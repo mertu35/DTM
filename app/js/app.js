@@ -2422,23 +2422,56 @@ async function renderBelgelerPage() {
           </div>`;
         return;
       }
-      listEl.innerHTML = `<div class="ky-proje-grid">
-        ${projeler.map(p => {
-          const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
-          return `<div class="ky-proje-item">
-            <div class="ky-proje-info">
-              <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
-              <div class="ky-proje-meta">
-                <span class="ky-proje-date">&#128197; ${tarih}</span>
-                ${getIsTuruBadge(p.isTuru)}
-              </div>
+
+      const projeKartBelge = (p) => {
+        const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
+        return `<div class="ky-proje-item">
+          <div class="ky-proje-info">
+            <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
+            <div class="ky-proje-meta">
+              <span class="ky-proje-date">&#128197; ${tarih}</span>
+              ${getIsTuruBadge(p.isTuru)}
+              ${getStatusBadge(p.status || 'taslak')}
             </div>
-            <div class="ky-proje-actions">
-              <button class="ky-btn-open" onclick="belgelerProjeAc('${p.id}')">Belge Oluştur</button>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>`;
+          </div>
+          <div class="ky-proje-actions">
+            <button class="ky-btn-open" onclick="belgelerProjeAc('${p.id}')">Belge Oluştur</button>
+          </div>
+        </div>`;
+      };
+
+      const renderBelgelerProjeGrid = (aramaMetni, durumFiltre) => {
+        const ara = aramaMetni.trim().toLocaleLowerCase('tr');
+        let filtrelenen = projeler;
+        if (durumFiltre !== 'hepsi') filtrelenen = filtrelenen.filter(p => (p.status || 'taslak') === durumFiltre);
+        if (ara) filtrelenen = filtrelenen.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara));
+        if (filtrelenen.length === 0) {
+          return `<div style="text-align:center;padding:30px;color:#9ca3af;font-size:13px">Arama/filtre ile eşleşen proje yok.</div>`;
+        }
+        return `<div class="ky-proje-grid">${filtrelenen.map(projeKartBelge).join('')}</div>`;
+      };
+
+      listEl.innerHTML = `
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <input id="belgelerProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." oninput="belgelerProjeFiltrele()"
+            style="flex:1;min-width:200px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
+          <select id="belgelerProjeDurum" onchange="belgelerProjeFiltrele()"
+            style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
+            <option value="hepsi">Tüm Durumlar</option>
+            <option value="taslak">Taslak</option>
+            <option value="geri_gonderildi">Geri Gönderildi</option>
+            <option value="gonderildi">Gönderildi</option>
+            <option value="onaylandi">Onaylandı</option>
+            <option value="arsivlendi">Arşivlendi</option>
+          </select>
+        </div>
+        <div id="belgelerProjeGrid">${renderBelgelerProjeGrid('', 'hepsi')}</div>`;
+
+      window.belgelerProjeFiltrele = () => {
+        const ara = document.getElementById('belgelerProjeArama').value;
+        const durum = document.getElementById('belgelerProjeDurum').value;
+        document.getElementById('belgelerProjeGrid').innerHTML = renderBelgelerProjeGrid(ara, durum);
+      };
     } catch(e) {
       const listEl = document.getElementById('belgelerProjeList');
       if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${e.message}</div>`;
@@ -4733,16 +4766,35 @@ async function renderGerceklestirmeciBelgelerPage() {
       return;
     }
 
-    let html = '';
-    if (aktif.length > 0) {
-      html += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Aktif Projeler</h3>
-        <div class="ky-proje-grid" style="margin-bottom:28px">${aktif.map(p => projeKarti(p, false)).join('')}</div>`;
-    }
-    if (onaylananlar.length > 0) {
-      html += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Onayladıklarım</h3>
-        <div class="ky-proje-grid">${onaylananlar.map(p => projeKarti(p, true)).join('')}</div>`;
-    }
-    listEl.innerHTML = html;
+    const renderGrupHTML = (aramaMetni) => {
+      const ara = aramaMetni.trim().toLocaleLowerCase('tr');
+      const eslesenAktif = ara ? aktif.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara)) : aktif;
+      const eslesenOnaylanan = ara ? onaylananlar.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara)) : onaylananlar;
+      if (eslesenAktif.length === 0 && eslesenOnaylanan.length === 0) {
+        return `<div style="text-align:center;padding:30px;color:#9ca3af;font-size:13px">Arama ile eşleşen proje yok.</div>`;
+      }
+      let h = '';
+      if (eslesenAktif.length > 0) {
+        h += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Aktif Projeler</h3>
+          <div class="ky-proje-grid" style="margin-bottom:28px">${eslesenAktif.map(p => projeKarti(p, false)).join('')}</div>`;
+      }
+      if (eslesenOnaylanan.length > 0) {
+        h += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Onayladıklarım</h3>
+          <div class="ky-proje-grid">${eslesenOnaylanan.map(p => projeKarti(p, true)).join('')}</div>`;
+      }
+      return h;
+    };
+
+    listEl.innerHTML = `
+      <div style="margin-bottom:16px">
+        <input id="gcBelgeProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." oninput="gcBelgeProjeFiltrele()"
+          style="width:100%;max-width:400px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
+      </div>
+      <div id="gcBelgeProjeGrup">${renderGrupHTML('')}</div>`;
+
+    window.gcBelgeProjeFiltrele = () => {
+      document.getElementById('gcBelgeProjeGrup').innerHTML = renderGrupHTML(document.getElementById('gcBelgeProjeArama').value);
+    };
   } catch(e) {
     const listEl = document.getElementById('gerceklestirmeciBelgeList');
     if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${e.message}</div>`;
