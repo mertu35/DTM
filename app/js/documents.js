@@ -1203,6 +1203,7 @@ function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge') {
   const container = document.createElement('div');
   container.style.cssText = `position:fixed;left:-9999px;top:0;width:${pageW}px;`;
   container.innerHTML = `
+    <style>${belgeOrtakCSS()}</style>
     <div style="font-family:Times New Roman,serif;font-size:9.5pt;color:#000;padding:${bodyPadding};width:${pageW}px;box-sizing:border-box;">
       ${html}
     </div>`;
@@ -1216,6 +1217,8 @@ function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge') {
       cell.style.border = '1px solid #000';
     });
   });
+
+  hizalaGorevliIsmi(container);
 
   const opts = {
     margin: 0,
