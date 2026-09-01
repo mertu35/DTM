@@ -794,7 +794,7 @@ body {
 .belge-preview .aciklama-metin { margin: 15px 0; line-height: 1.6; text-align: justify; }
 .belge-preview .imza-bolumu { margin-top: 30px; }
 .belge-preview .imza-baslik { font-weight: bold; margin-bottom: 10px; }
-.belge-preview .imzalar-yan { display: flex; justify-content: space-between; gap: 30px; padding: 0 8mm; }
+.belge-preview .imzalar-yan { display: flex; justify-content: space-between; gap: 30px; }
 .belge-preview .imza-kutu, .belge-preview .imza-kutu-inline { text-align: center; min-width: 150px; }
 .belge-preview .imza-ad { font-weight: bold; margin-top: 40px; }
 .belge-preview .imza-unvan { font-size: 10pt; }
