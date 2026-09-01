@@ -302,7 +302,7 @@ async function cokluBelgeIndir(secilen) {
       ${belgeSayfalamaCSS()}
     }`;
 
-  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${proje.isAdi || 'Belgeler'}</title><style>${css}</style></head><body>${sections}</body></html>`);
+  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${escHtml(proje.isAdi || 'Belgeler')}</title><style>${css}</style></head><body>${sections}</body></html>`);
   win.document.close();
   setTimeout(() => win.print(), 800);
 }
@@ -457,7 +457,7 @@ function cokluGerceklestirmeciBelgeIndir(secilen) {
       ${belgeSayfalamaCSS()}
     }`;
 
-  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${proje.isAdi || 'Belgeler'}</title><style>${css}</style></head><body>${sections}</body></html>`);
+  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${escHtml(proje.isAdi || 'Belgeler')}</title><style>${css}</style></head><body>${sections}</body></html>`);
   win.document.close();
   setTimeout(() => win.print(), 800);
 }
@@ -1064,7 +1064,7 @@ function renderVeriGirisPage() {
   const kalemler = proje.isTuru === 'Yapım İşi' ? '' : proje.isKalemleri.map((k, i) => `
     <tr>
       <td class="merkez">${i + 1}</td>
-      <td><input type="text" value="${k.ad}" data-field="isKalemleri" data-index="${i}" data-sub="ad" onchange="onKalemChange(this)"></td>
+      <td><input type="text" value="${escAttr(k.ad)}" data-field="isKalemleri" data-index="${i}" data-sub="ad" onchange="onKalemChange(this)"></td>
       <td><input type="number" value="${k.miktar}" data-field="isKalemleri" data-index="${i}" data-sub="miktar" onchange="onKalemChange(this)" style="width:80px"></td>
       <td><select data-field="isKalemleri" data-index="${i}" data-sub="birim" onchange="onKalemChange(this)">
         <option value="">--</option>
@@ -1108,7 +1108,7 @@ function renderVeriGirisPage() {
               const bf = f.fiyatlar[ki] || 0;
               const toplam = bf * (parseFloat(k.miktar) || 0);
               return `<tr>
-                <td>${k.ad || '-'}</td>
+                <td>${escHtml(k.ad || '-')}</td>
                 <td><input type="number" value="${bf || ''}" data-firma="ym" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
                 <td class="rakam">${toplam > 0 ? formatCurrency(toplam) : '-'}</td>
               </tr>`;
@@ -1157,7 +1157,7 @@ function renderVeriGirisPage() {
               const bf = f.fiyatlar[ki] || 0;
               const toplam = bf * (parseFloat(k.miktar) || 0);
               return `<tr>
-                <td>${k.ad || '-'}</td>
+                <td>${escHtml(k.ad || '-')}</td>
                 <td><input type="number" value="${bf || ''}" data-firma="teklif" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
                 <td class="rakam">${toplam > 0 ? formatCurrency(toplam) : '-'}</td>
               </tr>`;
@@ -2739,7 +2739,7 @@ function pdfIndirBelge() {
     belgeYazdir(html, landscape, true, dosyaAdi);
     return;
   }
-  belgePdfIndir(html, landscape, sozlesme, dosyaAdi);
+  belgePdfIndir(html, landscape, dosyaAdi);
 }
 
 // ===================== VERİ MERKEZİ SAYFASI =====================
@@ -4929,7 +4929,7 @@ function gerceklestirmeciBelgePdfIndir() {
     belgeYazdir(html, landscape, true, dosyaAdi);
     return;
   }
-  belgePdfIndir(html, landscape, sozlesme, dosyaAdi);
+  belgePdfIndir(html, landscape, dosyaAdi);
 }
 
 // ===================== PROJE ÖZET SAYFASI (GERÇEKLEŞTİRMECİ) =====================
@@ -4951,14 +4951,14 @@ function renderProjeOzetPage() {
   const satir = (label, value) => value ? `<tr><td style="color:#6b7280;padding:8px 12px;font-size:13px;width:45%">${label}</td><td style="padding:8px 12px;font-size:13px;font-weight:500">${value}</td></tr>` : '';
   const kart = (baslik, icerik) => `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden"><div style="padding:12px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#374151">${baslik}</div>${icerik}</div>`;
 
-  const ymGorevliler = p.ymGorevliler.slice(0, p.ymGorevliSayisi || 1).filter(g => g.ad).map(g => `<tr><td style="padding:6px 12px;font-size:13px">${g.ad}</td><td style="padding:6px 12px;font-size:13px;color:#6b7280">${g.unvan}</td></tr>`).join('');
-  const dtGorevliler = p.dtGorevliler.slice(0, p.dtGorevliSayisi || 1).filter(g => g.ad).map(g => `<tr><td style="padding:6px 12px;font-size:13px">${g.ad}</td><td style="padding:6px 12px;font-size:13px;color:#6b7280">${g.unvan}</td></tr>`).join('');
+  const ymGorevliler = p.ymGorevliler.slice(0, p.ymGorevliSayisi || 1).filter(g => g.ad).map(g => `<tr><td style="padding:6px 12px;font-size:13px">${escHtml(g.ad)}</td><td style="padding:6px 12px;font-size:13px;color:#6b7280">${escHtml(g.unvan)}</td></tr>`).join('');
+  const dtGorevliler = p.dtGorevliler.slice(0, p.dtGorevliSayisi || 1).filter(g => g.ad).map(g => `<tr><td style="padding:6px 12px;font-size:13px">${escHtml(g.ad)}</td><td style="padding:6px 12px;font-size:13px;color:#6b7280">${escHtml(g.unvan)}</td></tr>`).join('');
 
   const ymFirmalar = p.ymFirmalar.filter(f => f.ad);
   const ymFirmaRows = ymFirmalar.map(f => {
     const toplam = hesaplaYMFirmaToplam(f, kalemler);
     return `<tr>
-      <td style="padding:7px 12px;font-size:13px">${f.ad}</td>
+      <td style="padding:7px 12px;font-size:13px">${escHtml(f.ad)}</td>
       <td style="padding:7px 12px;font-size:13px;text-align:right">${formatCurrency(toplam)} TL</td>
     </tr>`;
   }).join('');
@@ -4969,7 +4969,7 @@ function renderProjeOzetPage() {
     const toplam = hesaplaTeklifFirmaToplam(f, kalemler);
     const kazanan = gercekIndex === kazananIndex;
     return `<tr style="${kazanan ? 'background:#f0fdf4;font-weight:600' : ''}">
-      <td style="padding:7px 12px;font-size:13px">${kazanan ? '✓ ' : ''}${f.ad}</td>
+      <td style="padding:7px 12px;font-size:13px">${kazanan ? '✓ ' : ''}${escHtml(f.ad)}</td>
       <td style="padding:7px 12px;font-size:13px;text-align:right">${formatCurrency(toplam)} TL</td>
     </tr>`;
   }).join('');
@@ -4998,10 +4998,10 @@ function renderProjeOzetPage() {
 
       ${kart('📅 Onay ve Sözleşme Bilgileri', `<table style="width:100%;border-collapse:collapse">
         ${satir('Y.M. Onay Tarihi', formatDate(p.ymOnayTarihi))}
-        ${satir('Y.M. Onay Sayısı', p.ymOnayNo)}
+        ${satir('Y.M. Onay Sayısı', escHtml(p.ymOnayNo))}
         ${satir('D.T. Onay Tarihi', formatDate(p.dtOnayTarihi))}
-        ${satir('D.T. Onay Sayısı', p.dtOnayNo)}
-        ${satir('Onaylayan Amir', p.onaylayanAmir?.ad ? p.onaylayanAmir.ad + ' / ' + p.onaylayanAmir.unvan : '')}
+        ${satir('D.T. Onay Sayısı', escHtml(p.dtOnayNo))}
+        ${satir('Onaylayan Amir', p.onaylayanAmir?.ad ? escHtml(p.onaylayanAmir.ad + ' / ' + p.onaylayanAmir.unvan) : '')}
         ${satir('Sözleşme Tarihi', formatDate(p.sozlesmeTarihi))}
         ${satir('İş Süresi', p.isSuresi ? p.isSuresi + ' Takvim Günü' : '')}
         ${satir('Fiili Bitim Tarihi', formatDate(p.fiiliBitimTarihi))}
@@ -5018,7 +5018,7 @@ function renderProjeOzetPage() {
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#f3f4f6"><th style="padding:8px 12px;font-size:12px;text-align:left;color:#6b7280">Firma</th><th style="padding:8px 12px;font-size:12px;text-align:right;color:#6b7280">Teklif Tutarı</th></tr></thead>
           <tbody>${firmaTeklifRows}</tbody>
-          ${kazananFirma?.ad ? `<tfoot><tr style="background:#f0fdf4;border-top:2px solid #bbf7d0"><td style="padding:8px 12px;font-size:13px;font-weight:700;color:#15803d">✓ Kazanan Firma</td><td style="padding:8px 12px;font-size:13px;font-weight:700;color:#15803d;text-align:right">${kazananFirma.ad}</td></tr></tfoot>` : ''}
+          ${kazananFirma?.ad ? `<tfoot><tr style="background:#f0fdf4;border-top:2px solid #bbf7d0"><td style="padding:8px 12px;font-size:13px;font-weight:700;color:#15803d">✓ Kazanan Firma</td><td style="padding:8px 12px;font-size:13px;font-weight:700;color:#15803d;text-align:right">${escHtml(kazananFirma.ad)}</td></tr></tfoot>` : ''}
         </table>`) : ''}
 
       ${kart('💰 Mali Özet', `<table style="width:100%;border-collapse:collapse">
@@ -5044,19 +5044,19 @@ function renderProjeOzetPage() {
             </div>
             <div class="form-group">
               <label>Yatırım Proje Numarası</label>
-              <input type="text" id="gc_yatirimProjeNo" value="${p.yatirimProjeNo || ''}" placeholder="Varsa giriniz" ${roInp}>
+              <input type="text" id="gc_yatirimProjeNo" value="${escAttr(p.yatirimProjeNo || '')}" placeholder="Varsa giriniz" ${roInp}>
             </div>
             <div class="form-group">
               <label>Bütçe Tertibi</label>
               <select id="gc_butceTertibi" ${dis}>
                 <option value="">-- Seçin --</option>
-                ${(referans.butceTertibiList || []).map(bt => { const no = typeof bt === 'string' ? bt : bt.no; const ac = typeof bt === 'string' ? '' : bt.aciklama; return `<option value="${no}" ${p.butceTertibi === no ? 'selected' : ''}>${no}${ac ? ' — ' + ac : ''}</option>`; }).join('')}
+                ${(referans.butceTertibiList || []).map(bt => { const no = typeof bt === 'string' ? bt : bt.no; const ac = typeof bt === 'string' ? '' : bt.aciklama; return `<option value="${escAttr(no)}" ${p.butceTertibi === no ? 'selected' : ''}>${escHtml(no)}${ac ? ' — ' + escHtml(ac) : ''}</option>`; }).join('')}
               </select>
             </div>
             <div class="form-group">
               <label>İşin Miktarı</label>
               <input type="text" id="gc_isMiktari"
-                value="${p.isTuru === 'Yapım İşi' ? '1 Adet' : (p.isMiktari || '')}"
+                value="${p.isTuru === 'Yapım İşi' ? '1 Adet' : escAttr(p.isMiktari || '')}"
                 ${ro || p.isTuru === 'Yapım İşi' ? 'readonly style="background:#f3f4f6;color:#6b7280"' : ''}
                 placeholder="Örn: 5 Adet">
             </div>

@@ -28,7 +28,7 @@ function renderYaklasikMaliyet(proje, referans) {
 
     kalemRows += `<tr>
       <td class="merkez">${i + 1}</td>
-      <td>${k.ad}</td>
+      <td>${escHtml(k.ad)}</td>
       <td class="merkez" colspan="1">${miktar}</td>
       <td class="rakam">${bf1 > 0 ? formatCurrency(bf1) : ''}</td>
       <td class="rakam">${t1 > 0 ? formatCurrency(t1) : ''}</td>
@@ -55,15 +55,15 @@ function renderYaklasikMaliyet(proje, referans) {
       <table class="bilgi-tablo" style="margin-bottom:20px">
         <tr>
           <td class="etiket" style="width:45%">İdarenin Adı</td>
-          <td>${proje.idareAdi}</td>
+          <td>${escHtml(proje.idareAdi)}</td>
         </tr>
         <tr>
           <td class="etiket">Yapılan İş / Mal / Hizmetin Adı, Niteliği</td>
-          <td>${proje.isAdi}</td>
+          <td>${escHtml(proje.isAdi)}</td>
         </tr>
         <tr>
           <td class="etiket">Alım ve Yetkilendirilen Görevlilere İlişkin Onay Belgesi /<br>Görevlendirme Onayı Tarih ve No.su</td>
-          <td>${formatDate(proje.ymOnayTarihi)} Tarih ve ${proje.ymOnayNo} Sayılı Olur</td>
+          <td>${formatDate(proje.ymOnayTarihi)} Tarih ve ${escHtml(proje.ymOnayNo)} Sayılı Olur</td>
         </tr>
       </table>
 
@@ -79,9 +79,9 @@ function renderYaklasikMaliyet(proje, referans) {
             <th colspan="2" rowspan="2">YAKLAŞIK MALİYET</th>
           </tr>
           <tr>
-            <th colspan="2" style="padding:12px 4px">${firma1.ad || '-'}</th>
-            <th colspan="2" style="padding:12px 4px">${firma2.ad || '-'}</th>
-            <th colspan="2" style="padding:12px 4px">${firma3.ad || '-'}</th>
+            <th colspan="2" style="padding:12px 4px">${escHtml(firma1.ad || '-')}</th>
+            <th colspan="2" style="padding:12px 4px">${escHtml(firma2.ad || '-')}</th>
+            <th colspan="2" style="padding:12px 4px">${escHtml(firma3.ad || '-')}</th>
           </tr>
           <tr>
             <th style="width:70px">BİRİM<br>FİYAT<br>(TL)</th>
@@ -112,7 +112,7 @@ function renderYaklasikMaliyet(proje, referans) {
       </table>
 
       <div style="margin:12px 0;border:0.5mm solid #000;padding:10px 14px;page-break-inside:avoid">
-        <p style="text-align:justify;line-height:1.2">Karaman İl Özel İdaresi ${proje.mudurluk} yetkilisince görevlendirilmem nedeniyle yukarıda özelliği belirtilen işin yapılması için 4734 sayılı Kamu İhale Kanununun 9. Maddesi gereğince yaklaşık maliyet çıkarılmış olup, ihale konusu işin ${formatCurrency(yaklasikMaliyet)} (${ymYaziyla}) (KDV hariç) bedelle ihaleye çıkması belirlenmiş ve iş bu tutanak tanzimen düzenlenmiştir. ${formatDate(ymTutanakT)}</p>
+        <p style="text-align:justify;line-height:1.2">Karaman İl Özel İdaresi ${escHtml(proje.mudurluk)} yetkilisince görevlendirilmem nedeniyle yukarıda özelliği belirtilen işin yapılması için 4734 sayılı Kamu İhale Kanununun 9. Maddesi gereğince yaklaşık maliyet çıkarılmış olup, ihale konusu işin ${formatCurrency(yaklasikMaliyet)} (${ymYaziyla}) (KDV hariç) bedelle ihaleye çıkması belirlenmiş ve iş bu tutanak tanzimen düzenlenmiştir. ${formatDate(ymTutanakT)}</p>
 
         <div style="margin-top:10px">
           <p><strong>DAYANAKLAR</strong></p>
@@ -124,8 +124,8 @@ function renderYaklasikMaliyet(proje, referans) {
           <div style="flex:1;display:flex;gap:10px">
             ${ymGorevliler.map(g =>
               `<div style="text-align:center;flex:1;padding-top:5px">
-                <strong>${g.ad}</strong><br>
-                <span style="font-size:9.5pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
+                <strong>${escHtml(g.ad)}</strong><br>
+                <span style="font-size:9.5pt">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</span>
               </div>`
             ).join('')}
           </div>
@@ -133,8 +133,8 @@ function renderYaklasikMaliyet(proje, referans) {
           <div style="width:190px;text-align:center;padding-top:65px">
             <p style="font-weight:bold">OLUR</p>
             <p>${formatDate(ymTutanakT)}</p>
-            <p style="margin-top:10px"><strong>${proje.onaylayanAmir.ad}</strong></p>
-            <p style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</p>
+            <p style="margin-top:10px"><strong>${escHtml(proje.onaylayanAmir.ad)}</strong></p>
+            <p style="font-size:9.5pt">${escHtml(proje.onaylayanAmir.unvan)}</p>
           </div>
           <!-- Boşluk: Yaklaşık Maliyet sütunlarının altı (140px) -->
           <div style="width:140px"></div>
@@ -185,9 +185,9 @@ function renderTeklifTutanagi(proje, referans) {
     const bf3 = f3.fiyatlar[i] || 0;
     teklifRows += `<tr style="height:26px">
       <td class="merkez">${i + 1}</td>
-      <td style="padding:6px 4px">${k.ad}</td>
+      <td style="padding:6px 4px">${escHtml(k.ad)}</td>
       <td class="merkez">${miktar}</td>
-      <td class="merkez">${k.birim}</td>
+      <td class="merkez">${escHtml(k.birim)}</td>
       <td class="merkez">${bf1 > 0 ? formatCurrency(bf1) + (f1Basit ? '' : ' +KDV') : ''}</td>
       <td class="merkez">${bf2 > 0 ? formatCurrency(bf2) + (f2Basit ? '' : ' +KDV') : ''}</td>
       <td class="merkez">${bf3 > 0 ? formatCurrency(bf3) + (f3Basit ? '' : ' +KDV') : ''}</td>
@@ -205,12 +205,12 @@ function renderTeklifTutanagi(proje, referans) {
       const toplam = bf * miktar;
       kazananRows += `<tr style="height:26px">
         <td class="merkez">${i + 1}</td>
-        <td style="padding:6px 4px">${k.ad}</td>
+        <td style="padding:6px 4px">${escHtml(k.ad)}</td>
         <td class="merkez">${miktar}</td>
-        <td class="merkez">${k.birim}</td>
-        <td class="merkez">${i === 0 ? kazanan.ad : ''}</td>
+        <td class="merkez">${escHtml(k.birim)}</td>
+        <td class="merkez">${i === 0 ? escHtml(kazanan.ad) : ''}</td>
         <td class="merkez">${bf > 0 ? formatCurrency(bf) + (kazananBasit ? '' : ' + KDV') : ''}</td>
-        <td style="padding:6px 4px">${i === 0 ? kazanan.adres : ''}</td>
+        <td style="padding:6px 4px">${i === 0 ? escHtml(kazanan.adres) : ''}</td>
       </tr>`;
     });
   }
@@ -248,15 +248,15 @@ function renderTeklifTutanagi(proje, referans) {
   // Görevli imzaları - yaklaşık maliyet stiliyle (koyu ad, normal ünvan, ortalı)
   const gorevliImzalar = dtGorevliler.map(g =>
     `<div style="text-align:center;flex:1;padding-top:5px">
-      <strong>${g.ad}</strong><br>
-      <span style="font-size:9.5pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
+      <strong>${escHtml(g.ad)}</strong><br>
+      <span style="font-size:9.5pt">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</span>
     </div>`
   ).join('');
 
   return `
     <div class="belge">
       <div style="text-align:center;margin-bottom:8px;line-height:1.6">
-        <p>T.C.<br><strong>${proje.idareAdi}</strong><br>${proje.mudurluk.toLocaleUpperCase('tr-TR')}</p>
+        <p>T.C.<br><strong>${escHtml(proje.idareAdi)}</strong><br>${escHtml(proje.mudurluk.toLocaleUpperCase('tr-TR'))}</p>
       </div>
 
       <h2 class="belge-baslik" style="margin-bottom:10px">TEKLİF TUTANAĞI</h2>
@@ -265,17 +265,17 @@ function renderTeklifTutanagi(proje, referans) {
         <tr>
           <td class="etiket" style="width:45%">İdarenin Adı</td>
           <td style="width:14px;vertical-align:top">:</td>
-          <td>${proje.idareAdi}</td>
+          <td>${escHtml(proje.idareAdi)}</td>
         </tr>
         <tr>
           <td class="etiket">Yapılan İş / Mal / Hizmetin Adı, Niteliği</td>
           <td style="width:14px;vertical-align:top">:</td>
-          <td>${proje.isAdi}</td>
+          <td>${escHtml(proje.isAdi)}</td>
         </tr>
         <tr>
           <td class="etiket">Alım ve Yetkilendirilen Görevlilere İlişkin Onay Belgesi /<br>Görevlendirme Onayı Tarih ve No.su</td>
           <td style="width:14px;vertical-align:top">:</td>
-          <td>${formatDate(proje.dtOnayTarihi)} Tarih ve ${proje.dtOnayNo} Sayılı Olur</td>
+          <td>${formatDate(proje.dtOnayTarihi)} Tarih ve ${escHtml(proje.dtOnayNo)} Sayılı Olur</td>
         </tr>
       </table>
 
@@ -303,9 +303,9 @@ function renderTeklifTutanagi(proje, referans) {
             <th style="padding:6px 4px">3. (Kişi / Firma Adı)</th>
           </tr>
           <tr>
-            <th style="padding:6px 4px">${f1.ad || '-'}</th>
-            <th style="padding:6px 4px">${f2.ad || '-'}</th>
-            <th style="padding:6px 4px">${f3.ad || '-'}</th>
+            <th style="padding:6px 4px">${escHtml(f1.ad || '-')}</th>
+            <th style="padding:6px 4px">${escHtml(f2.ad || '-')}</th>
+            <th style="padding:6px 4px">${escHtml(f3.ad || '-')}</th>
           </tr>
         </thead>
         <tbody>
@@ -329,8 +329,8 @@ function renderTeklifTutanagi(proje, referans) {
           <!-- UYGUNDUR sağda -->
           <div style="width:190px;text-align:center;padding-top:20px">
             <p style="font-weight:bold">UYGUNDUR</p>
-            <p style="margin-top:30px"><strong>${proje.onaylayanAmir.ad}</strong></p>
-            <p style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</p>
+            <p style="margin-top:30px"><strong>${escHtml(proje.onaylayanAmir.ad)}</strong></p>
+            <p style="font-size:9.5pt">${escHtml(proje.onaylayanAmir.unvan)}</p>
           </div>
         </div>
       </div>
@@ -355,8 +355,8 @@ function renderSozlesme(proje, referans) {
     <table class="sozlesme-sayfa-tablo">
       <thead><tr><td class="sozlesme-sayfa-header">
         T.C.<br>
-        <strong>${proje.idareAdi}</strong><br>
-        ${proje.mudurluk.toLocaleUpperCase('tr-TR')}
+        <strong>${escHtml(proje.idareAdi)}</strong><br>
+        ${escHtml(proje.mudurluk.toLocaleUpperCase('tr-TR'))}
       </td></tr></thead>
       <tbody><tr><td>
     <div class="belge">
@@ -365,14 +365,14 @@ function renderSozlesme(proje, referans) {
       <table style="width:100%;border-collapse:collapse;margin:10px 0">
         <tr>
           <td style="border:1px solid #000;text-align:center;padding:10px;font-weight:bold;color:#365F91;font-size:9.5pt;letter-spacing:0.5px">
-            ${proje.isAdi.toLocaleUpperCase('tr-TR')}
+            ${escHtml(proje.isAdi.toLocaleUpperCase('tr-TR'))}
           </td>
         </tr>
       </table>
 
       <div class="madde">
         <p><strong>Madde 1- Sözleşmenin Tarafları</strong></p>
-        <p>Bu sözleşme bir tarafta <strong>${proje.idareAdi}</strong> <strong>${proje.mudurluk.toLocaleUpperCase('tr-TR')}</strong> (Bundan böyle idare diye anılacaktır) ile diğer tarafta <strong>${kazanan.ad}</strong> (bundan böyle yüklenici olarak anılacaktır) arasında aşağıda yazılı şartlar dahilinde akdedilmiştir.</p>
+        <p>Bu sözleşme bir tarafta <strong>${escHtml(proje.idareAdi)}</strong> <strong>${escHtml(proje.mudurluk.toLocaleUpperCase('tr-TR'))}</strong> (Bundan böyle idare diye anılacaktır) ile diğer tarafta <strong>${escHtml(kazanan.ad)}</strong> (bundan böyle yüklenici olarak anılacaktır) arasında aşağıda yazılı şartlar dahilinde akdedilmiştir.</p>
       </div>
 
       <div class="madde">
@@ -408,25 +408,25 @@ function renderSozlesme(proje, referans) {
             <td style="width:38px;font-weight:bold;vertical-align:top">2.2.</td>
             <td style="width:190px;vertical-align:top">Yüklenicinin Tebligat Adresi</td>
             <td style="width:12px;vertical-align:top">:</td>
-            <td><strong>${kazanan.adres}</strong></td>
+            <td><strong>${escHtml(kazanan.adres)}</strong></td>
           </tr>
           <tr>
             <td></td>
             <td>Tel No</td>
             <td>:</td>
-            <td><strong>${kazanan.tel}</strong></td>
+            <td><strong>${escHtml(kazanan.tel)}</strong></td>
           </tr>
           <tr>
             <td></td>
             <td>Faks No</td>
             <td>:</td>
-            <td><strong>${kazananFaks}</strong></td>
+            <td><strong>${escHtml(kazananFaks)}</strong></td>
           </tr>
           <tr>
             <td></td>
             <td>E-Posta Adresi</td>
             <td>:</td>
-            <td><strong>${kazananEposta}</strong></td>
+            <td><strong>${escHtml(kazananEposta)}</strong></td>
           </tr>
         </table>
         <p style="margin-top:6px">2.3. Her iki taraf madde 2.1. ve 2.2.'de belirtilen adreslerini tebligat adresi olarak kabul etmişlerdir. Adres değişiklikleri usulüne uygun şekilde karşı tarafa tebliğ edilmedikçe en son bildirilen adrese yapılacak tebliğ ilgili tarafa yapılmış sayılır.</p>
@@ -445,19 +445,19 @@ function renderSozlesme(proje, referans) {
             <td style="width:38px;font-weight:bold">4.1.</td>
             <td style="width:190px">İşin Adı</td>
             <td style="width:12px">:</td>
-            <td>${proje.isAdi.toLocaleUpperCase('tr-TR')}</td>
+            <td>${escHtml(proje.isAdi.toLocaleUpperCase('tr-TR'))}</td>
           </tr>
           <tr>
             <td style="font-weight:bold">4.2.</td>
             <td>İşin Niteliği, Türü, Miktarı</td>
             <td>:</td>
-            <td>${proje.isTuru}</td>
+            <td>${escHtml(proje.isTuru)}</td>
           </tr>
           <tr>
             <td style="font-weight:bold">4.3.</td>
             <td>İşin Yapılma/ Teslim Edilme Yeri</td>
             <td>:</td>
-            <td>${proje.ilce ? proje.ilce + '/' : ''}${proje.sehir}</td>
+            <td>${escHtml(proje.ilce ? proje.ilce + '/' : '')}${escHtml(proje.sehir)}</td>
           </tr>
           <tr>
             <td style="font-weight:bold">4.4.</td>
@@ -619,8 +619,8 @@ function renderSozlesme(proje, referans) {
             </div>
             <div class="imza-kutu">
               <p class="bold">İDARE</p>
-              <div class="imza-ad">${proje.onaylayanAmir.ad}</div>
-              <div class="imza-unvan">${proje.onaylayanAmir.unvan}</div>
+              <div class="imza-ad">${escHtml(proje.onaylayanAmir.ad)}</div>
+              <div class="imza-unvan">${escHtml(proje.onaylayanAmir.unvan)}</div>
             </div>
           </div>
         </div>
@@ -715,8 +715,8 @@ function renderBittiTutanagi(proje, referans) {
   const bittiEkleriArr = (Array.isArray(proje.bittiEkleri) ? proje.bittiEkleri : proje.bittiEkleri ? [proje.bittiEkleri] : []).filter(e => e.trim());
   const gorevliImzalar = dtGorevliler.map(g =>
     `<td style="border:none;text-align:center;padding-top:0;width:${100 / dtGorevliler.length}%">
-      <strong>${g.ad}</strong><br>
-      <span style="font-size:11pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
+      <strong>${escHtml(g.ad)}</strong><br>
+      <span style="font-size:11pt">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</span>
     </td>`
   ).join('');
 
@@ -725,8 +725,8 @@ function renderBittiTutanagi(proje, referans) {
       <h2 class="belge-baslik" style="font-size:13pt;text-align:center">TUTANAK</h2>
 
       <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:11pt">
-        <tr><td style="border:none;width:35%;font-weight:bold;padding:1px 0">Yapılan İş / Hizmetin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${proje.isAdi.toLocaleUpperCase('tr-TR')}</td></tr>
-        <tr><td style="border:none;font-weight:bold;padding:1px 0">Yüklenicinin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${kazanan.ad || '-'}</td></tr>
+        <tr><td style="border:none;width:35%;font-weight:bold;padding:1px 0">Yapılan İş / Hizmetin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${escHtml(proje.isAdi.toLocaleUpperCase('tr-TR'))}</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:1px 0">Yüklenicinin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${escHtml(kazanan.ad || '-')}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:1px 0">Sözleşme Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:1px 0">Sözleşme Bedeli</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatCurrency(kazanan.toplam)} TL${isFirmaBasitUsul(kazanan.ad, referans) ? '' : ' (KDV Hariç)'}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:1px 0">İş Süresi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${proje.isSuresi} Takvim Günü</td></tr>
@@ -883,18 +883,18 @@ function renderDogrudanTeminOnayBelgesi(proje) {
 
   const satir = (etiket, deger, colspan) => `
     <tr>
-      <td style="border:1px solid #000;padding:5px 8px;font-weight:600;width:42%;background:#f9f9f9">${etiket}</td>
-      <td style="border:1px solid #000;padding:5px 8px;${colspan?'':''}width:58%">${deger || '-'}</td>
+      <td style="border:1px solid #000;padding:5px 8px;font-weight:600;width:42%;background:#f9f9f9">${escHtml(etiket)}</td>
+      <td style="border:1px solid #000;padding:5px 8px;${colspan?'':''}width:58%">${escHtml(deger || '-')}</td>
     </tr>`;
 
-  const gorevliMetni = dtGorevliler.map(g => `${g.ad}${g.unvan ? ' ' + g.unvan : ''}`).join(', ');
+  const gorevliMetni = dtGorevliler.map(g => `${escHtml(g.ad)}${g.unvan ? ' ' + escHtml(g.unvan) : ''}`).join(', ');
 
   return `
     <div class="belge">
       <div style="text-align:center;margin-bottom:6px">
         <div style="font-size:9.5pt;font-weight:bold">T.C.</div>
-        <div style="font-size:9.5pt;font-weight:bold">${proje.idareAdi}</div>
-        <div style="font-size:10pt;font-weight:bold">${proje.mudurluk}</div>
+        <div style="font-size:9.5pt;font-weight:bold">${escHtml(proje.idareAdi)}</div>
+        <div style="font-size:10pt;font-weight:bold">${escHtml(proje.mudurluk)}</div>
       </div>
 
       <h2 class="belge-baslik" style="margin:10px 0 4px">DOĞRUDAN TEMİN ONAY BELGESİ</h2>
@@ -941,8 +941,8 @@ function renderDogrudanTeminOnayBelgesi(proje) {
         </div>
         <div style="flex:1;padding:10px 14px;text-align:center">
           <div style="font-weight:bold">Uygundur. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</div>
-          <div style="margin-top:16px"><strong>${proje.onaylayanAmir.ad}</strong></div>
-          <div style="font-size:9.5pt;font-weight:bold">${proje.onaylayanAmir.unvan}</div>
+          <div style="margin-top:16px"><strong>${escHtml(proje.onaylayanAmir.ad)}</strong></div>
+          <div style="font-size:9.5pt;font-weight:bold">${escHtml(proje.onaylayanAmir.unvan)}</div>
         </div>
       </div>
     </div>
@@ -963,7 +963,7 @@ function renderHakedisRaporu(proje, referans) {
     <div class="belge">
       <h2 class="belge-baslik">HAKEDİŞ RAPORU</h2>
       <table style="width:100%;margin-bottom:15px"><tr>
-        <td><strong>${proje.isAdi.toLocaleUpperCase('tr-TR')}</strong></td>
+        <td><strong>${escHtml(proje.isAdi.toLocaleUpperCase('tr-TR'))}</strong></td>
         <td style="text-align:right"><strong>HAKEDİŞ NO: 1</strong></td>
       </tr></table>
 
@@ -1019,8 +1019,8 @@ function renderHakedisRaporu(proje, referans) {
           <div style="display:flex;gap:20px">
             ${dtGorevliler.map(g =>
               `<div style="text-align:center">
-                <strong>${g.ad}</strong><br>
-                <span style="font-size:9.5pt">${g.unvan || getUnvanByAd(g.ad, referans)}</span>
+                <strong>${escHtml(g.ad)}</strong><br>
+                <span style="font-size:9.5pt">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</span>
               </div>`
             ).join('')}
           </div>
@@ -1029,8 +1029,8 @@ function renderHakedisRaporu(proje, referans) {
 
       <div style="text-align:center;margin-top:40px">
         <p style="font-weight:bold;letter-spacing:2px">ONAYLAYAN</p>
-        <p style="margin-top:20px"><strong>${proje.onaylayanAmir.ad}</strong></p>
-        <p style="font-size:9.5pt">${proje.onaylayanAmir.unvan}</p>
+        <p style="margin-top:20px"><strong>${escHtml(proje.onaylayanAmir.ad)}</strong></p>
+        <p style="font-size:9.5pt">${escHtml(proje.onaylayanAmir.unvan)}</p>
       </div>
     </div>
   `;
@@ -1140,10 +1140,10 @@ function belgeYazdir(html, landscape = false, sozlesme = false, dosyaAdi = '') {
   setTimeout(() => win.print(), 1500);
 }
 
-function belgePdfIndir(html, landscape = false, sozlesme = false, dosyaAdi = 'belge') {
+function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge') {
   // A4 @96dpi: portrait=794px(210mm), landscape=1123px(297mm)
   const pageW = landscape ? 1123 : 794;
-  const bodyPadding = landscape ? '38px 57px' : sozlesme ? '38px 57px' : '57px 76px';
+  const bodyPadding = landscape ? '38px 57px' : '57px 76px';
 
   const container = document.createElement('div');
   container.style.cssText = `position:fixed;left:-9999px;top:0;width:${pageW}px;`;
