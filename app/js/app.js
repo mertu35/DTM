@@ -2525,6 +2525,7 @@ async function renderBelgelerPage() {
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
+  if (currentBelge === 'teklif-tutanagi') requestAnimationFrame(() => hizalaGorevliIsmi(document));
 }
 
 async function belgelerProjeAc(projeId) {
@@ -4830,6 +4831,7 @@ function renderGerceklestirmeciBelgelerView(main) {
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
+  if (currentGerceklestirmeciBelge === 'teklif-tutanagi') requestAnimationFrame(() => hizalaGorevliIsmi(document));
 }
 
 async function gcOnayBilgiKaydet() {

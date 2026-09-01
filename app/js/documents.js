@@ -1071,7 +1071,7 @@ function belgeOrtakCSS() {
     .teklif-tutanagi .gorevli-etiket { text-align: left; white-space: nowrap; }
     .teklif-tutanagi .gorevli-etiket .etiket { font-weight: bold; line-height: 1.6; }
     .teklif-tutanagi .gorevli-noktalar { line-height: 1.6; }
-    .teklif-tutanagi .gorevli-kisiler { display: flex; gap: 24px; margin-left: 110px; }
+    .teklif-tutanagi .gorevli-kisiler { display: flex; gap: 24px; }
     .teklif-tutanagi .gorevli-kisi { text-align: center; line-height: 1.6; }
     /* Sözleşme tipografisi — resmi Word şablonuyla eşitlendi:
        Times New Roman 11pt, 1.15 satır aralığı, madde öncesi 6pt boşluk */
@@ -1104,6 +1104,45 @@ function belgeSayfalamaCSS() {
     .sozlesme-sayfa-tablo thead { display: table-header-group; }
     .sozlesme-sayfa-tablo tbody { display: table-row-group; }
     .sozlesme-sayfa-tablo tfoot { display: table-footer-group; }`;
+}
+
+// Teklif Tutanağı'nda görevli adının, paragraftaki "tarafımca/tarafımızca"
+// kelimesinin hizasından başlaması isteniyor. Sabit bir piksel değeri yazmak
+// yerine (font/ölçek/metin uzunluğuna göre kayar), kelimenin gerçek konumu
+// verilen DOM kökünde anlık ölçülüp .gorevli-kisiler o kadar kaydırılır.
+function hizalaGorevliIsmi(root) {
+  try {
+    const box = (root.querySelectorAll ? root : document).querySelector
+      ? root.querySelector('.teklif-tutanagi') || root
+      : root;
+    const paragraflar = box.querySelectorAll ? box.querySelectorAll('p') : [];
+    let p = null;
+    for (const aday of paragraflar) {
+      if (/taraf[ıi]m(ız)?ca/.test(aday.textContent)) { p = aday; break; }
+    }
+    const kisiler = box.querySelector ? box.querySelector('.gorevli-kisiler') : null;
+    if (!p || !kisiler) return;
+
+    const doc = p.ownerDocument;
+    const walker = doc.createTreeWalker(p, NodeFilter.SHOW_TEXT);
+    let node, hedefNode = null, idx = -1;
+    while ((node = walker.nextNode())) {
+      const m = node.textContent.match(/taraf[ıi]m(ız)?ca/);
+      if (m) { hedefNode = node; idx = m.index; break; }
+    }
+    if (!hedefNode) return;
+
+    const range = doc.createRange();
+    range.setStart(hedefNode, idx);
+    range.setEnd(hedefNode, idx + 1);
+    const kelimeRect = range.getBoundingClientRect();
+    const kisilerRect = kisiler.getBoundingClientRect();
+    if (!kelimeRect.width && !kelimeRect.height) return;
+
+    const mevcutMargin = parseFloat(getComputedStyle(kisiler).marginLeft) || 0;
+    const fark = (kelimeRect.left - kisilerRect.left) + mevcutMargin;
+    kisiler.style.marginLeft = Math.max(0, fark) + 'px';
+  } catch (e) { /* hizalama kozmetik bir iyileştirme, hata belgeyi bozmasın */ }
 }
 
 // dosyaAdi verilirse yazdırma penceresinin başlığı olur; tarayıcının
@@ -1146,7 +1185,10 @@ function belgeYazdir(html, landscape = false, sozlesme = false, dosyaAdi = '') {
 <body>${html}</body>
 </html>`);
   win.document.close();
-  setTimeout(() => win.print(), 1500);
+  setTimeout(() => {
+    hizalaGorevliIsmi(win.document);
+    win.print();
+  }, 1500);
 }
 
 function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge') {
