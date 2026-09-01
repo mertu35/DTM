@@ -236,16 +236,23 @@ function renderTeklifTutanagi(proje, referans) {
       </tbody>
     </table>` : '';
 
-  // Görevli imza bloğu - resmi belgedeki gibi etiketli (Adı Soyadı: / Ünvanı:).
-  // Etiket birden fazla görevli olsa da tek sefer yazılır; her görevlinin adı/unvanı
-  // aynı satırda yan yana sıralanır (resmi belgedeki birleştirilmiş hücre düzeni).
-  const gorevliAdHucreleri = dtGorevliler.map(g => `<td class="deger">${escHtml(g.ad)}</td>`).join('');
-  const gorevliUnvanHucreleri = dtGorevliler.map(g => `<td class="deger">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</td>`).join('');
+  // Görevli imza bloğu - "Adı Soyadı" / "Ünvanı" etiketleri sola yaslı ve tek sefer
+  // yazılır; her görevlinin adı ve altında ortalı unvanı kendi sütununda, yan yana.
+  const gorevliKisiler = dtGorevliler.map(g =>
+    `<div class="gorevli-kisi">
+      <div>${escHtml(g.ad)}</div>
+      <div>${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</div>
+    </div>`
+  ).join('');
   const gorevliImzalar = `
-    <table class="gorevli-etiket-tablo" style="margin:0 auto">
-      <tr><td class="etiket">Adı Soyadı</td><td>:</td>${gorevliAdHucreleri}</tr>
-      <tr><td class="etiket">Ünvanı</td><td>:</td>${gorevliUnvanHucreleri}</tr>
-    </table>`;
+    <div class="gorevli-blok">
+      <div class="gorevli-etiket">
+        <div class="etiket">Adı Soyadı</div>
+        <div class="etiket">Ünvanı</div>
+      </div>
+      <div class="gorevli-noktalar"><div>:</div><div>:</div></div>
+      <div class="gorevli-kisiler">${gorevliKisiler}</div>
+    </div>`;
 
   return `
     <div class="belge teklif-tutanagi">
@@ -307,7 +314,7 @@ function renderTeklifTutanagi(proje, referans) {
           <!-- Görevliler sol tarafta -->
           <div style="flex:1">
             <p style="font-weight:bold;text-align:center;margin-bottom:6px">Piyasa Fiyat Araştırması ${dtGorevliler.length > 1 ? 'Görevlileri' : 'Görevlisi'}</p>
-            <div style="display:flex;gap:10px">
+            <div style="display:flex;justify-content:center">
               ${gorevliImzalar}
             </div>
           </div>
@@ -1054,9 +1061,12 @@ function belgeOrtakCSS() {
     .teklif-tutanagi { font-family: 'Times New Roman', Times, serif; font-size: 12pt; }
     .teklif-tutanagi .belge-baslik { font-size: 14pt; }
     .teklif-tutanagi .veri-tablo th, .teklif-tutanagi .veri-tablo td { font-size: 12pt; }
-    .teklif-tutanagi .gorevli-etiket-tablo td { padding: 1px 4px; }
-    .teklif-tutanagi .gorevli-etiket-tablo .etiket { font-weight: bold; white-space: nowrap; }
-    .teklif-tutanagi .gorevli-etiket-tablo .deger { min-width: 150px; text-align: center; }
+    .teklif-tutanagi .gorevli-blok { display: flex; align-items: flex-start; gap: 6px; }
+    .teklif-tutanagi .gorevli-etiket { text-align: left; white-space: nowrap; }
+    .teklif-tutanagi .gorevli-etiket .etiket { font-weight: bold; line-height: 1.6; }
+    .teklif-tutanagi .gorevli-noktalar { line-height: 1.6; }
+    .teklif-tutanagi .gorevli-kisiler { display: flex; gap: 24px; }
+    .teklif-tutanagi .gorevli-kisi { text-align: center; line-height: 1.6; }
     /* Sözleşme tipografisi — resmi Word şablonuyla eşitlendi:
        Times New Roman 11pt, 1.15 satır aralığı, madde öncesi 6pt boşluk */
     .sozlesme { font-family: 'Times New Roman', Times, serif; font-size: 11pt; }
