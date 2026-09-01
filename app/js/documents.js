@@ -219,7 +219,7 @@ function renderTeklifTutanagi(proje, referans) {
     <table class="veri-tablo" style="margin-top:0;border-top:none;table-layout:fixed">
       <colgroup>
         <col style="width:6%"><col style="width:24%"><col style="width:8%"><col style="width:8%">
-        <col style="width:18%"><col style="width:18%"><col style="width:18%">
+        <col style="width:18%"><col style="width:12%"><col style="width:24%">
       </colgroup>
       <thead>
         <tr>
