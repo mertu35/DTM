@@ -239,8 +239,8 @@ function renderTeklifTutanagi(proje, referans) {
   // Görevli imza bloğu - resmi belgedeki gibi etiketli (Adı Soyadı: / Ünvanı:), ortalı
   const gorevliImzalar = dtGorevliler.map(g =>
     `<table class="gorevli-etiket-tablo" style="margin:0 auto">
-      <tr><td class="etiket">Adı Soyadı</td><td>:</td><td>${escHtml(g.ad)}</td></tr>
-      <tr><td class="etiket">Ünvanı</td><td>:</td><td>${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</td></tr>
+      <tr><td class="etiket">Adı Soyadı</td><td>:</td><td class="deger">${escHtml(g.ad)}</td></tr>
+      <tr><td class="etiket">Ünvanı</td><td>:</td><td class="deger">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</td></tr>
     </table>`
   ).join('');
 
@@ -1053,6 +1053,7 @@ function belgeOrtakCSS() {
     .teklif-tutanagi .veri-tablo th, .teklif-tutanagi .veri-tablo td { font-size: 12pt; }
     .teklif-tutanagi .gorevli-etiket-tablo td { padding: 1px 4px; }
     .teklif-tutanagi .gorevli-etiket-tablo .etiket { font-weight: bold; white-space: nowrap; }
+    .teklif-tutanagi .gorevli-etiket-tablo .deger { width: 210px; text-align: center; }
     /* Sözleşme tipografisi — resmi Word şablonuyla eşitlendi:
        Times New Roman 11pt, 1.15 satır aralığı, madde öncesi 6pt boşluk */
     .sozlesme { font-family: 'Times New Roman', Times, serif; font-size: 11pt; }
