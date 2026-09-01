@@ -216,7 +216,11 @@ function renderTeklifTutanagi(proje, referans) {
   }
 
   const kazananHTML = kazanan ? `
-    <table class="veri-tablo" style="margin-top:0;border-top:none">
+    <table class="veri-tablo" style="margin-top:0;border-top:none;table-layout:fixed">
+      <colgroup>
+        <col style="width:6%"><col style="width:24%"><col style="width:8%"><col style="width:8%">
+        <col style="width:18%"><col style="width:18%"><col style="width:18%">
+      </colgroup>
       <thead>
         <tr>
           <th rowspan="2">SIRA<br>NO</th>
@@ -280,7 +284,11 @@ function renderTeklifTutanagi(proje, referans) {
         </tr>
       </table>
 
-      <table class="veri-tablo">
+      <table class="veri-tablo" style="table-layout:fixed">
+        <colgroup>
+          <col style="width:6%"><col style="width:24%"><col style="width:8%"><col style="width:8%">
+          <col style="width:18%"><col style="width:18%"><col style="width:18%">
+        </colgroup>
         <thead>
           <tr>
             <th rowspan="3" style="padding:4px">SIRA<br>NO</th>
