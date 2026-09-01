@@ -819,6 +819,26 @@ body {
 .belge-preview .gorevli-kisiler { display: flex; gap: 30px; }
 .belge-preview .gorevli-kisi { text-align: center; line-height: 1.6; }
 
+/* Sözleşme: resmi Word şablonuyla eşitlenen tipografi (yazdırmadaki .sozlesme ile aynı) */
+.belge-preview .sozlesme { font-family: 'Times New Roman', Times, serif; font-size: 11pt; }
+.belge-preview .sozlesme .madde p, .belge-preview .sozlesme .madde { font-size: 11pt; }
+.belge-preview .sozlesme .madde { margin-bottom: 6pt; line-height: 1.15; }
+.belge-preview .sozlesme .madde p { margin-top: 2pt; }
+.belge-preview .sozlesme-imza { margin-top: 10px; }
+.belge-preview .sozlesme-sayfa-footer { padding-top: 6px; }
+.belge-preview .imza-bosluk { margin-top: 55px; }
+.belge-preview .sozlesme-sayfa-tablo { width: 100%; border-collapse: collapse; }
+.belge-preview .sozlesme-sayfa-tablo > tbody > tr > td { padding: 0; }
+.belge-preview .sozlesme-sayfa-header {
+  display: block;
+  text-align: center;
+  font-weight: bold;
+  font-size: 9.5pt;
+  line-height: 1.4;
+  padding: 3px 0 5px;
+  margin-bottom: 4px;
+}
+
 /* Document tabs */
 .belge-tabs {
   display: flex;
