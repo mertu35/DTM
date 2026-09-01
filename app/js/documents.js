@@ -314,9 +314,7 @@ function renderTeklifTutanagi(proje, referans) {
           <!-- Görevliler sol tarafta -->
           <div style="flex:1">
             <p style="font-weight:bold;text-align:center;margin-bottom:6px">Piyasa Fiyat Araştırması ${dtGorevliler.length > 1 ? 'Görevlileri' : 'Görevlisi'}</p>
-            <div style="display:flex;justify-content:center">
-              ${gorevliImzalar}
-            </div>
+            ${gorevliImzalar}
           </div>
           <!-- UYGUNDUR sağda -->
           <div style="width:190px;text-align:center;padding-top:20px">
