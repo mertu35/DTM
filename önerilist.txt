@@ -134,7 +134,7 @@ SONRADAN EKLENENLER (01.09.2026)
     Bu iş sırasında toplu indirmede sözleşmenin hâlâ eski (sıkışık, %95
     ölçekli) düzende basıldığı fark edildi ve düzeltildi — bkz. 16. madde.
 
-18. appConfig kuralı firestore.rules'da tanımlı değildi   [YAPILDI — 01.09.2026, DEPLOY BEKLİYOR]
+18. appConfig kuralı firestore.rules'da tanımlı değildi   [YAPILDI VE DEPLOY EDİLDİ — 01.09.2026]
     Hakkında sayfasındaki güncelleme kontrolü appConfig/version
     dokümanını okuyor, ancak bu koleksiyon için kural yoktu. Firestore
     kuralı olmayan yolu varsayılan olarak reddettiği için okuma hep
@@ -142,8 +142,10 @@ SONRADAN EKLENENLER (01.09.2026)
     "güncel" görünüyordu. firestore.rules'a appConfig/{docId} kuralı
     eklendi: giriş yapmış herkes okuyabilir, sadece admin/superadmin
     yazabilir. Firestore Emulator'da 4 senaryo (okuma/yazma, yetkili/
-    yetkisiz) test edildi, hepsi geçti. Deploy edilene kadar özellik
-    hâlâ çalışmıyor — kullanıcı ofisten firebase deploy yapmalı.
+    yetkisiz) test edildi, hepsi geçti. Deploy edildi, özellik artık aktif.
+    Not: appConfig/version dokümanı henüz oluşturulmadıysa (Firebase
+    Console'dan elle latest: "2.1.0" gibi bir alanla eklenmeli), doc yok
+    sayılıp APP_CURRENT_VERSION varsayılan kabul ediliyor — hata vermez.
     (Ayrıntı: veri-envanteri.txt, madde 2.9)
 
 19. Veri envanteri gözden geçirme başlıkları

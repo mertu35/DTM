@@ -175,7 +175,6 @@ okunamaz; yalnızca sıfırlanabilir.
      gerceklestirmeci rolündeki kayıtları okuyabiliyor; admin/superadmin
      hepsini okuyabiliyor. Deploy edildi ve test edildi.
 
-  5. appConfig kuralının eksikliği (2.9) — [ÇÖZÜLDÜ, 01.09.2026, DEPLOY
-     BEKLİYOR] firestore.rules'a kural eklendi (giriş yapmış herkes okur,
-     admin/superadmin yazar), Firestore Emulator'da test edildi. Deploy
-     edilene kadar özellik hâlâ fiilen çalışmıyor.
+  5. appConfig kuralının eksikliği (2.9) — [ÇÖZÜLDÜ, 01.09.2026] firestore.
+     rules'a kural eklendi (giriş yapmış herkes okur, admin/superadmin
+     yazar), Firestore Emulator'da test edildi ve deploy edildi.
