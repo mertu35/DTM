@@ -1726,10 +1726,25 @@ body {
 .duyuru-baslik {
   font-weight: 600;
   font-size: 14px;
-  color: var(--gray-800);
+  color: var(--primary);
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.duyuru-okundu .duyuru-baslik {
+  color: var(--gray-700);
+  font-weight: 500;
+}
+.duyuru-chevron {
+  color: var(--gray-400);
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+.duyuru-item.duyuru-acik .duyuru-chevron {
+  transform: rotate(90deg);
+  color: var(--primary);
 }
 .duyuru-yeni {
   background: #1a56db;

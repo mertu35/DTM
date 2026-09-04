@@ -5987,7 +5987,10 @@ async function renderDuyurularPage() {
                   ${!okundu ? '<span class="duyuru-yeni">Yeni</span>' : ''}
                   ${escHtml(d.baslik)}
                 </div>
-                <div class="duyuru-meta">${escHtml(d.createdBy || '')} &middot; ${tarih}</div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div class="duyuru-meta">${escHtml(d.createdBy || '')} &middot; ${tarih}</div>
+                  <span class="duyuru-chevron">&#8250;</span>
+                </div>
               </div>
               <div class="duyuru-detay" id="duyuruDetay_${d.id}" style="display:none">
                 <div class="duyuru-mesaj">${escHtml(d.mesaj)}</div>
@@ -6006,7 +6009,10 @@ async function renderDuyurularPage() {
 
     window.toggleDuyuru = (id) => {
       const el = document.getElementById('duyuruDetay_' + id);
-      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+      if (!el) return;
+      const acik = el.style.display !== 'none';
+      el.style.display = acik ? 'none' : 'block';
+      el.closest('.duyuru-item')?.classList.toggle('duyuru-acik', !acik);
     };
   } catch(e) {
     main.innerHTML = `<div class="page-header"><h2>Duyurular</h2></div><div style="color:red;padding:20px">Yüklenemedi: ${e.message}</div>`;
