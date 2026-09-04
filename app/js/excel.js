@@ -121,7 +121,7 @@ function exportYaklasikMaliyetExcel(proje, referans) {
     const ortBF = ortT / (mik || 1);
     kalemRows += `<tr>
       <td class="center">${i + 1}</td>
-      <td>${k.ad || ''}</td>
+      <td>${escHtml(k.ad || '')}</td>
       <td class="center">${mik ? mik.toLocaleString('tr-TR') : ''}</td>
       ${tdRakam(bf1 || null)}${tdRakam(bf1 * mik || null)}
       ${tdRakam(bf2 || null)}${tdRakam(bf2 * mik || null)}
@@ -131,7 +131,7 @@ function exportYaklasikMaliyetExcel(proje, referans) {
   });
 
   const gorevliHtml = ymGorevliler.length
-    ? ymGorevliler.map(g => `<strong>${g.ad || ''}</strong><br>${g.unvan || ''}`).join('<br><br>')
+    ? ymGorevliler.map(g => `<strong>${escHtml(g.ad || '')}</strong><br>${escHtml(g.unvan || '')}`).join('<br><br>')
     : '';
 
   const html = `
@@ -145,15 +145,15 @@ function exportYaklasikMaliyetExcel(proje, referans) {
   <table style="width:100%">
     <tr>
       <td class="bold" style="border:none;width:46%">İdarenin Adı</td>
-      <td style="border:none">${proje.idareAdi || ''}</td>
+      <td style="border:none">${escHtml(proje.idareAdi || '')}</td>
     </tr>
     <tr>
       <td class="bold" style="border:none">Yapılan İş / Mal / Hizmetin Adı, Niteliği</td>
-      <td style="border:none">${proje.isAdi || ''}</td>
+      <td style="border:none">${escHtml(proje.isAdi || '')}</td>
     </tr>
     <tr>
       <td class="bold" style="border:none">Alım ve Yetkilendirilen Görevlilere İlişkin Onay Belgesi /<br>Görevlendirme Onayı Tarih ve No.su</td>
-      <td style="border:none">${formatDate(proje.ymOnayTarihi)} Tarih ve ${proje.ymOnayNo || ''} Sayılı Olur</td>
+      <td style="border:none">${formatDate(proje.ymOnayTarihi)} Tarih ve ${escHtml(proje.ymOnayNo || '')} Sayılı Olur</td>
     </tr>
     <tr><td style="border:none;height:10px" colspan="2"></td></tr>
   </table>
@@ -171,9 +171,9 @@ function exportYaklasikMaliyetExcel(proje, referans) {
         <th colspan="2" class="grup-h" rowspan="2">YAKLAŞIK MALİYET</th>
       </tr>
       <tr>
-        <th colspan="2" class="firma-h">${f1.ad || '-'}</th>
-        <th colspan="2" class="firma-h">${f2.ad || '-'}</th>
-        <th colspan="2" class="firma-h">${f3.ad || '-'}</th>
+        <th colspan="2" class="firma-h">${escHtml(f1.ad || '-')}</th>
+        <th colspan="2" class="firma-h">${escHtml(f2.ad || '-')}</th>
+        <th colspan="2" class="firma-h">${escHtml(f3.ad || '-')}</th>
       </tr>
       <tr>
         <th class="sutun-h">BİRİM<br>FİYAT<br>(TL)</th><th class="sutun-h">TOPLAM<br>FİYAT<br>(TL)</th>
@@ -199,7 +199,7 @@ function exportYaklasikMaliyetExcel(proje, referans) {
   <table style="width:100%;border-collapse:collapse;margin-top:8px">
     <tr>
       <td colspan="2" style="border:2px solid #000;border-bottom:none;text-align:justify;line-height:1.5;padding:6px 10px">
-        Karaman İl Özel İdaresi ${mudurlukMetin} yetkilisince görevlendirilmem nedeniyle yukarıda özelliği belirtilen işin yapılması için 4734 sayılı Kamu İhale Kanununun 9. Maddesi gereğince yaklaşık maliyet çıkarılmış olup, ihale konusu işin <b>${fmtPara(ym)} TL</b> (${ymYazi}) (KDV hariç) bedelle ihaleye çıkması belirlenmiş ve iş bu tutanak tanzimen düzenlenmiştir. <b>${formatDate(ymTutanakT)}</b>
+        Karaman İl Özel İdaresi ${escHtml(mudurlukMetin)} yetkilisince görevlendirilmem nedeniyle yukarıda özelliği belirtilen işin yapılması için 4734 sayılı Kamu İhale Kanununun 9. Maddesi gereğince yaklaşık maliyet çıkarılmış olup, ihale konusu işin <b>${fmtPara(ym)} TL</b> (${ymYazi}) (KDV hariç) bedelle ihaleye çıkması belirlenmiş ve iş bu tutanak tanzimen düzenlenmiştir. <b>${formatDate(ymTutanakT)}</b>
       </td>
     </tr>
     <tr>
@@ -215,8 +215,8 @@ function exportYaklasikMaliyetExcel(proje, referans) {
       <td style="border:2px solid #000;border-top:none;border-left:none;text-align:center;padding:8px;width:40%;vertical-align:top">
         <strong>OLUR</strong><br>
         ${formatDate(ymTutanakT)}<br><br>
-        <strong>${proje.onaylayanAmir?.ad || ''}</strong><br>
-        ${proje.onaylayanAmir?.unvan || ''}
+        <strong>${escHtml(proje.onaylayanAmir?.ad || '')}</strong><br>
+        ${escHtml(proje.onaylayanAmir?.unvan || '')}
       </td>
     </tr>
   </table>`;
@@ -280,9 +280,9 @@ function exportTeklifTutanagiExcel(proje, referans) {
     teklifRows += `<tr>
       <td></td>
       <td class="center">${i + 1}</td>
-      <td colspan="4">${k.ad || ''}</td>
+      <td colspan="4">${escHtml(k.ad || '')}</td>
       <td class="center">${mik ? mik.toLocaleString('tr-TR') : ''}</td>
-      <td class="center">${k.birim || ''}</td>
+      <td class="center">${escHtml(k.birim || '')}</td>
       ${tdRakam(p1)}<td class="center" style="font-size:8pt">${f1Basit ? '' : '+KDV'}</td>
       ${tdRakam(p2)}<td class="center" style="font-size:8pt">${f2Basit ? '' : '+KDV'}</td>
       ${tdRakam(p3)}<td class="center" style="font-size:8pt">${f3Basit ? '' : '+KDV'}</td>
@@ -301,13 +301,13 @@ function exportTeklifTutanagiExcel(proje, referans) {
       kazananRows += `<tr>
         <td></td>
         <td class="center">${i + 1}</td>
-        <td colspan="4">${k.ad || ''}</td>
+        <td colspan="4">${escHtml(k.ad || '')}</td>
         <td class="center">${mik ? mik.toLocaleString('tr-TR') : ''}</td>
-        <td class="center">${k.birim || ''}</td>
-        <td class="center">${i === 0 ? (kazanan.ad || '') : ''}</td>
+        <td class="center">${escHtml(k.birim || '')}</td>
+        <td class="center">${i === 0 ? escHtml(kazanan.ad || '') : ''}</td>
         <td></td>
         ${tdRakam(fiyat)}<td class="center" style="font-size:8pt">${kazananBasit ? '' : '+KDV'}</td>
-        <td colspan="2">${i === 0 ? (kazanan.adres || '') : ''}</td>
+        <td colspan="2">${i === 0 ? escHtml(kazanan.adres || '') : ''}</td>
         <td></td>
       </tr>`;
     });
@@ -320,14 +320,14 @@ function exportTeklifTutanagiExcel(proje, referans) {
           <td colspan="2" style="border:none"></td>
           <td colspan="2" class="etiket" style="border:1px solid #000">Adı Soyadı</td>
           <td style="border:1px solid #000" class="center">:</td>
-          <td colspan="3" style="border:1px solid #000">${g.ad || ''}</td>
+          <td colspan="3" style="border:1px solid #000">${escHtml(g.ad || '')}</td>
           <td colspan="9" style="border:none"></td>
         </tr>
         <tr>
           <td colspan="2" style="border:none"></td>
           <td colspan="2" class="etiket" style="border:1px solid #000">Ünvanı</td>
           <td style="border:1px solid #000" class="center">:</td>
-          <td colspan="3" style="border:1px solid #000">${g.unvan || ''}</td>
+          <td colspan="3" style="border:1px solid #000">${escHtml(g.unvan || '')}</td>
           <td colspan="9" style="border:none"></td>
         </tr>
         <tr class="bos-satir"><td colspan="${C}"></td></tr>`
@@ -355,7 +355,7 @@ function exportTeklifTutanagiExcel(proje, referans) {
   <!-- ── T.C. Üst Başlık ── -->
   <tr>
     <td colspan="${C}" class="tc-baslik">
-      T.C.<br>KARAMAN İL ÖZEL İDARESİ<br>${proje.mudurluk || 'YATIRIM VE İNŞAAT MÜDÜRLÜĞÜ'}
+      T.C.<br>KARAMAN İL ÖZEL İDARESİ<br>${escHtml(proje.mudurluk || 'YATIRIM VE İNŞAAT MÜDÜRLÜĞÜ')}
     </td>
   </tr>
   <tr class="bos-satir"><td colspan="${C}"></td></tr>
@@ -374,19 +374,19 @@ function exportTeklifTutanagiExcel(proje, referans) {
     <td></td>
     <td colspan="5" class="etiket">İdarenin Adı</td>
     <td class="center bold">:</td>
-    <td colspan="10">${proje.idareAdi || ''}</td>
+    <td colspan="10">${escHtml(proje.idareAdi || '')}</td>
   </tr>
   <tr>
     <td></td>
     <td colspan="5" class="etiket">Yapılan İş / Mal / Hizmetin Adı, Niteliği</td>
     <td class="center bold">:</td>
-    <td colspan="10">${proje.isAdi || ''}</td>
+    <td colspan="10">${escHtml(proje.isAdi || '')}</td>
   </tr>
   <tr>
     <td></td>
     <td colspan="5" class="etiket">Alım ve Yetkilendirilen Görevlilere İlişkin Onay Belgesi /<br>Görevlendirme Onayı Tarih ve No.su</td>
     <td class="center bold">:</td>
-    <td colspan="10">${formatDate(proje.dtOnayTarihi)} Tarih ve ${proje.dtOnayNo || ''} Sayılı Olur</td>
+    <td colspan="10">${formatDate(proje.dtOnayTarihi)} Tarih ve ${escHtml(proje.dtOnayNo || '')} Sayılı Olur</td>
   </tr>
   <tr class="bos-satir"><td colspan="${C}"></td></tr>
 
@@ -409,9 +409,9 @@ function exportTeklifTutanagiExcel(proje, referans) {
   </tr>
   <tr>
     <td style="border:none"></td>
-    <th colspan="2" class="firma-h">${f1.ad || '-'}</th>
-    <th colspan="2" class="firma-h">${f2.ad || '-'}</th>
-    <th colspan="2" class="firma-h">${f3.ad || '-'}</th>
+    <th colspan="2" class="firma-h">${escHtml(f1.ad || '-')}</th>
+    <th colspan="2" class="firma-h">${escHtml(f2.ad || '-')}</th>
+    <th colspan="2" class="firma-h">${escHtml(f3.ad || '-')}</th>
     <th colspan="3"></th>
   </tr>
 
@@ -465,7 +465,7 @@ function exportTeklifTutanagiExcel(proje, referans) {
     <td colspan="15" class="metin-kutu" style="text-align:justify;line-height:1.5">
       4734 sayılı Kamu İhale Kanunu'nun 22 nci Maddesi uyarınca <b>doğrudan temin usulüyle</b>
       yapılacak alımlara ilişkin yapılan piyasa araştırmasında ${teklifVerenMetni} teklif edilen fiyatlar ${tarafMetni} değerlendirilerek
-      yukarıda adı ve adresleri belirtilen ${kazanan ? `<b>${kazanan.ad}</b> ${kazananKisiMetni}` : '…'}
+      yukarıda adı ve adresleri belirtilen ${kazanan ? `<b>${escHtml(kazanan.ad)}</b> ${kazananKisiMetni}` : '…'}
       alım yapılması uygun görülmüştür. <b>${formatDate(dtTutanakT)}</b>
     </td>
   </tr>
@@ -488,11 +488,11 @@ function exportTeklifTutanagiExcel(proje, referans) {
   <tr class="bos-satir"><td colspan="${C}"></td></tr>
   <tr>
     <td colspan="12" style="border:none"></td>
-    <td colspan="5" class="center bold" style="border:none">${proje.onaylayanAmir?.ad || ''}</td>
+    <td colspan="5" class="center bold" style="border:none">${escHtml(proje.onaylayanAmir?.ad || '')}</td>
   </tr>
   <tr>
     <td colspan="12" style="border:none"></td>
-    <td colspan="5" class="center" style="border:none">${proje.onaylayanAmir?.unvan || ''}</td>
+    <td colspan="5" class="center" style="border:none">${escHtml(proje.onaylayanAmir?.unvan || '')}</td>
   </tr>
 
 </table>`;
