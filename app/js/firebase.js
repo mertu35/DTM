@@ -528,6 +528,20 @@ async function duyuruOkunduIsaretle(duyuruId) {
   });
 }
 
+// Kullanıcının kendi listesinden gizlediği (kişisel olarak sildiği) duyuruları getir
+async function getSilinenDuyurular() {
+  const snap = await db.collection('users').doc(currentDTMUser.uid).get();
+  return snap.data()?.silinenDuyurular || [];
+}
+
+// Duyuruyu sadece bu kullanıcı için gizle (herkesten silmez, sadece kendi
+// listesinden kaldırır — asıl duyuru dokümanı ve diğer kullanıcılar etkilenmez)
+async function duyuruKendindenGizle(duyuruId) {
+  await db.collection('users').doc(currentDTMUser.uid).update({
+    silinenDuyurular: firebase.firestore.FieldValue.arrayUnion(duyuruId)
+  });
+}
+
 // Kullanıcı rolünü değiştir (superadmin)
 async function changeUserRole(uid, newRole) {
   await db.collection('users').doc(uid).update({ role: newRole });

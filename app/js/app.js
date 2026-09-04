@@ -5962,7 +5962,8 @@ async function renderDuyurularPage() {
     <div class="page-header"><h2>Duyurular</h2><p>Yönetici tarafından paylaşılan duyurular.</p></div>
     <div style="text-align:center;padding:40px;color:var(--gray-400)">Yükleniyor...</div>`;
   try {
-    const [duyurular, okunanlar] = await Promise.all([getDuyurular(), getOkunanDuyurular()]);
+    const [tumDuyurular, okunanlar, silinenler] = await Promise.all([getDuyurular(), getOkunanDuyurular(), getSilinenDuyurular()]);
+    const duyurular = tumDuyurular.filter(d => !silinenler.includes(d.id));
     const canManage = ['admin', 'superadmin'].includes(currentDTMUser?.role);
     const adminForm = canManage ? `
       <div class="card" style="margin-bottom:20px">
@@ -5981,17 +5982,20 @@ async function renderDuyurularPage() {
           const tarih = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('tr-TR') : '-';
           return `
             <div class="duyuru-item ${okundu ? 'duyuru-okundu' : 'duyuru-okunmadi'}">
-              <div class="duyuru-ust">
+              <div class="duyuru-ust" onclick="toggleDuyuru('${d.id}')" style="cursor:pointer">
                 <div class="duyuru-baslik">
                   ${!okundu ? '<span class="duyuru-yeni">Yeni</span>' : ''}
                   ${escHtml(d.baslik)}
                 </div>
                 <div class="duyuru-meta">${escHtml(d.createdBy || '')} &middot; ${tarih}</div>
               </div>
-              <div class="duyuru-mesaj">${escHtml(d.mesaj)}</div>
-              <div class="duyuru-actions">
-                ${!okundu ? `<button class="btn btn-sm btn-outline" onclick="duyuruOku('${d.id}')">Okundu</button>` : '<span style="color:var(--gray-400);font-size:12px">Okundu</span>'}
-                ${['admin', 'superadmin'].includes(currentDTMUser?.role) ? `<button class="btn btn-sm btn-danger" onclick="duyuruSil('${d.id}')">Sil</button>` : ''}
+              <div class="duyuru-detay" id="duyuruDetay_${d.id}" style="display:none">
+                <div class="duyuru-mesaj">${escHtml(d.mesaj)}</div>
+                <div class="duyuru-actions">
+                  ${!okundu ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();duyuruOku('${d.id}')">Okundu</button>` : ''}
+                  ${okundu ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();duyuruKendindenGizleCagir('${d.id}')">Sil</button>` : ''}
+                  ${canManage ? `<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();duyuruSil('${d.id}')">Herkesten Kaldır</button>` : ''}
+                </div>
               </div>
             </div>`;
         }).join('');
@@ -5999,6 +6003,11 @@ async function renderDuyurularPage() {
       <div class="page-header"><h2>Duyurular</h2><p>Yönetici tarafından paylaşılan duyurular.</p></div>
       ${adminForm}
       <div class="card"><div class="card-header"><h3>Tüm Duyurular</h3></div><div class="card-body" style="padding:0">${listHTML}</div></div>`;
+
+    window.toggleDuyuru = (id) => {
+      const el = document.getElementById('duyuruDetay_' + id);
+      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    };
   } catch(e) {
     main.innerHTML = `<div class="page-header"><h2>Duyurular</h2></div><div style="color:red;padding:20px">Yüklenemedi: ${e.message}</div>`;
   }
@@ -6038,6 +6047,14 @@ async function duyuruSil(duyuruId) {
   if (!await showConfirm('Bu duyuru silinecek. Emin misiniz?', 'Sil')) return;
   try {
     await deleteDuyuru(duyuruId);
+    renderDuyurularPage();
+  } catch(e) { showToast('Hata: ' + hataMesaji(e), 'error'); }
+}
+
+// Okunmuş bir duyuruyu sadece kendi listesinden kaldırır (diğer kullanıcıları etkilemez)
+async function duyuruKendindenGizleCagir(duyuruId) {
+  try {
+    await duyuruKendindenGizle(duyuruId);
     renderDuyurularPage();
   } catch(e) { showToast('Hata: ' + hataMesaji(e), 'error'); }
 }

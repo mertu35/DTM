@@ -27,7 +27,7 @@ service cloud.firestore {
       allow update: if request.auth != null &&
         request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'avatar', 'okunanDuyurular', 'gorulenProjeler', 'lastLogin',
+          'avatar', 'okunanDuyurular', 'silinenDuyurular', 'gorulenProjeler', 'lastLogin',
           'lastGonderilenVisit', 'lastOnayliVisit',
           'email', 'emailVerified', 'pendingEmail', 'emailUpdatedAt'
         ]);
