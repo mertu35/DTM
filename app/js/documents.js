@@ -216,15 +216,10 @@ function renderTeklifTutanagi(proje, referans) {
   }
 
   const kazananHTML = kazanan ? `
-    <table class="veri-tablo" style="margin-top:0;border-top:none;font-size:9.5pt;table-layout:fixed">
+    <table class="veri-tablo" style="margin-top:0;border-top:none;table-layout:fixed">
       <colgroup>
-        <col style="width:32px">
-        <col style="width:160px">
-        <col style="width:38px">
-        <col style="width:45px">
-        <col style="width:90px">
-        <col style="width:110px">
-        <col style="width:130px">
+        <col style="width:6%"><col style="width:24%"><col style="width:8%"><col style="width:8%">
+        <col style="width:18%"><col style="width:12%"><col style="width:24%">
       </colgroup>
       <thead>
         <tr>
@@ -245,16 +240,26 @@ function renderTeklifTutanagi(proje, referans) {
       </tbody>
     </table>` : '';
 
-  // Görevli imzaları - yaklaşık maliyet stiliyle (koyu ad, normal ünvan, ortalı)
-  const gorevliImzalar = dtGorevliler.map(g =>
-    `<div style="text-align:center;flex:1;padding-top:5px">
-      <strong>${escHtml(g.ad)}</strong><br>
-      <span style="font-size:9.5pt">${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</span>
+  // Görevli imza bloğu - "Adı Soyadı" / "Ünvanı" etiketleri sola yaslı ve tek sefer
+  // yazılır; her görevlinin adı ve altında ortalı unvanı kendi sütununda, yan yana.
+  const gorevliKisiler = dtGorevliler.map(g =>
+    `<div class="gorevli-kisi">
+      <div>${escHtml(g.ad)}</div>
+      <div>${escHtml(g.unvan || getUnvanByAd(g.ad, referans))}</div>
     </div>`
   ).join('');
+  const gorevliImzalar = `
+    <div class="gorevli-blok">
+      <div class="gorevli-etiket">
+        <div class="etiket">Adı Soyadı</div>
+        <div class="etiket">Ünvanı</div>
+      </div>
+      <div class="gorevli-noktalar"><div>:</div><div>:</div></div>
+      <div class="gorevli-kisiler">${gorevliKisiler}</div>
+    </div>`;
 
   return `
-    <div class="belge">
+    <div class="belge teklif-tutanagi">
       <div style="text-align:center;margin-bottom:8px;line-height:1.6">
         <p>T.C.<br><strong>${escHtml(proje.idareAdi)}</strong><br>${escHtml(proje.mudurluk.toLocaleUpperCase('tr-TR'))}</p>
       </div>
@@ -279,15 +284,10 @@ function renderTeklifTutanagi(proje, referans) {
         </tr>
       </table>
 
-      <table class="veri-tablo" style="font-size:9.5pt;table-layout:fixed">
+      <table class="veri-tablo" style="table-layout:fixed">
         <colgroup>
-          <col style="width:32px">
-          <col style="width:160px">
-          <col style="width:38px">
-          <col style="width:45px">
-          <col style="width:110px">
-          <col style="width:110px">
-          <col style="width:110px">
+          <col style="width:6%"><col style="width:24%"><col style="width:8%"><col style="width:8%">
+          <col style="width:18%"><col style="width:18%"><col style="width:18%">
         </colgroup>
         <thead>
           <tr>
@@ -322,15 +322,13 @@ function renderTeklifTutanagi(proje, referans) {
           <!-- Görevliler sol tarafta -->
           <div style="flex:1">
             <p style="font-weight:bold;text-align:center;margin-bottom:6px">Piyasa Fiyat Araştırması ${dtGorevliler.length > 1 ? 'Görevlileri' : 'Görevlisi'}</p>
-            <div style="display:flex;gap:10px">
-              ${gorevliImzalar}
-            </div>
+            ${gorevliImzalar}
           </div>
           <!-- UYGUNDUR sağda -->
           <div style="width:190px;text-align:center;padding-top:20px">
             <p style="font-weight:bold">UYGUNDUR</p>
             <p style="margin-top:30px"><strong>${escHtml(proje.onaylayanAmir.ad)}</strong></p>
-            <p style="font-size:9.5pt">${escHtml(proje.onaylayanAmir.unvan)}</p>
+            <p><strong>${escHtml(proje.onaylayanAmir.unvan)}</strong></p>
           </div>
         </div>
       </div>
@@ -608,21 +606,24 @@ function renderSozlesme(proje, referans) {
         <p>İş bu sözleşme 22 Maddeden ibaret olup, İdare ve Yüklenici tarafından tam olarak okunup anlaşıldıktan sonra ${formatDate(proje.sozlesmeTarihi)} tarihinde 1 (Bir) nüsha olarak imza altına alınmıştır. Ayrıca İdare, Yüklenicinin talebi halinde sözleşmenin aslına uygun idarece onaylı suretini düzenleyip yükleniciye verecektir.</p>
       </div>
 
-      <div class="sozlesme-imza" style="margin-top:40px">
-        <div class="imzalar-yan">
-          <div class="imza-kutu">
-            <p class="bold">YÜKLENİCİ</p>
-            <div class="imza-ad" style="margin-top:60px"></div>
-          </div>
-          <div class="imza-kutu">
-            <p class="bold">İDARE</p>
-            <div class="imza-ad">${escHtml(proje.onaylayanAmir.ad)}</div>
-            <div class="imza-unvan">${escHtml(proje.onaylayanAmir.unvan)}</div>
-          </div>
-        </div>
-      </div>
+
     </div>
       </td></tr></tbody>
+      <tfoot><tr><td class="sozlesme-sayfa-footer">
+        <div class="sozlesme-imza">
+          <div class="imzalar-yan">
+            <div class="imza-kutu">
+              <p class="bold">YÜKLENİCİ</p>
+              <div class="imza-ad imza-bosluk"></div>
+            </div>
+            <div class="imza-kutu">
+              <p class="bold">İDARE</p>
+              <div class="imza-ad">${escHtml(proje.onaylayanAmir.ad)}</div>
+              <div class="imza-unvan">${escHtml(proje.onaylayanAmir.unvan)}</div>
+            </div>
+          </div>
+        </div>
+      </td></tr></tfoot>
     </table>
     </div>
   `;
@@ -881,8 +882,8 @@ function renderDogrudanTeminOnayBelgesi(proje) {
 
   const satir = (etiket, deger, colspan) => `
     <tr>
-      <td style="border:1px solid #000;padding:5px 8px;font-weight:600;width:42%;background:#f9f9f9">${etiket}</td>
-      <td style="border:1px solid #000;padding:5px 8px;${colspan?'':''}width:58%">${deger || '-'}</td>
+      <td style="border:1px solid #000;padding:5px 8px;font-weight:600;width:42%;background:#f9f9f9">${escHtml(etiket)}</td>
+      <td style="border:1px solid #000;padding:5px 8px;${colspan?'':''}width:58%">${escHtml(deger || '-')}</td>
     </tr>`;
 
   const gorevliMetni = dtGorevliler.map(g => `${escHtml(g.ad)}${g.unvan ? ' ' + escHtml(g.unvan) : ''}`).join(', ');
@@ -1034,27 +1035,15 @@ function renderHakedisRaporu(proje, referans) {
   `;
 }
 
-function belgeYazdir(html, landscape = false, sozlesme = false) {
-  const win = window.open('', '_blank');
-  const pageSize = landscape
-    ? 'size: A4 landscape; margin: 8mm 10mm;'
-    : sozlesme
-      ? 'size: A4 portrait; margin: 8mm 12mm;'
-      : 'size: A4 portrait; margin: 10mm 15mm;';
-  const maxWidth = landscape ? '280mm' : '210mm';
-  const bodyPadding = landscape ? '8mm 10mm' : '10mm 15mm';
-
-  win.document.write(`<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <title>Belge Yazdır</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Noto Serif', 'Times New Roman', serif; font-size: 9pt; color: #000; padding: ${bodyPadding}; }
-    .belge { max-width: ${maxWidth}; margin: 0 auto; }
+// Tüm yazdırma/PDF pencerelerinin (tek belge, toplu indirme) paylaştığı
+// tipografi kuralları. TEK KAYNAK: burayı değiştirmek, veri-tablo/madde/imza
+// gibi ortak stilleri kullanan her belge türünü ve her indirme yolunu
+// (belgeYazdir, cokluBelgeIndir, cokluGerceklestirmeciBelgeIndir) aynı anda
+// günceller. Sayfa boyutu, kenar boşluğu ve @page kuralları ortak değildir
+// (tek belge ile toplu indirmede farklı mekanizmalar kullanır) — bunlar
+// çağıran fonksiyonda ayrıca tanımlanır.
+function belgeOrtakCSS() {
+  return `
     .belge-ust { text-align: center; margin-bottom: 10px; }
     .belge-baslik { text-align: center; font-size: 13pt; margin: 8px 0; font-weight: bold; }
     .bilgi-tablo { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
@@ -1068,16 +1057,32 @@ function belgeYazdir(html, landscape = false, sozlesme = false) {
     .bold { font-weight: bold; }
     .toplam-satir td { font-weight: bold; background: #f9f9f9; }
     .aciklama-metin { margin: 12px 0; line-height: 1.5; text-align: justify; }
-    .imzalar-yan { display: flex; justify-content: space-around; gap: 30px; }
+    .imzalar-yan { display: flex; justify-content: space-between; gap: 30px; }
     .imza-kutu, .imza-kutu-inline { text-align: center; min-width: 150px; }
     .imza-ad { font-weight: bold; margin-top: 30px; }
     .imza-unvan { font-size: 9pt; }
     .madde { margin-bottom: 10px; line-height: 1.45; page-break-inside: avoid; break-inside: avoid; }
     .madde p { margin-top: 4px; text-align: justify; }
+    /* Teklif Tutanağı tipografisi — resmi Excel şablonuyla eşitlendi:
+       gerçek Times New Roman, üstbilgi/başlık 14pt kalın, gövde 12pt */
+    .teklif-tutanagi { font-family: 'Times New Roman', Times, serif; font-size: 12pt; }
+    .teklif-tutanagi .belge-baslik { font-size: 14pt; }
+    .teklif-tutanagi .veri-tablo th, .teklif-tutanagi .veri-tablo td { font-size: 12pt; }
+    .teklif-tutanagi .gorevli-blok { display: flex; align-items: flex-start; gap: 6px; }
+    .teklif-tutanagi .gorevli-etiket { text-align: left; white-space: nowrap; }
+    .teklif-tutanagi .gorevli-etiket .etiket { font-weight: bold; line-height: 1.6; }
+    .teklif-tutanagi .gorevli-noktalar { line-height: 1.6; }
+    .teklif-tutanagi .gorevli-kisiler { display: flex; gap: 64px; }
+    .teklif-tutanagi .gorevli-kisi { text-align: center; line-height: 1.6; }
+    /* Sözleşme tipografisi — resmi Word şablonuyla eşitlendi:
+       Times New Roman 11pt, 1.15 satır aralığı, madde öncesi 6pt boşluk */
+    .sozlesme { font-family: 'Times New Roman', Times, serif; font-size: 11pt; }
     .sozlesme .madde p, .sozlesme .madde { font-size: 11pt; }
-    .sozlesme .madde { margin-bottom: 6px; line-height: 1.3; page-break-inside: avoid; break-inside: avoid; }
-    .sozlesme .madde p { margin-top: 2px; }
-    .sozlesme-imza { margin-top: 15px; }
+    .sozlesme .madde { margin-bottom: 6pt; line-height: 1.15; page-break-inside: avoid; break-inside: avoid; }
+    .sozlesme .madde p { margin-top: 2pt; }
+    .sozlesme-imza { margin-top: 10px; }
+    .sozlesme-sayfa-footer { padding-top: 6px; }
+    .imza-bosluk { margin-top: 55px; }
     .hakedis-tablo td:first-child { width: 30px; text-align: center; font-weight: bold; }
     small { font-size: 8pt; }
     .sozlesme-sayfa-tablo { width: 100%; border-collapse: collapse; }
@@ -1090,34 +1095,116 @@ function belgeYazdir(html, landscape = false, sozlesme = false) {
       line-height: 1.4;
       padding: 3px 0 5px;
       margin-bottom: 4px;
+    }`;
+}
+
+// Sözleşmenin sayfa başına tekrar eden üstbilgi/imza bloğunu (thead/tfoot)
+// yazdırmada aktif eden ortak @media print kuralları.
+function belgeSayfalamaCSS() {
+  return `
+    .sozlesme-sayfa-tablo thead { display: table-header-group; }
+    .sozlesme-sayfa-tablo tbody { display: table-row-group; }
+    .sozlesme-sayfa-tablo tfoot { display: table-footer-group; }`;
+}
+
+// Teklif Tutanağı'nda görevli adının, paragraftaki "tarafımca/tarafımızca"
+// kelimesinin hizasından başlaması isteniyor. Sabit bir piksel değeri yazmak
+// yerine (font/ölçek/metin uzunluğuna göre kayar), kelimenin gerçek konumu
+// verilen DOM kökünde anlık ölçülüp .gorevli-kisiler o kadar kaydırılır.
+function hizalaGorevliIsmi(root) {
+  try {
+    const box = (root.querySelectorAll ? root : document).querySelector
+      ? root.querySelector('.teklif-tutanagi') || root
+      : root;
+    const paragraflar = box.querySelectorAll ? box.querySelectorAll('p') : [];
+    let p = null;
+    for (const aday of paragraflar) {
+      if (/taraf[ıi]m(ız)?ca/.test(aday.textContent)) { p = aday; break; }
     }
+    const kisiler = box.querySelector ? box.querySelector('.gorevli-kisiler') : null;
+    if (!p || !kisiler) return;
+
+    const doc = p.ownerDocument;
+    const walker = doc.createTreeWalker(p, NodeFilter.SHOW_TEXT);
+    let node, hedefNode = null, idx = -1;
+    while ((node = walker.nextNode())) {
+      const m = node.textContent.match(/taraf[ıi]m(ız)?ca/);
+      if (m) { hedefNode = node; idx = m.index; break; }
+    }
+    if (!hedefNode) return;
+
+    const range = doc.createRange();
+    range.setStart(hedefNode, idx);
+    range.setEnd(hedefNode, idx + 1);
+    const kelimeRect = range.getBoundingClientRect();
+    const kisilerRect = kisiler.getBoundingClientRect();
+    if (!kelimeRect.width && !kelimeRect.height) return;
+
+    const mevcutMargin = parseFloat(getComputedStyle(kisiler).marginLeft) || 0;
+    const fontPx = parseFloat(getComputedStyle(kisiler).fontSize) || 16;
+    // Kullanıcı geri bildirimiyle ince ayar: harf ortalama genişliği ~0.5em kabul
+    // edilip 10 harf kadar sola çekiliyor (kelimenin TAM başına değil, biraz önüne).
+    const harfGenisligi = fontPx * 0.5;
+    const fark = (kelimeRect.left - kisilerRect.left) + mevcutMargin - (harfGenisligi * 10);
+    kisiler.style.marginLeft = Math.max(0, fark) + 'px';
+  } catch (e) { /* hizalama kozmetik bir iyileştirme, hata belgeyi bozmasın */ }
+}
+
+// dosyaAdi verilirse yazdırma penceresinin başlığı olur; tarayıcının
+// "PDF olarak kaydet" hedefinde dosya adı buradan otomatik dolar.
+function belgeYazdir(html, landscape = false, sozlesme = false, dosyaAdi = '') {
+  const win = window.open('', '_blank');
+  const pageSize = landscape
+    ? 'size: A4 landscape; margin: 8mm 10mm;'
+    : sozlesme
+      // Resmi Word sözleşme şablonuyla aynı sayfa düzeni (üst 10 / alt 20 / yan 25 mm)
+      ? 'size: A4 portrait; margin: 10mm 25mm 20mm 25mm;'
+      : 'size: A4 portrait; margin: 10mm 15mm;';
+  const maxWidth = landscape ? '280mm' : '210mm';
+  const bodyPadding = landscape ? '8mm 10mm' : '10mm 15mm';
+
+  win.document.write(`<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>${escHtml(dosyaAdi) || 'Belge Yazdır'}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Serif', 'Times New Roman', serif; font-size: 9pt; color: #000; padding: ${bodyPadding}; }
+    .belge { max-width: ${maxWidth}; margin: 0 auto; }
+    ${belgeOrtakCSS()}
     @media print {
-      body { 
-        padding: 0 !important; 
-        zoom: 0.95;
+      body {
+        padding: 0 !important;
+        zoom: ${sozlesme ? 1 : 0.95};
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
       @page { ${pageSize} }
-      .sozlesme-sayfa-tablo thead { display: table-header-group; }
-      .sozlesme-sayfa-tablo tbody { display: table-row-group; }
+      ${belgeSayfalamaCSS()}
     }
   </style>
 </head>
 <body>${html}</body>
 </html>`);
   win.document.close();
-  setTimeout(() => win.print(), 1500);
+  setTimeout(() => {
+    hizalaGorevliIsmi(win.document);
+    win.print();
+  }, 1500);
 }
 
-function belgePdfIndir(html, landscape = false, sozlesme = false, dosyaAdi = 'belge') {
+function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge') {
   // A4 @96dpi: portrait=794px(210mm), landscape=1123px(297mm)
   const pageW = landscape ? 1123 : 794;
-  const bodyPadding = landscape ? '38px 57px' : sozlesme ? '38px 57px' : '57px 76px';
+  const bodyPadding = landscape ? '38px 57px' : '57px 76px';
 
   const container = document.createElement('div');
   container.style.cssText = `position:fixed;left:-9999px;top:0;width:${pageW}px;`;
   container.innerHTML = `
+    <style>${belgeOrtakCSS()}</style>
     <div style="font-family:Times New Roman,serif;font-size:9.5pt;color:#000;padding:${bodyPadding};width:${pageW}px;box-sizing:border-box;">
       ${html}
     </div>`;
@@ -1131,6 +1218,8 @@ function belgePdfIndir(html, landscape = false, sozlesme = false, dosyaAdi = 'be
       cell.style.border = '1px solid #000';
     });
   });
+
+  hizalaGorevliIsmi(container);
 
   const opts = {
     margin: 0,

@@ -263,52 +263,29 @@ async function cokluBelgeIndir(secilen) {
   for (const belgeId of secilen) {
     const b = belgeMap[belgeId];
     if (!b) continue;
-    parts.push({ html: b.render(), landscape: b.landscape || false });
+    parts.push({ html: b.render(), landscape: b.landscape || false, sozlesme: b.sozlesme || false });
   }
   if (!parts.length) return;
 
   const win = window.open('', '_blank');
   if (!win) { showToast('Açılır pencere engellendi. Tarayıcı ayarlarından izin verin.', 'error'); return; }
 
-  const sections = parts.map(b =>
-    `<div class="belge-bolum ${b.landscape ? 'pg-yatay' : 'pg-dikey'}">${b.html}</div>`
-  ).join('');
+  const sections = parts.map(b => {
+    const sinif = b.sozlesme ? 'pg-sozlesme' : (b.landscape ? 'pg-yatay' : 'pg-dikey');
+    return `<div class="belge-bolum ${sinif}">${b.html}</div>`;
+  }).join('');
 
   const css = `
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family: "Times New Roman", serif; font-size:9pt; color:#000; background:#fff; }
     .belge-bolum { padding:10mm 14mm; }
     .pg-yatay { padding:8mm 10mm; }
+    .pg-sozlesme { padding:10mm 25mm 20mm 25mm; }
     .belge { width:100%; }
-    .belge-ust { text-align:center; margin-bottom:10px; }
-    .belge-baslik { text-align:center; font-size:13pt; margin:8px 0; font-weight:bold; }
-    .bilgi-tablo { width:100%; border-collapse:collapse; margin-bottom:8px; }
-    .bilgi-tablo td { padding:2px 5px; vertical-align:top; }
-    .bilgi-tablo .etiket { font-weight:bold; }
-    .veri-tablo { width:100%; border-collapse:collapse; margin-bottom:8px; border:0.5mm solid #000; }
-    .veri-tablo th, .veri-tablo td { border:0.5mm solid #000; padding:2px 4px; text-align:left; font-size:9pt; }
-    .veri-tablo th { background:#f0f0f0; text-align:center; font-weight:bold; }
-    .rakam { text-align:right !important; } .merkez { text-align:center !important; } .bold { font-weight:bold; }
-    .toplam-satir td { font-weight:bold; background:#f9f9f9; }
-    .aciklama-metin { margin:12px 0; line-height:1.5; text-align:justify; }
-    .imzalar-yan { display:flex; justify-content:space-around; gap:30px; }
-    .imza-kutu, .imza-kutu-inline { text-align:center; min-width:150px; }
-    .imza-ad { font-weight:bold; margin-top:30px; } .imza-unvan { font-size:9pt; }
-    .madde { margin-bottom:10px; line-height:1.45; page-break-inside:avoid; break-inside:avoid; }
-    .madde p { margin-top:4px; text-align:justify; }
-    .sozlesme .madde p, .sozlesme .madde { font-size:11pt; }
-    .sozlesme .madde { margin-bottom:6px; line-height:1.3; }
-    .tutanak { font-size:10.5pt; }
-    .tutanak .bilgi-tablo td { font-size:10.5pt; padding:3px 5px; }
-    .tutanak .belge-baslik { font-size:12.5pt; }
-    .sozlesme-imza { margin-top:15px; }
-    .hakedis-tablo td:first-child { width:30px; text-align:center; font-weight:bold; }
-    small { font-size:8pt; }
-    .sozlesme-sayfa-tablo { width:100%; border-collapse:collapse; }
-    .sozlesme-sayfa-tablo > tbody > tr > td { padding:0; }
-    .sozlesme-sayfa-header { display:block; text-align:center; font-weight:bold; font-size:9.5pt; line-height:1.4; padding:3px 0 5px; margin-bottom:4px; }
+    ${belgeOrtakCSS()}
     @page dikey  { size: A4 portrait;  margin: 10mm 14mm; }
     @page yatay  { size: A4 landscape; margin: 8mm 10mm; }
+    @page sozlesmesayfa { size: A4 portrait; margin: 10mm 25mm 20mm 25mm; }
     @media print {
       body { 
         padding:0 !important; 
@@ -319,12 +296,13 @@ async function cokluBelgeIndir(secilen) {
       .belge-bolum { padding:0 !important; }
       .pg-dikey { page: dikey; break-before: page; }
       .pg-yatay { page: yatay; break-before: page; }
-      .pg-dikey:first-child, .pg-yatay:first-child { break-before: avoid; }
-      .sozlesme-sayfa-tablo thead { display:table-header-group; }
-      .sozlesme-sayfa-tablo tbody { display:table-row-group; }
+      /* Sözleşme, resmi Word şablonuyla eşit kenar boşluğu ve %100 ölçek kullanır */
+      .pg-sozlesme { page: sozlesmesayfa; break-before: page; zoom: 1; }
+      .pg-dikey:first-child, .pg-yatay:first-child, .pg-sozlesme:first-child { break-before: avoid; }
+      ${belgeSayfalamaCSS()}
     }`;
 
-  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${proje.isAdi || 'Belgeler'}</title><style>${css}</style></head><body>${sections}</body></html>`);
+  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${escHtml(proje.isAdi || 'Belgeler')}</title><style>${css}</style></head><body>${sections}</body></html>`);
   win.document.close();
   setTimeout(() => win.print(), 800);
 }
@@ -430,7 +408,7 @@ function cokluGerceklestirmeciBelgeIndir(secilen) {
     'yaklasik-maliyet': { render: () => renderYaklasikMaliyet(proje, referans), landscape: true },
     'teklif-tutanagi':  { render: () => renderTeklifTutanagi(proje, referans), landscape: true },
     'teknik-sartname':  { render: () => renderTeknikSartname(proje, referans), landscape: false },
-    'sozlesme':         { render: () => renderSozlesme(proje, referans), landscape: false },
+    'sozlesme':         { render: () => renderSozlesme(proje, referans), landscape: false, sozlesme: true },
     'bitti-tutanagi':   { render: () => renderBittiTutanagi(proje, referans), landscape: false },
     'muayene-kabul':    { render: () => renderMuayeneKabulTutanagi(proje, referans), landscape: false },
     'hakedis-raporu':   { render: () => renderHakedisRaporu(proje, referans), landscape: false }
@@ -440,52 +418,29 @@ function cokluGerceklestirmeciBelgeIndir(secilen) {
   for (const belgeId of secilen) {
     const b = belgeMap[belgeId];
     if (!b) continue;
-    parts.push({ html: b.render(), landscape: b.landscape });
+    parts.push({ html: b.render(), landscape: b.landscape, sozlesme: b.sozlesme || false });
   }
   if (!parts.length) return;
 
   const win = window.open('', '_blank');
   if (!win) { showToast('Açılır pencere engellendi. Tarayıcı ayarlarından izin verin.', 'error'); return; }
 
-  const sections = parts.map(b =>
-    `<div class="belge-bolum ${b.landscape ? 'pg-yatay' : 'pg-dikey'}">${b.html}</div>`
-  ).join('');
+  const sections = parts.map(b => {
+    const sinif = b.sozlesme ? 'pg-sozlesme' : (b.landscape ? 'pg-yatay' : 'pg-dikey');
+    return `<div class="belge-bolum ${sinif}">${b.html}</div>`;
+  }).join('');
 
   const css = `
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family: "Times New Roman", serif; font-size:9pt; color:#000; background:#fff; }
     .belge-bolum { padding:10mm 14mm; }
     .pg-yatay { padding:8mm 10mm; }
+    .pg-sozlesme { padding:10mm 25mm 20mm 25mm; }
     .belge { width:100%; }
-    .belge-ust { text-align:center; margin-bottom:10px; }
-    .belge-baslik { text-align:center; font-size:13pt; margin:8px 0; font-weight:bold; }
-    .bilgi-tablo { width:100%; border-collapse:collapse; margin-bottom:8px; }
-    .bilgi-tablo td { padding:2px 5px; vertical-align:top; }
-    .bilgi-tablo .etiket { font-weight:bold; }
-    .veri-tablo { width:100%; border-collapse:collapse; margin-bottom:8px; border:0.5mm solid #000; }
-    .veri-tablo th, .veri-tablo td { border:0.5mm solid #000; padding:2px 4px; text-align:left; font-size:9pt; }
-    .veri-tablo th { background:#f0f0f0; text-align:center; font-weight:bold; }
-    .rakam { text-align:right !important; } .merkez { text-align:center !important; } .bold { font-weight:bold; }
-    .toplam-satir td { font-weight:bold; background:#f9f9f9; }
-    .aciklama-metin { margin:12px 0; line-height:1.5; text-align:justify; }
-    .imzalar-yan { display:flex; justify-content:space-around; gap:30px; }
-    .imza-kutu, .imza-kutu-inline { text-align:center; min-width:150px; }
-    .imza-ad { font-weight:bold; margin-top:30px; } .imza-unvan { font-size:9pt; }
-    .madde { margin-bottom:10px; line-height:1.45; page-break-inside:avoid; break-inside:avoid; }
-    .madde p { margin-top:4px; text-align:justify; }
-    .sozlesme .madde p, .sozlesme .madde { font-size:11pt; }
-    .sozlesme .madde { margin-bottom:6px; line-height:1.3; }
-    .tutanak { font-size:10.5pt; }
-    .tutanak .bilgi-tablo td { font-size:10.5pt; padding:3px 5px; }
-    .tutanak .belge-baslik { font-size:12.5pt; }
-    .sozlesme-imza { margin-top:15px; }
-    .hakedis-tablo td:first-child { width:30px; text-align:center; font-weight:bold; }
-    small { font-size:8pt; }
-    .sozlesme-sayfa-tablo { width:100%; border-collapse:collapse; }
-    .sozlesme-sayfa-tablo > tbody > tr > td { padding:0; }
-    .sozlesme-sayfa-header { display:block; text-align:center; font-weight:bold; font-size:9.5pt; line-height:1.4; padding:3px 0 5px; margin-bottom:4px; }
+    ${belgeOrtakCSS()}
     @page dikey  { size: A4 portrait;  margin: 10mm 14mm; }
     @page yatay  { size: A4 landscape; margin: 8mm 10mm; }
+    @page sozlesmesayfa { size: A4 portrait; margin: 10mm 25mm 20mm 25mm; }
     @media print {
       body { 
         padding:0 !important; 
@@ -496,12 +451,13 @@ function cokluGerceklestirmeciBelgeIndir(secilen) {
       .belge-bolum { padding:0 !important; }
       .pg-dikey { page: dikey; break-before: page; }
       .pg-yatay { page: yatay; break-before: page; }
-      .pg-dikey:first-child, .pg-yatay:first-child { break-before: avoid; }
-      .sozlesme-sayfa-tablo thead { display:table-header-group; }
-      .sozlesme-sayfa-tablo tbody { display:table-row-group; }
+      /* Sözleşme, resmi Word şablonuyla eşit kenar boşluğu ve %100 ölçek kullanır */
+      .pg-sozlesme { page: sozlesmesayfa; break-before: page; zoom: 1; }
+      .pg-dikey:first-child, .pg-yatay:first-child, .pg-sozlesme:first-child { break-before: avoid; }
+      ${belgeSayfalamaCSS()}
     }`;
 
-  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${proje.isAdi || 'Belgeler'}</title><style>${css}</style></head><body>${sections}</body></html>`);
+  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${escHtml(proje.isAdi || 'Belgeler')}</title><style>${css}</style></head><body>${sections}</body></html>`);
   win.document.close();
   setTimeout(() => win.print(), 800);
 }
@@ -1108,7 +1064,7 @@ function renderVeriGirisPage() {
   const kalemler = proje.isTuru === 'Yapım İşi' ? '' : proje.isKalemleri.map((k, i) => `
     <tr>
       <td class="merkez">${i + 1}</td>
-      <td><input type="text" value="${k.ad}" data-field="isKalemleri" data-index="${i}" data-sub="ad" onchange="onKalemChange(this)"></td>
+      <td><input type="text" value="${escAttr(k.ad)}" data-field="isKalemleri" data-index="${i}" data-sub="ad" onchange="onKalemChange(this)"></td>
       <td><input type="number" value="${k.miktar}" data-field="isKalemleri" data-index="${i}" data-sub="miktar" onchange="onKalemChange(this)" style="width:80px"></td>
       <td><select data-field="isKalemleri" data-index="${i}" data-sub="birim" onchange="onKalemChange(this)">
         <option value="">--</option>
@@ -1152,7 +1108,7 @@ function renderVeriGirisPage() {
               const bf = f.fiyatlar[ki] || 0;
               const toplam = bf * (parseFloat(k.miktar) || 0);
               return `<tr>
-                <td>${k.ad || '-'}</td>
+                <td>${escHtml(k.ad || '-')}</td>
                 <td><input type="number" value="${bf || ''}" data-firma="ym" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
                 <td class="rakam">${toplam > 0 ? formatCurrency(toplam) : '-'}</td>
               </tr>`;
@@ -1201,7 +1157,7 @@ function renderVeriGirisPage() {
               const bf = f.fiyatlar[ki] || 0;
               const toplam = bf * (parseFloat(k.miktar) || 0);
               return `<tr>
-                <td>${k.ad || '-'}</td>
+                <td>${escHtml(k.ad || '-')}</td>
                 <td><input type="number" value="${bf || ''}" data-firma="teklif" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
                 <td class="rakam">${toplam > 0 ? formatCurrency(toplam) : '-'}</td>
               </tr>`;
@@ -2466,23 +2422,65 @@ async function renderBelgelerPage() {
           </div>`;
         return;
       }
-      listEl.innerHTML = `<div class="ky-proje-grid">
-        ${projeler.map(p => {
-          const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
-          return `<div class="ky-proje-item">
-            <div class="ky-proje-info">
-              <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
-              <div class="ky-proje-meta">
-                <span class="ky-proje-date">&#128197; ${tarih}</span>
-                ${getIsTuruBadge(p.isTuru)}
-              </div>
+
+      const projeKartBelge = (p) => {
+        const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
+        return `<div class="ky-proje-item">
+          <div class="ky-proje-info">
+            <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
+            <div class="ky-proje-meta">
+              <span class="ky-proje-date">&#128197; ${tarih}</span>
+              ${getIsTuruBadge(p.isTuru)}
+              ${getStatusBadge(p.status || 'taslak')}
             </div>
-            <div class="ky-proje-actions">
-              <button class="ky-btn-open" onclick="belgelerProjeAc('${p.id}')">Belge Oluştur</button>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>`;
+          </div>
+          <div class="ky-proje-actions">
+            <button class="ky-btn-open" onclick="belgelerProjeAc('${p.id}')">Belge Oluştur</button>
+          </div>
+        </div>`;
+      };
+
+      const renderBelgelerProjeGrid = (aramaMetni, durumFiltre, siralamaAnahtari) => {
+        const ara = aramaMetni.trim().toLocaleLowerCase('tr');
+        let filtrelenen = projeler;
+        if (durumFiltre !== 'hepsi') filtrelenen = filtrelenen.filter(p => (p.status || 'taslak') === durumFiltre);
+        if (ara) filtrelenen = filtrelenen.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara));
+        filtrelenen = siralaProjeler(filtrelenen, siralamaAnahtari);
+        if (filtrelenen.length === 0) {
+          return `<div style="text-align:center;padding:30px;color:#9ca3af;font-size:13px">Arama/filtre ile eşleşen proje yok.</div>`;
+        }
+        return `<div class="ky-proje-grid">${filtrelenen.map(projeKartBelge).join('')}</div>`;
+      };
+
+      listEl.innerHTML = `
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <input id="belgelerProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." oninput="belgelerProjeFiltrele()"
+            style="flex:1;min-width:200px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
+          <select id="belgelerProjeDurum" onchange="belgelerProjeFiltrele()"
+            style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
+            <option value="hepsi">Tüm Durumlar</option>
+            <option value="taslak">Taslak</option>
+            <option value="geri_gonderildi">Geri Gönderildi</option>
+            <option value="gonderildi">Gönderildi</option>
+            <option value="onaylandi">Onaylandı</option>
+            <option value="arsivlendi">Arşivlendi</option>
+          </select>
+          <select id="belgelerProjeSirala" onchange="belgelerProjeFiltrele()"
+            style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
+            <option value="tarih-yeni">Tarihe göre (Yeni → Eski)</option>
+            <option value="tarih-eski">Tarihe göre (Eski → Yeni)</option>
+            <option value="isim-az">İsme göre (A → Z)</option>
+            <option value="isim-za">İsme göre (Z → A)</option>
+          </select>
+        </div>
+        <div id="belgelerProjeGrid">${renderBelgelerProjeGrid('', 'hepsi', 'tarih-yeni')}</div>`;
+
+      window.belgelerProjeFiltrele = () => {
+        const ara = document.getElementById('belgelerProjeArama').value;
+        const durum = document.getElementById('belgelerProjeDurum').value;
+        const sirala = document.getElementById('belgelerProjeSirala').value;
+        document.getElementById('belgelerProjeGrid').innerHTML = renderBelgelerProjeGrid(ara, durum, sirala);
+      };
     } catch(e) {
       const listEl = document.getElementById('belgelerProjeList');
       if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${e.message}</div>`;
@@ -2569,6 +2567,7 @@ async function renderBelgelerPage() {
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
+  if (currentBelge === 'teklif-tutanagi') requestAnimationFrame(() => hizalaGorevliIsmi(document));
 }
 
 async function belgelerProjeAc(projeId) {
@@ -2775,7 +2774,15 @@ function pdfIndirBelge() {
     case 'hakedis-raporu':   html = renderHakedisRaporu(proje, referans);   break;
   }
   const dosyaAdi = `${proje.isAdi || 'Belge'} - ${belgeAdlari[currentBelge] || currentBelge}`;
-  belgePdfIndir(html, landscape, sozlesme, dosyaAdi);
+  // Sözleşme, sayfa başına tekrar eden üstbilgi/imza bloğu içerdiği için
+  // html2canvas tabanlı PDF motoruyla doğru üretilemiyor; tarayıcının kendi
+  // yazdırma motoruna yönlendiriliyor (çıktı "Yazdır" ile birebir aynı olur).
+  if (sozlesme) {
+    showToast('Yazdırma penceresinde Hedef olarak "PDF olarak kaydet" seçin.', 'info', 6000);
+    belgeYazdir(html, landscape, true, dosyaAdi);
+    return;
+  }
+  belgePdfIndir(html, landscape, dosyaAdi);
 }
 
 // ===================== VERİ MERKEZİ SAYFASI =====================
@@ -4235,12 +4242,13 @@ async function renderProjelerimPage() {
       </div>`;
     };
 
-    const renderProjelerimListe = (aramaMetni, durumFiltre) => {
+    const renderProjelerimListe = (aramaMetni, durumFiltre, siralamaAnahtari) => {
       const ara = aramaMetni.trim().toLocaleLowerCase('tr');
       return bolumler.map(b => {
         if (durumFiltre !== 'hepsi' && !b.keys.includes(durumFiltre)) return '';
         let grup = projeler.filter(p => b.keys.includes(p.status || 'taslak'));
         if (ara) grup = grup.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara));
+        grup = siralaProjeler(grup, siralamaAnahtari);
         return `<div class="ky-bolum-kart" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
           <div class="ky-bolum-baslik" style="padding:12px 16px;background:${b.renk};border-bottom:1px solid ${b.kenar};font-weight:700;font-size:13px;color:${b.yaziRenk}">
             ${b.baslik} (${grup.length})
@@ -4267,13 +4275,21 @@ async function renderProjelerimPage() {
           <option value="geri_gonderildi">İşlem Bekleyenler</option>
           <option value="gonderildi">Onaylananlar</option>
         </select>
+        <select id="projelerimSirala" onchange="projelerimFiltrele()"
+          style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
+          <option value="tarih-yeni">Tarihe göre (Yeni → Eski)</option>
+          <option value="tarih-eski">Tarihe göre (Eski → Yeni)</option>
+          <option value="isim-az">İsme göre (A → Z)</option>
+          <option value="isim-za">İsme göre (Z → A)</option>
+        </select>
       </div>
-      <div id="projelerimListe">${renderProjelerimListe('', 'hepsi')}</div>`;
+      <div id="projelerimListe">${renderProjelerimListe('', 'hepsi', 'tarih-yeni')}</div>`;
 
     window.projelerimFiltrele = () => {
       const ara = document.getElementById('projelerimArama').value;
       const durum = document.getElementById('projelerimDurum').value;
-      document.getElementById('projelerimListe').innerHTML = renderProjelerimListe(ara, durum);
+      const sirala = document.getElementById('projelerimSirala').value;
+      document.getElementById('projelerimListe').innerHTML = renderProjelerimListe(ara, durum, sirala);
     };
   } catch(e) {
     main.innerHTML = `<div class="page-header"><h2>Projelerim</h2></div><div style="color:red;padding:20px">Hata: ${e.message}</div>`;
@@ -4815,16 +4831,46 @@ async function renderGerceklestirmeciBelgelerPage() {
       return;
     }
 
-    let html = '';
-    if (aktif.length > 0) {
-      html += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Aktif Projeler</h3>
-        <div class="ky-proje-grid" style="margin-bottom:28px">${aktif.map(p => projeKarti(p, false)).join('')}</div>`;
-    }
-    if (onaylananlar.length > 0) {
-      html += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Onayladıklarım</h3>
-        <div class="ky-proje-grid">${onaylananlar.map(p => projeKarti(p, true)).join('')}</div>`;
-    }
-    listEl.innerHTML = html;
+    const renderGrupHTML = (aramaMetni, siralamaAnahtari) => {
+      const ara = aramaMetni.trim().toLocaleLowerCase('tr');
+      let eslesenAktif = ara ? aktif.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara)) : aktif;
+      let eslesenOnaylanan = ara ? onaylananlar.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara)) : onaylananlar;
+      eslesenAktif = siralaProjeler(eslesenAktif, siralamaAnahtari);
+      eslesenOnaylanan = siralaProjeler(eslesenOnaylanan, siralamaAnahtari);
+      if (eslesenAktif.length === 0 && eslesenOnaylanan.length === 0) {
+        return `<div style="text-align:center;padding:30px;color:#9ca3af;font-size:13px">Arama ile eşleşen proje yok.</div>`;
+      }
+      let h = '';
+      if (eslesenAktif.length > 0) {
+        h += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Aktif Projeler</h3>
+          <div class="ky-proje-grid" style="margin-bottom:28px">${eslesenAktif.map(p => projeKarti(p, false)).join('')}</div>`;
+      }
+      if (eslesenOnaylanan.length > 0) {
+        h += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Onayladıklarım</h3>
+          <div class="ky-proje-grid">${eslesenOnaylanan.map(p => projeKarti(p, true)).join('')}</div>`;
+      }
+      return h;
+    };
+
+    listEl.innerHTML = `
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <input id="gcBelgeProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." oninput="gcBelgeProjeFiltrele()"
+          style="flex:1;min-width:200px;max-width:400px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
+        <select id="gcBelgeProjeSirala" onchange="gcBelgeProjeFiltrele()"
+          style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
+          <option value="tarih-yeni">Tarihe göre (Yeni → Eski)</option>
+          <option value="tarih-eski">Tarihe göre (Eski → Yeni)</option>
+          <option value="isim-az">İsme göre (A → Z)</option>
+          <option value="isim-za">İsme göre (Z → A)</option>
+        </select>
+      </div>
+      <div id="gcBelgeProjeGrup">${renderGrupHTML('', 'tarih-yeni')}</div>`;
+
+    window.gcBelgeProjeFiltrele = () => {
+      const ara = document.getElementById('gcBelgeProjeArama').value;
+      const sirala = document.getElementById('gcBelgeProjeSirala').value;
+      document.getElementById('gcBelgeProjeGrup').innerHTML = renderGrupHTML(ara, sirala);
+    };
   } catch(e) {
     const listEl = document.getElementById('gerceklestirmeciBelgeList');
     if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${e.message}</div>`;
@@ -4913,6 +4959,7 @@ function renderGerceklestirmeciBelgelerView(main) {
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
+  if (currentGerceklestirmeciBelge === 'teklif-tutanagi') requestAnimationFrame(() => hizalaGorevliIsmi(document));
 }
 
 async function gcOnayBilgiKaydet() {
@@ -5004,7 +5051,15 @@ function gerceklestirmeciBelgePdfIndir() {
     case 'hakedis-raporu':   html = renderHakedisRaporu(proje, referans);   break;
   }
   const dosyaAdi = `${proje.isAdi || 'Belge'} - ${belgeAdlari[currentGerceklestirmeciBelge] || currentGerceklestirmeciBelge}`;
-  belgePdfIndir(html, landscape, sozlesme, dosyaAdi);
+  // Sözleşme, sayfa başına tekrar eden üstbilgi/imza bloğu içerdiği için
+  // html2canvas tabanlı PDF motoruyla doğru üretilemiyor; tarayıcının kendi
+  // yazdırma motoruna yönlendiriliyor (çıktı "Yazdır" ile birebir aynı olur).
+  if (sozlesme) {
+    showToast('Yazdırma penceresinde Hedef olarak "PDF olarak kaydet" seçin.', 'info', 6000);
+    belgeYazdir(html, landscape, true, dosyaAdi);
+    return;
+  }
+  belgePdfIndir(html, landscape, dosyaAdi);
 }
 
 // ===================== PROJE ÖZET SAYFASI (GERÇEKLEŞTİRMECİ) =====================
@@ -5026,14 +5081,14 @@ function renderProjeOzetPage() {
   const satir = (label, value) => value ? `<tr><td style="color:#6b7280;padding:8px 12px;font-size:13px;width:45%">${label}</td><td style="padding:8px 12px;font-size:13px;font-weight:500">${value}</td></tr>` : '';
   const kart = (baslik, icerik) => `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden"><div style="padding:12px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#374151">${baslik}</div>${icerik}</div>`;
 
-  const ymGorevliler = p.ymGorevliler.slice(0, p.ymGorevliSayisi || 1).filter(g => g.ad).map(g => `<tr><td style="padding:6px 12px;font-size:13px">${g.ad}</td><td style="padding:6px 12px;font-size:13px;color:#6b7280">${g.unvan}</td></tr>`).join('');
-  const dtGorevliler = p.dtGorevliler.slice(0, p.dtGorevliSayisi || 1).filter(g => g.ad).map(g => `<tr><td style="padding:6px 12px;font-size:13px">${g.ad}</td><td style="padding:6px 12px;font-size:13px;color:#6b7280">${g.unvan}</td></tr>`).join('');
+  const ymGorevliler = p.ymGorevliler.slice(0, p.ymGorevliSayisi || 1).filter(g => g.ad).map(g => `<tr><td style="padding:6px 12px;font-size:13px">${escHtml(g.ad)}</td><td style="padding:6px 12px;font-size:13px;color:#6b7280">${escHtml(g.unvan)}</td></tr>`).join('');
+  const dtGorevliler = p.dtGorevliler.slice(0, p.dtGorevliSayisi || 1).filter(g => g.ad).map(g => `<tr><td style="padding:6px 12px;font-size:13px">${escHtml(g.ad)}</td><td style="padding:6px 12px;font-size:13px;color:#6b7280">${escHtml(g.unvan)}</td></tr>`).join('');
 
   const ymFirmalar = p.ymFirmalar.filter(f => f.ad);
   const ymFirmaRows = ymFirmalar.map(f => {
     const toplam = hesaplaYMFirmaToplam(f, kalemler);
     return `<tr>
-      <td style="padding:7px 12px;font-size:13px">${f.ad}</td>
+      <td style="padding:7px 12px;font-size:13px">${escHtml(f.ad)}</td>
       <td style="padding:7px 12px;font-size:13px;text-align:right">${formatCurrency(toplam)} TL</td>
     </tr>`;
   }).join('');
@@ -5044,7 +5099,7 @@ function renderProjeOzetPage() {
     const toplam = hesaplaTeklifFirmaToplam(f, kalemler);
     const kazanan = gercekIndex === kazananIndex;
     return `<tr style="${kazanan ? 'background:#f0fdf4;font-weight:600' : ''}">
-      <td style="padding:7px 12px;font-size:13px">${kazanan ? '✓ ' : ''}${f.ad}</td>
+      <td style="padding:7px 12px;font-size:13px">${kazanan ? '✓ ' : ''}${escHtml(f.ad)}</td>
       <td style="padding:7px 12px;font-size:13px;text-align:right">${formatCurrency(toplam)} TL</td>
     </tr>`;
   }).join('');
@@ -5073,10 +5128,10 @@ function renderProjeOzetPage() {
 
       ${kart('📅 Onay ve Sözleşme Bilgileri', `<table style="width:100%;border-collapse:collapse">
         ${satir('Y.M. Onay Tarihi', formatDate(p.ymOnayTarihi))}
-        ${satir('Y.M. Onay Sayısı', p.ymOnayNo)}
+        ${satir('Y.M. Onay Sayısı', escHtml(p.ymOnayNo))}
         ${satir('D.T. Onay Tarihi', formatDate(p.dtOnayTarihi))}
-        ${satir('D.T. Onay Sayısı', p.dtOnayNo)}
-        ${satir('Onaylayan Amir', p.onaylayanAmir?.ad ? p.onaylayanAmir.ad + ' / ' + p.onaylayanAmir.unvan : '')}
+        ${satir('D.T. Onay Sayısı', escHtml(p.dtOnayNo))}
+        ${satir('Onaylayan Amir', p.onaylayanAmir?.ad ? escHtml(p.onaylayanAmir.ad + ' / ' + p.onaylayanAmir.unvan) : '')}
         ${satir('Sözleşme Tarihi', formatDate(p.sozlesmeTarihi))}
         ${satir('İş Süresi', p.isSuresi ? p.isSuresi + ' Takvim Günü' : '')}
         ${satir('Fiili Bitim Tarihi', formatDate(p.fiiliBitimTarihi))}
@@ -5093,7 +5148,7 @@ function renderProjeOzetPage() {
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#f3f4f6"><th style="padding:8px 12px;font-size:12px;text-align:left;color:#6b7280">Firma</th><th style="padding:8px 12px;font-size:12px;text-align:right;color:#6b7280">Teklif Tutarı</th></tr></thead>
           <tbody>${firmaTeklifRows}</tbody>
-          ${kazananFirma?.ad ? `<tfoot><tr style="background:#f0fdf4;border-top:2px solid #bbf7d0"><td style="padding:8px 12px;font-size:13px;font-weight:700;color:#15803d">✓ Kazanan Firma</td><td style="padding:8px 12px;font-size:13px;font-weight:700;color:#15803d;text-align:right">${kazananFirma.ad}</td></tr></tfoot>` : ''}
+          ${kazananFirma?.ad ? `<tfoot><tr style="background:#f0fdf4;border-top:2px solid #bbf7d0"><td style="padding:8px 12px;font-size:13px;font-weight:700;color:#15803d">✓ Kazanan Firma</td><td style="padding:8px 12px;font-size:13px;font-weight:700;color:#15803d;text-align:right">${escHtml(kazananFirma.ad)}</td></tr></tfoot>` : ''}
         </table>`) : ''}
 
       ${kart('💰 Mali Özet', `<table style="width:100%;border-collapse:collapse">
@@ -5119,19 +5174,19 @@ function renderProjeOzetPage() {
             </div>
             <div class="form-group">
               <label>Yatırım Proje Numarası</label>
-              <input type="text" id="gc_yatirimProjeNo" value="${p.yatirimProjeNo || ''}" placeholder="Varsa giriniz" ${roInp}>
+              <input type="text" id="gc_yatirimProjeNo" value="${escAttr(p.yatirimProjeNo || '')}" placeholder="Varsa giriniz" ${roInp}>
             </div>
             <div class="form-group">
               <label>Bütçe Tertibi</label>
               <select id="gc_butceTertibi" ${dis}>
                 <option value="">-- Seçin --</option>
-                ${(referans.butceTertibiList || []).map(bt => { const no = typeof bt === 'string' ? bt : bt.no; const ac = typeof bt === 'string' ? '' : bt.aciklama; return `<option value="${no}" ${p.butceTertibi === no ? 'selected' : ''}>${no}${ac ? ' — ' + ac : ''}</option>`; }).join('')}
+                ${(referans.butceTertibiList || []).map(bt => { const no = typeof bt === 'string' ? bt : bt.no; const ac = typeof bt === 'string' ? '' : bt.aciklama; return `<option value="${escAttr(no)}" ${p.butceTertibi === no ? 'selected' : ''}>${escHtml(no)}${ac ? ' — ' + escHtml(ac) : ''}</option>`; }).join('')}
               </select>
             </div>
             <div class="form-group">
               <label>İşin Miktarı</label>
               <input type="text" id="gc_isMiktari"
-                value="${p.isTuru === 'Yapım İşi' ? '1 Adet' : (p.isMiktari || '')}"
+                value="${p.isTuru === 'Yapım İşi' ? '1 Adet' : escAttr(p.isMiktari || '')}"
                 ${ro || p.isTuru === 'Yapım İşi' ? 'readonly style="background:#f3f4f6;color:#6b7280"' : ''}
                 placeholder="Örn: 5 Adet">
             </div>

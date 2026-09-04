@@ -17,6 +17,21 @@ function markError(...inputs) {
   if (inputs[0]?.focus) inputs[0].focus();
 }
 
+// Proje listesini seçilen kritere göre sırala (kaynak diziyi bozmaz)
+// sortKey: 'tarih-yeni' | 'tarih-eski' | 'isim-az' | 'isim-za'
+function siralaProjeler(projeler, sortKey) {
+  const dizi = [...projeler];
+  const tarihMs = (p) => p.updatedAt?.toMillis ? p.updatedAt.toMillis() : 0;
+  const isim = (p) => (p.isAdi || '').toLocaleLowerCase('tr');
+  switch (sortKey) {
+    case 'tarih-eski': return dizi.sort((a, b) => tarihMs(a) - tarihMs(b));
+    case 'isim-az': return dizi.sort((a, b) => isim(a).localeCompare(isim(b), 'tr'));
+    case 'isim-za': return dizi.sort((a, b) => isim(b).localeCompare(isim(a), 'tr'));
+    case 'tarih-yeni':
+    default: return dizi.sort((a, b) => tarihMs(b) - tarihMs(a));
+  }
+}
+
 // HTML attribute içinde güvenli kullanım için escape (XSS önlemi)
 function escAttr(str) {
   return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

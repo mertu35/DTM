@@ -794,7 +794,7 @@ body {
 .belge-preview .aciklama-metin { margin: 15px 0; line-height: 1.6; text-align: justify; }
 .belge-preview .imza-bolumu { margin-top: 30px; }
 .belge-preview .imza-baslik { font-weight: bold; margin-bottom: 10px; }
-.belge-preview .imzalar-yan { display: flex; justify-content: space-around; gap: 30px; }
+.belge-preview .imzalar-yan { display: flex; justify-content: space-between; gap: 30px; }
 .belge-preview .imza-kutu, .belge-preview .imza-kutu-inline { text-align: center; min-width: 150px; }
 .belge-preview .imza-ad { font-weight: bold; margin-top: 40px; }
 .belge-preview .imza-unvan { font-size: 10pt; }
@@ -807,6 +807,37 @@ body {
 .belge-preview .dayanaklar { margin: 20px 0; }
 .belge-preview .hakedis-tablo td:first-child { width: 30px; text-align: center; font-weight: bold; }
 .belge-preview small { font-size: 8pt; }
+
+/* Teklif Tutanağı: resmi belgeyle eşitlenen tipografi ve görevli imza bloğu
+   (yazdırma penceresindeki belgeOrtakCSS() ile aynı yapı, ekran boşluklarıyla) */
+.belge-preview .teklif-tutanagi { font-size: 12pt; }
+.belge-preview .teklif-tutanagi .veri-tablo th, .belge-preview .teklif-tutanagi .veri-tablo td { font-size: 12pt; }
+.belge-preview .gorevli-blok { display: flex; align-items: flex-start; gap: 8px; }
+.belge-preview .gorevli-etiket { text-align: left; white-space: nowrap; }
+.belge-preview .gorevli-etiket .etiket { font-weight: bold; line-height: 1.6; }
+.belge-preview .gorevli-noktalar { line-height: 1.6; }
+.belge-preview .gorevli-kisiler { display: flex; gap: 70px; }
+.belge-preview .gorevli-kisi { text-align: center; line-height: 1.6; }
+
+/* Sözleşme: resmi Word şablonuyla eşitlenen tipografi (yazdırmadaki .sozlesme ile aynı) */
+.belge-preview .sozlesme { font-family: 'Times New Roman', Times, serif; font-size: 11pt; }
+.belge-preview .sozlesme .madde p, .belge-preview .sozlesme .madde { font-size: 11pt; }
+.belge-preview .sozlesme .madde { margin-bottom: 6pt; line-height: 1.15; }
+.belge-preview .sozlesme .madde p { margin-top: 2pt; }
+.belge-preview .sozlesme-imza { margin-top: 10px; }
+.belge-preview .sozlesme-sayfa-footer { padding-top: 6px; }
+.belge-preview .imza-bosluk { margin-top: 55px; }
+.belge-preview .sozlesme-sayfa-tablo { width: 100%; border-collapse: collapse; }
+.belge-preview .sozlesme-sayfa-tablo > tbody > tr > td { padding: 0; }
+.belge-preview .sozlesme-sayfa-header {
+  display: block;
+  text-align: center;
+  font-weight: bold;
+  font-size: 9.5pt;
+  line-height: 1.4;
+  padding: 3px 0 5px;
+  margin-bottom: 4px;
+}
 
 /* Document tabs */
 .belge-tabs {

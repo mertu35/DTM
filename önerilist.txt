@@ -75,6 +75,87 @@ MİMARİ (SÜRDÜRÜLEBİLİRLİK)
     domains derdi biter, ileride Cloud Functions'a geçiş kolaylaşır.
 
 
+SONRADAN EKLENENLER (01.09.2026)
+-------------------------------
+
+20. XSS: resmi belgelerde escHtml() eksikliği   [YAPILDI — 01.09.2026]
+    Genel bir kontrol taramasında documents.js'teki neredeyse tüm belge
+    render fonksiyonları (Sözleşme, Yaklaşık Maliyet, Teklif Tutanağı,
+    D.T. Onay Belgesi, Bitti Tutanağı, Hakediş Raporu) ve app.js'teki
+    gerçekleştirmeci inceleme panelinde firma/görevli/idare gibi serbest
+    metin alanlarının escHtml()/escAttr() ile kaçırılmadan HTML'e
+    basıldığı görüldü. Firma bilgileri kullanıcı tarafından serbestçe
+    girildiği ve o firma "kazanan" seçildiğinde belgeyi görüntüleyen
+    gerçekleştirmeci/admin'in oturumunda çalışabileceği için gerçek bir
+    risk. Tüm noktalar tek tek düzeltildi, node --check ile doğrulandı.
+    firestore.rules'a dokunmuyor, deploy gerekmiyor.
+
+21. Belgeler ekranı proje seçiminde arama/filtre yoktu   [YAPILDI — 01.09.2026]
+    100 projesi olan bir kullanıcı senaryosu düşünülerek kontrol edildi.
+    "Projelerim" sayfasında arama+durum filtresi vardı ama "Belgeler"
+    sekmesindeki proje seçim ekranı (hem normal kullanıcı hem
+    gerçekleştirmeci tarafı) getUserProjeler()'ın döndürdüğü TÜM projeleri
+    filtresiz tek liste halinde gösteriyordu. Aynı arama/filtre deseni
+    oraya da eklendi, kartlara durum rozeti de eklendi.
+
+15. Diğer belgelerin sayfa düzeni de resmi şablonla karşılaştırılmalı   [KISMEN YAPILDI]
+    Sözleşme, kurumun Word şablonuna oturtuldu (A4, üst 10 / alt 20 /
+    yan 25 mm, Times New Roman 11 pt, 1.15 satır aralığı). Teklif Tutanağı
+    da gerçek bir resmi örnekle (.xls) karşılaştırılıp gerçek Times New
+    Roman'a, doğru puntoya (14/12pt) ve resmi görevli imza bloğu düzenine
+    (Adı Soyadı: / Ünvanı: etiketli, sola yaslı) geçirildi (01.09.2026).
+    Yaklaşık Maliyet, Muayene ve Kabul, Bitti Tutanağı ve Hakediş hâlâ eski
+    dar düzende (12-15 mm kenar, %95 ölçek, 9pt Noto Serif). Kurumun resmi
+    örnekleri varsa aynı karşılaştırma onlara da yapılmalı.
+
+16. "PDF İndir" ile "Yazdır" çıktıları hâlâ farklı (tek belge indirmede)   [KISMEN YAPILDI]
+    Sözleşmenin PDF indirmesi tarayıcının yazdırma motoruna alındı,
+    böylece iki çıktı birebir aynı — hem tek belge hem toplu indirmede
+    (01.09.2026, bkz. 17. madde). Ama Yaklaşık Maliyet, Teklif Tutanağı,
+    Hakediş gibi DİĞER belgelerin TEK BELGE "PDF İndir" yolu hâlâ
+    html2canvas tabanlı html2pdf kullanıyor; bu motor CSS sayfalama
+    özelliklerini (table-header-group / table-footer-group) desteklemediği
+    için çok sayfalı bir belgede T.C. üstbilgisi 2. sayfada basılmıyor.
+    Ya hepsi yazdırma motoruna alınmalı ya da bu bilinçli kabul edilmeli.
+    (Ayrıca bu yolun hiç belgeOrtakCSS() enjekte etmediği, dolayısıyla
+    tüm belge türlerinde tablo/imza stillerinin PDF'e hiç yansımadığı
+    01.09.2026'da fark edildi ve düzeltildi.)
+
+17. Yazdırma CSS'i dört ayrı kopyada duruyor   [YAPILDI — 01.09.2026]
+    Aynı stil bloğu app/css/style.css, app/js/documents.js ve
+    app/js/app.js (iki kez) içinde tekrarlanıyordu. İmza hizası
+    değişikliğinde aynı satır dört yerde elle düzeltilmek zorunda kalınmıştı.
+    documents.js'e eklenen belgeOrtakCSS()/belgeSayfalamaCSS() ile
+    belgeYazdir, cokluBelgeIndir ve cokluGerceklestirmeciBelgeIndir artık
+    tek kaynağı kullanıyor (üçü de yazdırma penceresi CSS'i — style.css'teki
+    .belge-preview ekran önizlemesi bilinçli olarak ayrı bırakıldı, çünkü
+    o farklı bir bağlam: ekranda okunabilirlik için daha geniş boşluklar
+    kullanıyor, yazdırmadaki gibi sıkışık olması istenmiyor).
+    Bu iş sırasında toplu indirmede sözleşmenin hâlâ eski (sıkışık, %95
+    ölçekli) düzende basıldığı fark edildi ve düzeltildi — bkz. 16. madde.
+
+18. appConfig kuralı firestore.rules'da tanımlı değildi   [YAPILDI VE DEPLOY EDİLDİ — 01.09.2026]
+    Hakkında sayfasındaki güncelleme kontrolü appConfig/version
+    dokümanını okuyor, ancak bu koleksiyon için kural yoktu. Firestore
+    kuralı olmayan yolu varsayılan olarak reddettiği için okuma hep
+    başarısız oluyordu, hata sessizce yutuluyor ve uygulama her zaman
+    "güncel" görünüyordu. firestore.rules'a appConfig/{docId} kuralı
+    eklendi: giriş yapmış herkes okuyabilir, sadece admin/superadmin
+    yazabilir. Firestore Emulator'da 4 senaryo (okuma/yazma, yetkili/
+    yetkisiz) test edildi, hepsi geçti. Deploy edildi, özellik artık aktif.
+    Not: appConfig/version dokümanı henüz oluşturulmadıysa (Firebase
+    Console'dan elle latest: "2.1.0" gibi bir alanla eklenmeli), doc yok
+    sayılıp APP_CURRENT_VERSION varsayılan kabul ediliyor — hata vermez.
+    (Ayrıntı: veri-envanteri.txt, madde 2.9)
+
+19. Veri envanteri gözden geçirme başlıkları
+    veri-envanteri.txt oluşturuldu. İçindeki 5. bölümde karara bağlanması
+    gereken noktalar listelendi: düz metin şifreler, yüklenici doğum
+    tarihi/iletişim bilgilerinin herkese açık olması, usernameEmailMap'in
+    oturum açmadan okunabilmesi ve users koleksiyonunun tüm kullanıcılara
+    açık olması.
+
+
 AÇIK KONULAR (devam eden)
 -------------------------
 

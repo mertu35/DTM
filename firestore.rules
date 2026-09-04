@@ -4,7 +4,15 @@ service cloud.firestore {
 
     // Kullanıcılar
     match /users/{userId} {
-      allow read: if request.auth != null;
+      // Herkes kendi kaydını, admin/superadmin herkesi okuyabilir.
+      // Sıradan kullanıcılar için okuma yalnızca 'gerceklestirmeci' rolündeki
+      // kayıtlarla sınırlı — proje gönderim ekranı bu listeyi okuyabilmeli,
+      // ama kullanıcılar birbirinin rolünü/e-postasını görmemeli.
+      allow read: if request.auth != null &&
+        (request.auth.uid == userId ||
+         resource.data.role == 'gerceklestirmeci' ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']));
       // Admin ve superadmin yazabilir; ancak superadmin atama/değiştirme yalnızca mevcut superadmin yapabilir
       allow write: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -125,6 +133,15 @@ service cloud.firestore {
         request.resource.data.sayfaSayisi is number &&
         request.resource.data.sayfaSayisi > resource.data.sayfaSayisi &&
         request.resource.data.sayfaSayisi - resource.data.sayfaSayisi <= 50;
+    }
+
+    // Uygulama sürüm bilgisi ("Hakkında" sayfasındaki güncelleme kontrolü)
+    // Herkes okuyabilir, sadece admin/superadmin güncelleyebilir.
+    match /appConfig/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
   }
 }
