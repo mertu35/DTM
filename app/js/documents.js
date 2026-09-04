@@ -606,6 +606,7 @@ function renderSozlesme(proje, referans) {
         <p>İş bu sözleşme 22 Maddeden ibaret olup, İdare ve Yüklenici tarafından tam olarak okunup anlaşıldıktan sonra ${formatDate(proje.sozlesmeTarihi)} tarihinde 1 (Bir) nüsha olarak imza altına alınmıştır. Ayrıca İdare, Yüklenicinin talebi halinde sözleşmenin aslına uygun idarece onaylı suretini düzenleyip yükleniciye verecektir.</p>
       </div>
 
+
     </div>
       </td></tr></tbody>
       <tfoot><tr><td class="sozlesme-sayfa-footer">
@@ -727,7 +728,7 @@ function renderBittiTutanagi(proje, referans) {
         <tr><td style="border:none;font-weight:bold;padding:1px 0">Yüklenicinin Adı</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${escHtml(kazanan.ad || '-')}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:1px 0">Sözleşme Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:1px 0">Sözleşme Bedeli</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatCurrency(kazanan.toplam)} TL${isFirmaBasitUsul(kazanan.ad, referans) ? '' : ' (KDV Hariç)'}</td></tr>
-        <tr><td style="border:none;font-weight:bold;padding:1px 0">İş Süresi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${proje.isSuresi} Takvim Günü</td></tr>
+        <tr><td style="border:none;font-weight:bold;padding:1px 0">İş Süresi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${escHtml(proje.isSuresi)} Takvim Günü</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:1px 0">İşe Başlama Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatDate(proje.sozlesmeTarihi)}</td></tr>
         <tr><td style="border:none;font-weight:bold;padding:1px 0">İşin Bitim Tarihi</td><td style="border:none;width:14px;vertical-align:top;padding:1px 0">:</td><td style="border:none;padding:1px 0">${formatDate(bitisT)}</td></tr>
       </table>
@@ -739,7 +740,7 @@ function renderBittiTutanagi(proje, referans) {
       ${bittiEkleriArr.length > 0 ? `
       <div style="margin-top:20px;line-height:1.8;font-size:11pt">
         <strong>Ek${bittiEkleriArr.length > 1 ? 'ler' : ''}:</strong>
-        ${bittiEkleriArr.map((e, i) => `<div>${i + 1}- ${e}</div>`).join('')}
+        ${bittiEkleriArr.map((e, i) => `<div>${i + 1}- ${escHtml(e)}</div>`).join('')}
       </div>` : ''}
 
       <div style="margin-top:50px">
@@ -932,8 +933,8 @@ function renderDogrudanTeminOnayBelgesi(proje) {
         <div style="flex:1;padding:10px 14px;border-right:1px solid #000;display:flex;flex-direction:column;justify-content:space-between">
           <p style="text-align:justify;margin:0">Yukarıda isimleri yazılı personelin, belirtilen yapımın/malın/hizmetin doğrudan temini için gerekli fiyat araştırmasını ve diğer işlemleri yapmak üzere görevlendirilmesi hususunu onaylarınıza arz ederim. &nbsp;&nbsp; ${formatDate(proje.dtOnayTarihi)}</p>
           <div>
-            <div style="display:flex"><span style="min-width:110px"><strong>Adı SOYADI</strong></span><span><strong>:</strong> ${gcAd}</span></div>
-            <div style="display:flex"><span style="min-width:110px"><strong>Unvanı</strong></span><span><strong>:</strong> ${gcUnvan}</span></div>
+            <div style="display:flex"><span style="min-width:110px"><strong>Adı SOYADI</strong></span><span><strong>:</strong> ${escHtml(gcAd)}</span></div>
+            <div style="display:flex"><span style="min-width:110px"><strong>Unvanı</strong></span><span><strong>:</strong> ${escHtml(gcUnvan)}</span></div>
             <div style="display:flex;margin-top:16px"><span style="min-width:110px"><strong>İmzası</strong></span><span><strong>:</strong></span></div>
           </div>
         </div>

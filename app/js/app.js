@@ -3995,7 +3995,7 @@ async function renderKullaniciYonetimiPage() {
                 <option value="user">Kullanıcı</option>
                 <option value="gerceklestirmeci">Gerçekleştirme Görevlisi</option>
                 <option value="admin">Yönetici</option>
-                <option value="superadmin">Sistem Yöneticisi</option>
+                ${currentDTMUser?.role === 'superadmin' ? '<option value="superadmin">Sistem Yöneticisi</option>' : ''}
               </select>
             </div>
           </div>
@@ -4016,7 +4016,7 @@ async function renderKullaniciYonetimiPage() {
                 <th>Ad Soyad</th>
                 <th>Kullanıcı Adı</th>
                 <th>E-Posta & Doğrulama</th>
-                <th>Şifre</th>
+                <th>Şifre İşlemi</th>
                 <th>Rol</th>
                 <th>İşlem</th>
               </tr>
@@ -4049,17 +4049,36 @@ async function renderKullaniciYonetimiPage() {
                       <span style="color:var(--gray-400);font-size:12px;">(Tanımlanmadı)</span>
                     `)}
                   </td>
-                  <td><span class="password-mask" style="font-family:monospace;background:var(--gray-100);padding:3px 6px;border-radius:4px;cursor:pointer;font-size:13px;user-select:none" onclick="this.textContent = this.textContent === '••••••••' ? '${escAttr(u.sifre || 'Bilinmiyor')}' : '••••••••'" title="Görmek için tıkla">••••••••</span></td>
-                  <td>${u.uid !== currentDTMUser.uid ? `
-                    <select onchange="kullaniciRolDegistir('${u.uid}', this.value)" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer">
-                      <option value="user" ${u.role === 'user' ? 'selected' : ''}>Kullanıcı</option>
-                      <option value="gerceklestirmeci" ${u.role === 'gerceklestirmeci' ? 'selected' : ''}>Gerçekleştirme Görevlisi</option>
-                      <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Yönetici</option>
-                      <option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>Sistem Yöneticisi</option>
-                    </select>` : `<span class="badge badge-admin">${getRoleLabel(u.role)}</span>`}
+                  <td>
+                    ${u.email && !u.email.endsWith('@dtm.local') ? `
+                      <button type="button" class="btn btn-outline btn-sm" onclick="adminSifreSifirlaClick('${escAttr(u.email)}', '${escAttr(u.username)}', '${escAttr(u.displayName)}')" style="font-size:11.5px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;" title="Kullanıcının e-posta adresine şifre sıfırlama bağlantısı gönder">
+                        🔑 Sıfırla
+                      </button>
+                    ` : `
+                      <span style="font-size:11.5px;color:var(--gray-400);" title="E-posta tanımlanmadığı için sıfırlama linki gönderilemez">E-Posta Yok</span>
+                    `}
+                  </td>
+                  <td>${u.uid !== currentDTMUser.uid ? (
+                    (u.role === 'superadmin' && currentDTMUser?.role !== 'superadmin') ? `
+                      <span class="badge badge-admin" style="background:#4338ca;color:#fff">${getRoleLabel(u.role)}</span>
+                    ` : `
+                      <select onchange="kullaniciRolDegistir('${u.uid}', this.value)" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer">
+                        <option value="user" ${u.role === 'user' ? 'selected' : ''}>Kullanıcı</option>
+                        <option value="gerceklestirmeci" ${u.role === 'gerceklestirmeci' ? 'selected' : ''}>Gerçekleştirme Görevlisi</option>
+                        <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Yönetici</option>
+                        ${currentDTMUser?.role === 'superadmin' ? `<option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>Sistem Yöneticisi</option>` : ''}
+                      </select>
+                    `
+                  ) : `<span class="badge badge-admin">${getRoleLabel(u.role)}</span>`}
                   </td>
                   <td>
-                    ${u.uid !== currentDTMUser.uid ? `<button class="btn btn-danger btn-sm" onclick="kullaniciSil('${u.uid}', '${escAttr(u.displayName)}')">Sil</button>` : '<span style="color:var(--gray-400);font-size:12px">(Aktif oturum)</span>'}
+                    ${u.uid !== currentDTMUser.uid ? (
+                      (u.role === 'superadmin' && currentDTMUser?.role !== 'superadmin') ? `
+                        <span style="color:var(--gray-400);font-size:12px">(Yetki kısıtlı)</span>
+                      ` : `
+                        <button class="btn btn-danger btn-sm" onclick="kullaniciSil('${u.uid}', '${escAttr(u.displayName)}', '${escAttr(u.username)}')">Sil</button>
+                      `
+                    ) : '<span style="color:var(--gray-400);font-size:12px">(Aktif oturum)</span>'}
                   </td>
                 </tr>`).join('')}
             </tbody>
@@ -4090,6 +4109,9 @@ async function kullaniciEkle(btn) {
     msg.style.color = 'red'; msg.textContent = 'Tüm zorunlu alanları doldurun.'; return;
   }
   if (sifre.length < 6) { markError(sifreEl); msg.style.color = 'red'; msg.textContent = 'Şifre en az 6 karakter olmalı.'; return; }
+  if (rol === 'superadmin' && currentDTMUser?.role !== 'superadmin') {
+    msg.style.color = 'red'; msg.textContent = 'Sistem Yöneticisi rolü yalnızca mevcut Sistem Yöneticisi tarafından atanabilir.'; return;
+  }
 
   msg.style.color = 'var(--gray-500)'; msg.textContent = 'Kullanıcı oluşturuluyor...';
   await butonKilitli(btn, 'Oluşturuluyor...', async () => {
@@ -4110,22 +4132,47 @@ async function kullaniciEkle(btn) {
 }
 
 async function kullaniciRolDegistir(uid, yeniRol) {
+  if (yeniRol === 'superadmin' && currentDTMUser?.role !== 'superadmin') {
+    showToast('Sistem Yöneticisi rolü yalnızca mevcut Sistem Yöneticisi tarafından atanabilir.', 'warning');
+    renderKullaniciYonetimiPage();
+    return;
+  }
   try {
     await changeUserRole(uid, yeniRol);
+    showToast('Kullanıcı rolü başarıyla güncellendi.', 'success');
     renderKullaniciYonetimiPage();
   } catch(e) {
     showToast('Hata: ' + hataMesaji(e), 'error');
   }
 }
 
-async function kullaniciSil(uid, ad) {
+async function kullaniciSil(uid, ad, username) {
   if (!await showConfirm(`"${escHtml(ad)}" kullanıcısı kalıcı olarak silinecek. Emin misiniz?`, 'Sil')) return;
   try {
-    await db.collection('users').doc(uid).collection('secret').doc('info').delete();
+    if (username) {
+      await db.collection('usernameEmailMap').doc(username.toLowerCase().trim()).delete().catch(e => console.warn('usernameEmailMap silinemedi:', e));
+    }
+    await db.collection('users').doc(uid).collection('secret').doc('info').delete().catch(e => console.warn('secret silinemedi:', e));
     await db.collection('users').doc(uid).delete();
+    showToast(`"${escHtml(ad)}" kullanıcısı silindi.`, 'success');
     renderKullaniciYonetimiPage();
   } catch(e) {
     showToast('Hata: ' + hataMesaji(e), 'error');
+  }
+}
+
+async function adminSifreSifirlaClick(email, username, ad) {
+  const targetEmail = (email || '').trim();
+  if (!targetEmail || targetEmail.endsWith('@dtm.local')) {
+    showToast(`"${escHtml(ad)}" için tanımlı geçerli bir e-posta adresi bulunmuyor.`, 'warning', 5000);
+    return;
+  }
+  if (!await showConfirm(`"${escHtml(ad)}" (${escHtml(targetEmail)}) kullanıcısına şifre sıfırlama bağlantısı gönderilsin mi?`, 'Şifre Sıfırla')) return;
+  try {
+    await auth.sendPasswordResetEmail(targetEmail);
+    showToast(`"${escHtml(ad)}" kullanıcısına şifre sıfırlama bağlantısı gönderildi.`, 'success');
+  } catch(e) {
+    showToast('Şifre sıfırlama hatası: ' + hataMesaji(e), 'error');
   }
 }
 
