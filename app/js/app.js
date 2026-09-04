@@ -1098,7 +1098,7 @@ function renderVeriGirisPage() {
           </div>
           <select data-field="ymFirmalar" data-index="${fi}" data-sub="ad" onchange="onFirmaChange(this, 'ym')">
             <option value="">-- Firma Seçin --</option>
-            ${[...referans.firmaList].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')).map(fr => `<option value="${fr.ad}" ${f.ad === fr.ad ? 'selected' : ''}>${fr.ad}</option>`).join('')}
+            ${[...referans.firmaList].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')).map(fr => `<option value="${escAttr(fr.ad)}" ${f.ad === fr.ad ? 'selected' : ''}>${escHtml(fr.ad)}</option>`).join('')}
           </select>
         </div>
         <table class="data-table">
@@ -1147,7 +1147,7 @@ function renderVeriGirisPage() {
           </div>
           <select data-field="teklifFirmalar" data-index="${fi}" data-sub="ad" onchange="onFirmaChange(this, 'teklif')">
             <option value="">-- Firma Seçin --</option>
-            ${[...referans.firmaList].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')).map(fr => `<option value="${fr.ad}" ${f.ad === fr.ad ? 'selected' : ''}>${fr.ad}</option>`).join('')}
+            ${[...referans.firmaList].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')).map(fr => `<option value="${escAttr(fr.ad)}" ${f.ad === fr.ad ? 'selected' : ''}>${escHtml(fr.ad)}</option>`).join('')}
           </select>
         </div>
         <table class="data-table">
@@ -5115,10 +5115,10 @@ function renderProjeOzetPage() {
       </div>
 
       ${kart('📋 Proje Bilgileri', `<table style="width:100%;border-collapse:collapse">
-        ${satir('İdare', p.idareAdi)}
-        ${satir('Müdürlük', p.mudurluk)}
+        ${satir('İdare', escHtml(p.idareAdi))}
+        ${satir('Müdürlük', escHtml(p.mudurluk))}
         ${satir('İş / Hizmet Adı', escHtml(p.isAdi))}
-        ${satir('İş Türü', p.isTuru)}
+        ${satir('İş Türü', escHtml(p.isTuru))}
         ${satir('KDV Oranı', '%' + p.kdvOrani)}
         ${satir('Şehir / İlçe', [p.sehir, p.ilce].filter(Boolean).join(' / '))}
       </table>`)}
@@ -5133,7 +5133,7 @@ function renderProjeOzetPage() {
         ${satir('D.T. Onay Sayısı', escHtml(p.dtOnayNo))}
         ${satir('Onaylayan Amir', p.onaylayanAmir?.ad ? escHtml(p.onaylayanAmir.ad + ' / ' + p.onaylayanAmir.unvan) : '')}
         ${satir('Sözleşme Tarihi', formatDate(p.sozlesmeTarihi))}
-        ${satir('İş Süresi', p.isSuresi ? p.isSuresi + ' Takvim Günü' : '')}
+        ${satir('İş Süresi', p.isSuresi ? escHtml(p.isSuresi) + ' Takvim Günü' : '')}
         ${satir('Fiili Bitim Tarihi', formatDate(p.fiiliBitimTarihi))}
       </table>`)}
 
@@ -5230,11 +5230,11 @@ function renderProjeOzetPage() {
         const odenek = p.odenek ? Number(p.odenek).toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' TL' : '-';
         return kart('💳 Ödenek ve Bütçe Bilgileri', `<table style="width:100%;border-collapse:collapse">
           ${satir('Kullanılabilir Ödenek', odenek)}
-          ${satir('Bütçe Tertibi', btLabel)}
-          ${satir('Yatırım Proje No', p.yatirimProjeNo || '')}
-          ${satir('İşin Miktarı', p.isMiktari || '')}
-          ${satir('Avans', p.avansVar || '')}
-          ${satir('Fiyat Farkı', p.fiyatFarkiVar || '')}
+          ${satir('Bütçe Tertibi', escHtml(btLabel))}
+          ${satir('Yatırım Proje No', escHtml(p.yatirimProjeNo || ''))}
+          ${satir('İşin Miktarı', escHtml(p.isMiktari || ''))}
+          ${satir('Avans', escHtml(p.avansVar || ''))}
+          ${satir('Fiyat Farkı', escHtml(p.fiyatFarkiVar || ''))}
         </table>`);
       })() : ''}
 
