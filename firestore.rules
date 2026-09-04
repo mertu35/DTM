@@ -5,9 +5,17 @@ service cloud.firestore {
     // Kullanıcılar
     match /users/{userId} {
       allow read: if request.auth != null;
+      // Admin ve superadmin yazabilir; ancak superadmin atama/değiştirme yalnızca mevcut superadmin yapabilir
       allow write: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin' ||
+          (
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+            request.resource.data.role != 'superadmin' &&
+            (!exists(/databases/$(database)/documents/users/$(userId)) || resource.data.role != 'superadmin')
+          )
+        );
       allow update: if request.auth != null &&
         request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -16,7 +24,7 @@ service cloud.firestore {
           'email', 'emailVerified', 'pendingEmail', 'emailUpdatedAt'
         ]);
 
-      // Şifre gibi hassas alanlar: sadece sahibi veya admin/superadmin okuyup yazabilir
+      // Şifre gibi hassas alanlar: sadece sahibi veya admin/superadmin okuyup yazabilir/silebilir
       match /secret/{secretId} {
         allow read, write: if request.auth != null &&
           (request.auth.uid == userId ||
@@ -52,13 +60,25 @@ service cloud.firestore {
         // Gerçekleştirmeci sadece kendi atandığı projeyi güncelleyebilir
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci' &&
          resource.data.atananGerceklestirmeciUid == request.auth.uid) ||
-        // Proje sahibi: onaylandi ve arsivlendi statüsüne geçemez
-        (resource.data.userId == request.auth.uid &&
-         !(request.resource.data.status in ['onaylandi', 'arsivlendi']))
+        // Proje sahibi:
+        // Yalnızca proje taslak veya geri_gonderildi aşamasındayken güncelleyebilir.
+        // gonderildi, onaylandi veya arsivlendi aşamasında proje sahibi güncelleyemez.
+        (
+          resource.data.userId == request.auth.uid &&
+          resource.data.status in ['taslak', 'geri_gonderildi'] &&
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.status in ['taslak', 'gonderildi'] &&
+          (
+            resource.data.locked != true ||
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['locked']) && request.resource.data.locked == false)
+          )
+        )
       );
 
-      allow delete: if request.auth != null &&
-        resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
+        (resource.data.userId == request.auth.uid && resource.data.status in ['taslak', 'geri_gonderildi'] && resource.data.locked != true)
+      );
     }
 
     // Referans verileri (kullanıcıya özel)
@@ -76,13 +96,17 @@ service cloud.firestore {
     }
 
     // Kullanıcı adı → doğrulanmış e-posta eşlemesi.
-    // Giriş ekranı ve "Şifremi Unuttum" akışı henüz oturum açılmadan çalışması gerektiği için
-    // okuma herkese açık; sadece {email} alanı tutulur, başka hiçbir profil bilgisi yoktur.
+    // Giriş ekranı ve "Şifremi Unuttum" akışı tekil get sorgusu ile çalışır.
+    // list (toplu tarama / enumeration) kesinlikle yasaktır.
     match /usernameEmailMap/{username} {
-      allow read: if true;
-      allow write: if request.auth != null &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username == username;
+      allow get: if true;
+      allow list: if false;
+      allow write: if request.auth != null && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username == username)
+      );
     }
 
     // Vision API aylık kullanım sayacı

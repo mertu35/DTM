@@ -150,7 +150,6 @@ async function createDTMUser(username, password, displayName, role, userEmail = 
     }
 
     await db.collection('users').doc(cred.user.uid).set(userDocData);
-    await db.collection('users').doc(cred.user.uid).collection('secret').doc('info').set({ sifre: password });
 
     // Kullanıcı adı → e-posta eşlemesi. Bu yazılmazsa kullanıcı, kullanıcı adıyla
     // giriş yapamaz: auth hesabı gerçek e-postayla açıldığı için `kullaniciadi@dtm.local`
@@ -176,12 +175,7 @@ async function createDTMUser(username, password, displayName, role, userEmail = 
 // Tüm kullanıcıları getir (admin) - e-posta ve doğrulama durumları dahil
 async function getAllUsers() {
   const snap = await db.collection('users').orderBy('displayName').get();
-  const users = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
-  await Promise.all(users.map(async u => {
-    const secretSnap = await db.collection('users').doc(u.uid).collection('secret').doc('info').get();
-    u.sifre = secretSnap.data()?.sifre;
-  }));
-  return users;
+  return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
 }
 
 // Şifre değiştir (mevcut şifre ile yeniden auth gerekli)
@@ -190,7 +184,6 @@ async function changePassword(mevcutSifre, yeniSifre) {
   const credential = firebase.auth.EmailAuthProvider.credential(user.email, mevcutSifre);
   await user.reauthenticateWithCredential(credential);
   await user.updatePassword(yeniSifre);
-  await db.collection('users').doc(user.uid).collection('secret').doc('info').set({ sifre: yeniSifre });
 }
 
 // ===================== E-POSTA DOĞRULAMA & ŞİFRE SIFIRLAMA =====================
