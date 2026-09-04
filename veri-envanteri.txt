@@ -159,16 +159,21 @@ okunamaz; yalnızca sıfırlanabilir.
 
 5. GÖZDEN GEÇİRİLMESİ ÖNERİLEN NOKTALAR
 ---------------------------------------
-  1. Düz metin şifreler (2.2) — Firebase Auth zaten kimlik doğruluyor;
-     bu kopya teknik olarak gerekli değil. Kaldırılması bir politika kararı.
+  1. Düz metin şifreler (2.2) — [ÇÖZÜLDÜ, 04.09.2026] users/{uid}/secret/info
+     dokümanına şifre artık hiç yazılmıyor (createDTMUser, changePassword);
+     getAllUsers() de artık şifreleri toplu okuyup admin listesine
+     eklemiyor. Kimlik doğrulama tamamen Firebase Auth'un kendi hash'ine
+     bırakıldı.
 
   2. Yüklenici doğum tarihi ve iletişim bilgileri (3.b) — giriş yapmış
      her kullanıcının görmesi gerekiyor mu? Gerekmiyorsa globalReferans
      yerine daha dar erişimli bir yapıya taşınabilir.
 
-  3. usernameEmailMap'in herkese açık olması (2.7) — kabul edilebilir
-     bulunmazsa alternatif, bu sorguyu sunucu tarafında (Cloud Function)
-     yapmaktır; Blaze planı gerektirir.
+  3. usernameEmailMap'in herkese açık olması (2.7) — [KISMEN ÇÖZÜLDÜ,
+     04.09.2026] Tekil kullanıcı adı sorgusu (get) hâlâ oturumsuz açık
+     (giriş ekranı için gerekli), ama toplu tarama (list) artık tamamen
+     yasak — önceden "allow read: if true" hem get hem list'i kapsıyordu,
+     yani biri tüm kullanıcı adı→e-posta eşlemesini tek sorguda çekebilirdi.
 
   4. users koleksiyonunun tüm kullanıcılara açık olması (2.1) — [ÇÖZÜLDÜ,
      01.09.2026] Sıradan kullanıcılar artık sadece kendi kaydını ve

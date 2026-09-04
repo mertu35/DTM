@@ -98,6 +98,37 @@ SONRADAN EKLENENLER (01.09.2026)
     filtresiz tek liste halinde gösteriyordu. Aynı arama/filtre deseni
     oraya da eklendi, kartlara durum rozeti de eklendi.
 
+22. Genel güvenlik taraması (04.09.2026)   [YAPILDI]
+    Bu taramadan önce, main branch'e benim bilmediğim ayrı bir oturumdan
+    (muhtemelen telefondan, çok daha eski bir noktadan çatallanmış) 6
+    güvenlik açığı kapatan bir commit gelmişti: düz metin şifrelerin
+    Firestore'dan tamamen kaldırılması, users koleksiyonunda superadmin
+    yetki yükseltme açığı, projeler koleksiyonunda durum geçiş/kilit
+    bypass açığı, usernameEmailMap'te toplu kullanıcı adı tarama (list)
+    açığı, ve documents.js'te kısmen örtüşen bağımsız bir XSS taraması.
+    Bu, benim çalışmamla temiz merge edildi (bkz. veri-envanteri.txt
+    madde 5.1 ve 5.3).
+
+    Merge sonrası yaptığım taramada ek olarak bulunup düzeltilenler:
+    - excel.js: documents.js'ten tamamen bağımsız kendi HTML üretim
+      mantığı vardı (Excel export), hiç escHtml() kullanmıyordu — aynı
+      firma/görevli/idare taint akışı .xls dosyasına ham yazılıyordu.
+    - Veri Giriş formundaki firma seçim dropdown'ları (YM ve Teklif fiyat
+      girişi, iki yerde): <option value="${fr.ad}">${fr.ad}</option> hiç
+      kaçırılmadan basılıyordu — hem attribute hem text-content olarak
+      gerçek bir XSS.
+    - renderProjeOzetPage() (gerçekleştirmeci proje özet ekranı): İDARE,
+      MÜDÜRLÜK, İŞ TÜRÜ, İŞ SÜRESİ, BÜTÇE TERTİBİ, YATIRIM PROJE NO,
+      İŞİN MİKTARI, AVANS, FİYAT FARKI satırları hem benim hem Sep-4
+      taramasında atlanmıştı — proje sahibinin serbest metni,
+      gerçekleştirmeci gibi farklı/yetkili bir kullanıcının oturumunda
+      kaçırılmadan gösteriliyordu.
+    - documents.js'teki satir() yardımcısının (D.T. Onay Belgesi) zaten
+      kendi içinde escHtml() yaptığı noktalarda, iki bağımsız düzeltme
+      üst üste binince oluşan çifte kaçırma (&amp;amp; gibi) bug'ı
+      düzeltildi.
+    Tüm düzeltmeler gerçek tarayıcıda XSS payload'larıyla test edildi.
+
 15. Diğer belgelerin sayfa düzeni de resmi şablonla karşılaştırılmalı   [KISMEN YAPILDI]
     Sözleşme, kurumun Word şablonuna oturtuldu (A4, üst 10 / alt 20 /
     yan 25 mm, Times New Roman 11 pt, 1.15 satır aralığı). Teklif Tutanağı
