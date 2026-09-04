@@ -1724,7 +1724,7 @@ body {
   margin-bottom: 8px;
 }
 .duyuru-baslik {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
   color: var(--primary);
   display: flex;
@@ -1732,8 +1732,8 @@ body {
   gap: 8px;
 }
 .duyuru-okundu .duyuru-baslik {
-  color: var(--gray-700);
   font-weight: 500;
+  opacity: 0.75;
 }
 .duyuru-chevron {
   color: var(--gray-400);
