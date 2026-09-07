@@ -78,7 +78,7 @@ service cloud.firestore {
           request.resource.data.status in ['taslak', 'gonderildi'] &&
           (
             resource.data.get('locked', false) != true ||
-            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['locked']) && request.resource.data.locked == false)
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['locked', 'lockedAt', 'lockedBy']) && request.resource.data.locked == false)
           )
         )
       );
