@@ -77,7 +77,7 @@ service cloud.firestore {
           request.resource.data.userId == request.auth.uid &&
           request.resource.data.status in ['taslak', 'gonderildi'] &&
           (
-            resource.data.locked != true ||
+            resource.data.get('locked', false) != true ||
             (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['locked']) && request.resource.data.locked == false)
           )
         )
@@ -85,7 +85,7 @@ service cloud.firestore {
 
       allow delete: if request.auth != null && (
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
-        (resource.data.userId == request.auth.uid && resource.data.status in ['taslak', 'geri_gonderildi'] && resource.data.locked != true)
+        (resource.data.userId == request.auth.uid && resource.data.status in ['taslak', 'geri_gonderildi'] && resource.data.get('locked', false) != true)
       );
     }
 
