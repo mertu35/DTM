@@ -2660,7 +2660,7 @@ function acSozlesmeMaddeleriDuzenleModal() {
     saveProje(proje);
     if (currentCloudProjeId) {
       try {
-        await saveProjeToCloud(currentCloudProjeId, proje, currentProjeStatus);
+        await updateProjeInCloud(currentCloudProjeId, proje);
       } catch(e) {
         console.warn('Buluta kaydedilemedi:', e);
       }
@@ -2719,7 +2719,7 @@ function acTeknikSartnameDuzenleModal() {
     saveProje(proje);
     if (currentCloudProjeId) {
       try {
-        await saveProjeToCloud(currentCloudProjeId, proje, currentProjeStatus);
+        await updateProjeInCloud(currentCloudProjeId, proje);
       } catch(e) {
         console.warn('Buluta kaydedilemedi:', e);
       }
