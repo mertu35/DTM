@@ -129,6 +129,41 @@ SONRADAN EKLENENLER (01.09.2026)
       düzeltildi.
     Tüm düzeltmeler gerçek tarayıcıda XSS payload'larıyla test edildi.
 
+23. Sep-4 projeler kuralındaki "locked" alanı regresyonları   [YAPILDI — 04.09.2026]
+    Sep-4 güvenlik commit'i projeler koleksiyonuna durum/kilit koruması
+    eklemişti (bkz. madde 22), ama iki gerçek regresyon içeriyordu —
+    ikisi de kullanıcı tarafından gerçek kullanımda yakalandı:
+    a) update/delete kuralları resource.data.locked != true şeklinde
+       yazılmıştı. Firestore Rules'ta bir map alanı dokümanda HİÇ YOKSA
+       ona erişmek hataya düşüp izni reddediyor. saveProjeToCloud() yeni
+       proje oluştururken 'locked' alanını hiç yazmadığı için, HİÇ
+       KİLİTLENMEMİŞ (yani neredeyse tüm normal) taslak projelerin
+       sahipleri kendi projelerini güncelleyemiyor/silemiyordu. Düzeltme:
+       resource.data.get('locked', false) != true (güvenli varsayılan).
+    b) Kilit açma istisnası affectedKeys().hasOnly(['locked']) idi, ama
+       toggleProjeLock() kilidi açarken locked+lockedAt+lockedBy
+       alanlarını birlikte gönderiyor — istisna hiç eşleşmiyor, kilitli
+       bir proje asla açılamıyordu. Düzeltme: hasOnly listesine
+       lockedAt/lockedBy de eklendi.
+    Her ikisi de Firestore Emulator'da gerçekçi veri/payload'larla
+    (locked alanı hiç olmayan proje, gerçek toggleProjeLock çağrısı)
+    test edildi, güvenlik davranışı (kilitli proje korunuyor, başka
+    alanla birlikte kilit açmaya çalışmak reddediliyor) bozulmadı.
+
+24. Sözleşme/Teknik Şartname "Kaydet" boş proje oluşturuyordu   [YAPILDI — 04.09.2026]
+    Kullanıcı fark etti: bir proje açıp belge çıktısı alırken kendiliğinden
+    2 tane "(İsimsiz)" boş taslak proje oluşmuş. Kök neden:
+    acSozlesmeMaddeleriDuzenleModal() ve acTeknikSartnameDuzenleModal()
+    modallarının Kaydet butonları saveProjeToCloud(currentCloudProjeId,
+    proje, currentProjeStatus) çağırıyordu — ama bu fonksiyon TEK
+    parametre alıyor ve HER ÇAĞRIDA yeni bir doküman oluşturuyor. Fazla
+    argümanlar JS'te sessizce yok sayıldığından currentCloudProjeId
+    (bir string) projeData yerine geçiyor, proje.isAdi okunamayıp
+    '(İsimsiz)' varsayılanına düşülüyor ve var olan proje güncellenmek
+    yerine boş bir taslak daha oluşuyordu. Doğru fonksiyon
+    updateProjeInCloud(projeId, projeData) zaten başka yerlerde doğru
+    kullanılıyordu; iki çağrı noktası da buna çevrildi.
+
 15. Diğer belgelerin sayfa düzeni de resmi şablonla karşılaştırılmalı   [KISMEN YAPILDI]
     Sözleşme, kurumun Word şablonuna oturtuldu (A4, üst 10 / alt 20 /
     yan 25 mm, Times New Roman 11 pt, 1.15 satır aralığı). Teklif Tutanağı
