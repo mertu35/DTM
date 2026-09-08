@@ -1,8 +1,8 @@
 // ===================== CALCULATIONS.JS =====================
 
 function getKalemler(proje) {
-  if (proje.isTuru === 'Yapım İşi') {
-    return [{ ad: proje.isAdi || 'Yapım İşi', miktar: 1, birim: '***' }];
+  if (!isMalVeyaHizmetTuru(proje.isTuru)) {
+    return [{ ad: proje.isAdi || proje.isTuru || 'Yapım İşi', miktar: 1, birim: '***' }];
   }
   const doldurulanlar = (proje.isKalemleri || []).filter(k => k && (k.ad?.trim() || (k.miktar !== '' && k.miktar !== undefined && k.miktar !== null)));
   if (doldurulanlar.length > 0) {

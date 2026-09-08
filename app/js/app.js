@@ -601,6 +601,10 @@ async function onAuthReady(user) {
         loadGlobalReferansFromCloud().catch(() => null)
       ]);
       referans = Object.assign(getDefaultReferans(), cloudRef || {});
+      // İş türleri listesi kullanıcıya özel değildir; buluttaki eski kayıt
+      // yeni eklenen türleri (örn. Onarım İşi) içermeyebileceği için her
+      // zaman kod içindeki güncel listeyle değiştirilir.
+      referans.isTurleri = IS_TURU_ADLARI.slice();
       if (!cloudRef) await saveReferansToCloud(referans);
       // Global alanları birleştir (globalReferans varsa üzerine yaz)
       if (globalRef) {
@@ -1061,7 +1065,7 @@ function renderVeriGirisPage() {
     </div>`).join('');
   const mkEkleBtn = mkSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('mk')" style="margin-top:6px;">+ Muayene Kabul Görevlisi Ekle</button>` : '';
 
-  const kalemler = proje.isTuru === 'Yapım İşi' ? '' : proje.isKalemleri.map((k, i) => `
+  const kalemler = !isMalVeyaHizmetTuru(proje.isTuru) ? '' : proje.isKalemleri.map((k, i) => `
     <tr>
       <td class="merkez">${i + 1}</td>
       <td><input type="text" value="${escAttr(k.ad)}" data-field="isKalemleri" data-index="${i}" data-sub="ad" onchange="onKalemChange(this)"></td>
@@ -1072,9 +1076,9 @@ function renderVeriGirisPage() {
       </select></td>
     </tr>`).join('');
 
-  const kalemlerSection = proje.isTuru === 'Yapım İşi' ? `
+  const kalemlerSection = !isMalVeyaHizmetTuru(proje.isTuru) ? `
     <div class="card-body">
-      <p style="color:var(--gray-500)">Yapım İşi seçildiğinde iş kalemi otomatik olarak iş adı ve miktar 1 olarak belirlenir.</p>
+      <p style="color:var(--gray-500)">Bu iş türü seçildiğinde iş kalemi otomatik olarak iş adı ve miktar 1 olarak belirlenir.</p>
     </div>` : `
     <div class="card-body">
       <table class="data-table">
@@ -1366,8 +1370,8 @@ function renderVeriGirisPage() {
           </div>
           <div class="form-group">
             <label>İşin Miktarı</label>
-            <input type="text" id="isMiktari" value="${proje.isTuru === 'Yapım İşi' ? '1 Adet' : escAttr(proje.isMiktari || '')}"
-              ${proje.isTuru === 'Yapım İşi' ? 'readonly style="background:#f3f4f6"' : ''}
+            <input type="text" id="isMiktari" value="${!isMalVeyaHizmetTuru(proje.isTuru) ? '1 Adet' : escAttr(proje.isMiktari || '')}"
+              ${!isMalVeyaHizmetTuru(proje.isTuru) ? 'readonly style="background:#f3f4f6"' : ''}
               oninput="onFieldChange('isMiktari', this.value)" placeholder="Örn: 5 Adet">
           </div>
           <div class="form-group">
@@ -1437,7 +1441,7 @@ function renderVeriGirisPage() {
       </div>
     </div>
 
-    ${proje.isTuru === 'Yapım İşi' ? `
+    ${!isMalVeyaHizmetTuru(proje.isTuru) ? `
     <!-- TARİHLER -->
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
@@ -1486,7 +1490,7 @@ function renderVeriGirisPage() {
       </div>
     </div>` : ''}
 
-    ${proje.isTuru !== 'Yapım İşi' ? `
+    ${isMalVeyaHizmetTuru(proje.isTuru) ? `
     <!-- MUAYENE VE KABUL KOMİSYONU / HEYETİ -->
     <div class="card">
       <div class="card-header" onclick="toggleCard(this)">
@@ -3624,7 +3628,7 @@ function projeValidasyon(p) {
   if (!p.dtGorevliler?.slice(0, p.dtGorevliSayisi||1).some(g => g.ad?.trim()))
                                                                  eksikler.push('D.T. Görevlisi');
   if (!p.onaylayanAmir?.ad?.trim())                             eksikler.push('Onaylayan Amir');
-  if (p.isTuru !== 'Yapım İşi' && !p.isKalemleri?.some(k => k.ad?.trim()))
+  if (isMalVeyaHizmetTuru(p.isTuru) && !p.isKalemleri?.some(k => k.ad?.trim()))
                                                                  eksikler.push('En az 1 İş Kalemi');
   if (!p.ymFirmalar?.some(f => f.ad?.trim()))                   eksikler.push('En az 1 Y.M. Firması');
   if (!p.teklifFirmalar?.some(f => f.ad?.trim()))               eksikler.push('En az 1 Teklif Firması');
@@ -5186,8 +5190,8 @@ function renderProjeOzetPage() {
             <div class="form-group">
               <label>İşin Miktarı</label>
               <input type="text" id="gc_isMiktari"
-                value="${p.isTuru === 'Yapım İşi' ? '1 Adet' : escAttr(p.isMiktari || '')}"
-                ${ro || p.isTuru === 'Yapım İşi' ? 'readonly style="background:#f3f4f6;color:#6b7280"' : ''}
+                value="${!isMalVeyaHizmetTuru(p.isTuru) ? '1 Adet' : escAttr(p.isMiktari || '')}"
+                ${ro || !isMalVeyaHizmetTuru(p.isTuru) ? 'readonly style="background:#f3f4f6;color:#6b7280"' : ''}
                 placeholder="Örn: 5 Adet">
             </div>
             <div class="form-group">

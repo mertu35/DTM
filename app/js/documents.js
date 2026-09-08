@@ -875,7 +875,7 @@ function renderMuayeneKabulTutanagi(proje, referans) {
 function renderDogrudanTeminOnayBelgesi(proje) {
   const yaklasikMaliyet = hesaplaYaklasikMaliyet(proje);
   const dtGorevliler = getAktifGorevliler(proje.dtGorevliler);
-  const isMiktari = proje.isTuru === 'Yapım İşi' ? '1 Adet' : (proje.isMiktari || '-');
+  const isMiktari = !isMalVeyaHizmetTuru(proje.isTuru) ? '1 Adet' : (proje.isMiktari || '-');
   const odenek = proje.odenek ? formatCurrency(parseFloat(proje.odenek)) + ' -TL' : '-';
   const gcAd = proje.gerceklestirmeGorevlisi?.ad || '';
   const gcUnvan = proje.gerceklestirmeGorevlisi?.unvan || 'Gerçekleştirme Görevlisi';

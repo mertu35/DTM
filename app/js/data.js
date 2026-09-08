@@ -23,6 +23,13 @@ const IS_TURLERI = [
     dashboard: { icon: 'building', color: '#ea580c', bg: '#fff7ed' }
   },
   {
+    ad: 'Onarım İşi',
+    aktif: true,
+    malVeyaHizmet: false,
+    rozet:     { bg: '#ecfeff', color: '#155e75', border: '#a5f3fc' },
+    dashboard: { icon: 'building', color: '#0e7490', bg: '#ecfeff' }
+  },
+  {
     ad: 'Mal Alımı',
     aktif: true,
     malVeyaHizmet: true,
@@ -257,6 +264,10 @@ function loadReferans() {
   if (saved) {
     const parsed = JSON.parse(saved);
     const ref = Object.assign(getDefaultReferans(), parsed);
+    // İş türleri listesi kullanıcı tarafından düzenlenmez; her zaman kod
+    // içindeki güncel IS_TURLERI listesinden gelir (eski kayıtlarda saklı
+    // kalmış liste yeni eklenen türleri asla göstermeyeceği için üzerine yazılır).
+    ref.isTurleri = IS_TURU_ADLARI.slice();
     // Eski string formatını {no, aciklama} objesine migrate et
     if (ref.butceTertibiList) {
       ref.butceTertibiList = ref.butceTertibiList.map(bt =>
