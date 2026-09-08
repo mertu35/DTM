@@ -4979,6 +4979,8 @@ function renderGerceklestirmeciBelgelerView(main) {
 }
 
 async function gcOnayBilgiKaydet() {
+  proje.dtOnayTarihi = document.getElementById('gc_dtOnayTarihi')?.value || '';
+  proje.dtOnayNo = document.getElementById('gc_dtOnayNo')?.value || '';
   proje.odenek = document.getElementById('gc_odenek')?.value || '';
   proje.yatirimProjeNo = document.getElementById('gc_yatirimProjeNo')?.value || '';
   proje.butceTertibi = document.getElementById('gc_butceTertibi')?.value || '';
@@ -5184,6 +5186,14 @@ function renderProjeOzetPage() {
         </div>
         <div style="padding:16px">
           <div class="form-grid">
+            <div class="form-group">
+              <label>D.T. Onay Tarihi</label>
+              <input type="date" id="gc_dtOnayTarihi" value="${p.dtOnayTarihi || ''}" ${roInp}>
+            </div>
+            <div class="form-group">
+              <label>D.T. Onay Sayısı</label>
+              <input type="text" id="gc_dtOnayNo" value="${escAttr(p.dtOnayNo || '')}" placeholder="Örn: 84426" ${roInp}>
+            </div>
             <div class="form-group">
               <label>Kullanılabilir Ödenek Tutarı (TL)</label>
               <input type="number" id="gc_odenek" value="${p.odenek || ''}" placeholder="0.00" ${roInp}>
