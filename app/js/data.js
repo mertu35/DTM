@@ -30,6 +30,13 @@ const IS_TURLERI = [
     dashboard: { icon: 'building', color: '#0e7490', bg: '#ecfeff' }
   },
   {
+    ad: 'Bakım Onarım İşi',
+    aktif: true,
+    malVeyaHizmet: false,
+    rozet:     { bg: '#fdf4ff', color: '#86198f', border: '#f5d0fe' },
+    dashboard: { icon: 'building', color: '#a21caf', bg: '#fdf4ff' }
+  },
+  {
     ad: 'Mal Alımı',
     aktif: true,
     malVeyaHizmet: true,
