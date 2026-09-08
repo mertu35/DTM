@@ -75,7 +75,11 @@ service cloud.firestore {
           resource.data.userId == request.auth.uid &&
           resource.data.status in ['taslak', 'geri_gonderildi'] &&
           request.resource.data.userId == request.auth.uid &&
-          request.resource.data.status in ['taslak', 'gonderildi'] &&
+          // geri_gonderildi da izinli listede kalmalı: proje sahibi bir alanı
+          // kaydettiğinde (örn. İş Türü değişikliği, sözleşme maddeleri) durumu
+          // ayrıca değiştirmeyen kısmi update'ler, mevcut durumu (geri_gonderildi)
+          // olduğu gibi korur — bu durum listede yoksa bu tür kayıtlar reddedilir.
+          request.resource.data.status in ['taslak', 'gonderildi', 'geri_gonderildi'] &&
           (
             resource.data.get('locked', false) != true ||
             (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['locked', 'lockedAt', 'lockedBy']) && request.resource.data.locked == false)
