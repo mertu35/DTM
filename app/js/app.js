@@ -784,10 +784,22 @@ function renderPage() {
   }
 }
 
+// Karşılama ekranında gösterilecek ismi belirler. Sadece ilk kelimeyi almak,
+// isim "M. Asım" gibi tek harfli bir kısaltmayla başlıyorsa "M.!" gibi eksik
+// bir selamlamaya yol açıyordu — bu durumda bir sonraki kelime de eklenir.
+function karsilamaAdi(displayName) {
+  if (!displayName) return 'Hoş Geldiniz';
+  const parcalar = displayName.trim().split(/\s+/).filter(Boolean);
+  if (parcalar.length > 1 && parcalar[0].replace('.', '').length <= 1) {
+    return parcalar[0] + ' ' + parcalar[1];
+  }
+  return parcalar[0] || 'Hoş Geldiniz';
+}
+
 // ===================== ANA SAYFA =====================
 async function renderAnaSayfaPage() {
   const main = document.getElementById('mainContent');
-  const ad = currentDTMUser?.displayName?.split(' ')[0] || 'Hoş Geldiniz';
+  const ad = karsilamaAdi(currentDTMUser?.displayName);
   const saat = new Date().getHours();
   const selamlama = saat < 12 ? 'Günaydın' : saat < 18 ? 'İyi Günler' : 'İyi Akşamlar';
 
@@ -803,7 +815,7 @@ async function renderAnaSayfaPage() {
     <div style="max-width:700px;margin:0 auto;padding:32px 16px">
       <div style="text-align:center;margin-bottom:40px">
         <img src="icons/Birim Arması.png" style="width:160px;display:block;margin:0 auto 12px" alt="Birim Arması">
-        <h1 style="font-size:26px;font-weight:700;color:var(--gray-800);margin-bottom:6px">${selamlama}, ${ad}!</h1>
+        <h1 style="font-size:26px;font-weight:700;color:var(--gray-800);margin-bottom:6px">${selamlama}, ${escHtml(ad)}!</h1>
         <p style="color:var(--gray-500);font-size:14px">Doğrudan Temin Modülü'ne Hoş Geldiniz.</p>
       </div>
 
