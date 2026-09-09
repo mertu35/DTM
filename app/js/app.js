@@ -588,9 +588,19 @@ async function doLogout() {
   await dtmLogout();
 }
 
+// Rol bazlı periyodik kontrollerin interval ID'leri — çıkış/giriş arasında
+// eskilerinin temizlenmemesi, aynı taramanın üst üste binerek gereksiz
+// Firestore okuması yapmasına yol açıyordu.
+let rolIntervalIds = [];
+function rolIntervallariTemizle() {
+  rolIntervalIds.forEach(id => clearInterval(id));
+  rolIntervalIds = [];
+}
+
 async function onAuthReady(user) {
   const lo = document.getElementById('loadingOverlay');
   if (lo) lo.style.display = 'none';
+  rolIntervallariTemizle();
   if (user && currentDTMUser) {
     // Referansı buluttan yükle (kullanıcı + global)
     // Vision API key'i Remote Config'den yükle
@@ -640,11 +650,11 @@ async function onAuthReady(user) {
     checkForUpdates(); // Otomatik güncelleme badge kontrolü
     if (currentDTMUser.role === 'gerceklestirmeci') {
       checkGonderilenProjeler();
-      setInterval(checkGonderilenProjeler, 30000);
+      rolIntervalIds.push(setInterval(checkGonderilenProjeler, 30000));
     }
     if (['admin', 'superadmin'].includes(currentDTMUser.role)) {
       checkOnayliProjeler();
-      setInterval(checkOnayliProjeler, 30000);
+      rolIntervalIds.push(setInterval(checkOnayliProjeler, 30000));
     }
     if (currentDTMUser.role === 'user') checkGeriGonderiend();
   } else {
