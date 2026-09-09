@@ -148,8 +148,11 @@ function showConfirm(mesaj, onayBtn = 'Evet', iptalBtn = 'İptal') {
   });
 }
 
-function acBelgeIndirModal() {
-  if (!proje || !currentBelgelerProjeId) return;
+// Ortak belge indir modalı. dtOnayBelgesi=true iken listeye D.T. Onay Belgesi
+// de eklenir (gerçekleştirmeci görünümü); onIndir seçilen belge id'leriyle
+// çağrılan asıl indirme/yazdırma fonksiyonudur.
+function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
+  if (!proje || !guard) return;
 
   const mevcut = document.getElementById('dtmBelgeIndirModal');
   if (mevcut) mevcut.remove();
@@ -159,6 +162,7 @@ function acBelgeIndirModal() {
   const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
 
   const belgeler = [
+    ...(dtOnayBelgesi ? [{ id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi', excel: false, word: false }] : []),
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
     { id: 'teknik-sartname', ad: 'Teknik Şartname', excel: false, word: true },
@@ -222,7 +226,7 @@ function acBelgeIndirModal() {
     const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')].map(cb => cb.value);
     if (!secilen.length) { showToast('En az bir belge seçin', 'warning'); return; }
     overlay.remove();
-    await cokluBelgeIndir(secilen);
+    await onIndir(secilen);
   };
 
   document.getElementById('dtmBelgeIndirExcel').onclick = () => {
@@ -246,10 +250,18 @@ function acBelgeIndirModal() {
   };
 }
 
-async function cokluBelgeIndir(secilen) {
-  if (!proje || !currentBelgelerProjeId) { showToast('Proje bulunamadı', 'error'); return; }
+function acBelgeIndirModal() {
+  belgeIndirModalAc(currentBelgelerProjeId, false, cokluBelgeIndir);
+}
 
-  const belgeMap = {
+function acGerceklestirmeciIndirModal() {
+  belgeIndirModalAc(currentGerceklestirmeciBelgelerProjeId, true, cokluGerceklestirmeciBelgeIndir);
+}
+
+// Ortak: proje belgeleri render eşlemesi. dtOnayBelgesi=true iken D.T. Onay
+// Belgesi de eşlemeye eklenir (gerçekleştirmeci görünümünde kullanılır).
+function belgeMapOlustur(dtOnayBelgesi) {
+  const map = {
     'yaklasik-maliyet': { render: () => renderYaklasikMaliyet(proje, referans), landscape: true },
     'teklif-tutanagi':  { render: () => renderTeklifTutanagi(proje, referans), landscape: true },
     'teknik-sartname':  { render: () => renderTeknikSartname(proje, referans), landscape: false },
@@ -258,6 +270,13 @@ async function cokluBelgeIndir(secilen) {
     'muayene-kabul':    { render: () => renderMuayeneKabulTutanagi(proje, referans), landscape: false },
     'hakedis-raporu':   { render: () => renderHakedisRaporu(proje, referans), landscape: false }
   };
+  if (dtOnayBelgesi) map['dt-onay-belgesi'] = { render: () => renderDogrudanTeminOnayBelgesi(proje), landscape: false };
+  return map;
+}
+
+// Ortak: seçilen belgeleri tek bir yazdırma penceresinde birleştirip açar.
+function belgeleriYazdirPenceresiAc(secilen, dtOnayBelgesi) {
+  const belgeMap = belgeMapOlustur(dtOnayBelgesi);
 
   const parts = [];
   for (const belgeId of secilen) {
@@ -287,8 +306,8 @@ async function cokluBelgeIndir(secilen) {
     @page yatay  { size: A4 landscape; margin: 8mm 10mm; }
     @page sozlesmesayfa { size: A4 portrait; margin: 10mm 25mm 20mm 25mm; }
     @media print {
-      body { 
-        padding:0 !important; 
+      body {
+        padding:0 !important;
         zoom: 0.95;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
@@ -307,159 +326,14 @@ async function cokluBelgeIndir(secilen) {
   setTimeout(() => win.print(), 800);
 }
 
-function acGerceklestirmeciIndirModal() {
-  if (!proje || !currentGerceklestirmeciBelgelerProjeId) return;
-
-  const mevcut = document.getElementById('dtmBelgeIndirModal');
-  if (mevcut) mevcut.remove();
-
-  const isMalVeyaHizmet = isMalVeyaHizmetTuru(proje.isTuru);
-  const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
-  const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
-
-  const belgeler = [
-    { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi', excel: false, word: false },
-    { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
-    { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
-    { id: 'teknik-sartname', ad: 'Teknik Şartname', excel: false, word: true },
-    ...(isMalVeyaHizmet ? [] : [{ id: 'sozlesme', ad: 'Sözleşme', excel: false, word: true }]),
-    { id: sonTutanakId, ad: sonTutanakAd, excel: false, word: true },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu', excel: false, word: true }
-  ];
-
-  const checkboxler = belgeler.map(b => `
-    <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px solid var(--gray-100);">
-      <input type="checkbox" class="belge-indir-cb" value="${b.id}" data-excel="${b.excel}" data-word="${b.word}" checked
-        style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
-      <span style="font-size:14px;color:var(--gray-800);flex:1">${b.ad}</span>
-      ${b.excel ? '<span style="font-size:10px;background:#10b981;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">XLSX</span>' : ''}
-      ${b.word ? '<span style="font-size:10px;background:#2563eb;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">DOC</span>' : ''}
-    </label>`).join('');
-
-  const overlay = document.createElement('div');
-  overlay.id = 'dtmBelgeIndirModal';
-  overlay.className = 'dtm-modal-overlay';
-  overlay.innerHTML = `
-    <div class="dtm-modal" style="max-width:420px">
-      <div class="dtm-modal-header">
-        <h3>&#128196; Belge İndir</h3>
-      </div>
-      <div class="dtm-modal-body">
-        <p style="margin:0 0 14px;font-size:13px;color:var(--gray-500)">İndirilecek belgeleri işaretleyin</p>
-        <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:2px solid var(--gray-200);margin-bottom:2px;font-weight:600;">
-          <input type="checkbox" id="hepsiniSecCb2" checked style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
-          <span style="font-size:14px;color:var(--gray-700)">Tümünü Seç</span>
-        </label>
-        ${checkboxler}
-      </div>
-      <div class="dtm-modal-footer">
-        <button id="gcIndirIptal" class="btn btn-outline">İptal</button>
-        <button id="gcIndirWord" class="btn" style="background:#2563eb;color:#fff" title="Sadece DOC işaretli belgeler">&#128196; Word</button>
-        <button id="gcIndirExcel" class="btn" style="background:#10b981;color:#fff" title="Sadece XLSX işaretli belgeler">&#128202; Excel</button>
-        <button id="gcIndirOnay" class="btn btn-primary">&#128196; PDF</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-
-  const hepsiniCb = document.getElementById('hepsiniSecCb2');
-  const cbList = overlay.querySelectorAll('.belge-indir-cb');
-  hepsiniCb.addEventListener('change', () => cbList.forEach(cb => cb.checked = hepsiniCb.checked));
-  cbList.forEach(cb => cb.addEventListener('change', () => {
-    hepsiniCb.checked = [...cbList].every(c => c.checked);
-    hepsiniCb.indeterminate = !hepsiniCb.checked && [...cbList].some(c => c.checked);
-  }));
-
-  document.getElementById('gcIndirIptal').onclick = () => overlay.remove();
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-
-  document.getElementById('gcIndirOnay').onclick = () => {
-    const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')].map(cb => cb.value);
-    if (!secilen.length) { showToast('En az bir belge seçin', 'warning'); return; }
-    overlay.remove();
-    cokluGerceklestirmeciBelgeIndir(secilen);
-  };
-
-  document.getElementById('gcIndirExcel').onclick = () => {
-    const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')]
-      .filter(cb => cb.dataset.excel === 'true')
-      .map(cb => cb.value);
-    if (!secilen.length) { showToast('Excel desteği olan belge seçilmedi (Yaklaşık Maliyet veya Teklif Tutanağı)', 'warning'); return; }
-    overlay.remove();
-    secilen.forEach(belgeId => belgeIdindenExcelUret(belgeId, proje, referans));
-    showToast(`${secilen.length} belge Excel olarak indirildi.`, 'success');
-  };
-
-  document.getElementById('gcIndirWord').onclick = () => {
-    const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')]
-      .filter(cb => cb.dataset.word === 'true')
-      .map(cb => cb.value);
-    if (!secilen.length) { showToast('Word desteği olan belge seçilmedi', 'warning'); return; }
-    overlay.remove();
-    secilen.forEach(belgeId => belgeIdindenWordUret(belgeId, proje, referans));
-    showToast(`${secilen.length} belge Word olarak indirildi.`, 'success');
-  };
+async function cokluBelgeIndir(secilen) {
+  if (!proje || !currentBelgelerProjeId) { showToast('Proje bulunamadı', 'error'); return; }
+  belgeleriYazdirPenceresiAc(secilen, false);
 }
 
 function cokluGerceklestirmeciBelgeIndir(secilen) {
   if (!proje || !currentGerceklestirmeciBelgelerProjeId) return;
-
-  const belgeMap = {
-    'dt-onay-belgesi':  { render: () => renderDogrudanTeminOnayBelgesi(proje), landscape: false },
-    'yaklasik-maliyet': { render: () => renderYaklasikMaliyet(proje, referans), landscape: true },
-    'teklif-tutanagi':  { render: () => renderTeklifTutanagi(proje, referans), landscape: true },
-    'teknik-sartname':  { render: () => renderTeknikSartname(proje, referans), landscape: false },
-    'sozlesme':         { render: () => renderSozlesme(proje, referans), landscape: false, sozlesme: true },
-    'bitti-tutanagi':   { render: () => renderBittiTutanagi(proje, referans), landscape: false },
-    'muayene-kabul':    { render: () => renderMuayeneKabulTutanagi(proje, referans), landscape: false },
-    'hakedis-raporu':   { render: () => renderHakedisRaporu(proje, referans), landscape: false }
-  };
-
-  const parts = [];
-  for (const belgeId of secilen) {
-    const b = belgeMap[belgeId];
-    if (!b) continue;
-    parts.push({ html: b.render(), landscape: b.landscape, sozlesme: b.sozlesme || false });
-  }
-  if (!parts.length) return;
-
-  const win = window.open('', '_blank');
-  if (!win) { showToast('Açılır pencere engellendi. Tarayıcı ayarlarından izin verin.', 'error'); return; }
-
-  const sections = parts.map(b => {
-    const sinif = b.sozlesme ? 'pg-sozlesme' : (b.landscape ? 'pg-yatay' : 'pg-dikey');
-    return `<div class="belge-bolum ${sinif}">${b.html}</div>`;
-  }).join('');
-
-  const css = `
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: "Times New Roman", serif; font-size:9pt; color:#000; background:#fff; }
-    .belge-bolum { padding:10mm 14mm; }
-    .pg-yatay { padding:8mm 10mm; }
-    .pg-sozlesme { padding:10mm 25mm 20mm 25mm; }
-    .belge { width:100%; }
-    ${belgeOrtakCSS()}
-    @page dikey  { size: A4 portrait;  margin: 10mm 14mm; }
-    @page yatay  { size: A4 landscape; margin: 8mm 10mm; }
-    @page sozlesmesayfa { size: A4 portrait; margin: 10mm 25mm 20mm 25mm; }
-    @media print {
-      body { 
-        padding:0 !important; 
-        zoom: 0.95;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      .belge-bolum { padding:0 !important; }
-      .pg-dikey { page: dikey; break-before: page; }
-      .pg-yatay { page: yatay; break-before: page; }
-      /* Sözleşme, resmi Word şablonuyla eşit kenar boşluğu ve %100 ölçek kullanır */
-      .pg-sozlesme { page: sozlesmesayfa; break-before: page; zoom: 1; }
-      .pg-dikey:first-child, .pg-yatay:first-child, .pg-sozlesme:first-child { break-before: avoid; }
-      ${belgeSayfalamaCSS()}
-    }`;
-
-  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${escHtml(proje.isAdi || 'Belgeler')}</title><style>${css}</style></head><body>${sections}</body></html>`);
-  win.document.close();
-  setTimeout(() => win.print(), 800);
+  belgeleriYazdirPenceresiAc(secilen, true);
 }
 
 const AVATARS = [
