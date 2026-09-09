@@ -2563,6 +2563,10 @@ function acSozlesmeMaddeleriDuzenleModal() {
         await updateProjeInCloud(currentCloudProjeId, proje);
       } catch(e) {
         console.warn('Buluta kaydedilemedi:', e);
+        showToast('Değişiklikler buluta kaydedilemedi: ' + hataMesaji(e) + ' (Sadece bu cihazda kaldı, tekrar deneyin)', 'error');
+        kapat();
+        renderPage();
+        return;
       }
     }
     showToast("Sözleşme maddeleri başarıyla güncellendi.", "success");
@@ -2622,6 +2626,10 @@ function acTeknikSartnameDuzenleModal() {
         await updateProjeInCloud(currentCloudProjeId, proje);
       } catch(e) {
         console.warn('Buluta kaydedilemedi:', e);
+        showToast('Değişiklikler buluta kaydedilemedi: ' + hataMesaji(e) + ' (Sadece bu cihazda kaldı, tekrar deneyin)', 'error');
+        kapat();
+        renderPage();
+        return;
       }
     }
     showToast("Teknik Şartname metni başarıyla güncellendi.", "success");
@@ -3448,9 +3456,17 @@ async function cloudKaydet() {
       const extraUpdate = { geriGonderNot: null, geriGonderAt: null, geriGonderBy: null };
       if (currentProjeStatus === 'geri_gonderildi') {
         extraUpdate.status = 'taslak';
-        currentProjeStatus = 'taslak';
       }
-      await db.collection('projeler').doc(currentCloudProjeId).update(extraUpdate).catch(e => console.warn('[proje] Durum güncellenemedi:', e?.code, e?.message));
+      try {
+        await db.collection('projeler').doc(currentCloudProjeId).update(extraUpdate);
+        if (currentProjeStatus === 'geri_gonderildi') currentProjeStatus = 'taslak';
+      } catch(e) {
+        console.warn('[proje] Durum güncellenemedi:', e?.code, e?.message);
+        lastSavedProjeSnapshot = JSON.stringify(proje);
+        showToast('Proje kaydedildi, ancak durum güncellenemedi: ' + hataMesaji(e), 'warning');
+        renderPage();
+        return;
+      }
       lastSavedProjeSnapshot = JSON.stringify(proje);
       showToast('Proje başarıyla kaydedildi!');
     } else {
