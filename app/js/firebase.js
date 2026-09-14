@@ -493,11 +493,10 @@ async function getProjeFromCloud(projeId) {
   return { id: snap.id, ...snap.data() };
 }
 
-// ===== İŞE AİT DOSYALAR (Firebase Storage) =====
-// Fotoğraf, fatura, vergi borcu yoktur belgesi gibi projeyle ilgili serbest
-// dosyalar. Sınırlar storage.rules'daki kurallarla birebir aynı olmalı —
-// biri değişirse diğeri de güncellenmeli.
-const PROJE_DOSYA_MAX_BOYUT = 10 * 1024 * 1024; // 10 MB
+// ===== İŞE AİT DOSYALAR (Firestore Alt-Koleksiyonu & Base64) =====
+// Fotoğraf, fatura, vergi borcu belgesi vb. harici depolama gerektirmeden
+// doğrudan Firestore'da 'projeler/{projeId}/dosyalar' koleksiyonuna kaydedilir.
+const PROJE_DOSYA_MAX_BELGE_BOYUT = 800 * 1024; // PDF/Word/Excel için 800 KB (Base64 ile < 1 MB)
 const PROJE_DOSYA_IZIN_VERILEN_TIPLER = [
   'image/', 'application/pdf', 'application/msword',
   'application/vnd.openxmlformats-officedocument.', 'application/vnd.ms-excel'
@@ -507,47 +506,138 @@ function projeDosyaTipiIzinli(dosya) {
   return PROJE_DOSYA_IZIN_VERILEN_TIPLER.some(t => dosya.type.startsWith(t));
 }
 
-// Projeye dosya yükle
-async function projeDosyaYukle(projeId, dosya) {
-  if (dosya.size > PROJE_DOSYA_MAX_BOYUT) {
-    throw new Error('Dosya 10 MB\'tan büyük olamaz.');
+// Resimleri tarayıcıda kayıpsız sıkıştırıp Base64 JPEG üretir
+function compressImage(file, maxDimension = 1600, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Dosyayı Base64 Data URL formatına çevirir
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => resolve(reader.target.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+// Base64 verisini Blob formatına çevirir
+function base64ToBlob(base64Data, contentType) {
+  const parts = base64Data.split(';base64,');
+  const type = contentType || (parts[0] ? parts[0].split(':')[1] : 'application/octet-stream');
+  const byteCharacters = atob(parts[1] || parts[0]);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
   }
+  const byteArray = new Uint8Array(byteNumbers);
+  return new Blob([byteArray], { type: type });
+}
+
+// Dosyayı yeni sekmede önizler veya doğrudan indirir
+window.projeDosyaGoruntule = function(base64Data, dosyaAdi, contentType) {
+  try {
+    const blob = base64ToBlob(base64Data, contentType);
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, '_blank');
+  } catch(e) {
+    const a = document.createElement('a');
+    a.href = base64Data;
+    a.download = dosyaAdi || 'dosya';
+    a.click();
+  }
+};
+
+// Projeye dosya yükle (Firestore alt-koleksiyonuna)
+async function projeDosyaYukle(projeId, dosya) {
   if (!projeDosyaTipiIzinli(dosya)) {
     throw new Error('Bu dosya türü desteklenmiyor. Resim, PDF, Word veya Excel dosyası yükleyin.');
   }
-  const guvenliAd = dosya.name.replace(/[^\w.\-ğüşıöçĞÜŞİÖÇ ]/g, '_');
-  const yol = `projeDosyalari/${projeId}/${Date.now()}_${guvenliAd}`;
-  await storage.ref(yol).put(dosya, {
-    contentType: dosya.type,
-    customMetadata: {
-      orijinalAd: dosya.name,
-      yukleyenAd: currentDTMUser?.displayName || currentDTMUser?.username || ''
+
+  let dataUrl = '';
+  let sonBoyut = dosya.size;
+
+  if (dosya.type.startsWith('image/')) {
+    // Fotoğrafları otomatik optimize et (mobil kamera fotoları 200-300 KB'a iner)
+    dataUrl = await compressImage(dosya);
+    sonBoyut = Math.round((dataUrl.length * 3) / 4);
+  } else {
+    // PDF / Word / Excel dosyaları
+    if (dosya.size > PROJE_DOSYA_MAX_BELGE_BOYUT) {
+      throw new Error('PDF veya Word dosyası 800 KB\'tan büyük olamaz. Lütfen daha küçük boyutlu bir dosya yükleyin.');
     }
+    dataUrl = await fileToBase64(dosya);
+  }
+
+  // Firestore 1 MB doküman sınır kontrolü
+  if (dataUrl.length > 1000 * 1024) {
+    throw new Error('Dosya veritabanı boyut sınırını (1 MB) aşıyor.');
+  }
+
+  const docRef = await db.collection('projeler').doc(projeId).collection('dosyalar').add({
+    ad: dosya.name,
+    boyut: sonBoyut,
+    tip: dosya.type || 'application/octet-stream',
+    yukleyenAd: currentDTMUser?.displayName || currentDTMUser?.username || '',
+    yukleyenUid: currentDTMUser?.uid || '',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    data: dataUrl
   });
-  return yol;
+
+  return `projeler/${projeId}/dosyalar/${docRef.id}`;
 }
 
 // Projeye ait yüklenmiş dosyaları listele (en yeni en üstte)
 async function projeDosyalariGetir(projeId) {
-  const sonuc = await storage.ref(`projeDosyalari/${projeId}`).listAll();
-  const dosyalar = await Promise.all(sonuc.items.map(async (item) => {
-    const meta = await item.getMetadata();
+  const snap = await db.collection('projeler').doc(projeId).collection('dosyalar')
+    .orderBy('createdAt', 'desc')
+    .get();
+
+  return snap.docs.map(doc => {
+    const d = doc.data();
     return {
-      yol: item.fullPath,
-      ad: meta.customMetadata?.orijinalAd || item.name,
-      boyut: meta.size,
-      tip: meta.contentType,
-      yukleyenAd: meta.customMetadata?.yukleyenAd || '',
-      yuklenmeTarihi: meta.timeCreated,
-      url: await item.getDownloadURL()
+      yol: `projeler/${projeId}/dosyalar/${doc.id}`,
+      docId: doc.id,
+      ad: d.ad || 'İsimsiz Belge',
+      boyut: d.boyut || 0,
+      tip: d.tip || '',
+      yukleyenAd: d.yukleyenAd || '',
+      yuklenmeTarihi: d.createdAt?.toDate ? d.createdAt.toDate().toISOString() : new Date().toISOString(),
+      url: d.data || ''
     };
-  }));
-  return dosyalar.sort((a, b) => new Date(b.yuklenmeTarihi) - new Date(a.yuklenmeTarihi));
+  });
 }
 
 // Projeye ait bir dosyayı sil
 async function projeDosyaSil(yol) {
-  await storage.ref(yol).delete();
+  await db.doc(yol).delete();
 }
 
 // ===== DUYURU FONKSİYONLARI =====

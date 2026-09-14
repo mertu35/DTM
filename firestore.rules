@@ -91,6 +91,21 @@ service cloud.firestore {
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
         (resource.data.userId == request.auth.uid && resource.data.status in ['taslak', 'geri_gonderildi'] && resource.data.get('locked', false) != true)
       );
+
+      // Projeye ait ekler / dosyalar (Firestore alt koleksiyonu)
+      match /dosyalar/{dosyaId} {
+        allow read: if request.auth != null && (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
+          (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.userId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.atananGerceklestirmeciUid == request.auth.uid)
+        );
+
+        allow create, delete: if request.auth != null && (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
+          (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.userId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.atananGerceklestirmeciUid == request.auth.uid)
+        );
+      }
     }
 
     // Referans verileri (kullanıcıya özel)

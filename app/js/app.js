@@ -1538,18 +1538,31 @@ function formatDosyaBoyutu(bayt) {
   return (bayt / 1024 / 1024).toFixed(1) + ' MB';
 }
 
+window._projeDosyalariCache = {};
+
+window.projeDosyaAc = function(docId) {
+  const d = window._projeDosyalariCache?.[docId];
+  if (!d || !d.url) return;
+  if (typeof projeDosyaGoruntule === 'function') {
+    projeDosyaGoruntule(d.url, d.ad, d.tip);
+  }
+};
+
 async function projeDosyaListesiYukle() {
   const container = document.getElementById('projeDosyaListesi');
   if (!container || !currentCloudProjeId) return;
   try {
     const dosyalar = await projeDosyalariGetir(currentCloudProjeId);
+    window._projeDosyalariCache = {};
+    dosyalar.forEach(d => { window._projeDosyalariCache[d.docId] = d; });
+
     if (!dosyalar.length) {
       container.innerHTML = `<p style="color:var(--gray-400);font-size:13px">Henüz dosya eklenmemiş.</p>`;
       return;
     }
     container.innerHTML = dosyalar.map(d => `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
-        <a href="${escAttr(d.url)}" target="_blank" rel="noopener" style="flex:1;font-size:13px;color:var(--gray-800);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.ad)}</a>
+        <a href="javascript:void(0)" onclick="projeDosyaAc('${escAttr(d.docId)}')" style="flex:1;font-size:13px;color:var(--primary, #1e40af);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Görüntüle / İndir">📎 ${escHtml(d.ad)}</a>
         <span style="font-size:11.5px;color:var(--gray-400);white-space:nowrap">${formatDosyaBoyutu(d.boyut)}</span>
         <span style="font-size:11.5px;color:var(--gray-400);white-space:nowrap">${escHtml(d.yukleyenAd)}</span>
         ${!currentProjeKilitli ? `<button type="button" onclick="projeDosyaSilOnayla('${escAttr(d.yol)}')" title="Sil" style="padding:3px 7px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;color:#6b7280;font-size:13px;flex-shrink:0">✕</button>` : ''}
