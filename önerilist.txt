@@ -222,6 +222,26 @@ SONRADAN EKLENENLER (01.09.2026)
     açık olması.
 
 
+SONRADAN EKLENENLER (14-15.09.2026)
+-----------------------------------
+
+25. İşe Ait Dosyalar — firestore.rules'da boyut/tip sınırı yok   [YAPILMADI]
+    Fotoğraf/fatura/vergi borcu yoktur gibi ekler artık projeler/{projeId}/
+    dosyalar alt koleksiyonunda Base64 olarak tutuluyor (Firebase Storage/
+    Blaze planı gerektirmeden). Büyük PDF'ler 700 KB'lık parçalara bölünüp
+    (parcalar alt koleksiyonu) açılırken birleştiriliyor — parçalama/
+    birleştirme ve silme (tüm parçaları temizleme) test edildi, doğru
+    çalışıyor. Meta doküman + parçalar tek atomik batch'te yazılıyor,
+    yarım kalma riski yok.
+    Eksik: firestore.rules'daki dosyalar/{dosyaId=**} kuralı sadece KİM
+    yazabilir diye bakıyor (sahip/gerçekleştirmeci/admin) — dosya boyutu
+    (client'ta 5 MB / 700 KB parça sınırı var) veya dosya tipi için kural
+    seviyesinde HİÇBİR kontrol yok. Şu an sadece tarayıcıdaki JS kontrolüne
+    güveniliyor, bu da API'yi doğrudan çağıran biri tarafından atlanabilir.
+    Küçük/güvenilir kullanıcı grubu için düşük risk kabul edildi, ama
+    firestore.rules'a request.resource.data üzerinden boyut/tip kontrolü
+    eklenip emülatörde test edilmesi gerekiyor.
+
 AÇIK KONULAR (devam eden)
 -------------------------
 
