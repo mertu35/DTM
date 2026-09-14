@@ -1540,11 +1540,21 @@ function formatDosyaBoyutu(bayt) {
 
 window._projeDosyalariCache = {};
 
-window.projeDosyaAc = function(docId) {
+window.projeDosyaAc = async function(docId) {
   const d = window._projeDosyalariCache?.[docId];
-  if (!d || !d.url) return;
-  if (typeof projeDosyaGoruntule === 'function') {
-    projeDosyaGoruntule(d.url, d.ad, d.tip);
+  if (!d) return;
+  try {
+    let dataUrl = d.url;
+    if (d.parcali && !dataUrl) {
+      if (typeof showToast === 'function') showToast('Dosya açılıyor, lütfen bekleyin...', 'info');
+      dataUrl = await projeDosyaIcerigiGetir(d.projeId, d.docId, d);
+      d.url = dataUrl;
+    }
+    if (typeof projeDosyaGoruntule === 'function' && dataUrl) {
+      projeDosyaGoruntule(dataUrl, d.ad, d.tip);
+    }
+  } catch(e) {
+    if (typeof showToast === 'function') showToast('Dosya açılamadı: ' + (e.message || e), 'error');
   }
 };
 

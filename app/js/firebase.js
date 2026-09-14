@@ -496,14 +496,36 @@ async function getProjeFromCloud(projeId) {
 // ===== İŞE AİT DOSYALAR (Firestore Alt-Koleksiyonu & Base64) =====
 // Fotoğraf, fatura, vergi borcu belgesi vb. harici depolama gerektirmeden
 // doğrudan Firestore'da 'projeler/{projeId}/dosyalar' koleksiyonuna kaydedilir.
-const PROJE_DOSYA_MAX_BELGE_BOYUT = 800 * 1024; // PDF/Word/Excel için 800 KB (Base64 ile < 1 MB)
+const PROJE_DOSYA_MAX_BOYUT = 5 * 1024 * 1024; // Maksimum dosya boyutu: 5 MB
+const PROJE_DOSYA_IZIN_VERILEN_UZANTILAR = [
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx',
+  '.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif'
+];
 const PROJE_DOSYA_IZIN_VERILEN_TIPLER = [
   'image/', 'application/pdf', 'application/msword',
-  'application/vnd.openxmlformats-officedocument.', 'application/vnd.ms-excel'
+  'application/vnd.openxmlformats-officedocument.', 'application/vnd.ms-excel',
+  'application/x-pdf'
 ];
 
 function projeDosyaTipiIzinli(dosya) {
-  return PROJE_DOSYA_IZIN_VERILEN_TIPLER.some(t => dosya.type.startsWith(t));
+  const ad = (dosya.name || '').toLowerCase();
+  const uzantiGecerli = PROJE_DOSYA_IZIN_VERILEN_UZANTILAR.some(u => ad.endsWith(u));
+  const tipGecerli = dosya.type && PROJE_DOSYA_IZIN_VERILEN_TIPLER.some(t => dosya.type.startsWith(t));
+  return uzantiGecerli || tipGecerli;
+}
+
+function dosyaMimeTipiBelirle(dosya) {
+  if (dosya.type && dosya.type !== 'application/octet-stream') return dosya.type;
+  const ad = (dosya.name || '').toLowerCase();
+  if (ad.endsWith('.pdf')) return 'application/pdf';
+  if (ad.endsWith('.doc')) return 'application/msword';
+  if (ad.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (ad.endsWith('.xls')) return 'application/vnd.ms-excel';
+  if (ad.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  if (ad.endsWith('.jpg') || ad.endsWith('.jpeg')) return 'image/jpeg';
+  if (ad.endsWith('.png')) return 'image/png';
+  if (ad.endsWith('.webp')) return 'image/webp';
+  return 'application/pdf';
 }
 
 // Resimleri tarayıcıda kayıpsız sıkıştırıp Base64 JPEG üretir
@@ -551,8 +573,9 @@ function fileToBase64(file) {
 // Base64 verisini Blob formatına çevirir
 function base64ToBlob(base64Data, contentType) {
   const parts = base64Data.split(';base64,');
-  const type = contentType || (parts[0] ? parts[0].split(':')[1] : 'application/octet-stream');
-  const byteCharacters = atob(parts[1] || parts[0]);
+  const type = contentType || (parts[0] ? parts[0].replace('data:', '') : 'application/pdf');
+  const rawBase64 = parts[1] || parts[0];
+  const byteCharacters = atob(rawBase64);
   const byteNumbers = new Array(byteCharacters.length);
   for (let i = 0; i < byteCharacters.length; i++) {
     byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -564,7 +587,8 @@ function base64ToBlob(base64Data, contentType) {
 // Dosyayı yeni sekmede önizler veya doğrudan indirir
 window.projeDosyaGoruntule = function(base64Data, dosyaAdi, contentType) {
   try {
-    const blob = base64ToBlob(base64Data, contentType);
+    const mime = contentType || dosyaMimeTipiBelirle({ name: dosyaAdi, type: '' });
+    const blob = base64ToBlob(base64Data, mime);
     const blobUrl = URL.createObjectURL(blob);
     window.open(blobUrl, '_blank');
   } catch(e) {
@@ -577,41 +601,84 @@ window.projeDosyaGoruntule = function(base64Data, dosyaAdi, contentType) {
 
 // Projeye dosya yükle (Firestore alt-koleksiyonuna)
 async function projeDosyaYukle(projeId, dosya) {
+  if (dosya.size > PROJE_DOSYA_MAX_BOYUT) {
+    throw new Error('Dosya boyutu 5 MB\'tan büyük olamaz. Lütfen daha küçük bir dosya seçin.');
+  }
+
   if (!projeDosyaTipiIzinli(dosya)) {
     throw new Error('Bu dosya türü desteklenmiyor. Resim, PDF, Word veya Excel dosyası yükleyin.');
   }
 
+  const mimeTipi = dosyaMimeTipiBelirle(dosya);
   let dataUrl = '';
   let sonBoyut = dosya.size;
 
-  if (dosya.type.startsWith('image/')) {
+  if (mimeTipi.startsWith('image/')) {
     // Fotoğrafları otomatik optimize et (mobil kamera fotoları 200-300 KB'a iner)
     dataUrl = await compressImage(dosya);
     sonBoyut = Math.round((dataUrl.length * 3) / 4);
   } else {
     // PDF / Word / Excel dosyaları
-    if (dosya.size > PROJE_DOSYA_MAX_BELGE_BOYUT) {
-      throw new Error('PDF veya Word dosyası 800 KB\'tan büyük olamaz. Lütfen daha küçük boyutlu bir dosya yükleyin.');
-    }
     dataUrl = await fileToBase64(dosya);
   }
 
-  // Firestore 1 MB doküman sınır kontrolü
-  if (dataUrl.length > 1000 * 1024) {
-    throw new Error('Dosya veritabanı boyut sınırını (1 MB) aşıyor.');
+  const docRef = db.collection('projeler').doc(projeId).collection('dosyalar').doc();
+  const CHUNK_SIZE = 700 * 1024; // 700 KB chunk (Firestore 1 MB doküman sınırına tam uyar)
+
+  if (dataUrl.length <= CHUNK_SIZE) {
+    // Tek doküman olarak sığıyor
+    await docRef.set({
+      ad: dosya.name,
+      boyut: sonBoyut,
+      tip: mimeTipi,
+      yukleyenAd: currentDTMUser?.displayName || currentDTMUser?.username || '',
+      yukleyenUid: currentDTMUser?.uid || '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      parcali: false,
+      data: dataUrl
+    });
+  } else {
+    // 1 MB'ı aşan büyük PDF'ler için parçalama (chunking)
+    const chunks = [];
+    for (let i = 0; i < dataUrl.length; i += CHUNK_SIZE) {
+      chunks.push(dataUrl.slice(i, i + CHUNK_SIZE));
+    }
+
+    await docRef.set({
+      ad: dosya.name,
+      boyut: sonBoyut,
+      tip: mimeTipi,
+      yukleyenAd: currentDTMUser?.displayName || currentDTMUser?.username || '',
+      yukleyenUid: currentDTMUser?.uid || '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      parcali: true,
+      parcaSayisi: chunks.length
+    });
+
+    // Parçaları subcollection olarak kaydet
+    const batch = db.batch();
+    chunks.forEach((chunk, index) => {
+      const chunkDoc = docRef.collection('parcalar').doc(String(index).padStart(3, '0'));
+      batch.set(chunkDoc, { index, chunk });
+    });
+    await batch.commit();
   }
 
-  const docRef = await db.collection('projeler').doc(projeId).collection('dosyalar').add({
-    ad: dosya.name,
-    boyut: sonBoyut,
-    tip: dosya.type || 'application/octet-stream',
-    yukleyenAd: currentDTMUser?.displayName || currentDTMUser?.username || '',
-    yukleyenUid: currentDTMUser?.uid || '',
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    data: dataUrl
-  });
-
   return `projeler/${projeId}/dosyalar/${docRef.id}`;
+}
+
+// Büyük parçalı dosyaların içeriğini birleştirerek getirir
+async function projeDosyaIcerigiGetir(projeId, docId, dosyaMeta) {
+  if (!dosyaMeta.parcali && dosyaMeta.url) {
+    return dosyaMeta.url;
+  }
+  const snap = await db.collection('projeler').doc(projeId)
+    .collection('dosyalar').doc(docId)
+    .collection('parcalar').orderBy('index', 'asc')
+    .get();
+
+  const fullData = snap.docs.map(d => d.data().chunk).join('');
+  return fullData;
 }
 
 // Projeye ait yüklenmiş dosyaları listele (en yeni en üstte)
@@ -623,11 +690,13 @@ async function projeDosyalariGetir(projeId) {
   return snap.docs.map(doc => {
     const d = doc.data();
     return {
-      yol: `projeler/${projeId}/dosyalar/${doc.id}`,
+      projeId: projeId,
       docId: doc.id,
+      yol: `projeler/${projeId}/dosyalar/${doc.id}`,
       ad: d.ad || 'İsimsiz Belge',
       boyut: d.boyut || 0,
-      tip: d.tip || '',
+      tip: d.tip || 'application/pdf',
+      parcali: Boolean(d.parcali),
       yukleyenAd: d.yukleyenAd || '',
       yuklenmeTarihi: d.createdAt?.toDate ? d.createdAt.toDate().toISOString() : new Date().toISOString(),
       url: d.data || ''
@@ -637,7 +706,14 @@ async function projeDosyalariGetir(projeId) {
 
 // Projeye ait bir dosyayı sil
 async function projeDosyaSil(yol) {
-  await db.doc(yol).delete();
+  const docRef = db.doc(yol);
+  const subSnap = await docRef.collection('parcalar').get();
+  if (!subSnap.empty) {
+    const batch = db.batch();
+    subSnap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  }
+  await docRef.delete();
 }
 
 // ===== DUYURU FONKSİYONLARI =====
