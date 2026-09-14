@@ -4,7 +4,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 auth.languageCode = 'tr'; // Firebase e-postaları ve doğrulama sayfaları Türkçe
 const db = firebase.firestore();
-const storage = firebase.storage();
 const remoteConfig = firebase.remoteConfig();
 remoteConfig.settings.minimumFetchIntervalMillis = 3600000; // 1 saat cache
 
@@ -644,7 +643,9 @@ async function projeDosyaYukle(projeId, dosya) {
       chunks.push(dataUrl.slice(i, i + CHUNK_SIZE));
     }
 
-    await docRef.set({
+    // Meta dokümanı ve parçaları tek bir atomik batch içinde yaz (yarım kalma/boş kayıt riskini sıfırlar)
+    const batch = db.batch();
+    batch.set(docRef, {
       ad: dosya.name,
       boyut: sonBoyut,
       tip: mimeTipi,
@@ -655,8 +656,6 @@ async function projeDosyaYukle(projeId, dosya) {
       parcaSayisi: chunks.length
     });
 
-    // Parçaları subcollection olarak kaydet
-    const batch = db.batch();
     chunks.forEach((chunk, index) => {
       const chunkDoc = docRef.collection('parcalar').doc(String(index).padStart(3, '0'));
       batch.set(chunkDoc, { index, chunk });
