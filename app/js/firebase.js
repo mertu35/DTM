@@ -4,6 +4,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 auth.languageCode = 'tr'; // Firebase e-postaları ve doğrulama sayfaları Türkçe
 const db = firebase.firestore();
+const storage = firebase.storage();
 const remoteConfig = firebase.remoteConfig();
 remoteConfig.settings.minimumFetchIntervalMillis = 3600000; // 1 saat cache
 
@@ -490,6 +491,63 @@ async function getProjeFromCloud(projeId) {
   const snap = await db.collection('projeler').doc(projeId).get();
   if (!snap.exists) throw new Error('Proje bulunamadı');
   return { id: snap.id, ...snap.data() };
+}
+
+// ===== İŞE AİT DOSYALAR (Firebase Storage) =====
+// Fotoğraf, fatura, vergi borcu yoktur belgesi gibi projeyle ilgili serbest
+// dosyalar. Sınırlar storage.rules'daki kurallarla birebir aynı olmalı —
+// biri değişirse diğeri de güncellenmeli.
+const PROJE_DOSYA_MAX_BOYUT = 10 * 1024 * 1024; // 10 MB
+const PROJE_DOSYA_IZIN_VERILEN_TIPLER = [
+  'image/', 'application/pdf', 'application/msword',
+  'application/vnd.openxmlformats-officedocument.', 'application/vnd.ms-excel'
+];
+
+function projeDosyaTipiIzinli(dosya) {
+  return PROJE_DOSYA_IZIN_VERILEN_TIPLER.some(t => dosya.type.startsWith(t));
+}
+
+// Projeye dosya yükle
+async function projeDosyaYukle(projeId, dosya) {
+  if (dosya.size > PROJE_DOSYA_MAX_BOYUT) {
+    throw new Error('Dosya 10 MB\'tan büyük olamaz.');
+  }
+  if (!projeDosyaTipiIzinli(dosya)) {
+    throw new Error('Bu dosya türü desteklenmiyor. Resim, PDF, Word veya Excel dosyası yükleyin.');
+  }
+  const guvenliAd = dosya.name.replace(/[^\w.\-ğüşıöçĞÜŞİÖÇ ]/g, '_');
+  const yol = `projeDosyalari/${projeId}/${Date.now()}_${guvenliAd}`;
+  await storage.ref(yol).put(dosya, {
+    contentType: dosya.type,
+    customMetadata: {
+      orijinalAd: dosya.name,
+      yukleyenAd: currentDTMUser?.displayName || currentDTMUser?.username || ''
+    }
+  });
+  return yol;
+}
+
+// Projeye ait yüklenmiş dosyaları listele (en yeni en üstte)
+async function projeDosyalariGetir(projeId) {
+  const sonuc = await storage.ref(`projeDosyalari/${projeId}`).listAll();
+  const dosyalar = await Promise.all(sonuc.items.map(async (item) => {
+    const meta = await item.getMetadata();
+    return {
+      yol: item.fullPath,
+      ad: meta.customMetadata?.orijinalAd || item.name,
+      boyut: meta.size,
+      tip: meta.contentType,
+      yukleyenAd: meta.customMetadata?.yukleyenAd || '',
+      yuklenmeTarihi: meta.timeCreated,
+      url: await item.getDownloadURL()
+    };
+  }));
+  return dosyalar.sort((a, b) => new Date(b.yuklenmeTarihi) - new Date(a.yuklenmeTarihi));
+}
+
+// Projeye ait bir dosyayı sil
+async function projeDosyaSil(yol) {
+  await storage.ref(yol).delete();
 }
 
 // ===== DUYURU FONKSİYONLARI =====

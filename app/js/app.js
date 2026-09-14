@@ -1489,6 +1489,27 @@ function renderVeriGirisPage() {
       </div>
     </div>
 
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h3>📁 İşe Ait Dosyalar</h3>
+        <span class="toggle-icon">&#9660;</span>
+      </div>
+      <div class="card-body">
+        ${!currentCloudProjeId ? `
+          <p style="color:var(--gray-500);font-size:13px">Dosya ekleyebilmek için önce projeyi bir kez kaydedin.</p>
+        ` : `
+          <div id="projeDosyaListesi" style="margin-bottom:12px">
+            <p style="color:var(--gray-400);font-size:13px">Yükleniyor...</p>
+          </div>
+          ${!currentProjeKilitli ? `
+            <input type="file" id="projeDosyaInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="projeDosyaSecildi(this.files)">
+            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('projeDosyaInput').click()">+ Dosya Ekle</button>
+            <p style="font-size:11.5px;color:var(--gray-400);margin-top:6px">Fotoğraf, fatura, vergi borcu yoktur belgesi vb. — Resim, PDF, Word veya Excel, dosya başına en fazla 10 MB.</p>
+          ` : ''}
+        `}
+      </div>
+    </div>
+
     ${!currentProjeKilitli ? `
     <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid #e5e7eb;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:100;box-shadow:0 -2px 8px rgba(0,0,0,0.06)">
       <span style="font-size:13px;color:#6b7280">
@@ -1506,6 +1527,65 @@ function bindVeriGiris() {
     document.querySelectorAll('#mainContent input, #mainContent select, #mainContent button').forEach(el => {
       el.disabled = true;
     });
+  }
+  if (currentCloudProjeId) projeDosyaListesiYukle();
+}
+
+function formatDosyaBoyutu(bayt) {
+  if (!bayt) return '';
+  if (bayt < 1024) return bayt + ' B';
+  if (bayt < 1024 * 1024) return (bayt / 1024).toFixed(0) + ' KB';
+  return (bayt / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+async function projeDosyaListesiYukle() {
+  const container = document.getElementById('projeDosyaListesi');
+  if (!container || !currentCloudProjeId) return;
+  try {
+    const dosyalar = await projeDosyalariGetir(currentCloudProjeId);
+    if (!dosyalar.length) {
+      container.innerHTML = `<p style="color:var(--gray-400);font-size:13px">Henüz dosya eklenmemiş.</p>`;
+      return;
+    }
+    container.innerHTML = dosyalar.map(d => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
+        <a href="${escAttr(d.url)}" target="_blank" rel="noopener" style="flex:1;font-size:13px;color:var(--gray-800);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.ad)}</a>
+        <span style="font-size:11.5px;color:var(--gray-400);white-space:nowrap">${formatDosyaBoyutu(d.boyut)}</span>
+        <span style="font-size:11.5px;color:var(--gray-400);white-space:nowrap">${escHtml(d.yukleyenAd)}</span>
+        ${!currentProjeKilitli ? `<button type="button" onclick="projeDosyaSilOnayla('${escAttr(d.yol)}')" title="Sil" style="padding:3px 7px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;color:#6b7280;font-size:13px;flex-shrink:0">✕</button>` : ''}
+      </div>`).join('');
+  } catch(e) {
+    container.innerHTML = `<p style="color:#dc2626;font-size:13px">Dosyalar yüklenemedi: ${escHtml(hataMesaji(e))}</p>`;
+  }
+}
+
+async function projeDosyaSecildi(fileList) {
+  if (!currentCloudProjeId) return;
+  const dosyalar = Array.from(fileList || []);
+  if (!dosyalar.length) return;
+  let hataVar = false;
+  for (const dosya of dosyalar) {
+    try {
+      await projeDosyaYukle(currentCloudProjeId, dosya);
+    } catch(e) {
+      hataVar = true;
+      showToast(escHtml(dosya.name) + ': ' + escHtml(hataMesaji(e)), 'error');
+    }
+  }
+  const input = document.getElementById('projeDosyaInput');
+  if (input) input.value = '';
+  if (!hataVar) showToast('Dosya(lar) yüklendi.', 'success');
+  projeDosyaListesiYukle();
+}
+
+async function projeDosyaSilOnayla(yol) {
+  if (!await showConfirm('Bu dosyayı silmek istediğinize emin misiniz?', 'Dosyayı Sil')) return;
+  try {
+    await projeDosyaSil(yol);
+    showToast('Dosya silindi.', 'success');
+    projeDosyaListesiYukle();
+  } catch(e) {
+    showToast('Hata: ' + escHtml(hataMesaji(e)), 'error');
   }
 }
 
