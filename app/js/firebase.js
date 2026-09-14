@@ -564,8 +564,8 @@ function compressImage(file, maxDimension = 1600, quality = 0.82) {
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = () => resolve(reader.target.result);
+    reader.onerror = () => reject(new Error('Dosya okunamadı'));
+    reader.onload = (e) => resolve((e && e.target ? e.target.result : null) || reader.result);
     reader.readAsDataURL(file);
   });
 }
