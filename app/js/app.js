@@ -72,7 +72,13 @@ function showToast(mesaj, tip = 'success', sure = 3000) {
   toast.style.cssText = `background:${r.bg};border:1px solid ${r.border};color:#fff;padding:12px 18px;border-radius:10px;
     font-size:14px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px;
     max-width:360px;animation:toastIn 0.25s ease;`;
-  toast.innerHTML = `<span style="font-size:16px;font-weight:700">${r.icon}</span><span>${mesaj}</span>`;
+  const iconSpan = document.createElement('span');
+  iconSpan.style.cssText = 'font-size:16px;font-weight:700';
+  iconSpan.textContent = r.icon;
+  const msgSpan = document.createElement('span');
+  msgSpan.textContent = mesaj;
+  toast.appendChild(iconSpan);
+  toast.appendChild(msgSpan);
   container.appendChild(toast);
 
   setTimeout(() => {
@@ -2334,8 +2340,8 @@ async function parseTeklifPDF(file, type, fi) {
     if (firmaAdi) liste[fi].ad = firmaAdi;
     if (tutar > 0) {
       const aktifKi = proje.isKalemleri.findIndex(k => k.ad?.trim());
-      const ki = aktifKi >= 0 ? aktifKi : 0;
-      const miktar = parseFloat(proje.isKalemleri[ki]?.miktar) || 1;
+      const miktarVal = parseFloat(proje.isKalemleri[ki]?.miktar);
+      const miktar = (!isNaN(miktarVal) && miktarVal > 0) ? miktarVal : 1;
       liste[fi].fiyatlar[ki] = Math.round((tutar / miktar) * 100) / 100;
     }
     saveProje(proje);
@@ -3687,7 +3693,7 @@ async function gonderiClick(projeId, isAdi) {
     <div id="gonderiModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center">
       <div style="background:#fff;border-radius:14px;padding:32px 28px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
         <h3 style="font-size:17px;font-weight:700;color:#1f2937;margin-bottom:6px">📤 Gerçekleştirmeciye Gönder</h3>
-        <p style="font-size:13px;color:#6b7280;margin-bottom:20px"><strong>${isAdi}</strong> projesi seçtiğiniz kişiye gönderilecek. Bu işlem geri alınamaz.</p>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:20px"><strong>${escHtml(isAdi)}</strong> projesi seçtiğiniz kişiye gönderilecek. Bu işlem geri alınamaz.</p>
         <div style="margin-bottom:20px">
           <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Gerçekleştirmeci Seçin</label>
           <select id="gerceklestirmeciSelect" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
@@ -3755,11 +3761,11 @@ async function arsivdenCikarClick(projeId, isAdi) {
           <p style="margin:0 0 20px;font-size:13px;color:#6b7280">Proje kime gönderilsin?</p>
           <div style="display:flex;flex-direction:column;gap:10px">
             <button id="arsivHedefSahip" style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px;transition:border-color 0.15s">
-              <div style="font-weight:600;color:#111">👤 ${sahipAd}</div>
+              <div style="font-weight:600;color:#111">👤 ${escHtml(sahipAd)}</div>
               <div style="font-size:12px;color:#6b7280;margin-top:2px">Proje sahibine geri gönder</div>
             </button>
             ${gcAd ? `<button id="arsivHedefGc" style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px;transition:border-color 0.15s">
-              <div style="font-weight:600;color:#111">👷 ${gcAd}</div>
+              <div style="font-weight:600;color:#111">👷 ${escHtml(gcAd)}</div>
               <div style="font-size:12px;color:#6b7280;margin-top:2px">Gerçekleştirmeciye geri gönder</div>
             </button>` : ''}
           </div>
@@ -3800,11 +3806,11 @@ async function adminGeriGonderClick(projeId, isAdi) {
           <p style="margin:0 0 20px;font-size:13px;color:#6b7280">Proje kime gönderilsin?</p>
           <div style="display:flex;flex-direction:column;gap:10px">
             <button id="ggHedefSahip" style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px">
-              <div style="font-weight:600;color:#111">👤 ${sahipAd}</div>
+              <div style="font-weight:600;color:#111">👤 ${escHtml(sahipAd)}</div>
               <div style="font-size:12px;color:#6b7280;margin-top:2px">Proje sahibine geri gönder</div>
             </button>
             ${gcAd ? `<button id="ggHedefGc" style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px">
-              <div style="font-weight:600;color:#111">👷 ${gcAd}</div>
+              <div style="font-weight:600;color:#111">👷 ${escHtml(gcAd)}</div>
               <div style="font-size:12px;color:#6b7280;margin-top:2px">Gerçekleştirmeciye geri gönder</div>
             </button>` : ''}
           </div>
@@ -3867,7 +3873,7 @@ async function onaylaClick(projeId, isAdi) {
 }
 
 async function geriGonderClick(projeId, isAdi) {
-  const not = await showPrompt(`"${isAdi}" projesini geri gönderiyorsunuz.<br>Geri gönderme nedeninizi yazın:`, 'Nedeninizi buraya yazın...');
+  const not = await showPrompt(`"${escHtml(isAdi)}" projesini geri gönderiyorsunuz.<br>Geri gönderme nedeninizi yazın:`, 'Nedeninizi buraya yazın...');
   if (not === null) return;
   if (!not.trim()) { showToast('Not boş olamaz.', 'warning'); return; }
   try {
@@ -5089,15 +5095,12 @@ function renderProjeOzetPage() {
   const p = proje;
   const kalemler = getKalemler(p);
   const ymMaliyet = hesaplaYaklasikMaliyet(p);
-  const kazananIndex = p.kazananFirmaIndex >= 0 ? p.kazananFirmaIndex : hesaplaKazananFirma(p);
-  const kazananFirma = p.teklifFirmalar[kazananIndex];
-  const sozlesmeKdvsiz = kazananFirma ? kazananFirma.fiyatlar.reduce((t, f, i) => {
-    const miktar = parseFloat(kalemler[i]?.miktar) || 1;
-    return t + (parseFloat(f) || 0) * miktar;
-  }, 0) : 0;
+  const kazananIndex = (p.kazananFirmaIndex !== undefined && p.kazananFirmaIndex >= 0) ? p.kazananFirmaIndex : hesaplaKazananFirma(p);
+  const kazananFirma = (p.teklifFirmalar && kazananIndex >= 0) ? p.teklifFirmalar[kazananIndex] : null;
+  const sozlesmeKdvsiz = kazananFirma ? hesaplaTeklifFirmaToplam(kazananFirma, kalemler) : 0;
   const basitUsul = currentProjeKazananBasitUsul === true || (kazananFirma && typeof isFirmaBasitUsul === 'function' ? isFirmaBasitUsul(kazananFirma.ad, referans) : false);
-  const kdvTutar = basitUsul ? 0 : sozlesmeKdvsiz * (p.kdvOrani / 100);
-  const sozlesmeToplamKdvli = sozlesmeKdvsiz + kdvTutar;
+  const kdvTutar = basitUsul ? 0 : Math.round((sozlesmeKdvsiz * ((parseFloat(p.kdvOrani) || 20) / 100) + Number.EPSILON) * 100) / 100;
+  const sozlesmeToplamKdvli = Math.round((sozlesmeKdvsiz + kdvTutar + Number.EPSILON) * 100) / 100;
 
   const satir = (label, value) => value ? `<tr><td style="color:#6b7280;padding:8px 12px;font-size:13px;width:45%">${label}</td><td style="padding:8px 12px;font-size:13px;font-weight:500">${value}</td></tr>` : '';
   const kart = (baslik, icerik) => `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden"><div style="padding:12px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#374151">${baslik}</div>${icerik}</div>`;

@@ -23,7 +23,7 @@ function renderYaklasikMaliyet(proje, referans) {
     const t1 = bf1 * miktar;
     const t2 = bf2 * miktar;
     const t3 = bf3 * miktar;
-    const ortBF = hesaplaYMKalemOrtalama(proje, i) / (miktar || 1);
+    const ortBF = miktar > 0 ? hesaplaYMKalemOrtalama(proje, i) / miktar : 0;
     const ortT = hesaplaYMKalemOrtalama(proje, i);
 
     kalemRows += `<tr>

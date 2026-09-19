@@ -118,7 +118,7 @@ function exportYaklasikMaliyetExcel(proje, referans) {
     const bf2  = parseFloat(f2.fiyatlar[i]) || 0;
     const bf3  = parseFloat(f3.fiyatlar[i]) || 0;
     const ortT = hesaplaYMKalemOrtalama(proje, i);
-    const ortBF = ortT / (mik || 1);
+    const ortBF = mik > 0 ? ortT / mik : 0;
     kalemRows += `<tr>
       <td class="center">${i + 1}</td>
       <td>${escHtml(k.ad || '')}</td>

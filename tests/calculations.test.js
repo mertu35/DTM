@@ -207,6 +207,40 @@ function check(ad, gercek, beklenen) {
 }
 
 // ============================================================
+// SENARYO 9: miktar = 0 kontrolü (0 girilirse 1 sayılmamalı, maliyet şişmemeli)
+// ============================================================
+{
+  const proje = {
+    isTuru: 'Mal Alımı', isAdi: 'Test Sıfır Miktar',
+    isKalemleri: [{ ad: 'İptal Kalem', miktar: '0', birim: 'Adet' }],
+    ymFirmalar: [
+      { ad: 'Firma A', fiyatlar: [500] },
+      { ad: 'Firma B', fiyatlar: [700] }
+    ]
+  };
+  const ort = hesaplaYMKalemOrtalama(proje, 0);
+  check('S9: Sıfır miktar -> ortalama 0 olmalı (1 sayılmamalı)', ort, 0);
+  const ym = hesaplaYaklasikMaliyet(proje);
+  check('S9: Sıfır miktar -> yaklaşık maliyet 0 olmalı', ym, 0);
+}
+
+// ============================================================
+// SENARYO 10: getKazananFirma sınır aşımı (bayat index crash etmemeli)
+// ============================================================
+{
+  const referans = getDefaultReferans();
+  const proje = {
+    isTuru: 'Yapım İşi', isAdi: 'Test', isKalemleri: [],
+    teklifFirmalar: [{ ad: 'Firma A', fiyatlar: [1000] }],
+    kazananFirmaIndex: 5 // Liste dışı bayat index!
+  };
+  const kazanan = getKazananFirma(proje, referans);
+  check('S10: Bayat kazananFirmaIndex -> crash etmemeli, null dönmeli', kazanan, null);
+  const h = hesaplaHakedis(proje, referans);
+  check('S10: Bayat index -> hesaplaHakedis null dönmeli', h, null);
+}
+
+// ============================================================
 console.log('\n=== HESAPLAMA BİRİM TESTİ SONUÇLARI ===\n');
 let fail = 0;
 for (const r of sonuclar) {

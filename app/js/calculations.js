@@ -23,11 +23,11 @@ function getKalemler(proje) {
 function hesaplaYMFirmaToplam(firma, kalemler) {
   let toplam = 0;
   for (let i = 0; i < kalemler.length; i++) {
-    const fiyat = firma.fiyatlar[i] || 0;
-    const miktar = parseFloat(kalemler[i].miktar) || 0;
+    const fiyat = (firma.fiyatlar && firma.fiyatlar[i]) || 0;
+    const miktar = parseFloat(kalemler[i]?.miktar) || 0;
     toplam += fiyat * miktar;
   }
-  return toplam;
+  return Math.round((toplam + Number.EPSILON) * 100) / 100;
 }
 
 // Kalem bazlı ortalamaların toplamı olarak hesaplanır (hesaplaYMKalemOrtalama ile aynı yöntem),
@@ -38,41 +38,43 @@ function hesaplaYaklasikMaliyet(proje) {
   for (let i = 0; i < kalemler.length; i++) {
     toplam += hesaplaYMKalemOrtalama(proje, i);
   }
-  return toplam;
+  return Math.round((toplam + Number.EPSILON) * 100) / 100;
 }
 
 function hesaplaYMKalemOrtalama(proje, kalemIndex) {
   const kalemler = getKalemler(proje);
-  const miktar = parseFloat(kalemler[kalemIndex]?.miktar) || 1;
+  const miktarVal = parseFloat(kalemler[kalemIndex]?.miktar);
+  const miktar = (!isNaN(miktarVal) && miktarVal >= 0) ? miktarVal : 1;
   let toplam = 0;
   let count = 0;
-  for (const firma of proje.ymFirmalar) {
-    const fiyat = firma.fiyatlar[kalemIndex] || 0;
+  for (const firma of (proje.ymFirmalar || [])) {
+    const fiyat = (firma.fiyatlar && firma.fiyatlar[kalemIndex]) || 0;
     if (fiyat > 0) {
       toplam += fiyat * miktar;
       count++;
     }
   }
-  return count > 0 ? toplam / count : 0;
+  const ort = count > 0 ? toplam / count : 0;
+  return Math.round((ort + Number.EPSILON) * 100) / 100;
 }
 
 // Teklif hesaplama
 function hesaplaTeklifFirmaToplam(firma, kalemler) {
   let toplam = 0;
   for (let i = 0; i < kalemler.length; i++) {
-    const fiyat = firma.fiyatlar[i] || 0;
-    const miktar = parseFloat(kalemler[i].miktar) || 0;
+    const fiyat = (firma.fiyatlar && firma.fiyatlar[i]) || 0;
+    const miktar = parseFloat(kalemler[i]?.miktar) || 0;
     toplam += fiyat * miktar;
   }
-  return toplam;
+  return Math.round((toplam + Number.EPSILON) * 100) / 100;
 }
 
 function hesaplaKazananFirma(proje) {
   const kalemler = getKalemler(proje);
   let minToplam = Infinity;
   let minIndex = -1;
-  proje.teklifFirmalar.forEach((f, i) => {
-    if (f.ad) {
+  (proje.teklifFirmalar || []).forEach((f, i) => {
+    if (f && f.ad) {
       const toplam = hesaplaTeklifFirmaToplam(f, kalemler);
       if (toplam > 0 && toplam < minToplam) {
         minToplam = toplam;
@@ -84,10 +86,13 @@ function hesaplaKazananFirma(proje) {
 }
 
 function getKazananFirma(proje, referans) {
-  const idx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
-  if (idx < 0) return null;
+  const idx = (proje.kazananFirmaIndex !== undefined && proje.kazananFirmaIndex >= 0)
+    ? proje.kazananFirmaIndex
+    : hesaplaKazananFirma(proje);
+  if (idx < 0 || !proje.teklifFirmalar || !proje.teklifFirmalar[idx]) return null;
   const firma = proje.teklifFirmalar[idx];
-  const firmaDetay = getFirmaByAd(firma.ad, referans);
+  if (!firma || !firma.ad) return null;
+  const firmaDetay = typeof getFirmaByAd === 'function' ? getFirmaByAd(firma.ad, referans) : null;
   const kalemler = getKalemler(proje);
   return {
     ad: firma.ad,
@@ -100,33 +105,37 @@ function getKazananFirma(proje, referans) {
 
 // Hakediş hesaplama
 function hesaplaHakedis(proje, referans) {
-  const kazanan = proje.teklifFirmalar[proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje)];
-  if (!kazanan) return null;
+  const idx = (proje.kazananFirmaIndex !== undefined && proje.kazananFirmaIndex >= 0)
+    ? proje.kazananFirmaIndex
+    : hesaplaKazananFirma(proje);
+  if (idx < 0 || !proje.teklifFirmalar || !proje.teklifFirmalar[idx]) return null;
+  const kazanan = proje.teklifFirmalar[idx];
+  if (!kazanan || !kazanan.ad) return null;
 
   const kalemler = getKalemler(proje);
   const sozlesmeBedeli = hesaplaTeklifFirmaToplam(kazanan, kalemler);
   const fiyatFarki = parseFloat(proje.fiyatFarki) || 0;
-  const toplamTutar = sozlesmeBedeli + fiyatFarki;
+  const toplamTutar = Math.round((sozlesmeBedeli + fiyatFarki + Number.EPSILON) * 100) / 100;
   const oncekiHakedis = parseFloat(proje.oncekiHakedisTutar) || 0;
-  const buHakedis = toplamTutar - oncekiHakedis;
+  const buHakedis = Math.round((toplamTutar - oncekiHakedis + Number.EPSILON) * 100) / 100;
   
   const basitUsul = typeof isFirmaBasitUsul === 'function' ? isFirmaBasitUsul(kazanan.ad, referans) : false;
   const kdvOrani = basitUsul ? 0 : (parseFloat(proje.kdvOrani) || 20);
-  const kdv = buHakedis * kdvOrani / 100;
-  const tahakkuk = buHakedis + kdv;
+  const kdv = Math.round((buHakedis * kdvOrani / 100 + Number.EPSILON) * 100) / 100;
+  const tahakkuk = Math.round((buHakedis + kdv + Number.EPSILON) * 100) / 100;
 
   const avans = parseFloat(proje.avansMahsubu) || 0;
   const sozlesmeDamga = parseFloat(proje.sozlesmeDamgaVergisi) || 0;
-  const damgaVergisi = (buHakedis - avans) * 0.00948;
-  const kdvTevkifati = kdv * 4 / 10;
+  const damgaVergisi = Math.round(((buHakedis - avans) * 0.00948 + Number.EPSILON) * 100) / 100;
+  const kdvTevkifati = Math.round((kdv * 4 / 10 + Number.EPSILON) * 100) / 100;
   const sgk = parseFloat(proje.sgkKesintisi) || 0;
   const vergi = parseFloat(proje.vergiBorcu) || 0;
   const gecikme = parseFloat(proje.gecikmeCezasi) || 0;
   const fiyatFarkiTeminat = parseFloat(proje.fiyatFarkiTeminat) || 0;
   const geciciKabul = parseFloat(proje.geciciKabulNoksanlari) || 0;
 
-  const toplamKesinti = sozlesmeDamga + damgaVergisi + kdvTevkifati + sgk + vergi + gecikme + avans + fiyatFarkiTeminat + geciciKabul;
-  const odenecek = tahakkuk - toplamKesinti;
+  const toplamKesinti = Math.round((sozlesmeDamga + damgaVergisi + kdvTevkifati + sgk + vergi + gecikme + avans + fiyatFarkiTeminat + geciciKabul + Number.EPSILON) * 100) / 100;
+  const odenecek = Math.round((tahakkuk - toplamKesinti + Number.EPSILON) * 100) / 100;
 
   return {
     sozlesmeBedeli,
