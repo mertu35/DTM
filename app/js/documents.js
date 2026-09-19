@@ -154,9 +154,9 @@ function renderTeklifTutanagi(proje, referans) {
   const dtTutanakT = proje.dtTutanakTarihiAyni !== false ? proje.dtOnayTarihi : (proje.dtTutanakTarihi || proje.dtOnayTarihi);
 
   // Firma isimleri
-  const f1 = proje.teklifFirmalar[0];
-  const f2 = proje.teklifFirmalar[1];
-  const f3 = proje.teklifFirmalar[2];
+  const f1 = (proje.teklifFirmalar && proje.teklifFirmalar[0]) || { ad: '', fiyatlar: [] };
+  const f2 = (proje.teklifFirmalar && proje.teklifFirmalar[1]) || { ad: '', fiyatlar: [] };
+  const f3 = (proje.teklifFirmalar && proje.teklifFirmalar[2]) || { ad: '', fiyatlar: [] };
 
   // Dinamik metin hesapla
   const getFirmaTur = (ad) => {
@@ -954,8 +954,8 @@ function renderHakedisRaporu(proje, referans) {
 
   const dtGorevliler = getAktifGorevliler(proje.dtGorevliler);
   const odenecekYazi = sayidanYaziya(hak.odenecek);
-  const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
-  const kazanan = proje.teklifFirmalar[kazananIdx];
+  const kazananIdx = (proje.kazananFirmaIndex !== undefined && proje.kazananFirmaIndex >= 0) ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
+  const kazanan = (proje.teklifFirmalar && kazananIdx >= 0) ? proje.teklifFirmalar[kazananIdx] : null;
   const basitUsul = kazanan ? isFirmaBasitUsul(kazanan.ad, referans) : false;
 
   return `

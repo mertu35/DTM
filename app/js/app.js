@@ -4208,7 +4208,7 @@ async function adminSifreSifirlaClick(email, username, ad) {
   if (!await showConfirm(`"${escHtml(ad)}" (${escHtml(targetEmail)}) kullanıcısına şifre sıfırlama bağlantısı gönderilsin mi?`, 'Şifre Sıfırla')) return;
   try {
     await auth.sendPasswordResetEmail(targetEmail);
-    showToast(`"${escHtml(ad)}" kullanıcısına şifre sıfırlama bağlantısı gönderildi.`, 'success');
+    showToast(`"${ad}" kullanıcısına şifre sıfırlama bağlantısı gönderildi.`, 'success');
   } catch(e) {
     showToast('Şifre sıfırlama hatası: ' + hataMesaji(e), 'error');
   }
@@ -5575,8 +5575,8 @@ function renderProfilPage() {
                onmouseout="document.getElementById('avatarEditOverlay').style.opacity='0'"
                style="position:relative;width:80px;height:80px;cursor:pointer;flex-shrink:0;border-radius:50%;box-shadow:0 4px 14px rgba(0,0,0,0.25);">
             <div id="profilAvatarCircle" style="width:80px;height:80px;background:rgba(255,255,255,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;border:3px solid rgba(255,255,255,0.85);backdrop-filter:blur(4px);">
-              ${u.avatar
-                ? `<img src="icons/avatars/${u.avatar}.png" style="width:100%;height:100%;object-fit:cover" />`
+              ${avatarSrc(u.avatar)
+                ? `<img src="${avatarSrc(u.avatar)}" style="width:100%;height:100%;object-fit:cover" />`
                 : (typeof getIcon === 'function' ? getIcon('user', 40) : '👤')}
             </div>
             <div id="avatarEditOverlay" style="position:absolute;inset:0;background:rgba(15,23,42,0.65);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:all 0.2s ease;pointer-events:none;color:#fff;">
