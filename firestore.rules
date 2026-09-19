@@ -53,11 +53,19 @@ service cloud.firestore {
     // Sadece kayıtlı oturum açmış kullanıcılar okuyabilir. Yalnızca displayName ve role içerir.
     match /publicUsers/{userId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && (
-        request.auth.uid == userId ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'])
-      );
+      // Admin ve superadmin her şeyi yazabilir / silebilir
+      allow write: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+      // Kullanıcı kendi kaydını oluşturabilir veya güncelleyebilir; ancak 'role' alanını keyfi değiştiremez
+      // (rolü yalnızca admin belirler; kullanıcının yazdığı rol users tablosundaki gerçek rolüyle birebir aynı olmalıdır)
+      allow create, update: if request.auth != null &&
+        request.auth.uid == userId &&
+        (
+          !('role' in request.resource.data) ||
+          (exists(/databases/$(database)/documents/users/$(userId)) &&
+           get(/databases/$(database)/documents/users/$(userId)).data.role == request.resource.data.role)
+        );
     }
 
     // Duyurular

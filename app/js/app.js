@@ -584,6 +584,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const snap = await db.collection('users').doc(user.uid).get();
         if (snap.exists) currentDTMUser = { uid: user.uid, ...snap.data() };
       }
+      if (currentDTMUser) {
+        db.collection('publicUsers').doc(user.uid).set({
+          uid: user.uid,
+          displayName: currentDTMUser.displayName || '',
+          role: currentDTMUser.role || 'user'
+        }, { merge: true }).catch(() => {});
+
+        // Yönetici açtığında tüm kullanıcı listesini publicUsers ile otomatik senkronize et
+        if (['admin', 'superadmin'].includes(currentDTMUser.role)) {
+          getAllUsers().catch(() => {});
+        }
+      }
       onAuthReady(user);
     } else {
       onAuthReady(null);
@@ -4177,6 +4189,7 @@ async function kullaniciSil(uid, ad, username) {
     if (username) {
       await db.collection('usernameEmailMap').doc(username.toLowerCase().trim()).delete().catch(e => console.warn('usernameEmailMap silinemedi:', e));
     }
+    await db.collection('publicUsers').doc(uid).delete().catch(e => console.warn('publicUsers silinemedi:', e));
     await db.collection('users').doc(uid).collection('secret').doc('info').delete().catch(e => console.warn('secret silinemedi:', e));
     await db.collection('users').doc(uid).delete();
     showToast(`"${escHtml(ad)}" kullanıcısı silindi.`, 'success');
