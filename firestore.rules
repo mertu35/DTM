@@ -38,6 +38,10 @@ service cloud.firestore {
           !('emailVerified' in request.resource.data.diff(resource.data).affectedKeys()) ||
           request.resource.data.emailVerified == false ||
           request.auth.token.email_verified == true
+        ) &&
+        (
+          !('avatar' in request.resource.data.diff(resource.data).affectedKeys()) ||
+          request.resource.data.avatar in ['avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6', null, '']
         );
 
       // Şifre gibi hassas alanlar: sadece sahibi veya admin/superadmin okuyup yazabilir/silebilir
@@ -135,7 +139,16 @@ service cloud.firestore {
           (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.atananGerceklestirmeciUid == request.auth.uid)
         );
 
-        allow create, delete: if request.auth != null && (
+        allow create: if request.auth != null && (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
+          (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.userId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.atananGerceklestirmeciUid == request.auth.uid)
+        ) && (
+          !('boyut' in request.resource.data) ||
+          (request.resource.data.boyut is number && request.resource.data.boyut <= 5242880)
+        );
+
+        allow delete: if request.auth != null && (
           (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
           (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.userId == request.auth.uid) ||
           (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.atananGerceklestirmeciUid == request.auth.uid)

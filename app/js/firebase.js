@@ -518,8 +518,12 @@ const PROJE_DOSYA_IZIN_VERILEN_TIPLER = [
 function projeDosyaTipiIzinli(dosya) {
   const ad = (dosya.name || '').toLowerCase();
   const uzantiGecerli = PROJE_DOSYA_IZIN_VERILEN_UZANTILAR.some(u => ad.endsWith(u));
-  const tipGecerli = dosya.type && PROJE_DOSYA_IZIN_VERILEN_TIPLER.some(t => dosya.type.startsWith(t));
-  return uzantiGecerli || tipGecerli;
+  if (!uzantiGecerli) return false;
+  // Eğer tarayıcı MIME tipi veriyorsa izinli tiplerle uyuşmalıdır (sahte uzantılı HTML/EXE engellenir)
+  if (dosya.type && dosya.type !== 'application/octet-stream') {
+    return PROJE_DOSYA_IZIN_VERILEN_TIPLER.some(t => dosya.type.startsWith(t));
+  }
+  return true;
 }
 
 function dosyaMimeTipiBelirle(dosya) {

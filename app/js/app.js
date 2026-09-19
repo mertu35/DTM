@@ -347,7 +347,7 @@ const AVATARS = [
 ];
 
 function avatarSrc(name) {
-  return name ? `icons/avatars/${name}.png` : null;
+  return (name && AVATARS.includes(name)) ? `icons/avatars/${name}.png` : null;
 }
 
 function updateSidebarAvatar() {
@@ -2504,7 +2504,7 @@ async function renderBelgelerPage() {
       };
     } catch(e) {
       const listEl = document.getElementById('belgelerProjeList');
-      if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${e.message}</div>`;
+      if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${escHtml(e?.message || '')}</div>`;
     }
     return;
   }
@@ -3453,7 +3453,7 @@ async function renderDashboardPage() {
   } catch(e) {
     main.innerHTML = `
       <div class="page-header"><h2>Dashboard</h2></div>
-      <div style="color:red;padding:20px">Hata: ${e.message}</div>`;
+      <div style="color:red;padding:20px">Hata: ${escHtml(e?.message || '')}</div>`;
   }
 }
 
@@ -3533,7 +3533,7 @@ async function renderKaydetYuklePage() {
     }
   } catch(e) {
     const listEl = document.getElementById('dosyaGetirList');
-    if (listEl) listEl.innerHTML = `<div style="color:red;padding:12px">Projeler yüklenemedi: ${e.message}</div>`;
+    if (listEl) listEl.innerHTML = `<div style="color:red;padding:12px">Projeler yüklenemedi: ${escHtml(e?.message || '')}</div>`;
   }
 }
 
@@ -4125,7 +4125,7 @@ async function renderKullaniciYonetimiPage() {
     `;
   } catch(e) {
     main.innerHTML = `<div class="vm-page-header"><h2>Kullanıcı Yönetimi</h2></div>
-      <div style="color:red;padding:20px">Hata: ${e.message}</div>`;
+      <div style="color:red;padding:20px">Hata: ${escHtml(e?.message || '')}</div>`;
   }
 }
 
@@ -4192,7 +4192,7 @@ async function kullaniciSil(uid, ad, username) {
     await db.collection('publicUsers').doc(uid).delete().catch(e => console.warn('publicUsers silinemedi:', e));
     await db.collection('users').doc(uid).collection('secret').doc('info').delete().catch(e => console.warn('secret silinemedi:', e));
     await db.collection('users').doc(uid).delete();
-    showToast(`"${escHtml(ad)}" kullanıcısı silindi.`, 'success');
+    showToast(`"${ad}" kullanıcısı silindi.`, 'success');
     renderKullaniciYonetimiPage();
   } catch(e) {
     showToast('Hata: ' + hataMesaji(e), 'error');
@@ -4202,7 +4202,7 @@ async function kullaniciSil(uid, ad, username) {
 async function adminSifreSifirlaClick(email, username, ad) {
   const targetEmail = (email || '').trim();
   if (!targetEmail || targetEmail.endsWith('@dtm.local')) {
-    showToast(`"${escHtml(ad)}" için tanımlı geçerli bir e-posta adresi bulunmuyor.`, 'warning', 5000);
+    showToast(`"${ad}" için tanımlı geçerli bir e-posta adresi bulunmuyor.`, 'warning', 5000);
     return;
   }
   if (!await showConfirm(`"${escHtml(ad)}" (${escHtml(targetEmail)}) kullanıcısına şifre sıfırlama bağlantısı gönderilsin mi?`, 'Şifre Sıfırla')) return;
@@ -4330,7 +4330,7 @@ async function renderProjelerimPage() {
       document.getElementById('projelerimListe').innerHTML = renderProjelerimListe(ara, durum, sirala);
     };
   } catch(e) {
-    main.innerHTML = `<div class="page-header"><h2>Projelerim</h2></div><div style="color:red;padding:20px">Hata: ${e.message}</div>`;
+    main.innerHTML = `<div class="page-header"><h2>Projelerim</h2></div><div style="color:red;padding:20px">Hata: ${escHtml(e?.message || '')}</div>`;
   }
 }
 
@@ -4430,7 +4430,7 @@ async function renderGonderilenProjelerPage() {
       document.getElementById('gonderilenListe').innerHTML = renderGonderilenListe(ara);
     };
   } catch(e) {
-    main.innerHTML = `<div class="page-header"><h2>Projeler</h2></div><div style="color:red;padding:20px">Hata: ${e.message}</div>`;
+    main.innerHTML = `<div class="page-header"><h2>Projeler</h2></div><div style="color:red;padding:20px">Hata: ${escHtml(e?.message || '')}</div>`;
   }
 }
 
@@ -4911,7 +4911,7 @@ async function renderGerceklestirmeciBelgelerPage() {
     };
   } catch(e) {
     const listEl = document.getElementById('gerceklestirmeciBelgeList');
-    if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${e.message}</div>`;
+    if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${escHtml(e?.message || '')}</div>`;
   }
 }
 
@@ -5521,7 +5521,7 @@ async function renderOnayliBelgelerPage() {
 
   } catch(e) {
     const el = document.getElementById('onayliBelgelerContent');
-    if (el) el.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${e.message}</div>`;
+    if (el) el.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${escHtml(e?.message || '')}</div>`;
   }
 }
 
@@ -6060,7 +6060,7 @@ async function renderDuyurularPage() {
       el.closest('.duyuru-item')?.classList.toggle('duyuru-acik', !acik);
     };
   } catch(e) {
-    main.innerHTML = `<div class="page-header"><h2>Duyurular</h2></div><div style="color:red;padding:20px">Yüklenemedi: ${e.message}</div>`;
+    main.innerHTML = `<div class="page-header"><h2>Duyurular</h2></div><div style="color:red;padding:20px">Yüklenemedi: ${escHtml(e?.message || '')}</div>`;
   }
 }
 
