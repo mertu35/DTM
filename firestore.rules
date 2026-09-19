@@ -5,14 +5,13 @@ service cloud.firestore {
     // Kullanıcılar
     match /users/{userId} {
       // Herkes kendi kaydını, admin/superadmin herkesi okuyabilir.
-      // Sıradan kullanıcılar için okuma yalnızca 'gerceklestirmeci' rolündeki
-      // kayıtlarla sınırlı — proje gönderim ekranı bu listeyi okuyabilmeli,
-      // ama kullanıcılar birbirinin rolünü/e-postasını görmemeli.
+      // Sıradan kullanıcıların diğer kullanıcıların profilini (e-posta, son giriş vb.)
+      // okuması kesinlikle engellenmiştir (veri sızıntısı koruması).
       allow read: if request.auth != null &&
         (request.auth.uid == userId ||
-         resource.data.role == 'gerceklestirmeci' ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']));
+
       // Admin ve superadmin yazabilir; ancak superadmin atama/değiştirme yalnızca mevcut superadmin yapabilir
       allow write: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -24,13 +23,22 @@ service cloud.firestore {
             (!exists(/databases/$(database)/documents/users/$(userId)) || resource.data.role != 'superadmin')
           )
         );
+
+      // Kullanıcı kendi profilini sınırlı alanlarda güncelleyebilir.
+      // emailVerified alanını yalnızca Firebase Auth'un kriptografik token doğrulaması (email_verified)
+      // true olduğunda true yapabilir; böylece Auth doğrulaması olmadan profil sahteciliği engellenir.
       allow update: if request.auth != null &&
         request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'avatar', 'okunanDuyurular', 'silinenDuyurular', 'gorulenGeriGonderilenler', 'lastLogin',
           'lastGonderilenVisit', 'lastOnayliVisit',
           'email', 'emailVerified', 'pendingEmail', 'emailUpdatedAt'
-        ]);
+        ]) &&
+        (
+          !('emailVerified' in request.resource.data.diff(resource.data).affectedKeys()) ||
+          request.resource.data.emailVerified == false ||
+          request.auth.token.email_verified == true
+        );
 
       // Şifre gibi hassas alanlar: sadece sahibi veya admin/superadmin okuyup yazabilir/silebilir
       match /secret/{secretId} {
@@ -39,6 +47,17 @@ service cloud.firestore {
            (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']));
       }
+    }
+
+    // Genel Kullanıcı Bilgisi (Gerçekleştirmeci dropdown listesi ve personel görünümü için)
+    // Sadece kayıtlı oturum açmış kullanıcılar okuyabilir. Yalnızca displayName ve role içerir.
+    match /publicUsers/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (
+        request.auth.uid == userId ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'])
+      );
     }
 
     // Duyurular
@@ -57,17 +76,20 @@ service cloud.firestore {
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci' &&
           resource.data.atananGerceklestirmeciUid == request.auth.uid));
 
-      // Sadece kendi adına, taslak olarak oluşturabilir
+      // Sadece yetkili kullanıcı kendi adına, taslak olarak oluşturabilir
       allow create: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.status == 'taslak';
 
       allow update: if request.auth != null && (
         // Admin/superadmin her alanı değiştirebilir
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
-        // Gerçekleştirmeci sadece kendi atandığı projeyi güncelleyebilir
+        // Gerçekleştirmeci sadece kendi atandığı ve 'gonderildi' durumundaki projeyi güncelleyebilir
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci' &&
-         resource.data.atananGerceklestirmeciUid == request.auth.uid) ||
+         resource.data.atananGerceklestirmeciUid == request.auth.uid &&
+         resource.data.status == 'gonderildi' &&
+         request.resource.data.status in ['gonderildi', 'onaylandi', 'geri_gonderildi']) ||
         // Proje sahibi:
         // Yalnızca proje taslak veya geri_gonderildi aşamasındayken güncelleyebilir.
         // gonderildi, onaylandi veya arsivlendi aşamasında proje sahibi güncelleyemez.
@@ -75,11 +97,16 @@ service cloud.firestore {
           resource.data.userId == request.auth.uid &&
           resource.data.status in ['taslak', 'geri_gonderildi'] &&
           request.resource.data.userId == request.auth.uid &&
-          // geri_gonderildi da izinli listede kalmalı: proje sahibi bir alanı
-          // kaydettiğinde (örn. İş Türü değişikliği, sözleşme maddeleri) durumu
-          // ayrıca değiştirmeyen kısmi update'ler, mevcut durumu (geri_gonderildi)
-          // olduğu gibi korur — bu durum listede yoksa bu tür kayıtlar reddedilir.
-          request.resource.data.status in ['taslak', 'gonderildi', 'geri_gonderildi'] &&
+          // Sahip kendi projesini doğrudan 'geri_gonderildi' durumuna sokamaz; yalnızca gerceklestirmeci/admin yapabilir.
+          (
+            (resource.data.status == 'taslak' && request.resource.data.status in ['taslak', 'gonderildi']) ||
+            (resource.data.status == 'geri_gonderildi' && request.resource.data.status in ['geri_gonderildi', 'gonderildi'])
+          ) &&
+          // 'gonderildi' durumuna geçiriliyorsa gerçekleştirmeci atanmış olmalıdır
+          (
+            request.resource.data.status != 'gonderildi' ||
+            (request.resource.data.atananGerceklestirmeciUid is string && request.resource.data.atananGerceklestirmeciUid.size() > 0)
+          ) &&
           (
             resource.data.get('locked', false) != true ||
             (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['locked', 'lockedAt', 'lockedBy']) && request.resource.data.locked == false)
@@ -122,36 +149,31 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'gerceklestirmeci'];
     }
 
-    // Kullanıcı adı → doğrulanmış e-posta eşlemesi.
-    // Giriş ekranı ve "Şifremi Unuttum" akışı tekil get sorgusu ile çalışır.
-    // list (toplu tarama / enumeration) kesinlikle yasaktır.
+    // Kullanıcı adı → e-posta eşlemesi.
+    // Oturum açılmadan e-posta sızıntısını önlemek için dışarıdan erişime kapatılmıştır.
+    // Yalnızca admin/superadmin erişebilir.
     match /usernameEmailMap/{username} {
-      allow get: if true;
-      allow list: if false;
-      allow write: if request.auth != null && (
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username == username)
+      allow read, write: if request.auth != null && (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']
       );
     }
 
     // Vision API aylık kullanım sayacı
-    // Sayaç sadece artabilir — reset/azaltma engellenir
+    // Sayaç sadece artabilir — reset/azaltma engellenir, aylık tavan (500 sayfa) kontrol edilir
     match /visionUsage/{ayDoc} {
-      allow read: if request.auth != null &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
-      // İlk yazım: en fazla 50 sayfa
+      allow read: if request.auth != null;
+      // İlk yazım: en fazla 50 sayfa, tavan 500
       allow create: if request.auth != null &&
         request.resource.data.sayfaSayisi is number &&
         request.resource.data.sayfaSayisi >= 0 &&
-        request.resource.data.sayfaSayisi <= 50;
-      // Güncelleme: sayaç sadece artabilir, tek istekte en fazla 50 artış
+        request.resource.data.sayfaSayisi <= 500;
+      // Güncelleme: sayaç sadece artabilir, tek istekte en fazla 50 artış, tavan 500
       allow update: if request.auth != null &&
         request.resource.data.sayfaSayisi is number &&
         request.resource.data.sayfaSayisi > resource.data.sayfaSayisi &&
-        request.resource.data.sayfaSayisi - resource.data.sayfaSayisi <= 50;
+        request.resource.data.sayfaSayisi - resource.data.sayfaSayisi <= 50 &&
+        request.resource.data.sayfaSayisi <= 500;
     }
 
     // Uygulama sürüm bilgisi ("Hakkında" sayfasındaki güncelleme kontrolü)

@@ -404,7 +404,7 @@ window.sifremiUnuttumModalAc = function() {
   const msg = document.getElementById('sifreSifirlamaMsg');
   const btn = document.getElementById('btnSifreSifirla');
   const loginUser = document.getElementById('loginUsername')?.value.trim();
-  if (input) input.value = loginUser || '';
+  if (input) input.value = (loginUser && loginUser.includes('@')) ? loginUser : '';
   if (msg) { msg.style.display = 'none'; msg.textContent = ''; }
   if (btn) { btn.style.display = 'inline-flex'; btn.disabled = false; btn.innerHTML = '<span>Sıfırlama Bağlantısı Gönder</span>'; }
   if (modal) modal.style.display = 'flex';
@@ -426,7 +426,7 @@ window.sifremiUnuttumGonder = async function(btn) {
       msg.style.background = '#fef2f2';
       msg.style.border = '1px solid #fecaca';
       msg.style.color = '#991b1b';
-      msg.textContent = 'Lütfen kullanıcı adınızı veya e-posta adresinizi giriniz.';
+      msg.textContent = 'Lütfen kayıtlı e-posta adresinizi giriniz.';
     }
     return;
   }

@@ -97,6 +97,13 @@ async function dtmLogin(identifier, password) {
   const snap = await userDocRef.get();
   let userData = snap.exists ? snap.data() : {};
 
+  // Genel kullanıcı dizinini (publicUsers: yalnızca ad ve rol) arka planda senkronize et
+  db.collection('publicUsers').doc(cred.user.uid).set({
+    uid: cred.user.uid,
+    displayName: userData.displayName || '',
+    role: userData.role || 'user'
+  }, { merge: true }).catch(() => {});
+
   // Auth e-posta doğrulama durumunu Firestore ile senkronize et
   if (cred.user.email && !cred.user.email.endsWith('@dtm.local')) {
     const isVerified = cred.user.emailVerified;
@@ -110,11 +117,6 @@ async function dtmLogin(identifier, password) {
       userData.emailVerified = isVerified;
       if (isVerified) userData.pendingEmail = null;
     }
-    // Eşlemeyi doğrulanmamış hesaplar için de yaz: yönetici tarafından gerçek e-postayla
-    // açılan hesaplarda emailVerified false olur, ama kullanıcı adıyla giriş yine de
-    // çalışmalı. Giriş zaten şifre istediği için bu bir güvenlik gevşemesi değil;
-    // şifre sıfırlama yalnızca verified:true kaydı kullanmaya devam ediyor.
-    if (userData.username) syncUsernameEmailMap(userData.username, cred.user.email, isVerified);
   }
 
   currentDTMUser = { uid: cred.user.uid, ...userData };
@@ -151,19 +153,12 @@ async function createDTMUser(username, password, displayName, role, userEmail = 
 
     await db.collection('users').doc(cred.user.uid).set(userDocData);
 
-    // Kullanıcı adı → e-posta eşlemesi. Bu yazılmazsa kullanıcı, kullanıcı adıyla
-    // giriş yapamaz: auth hesabı gerçek e-postayla açıldığı için `kullaniciadi@dtm.local`
-    // denemesi boşa gider ve eşleme olmadan gerçek adrese ulaşılamaz.
-    // Firestore kuralı yalnızca kişinin KENDİ kullanıcı adına yazmasına izin verdiği için
-    // bu kayıt, yönetici oturumuyla değil, yeni kullanıcının oturumuyla (secondaryApp) yazılır.
-    if (cleanEmail) {
-      try {
-        await secondaryApp.firestore().collection('usernameEmailMap').doc(cleanUsername)
-          .set({ email: cleanEmail, verified: false });
-      } catch (e) {
-        console.warn('usernameEmailMap (yeni kullanıcı) yazılamadı:', e);
-      }
-    }
+    // Genel kullanıcı dizinine (publicUsers) ad ve rol bilgisini yaz
+    await db.collection('publicUsers').doc(cred.user.uid).set({
+      uid: cred.user.uid,
+      displayName: displayName.trim(),
+      role: role || 'user'
+    }).catch(e => console.warn('publicUsers yazılamadı:', e));
 
     await secondaryApp.auth().signOut();
     return cred.user.uid;
@@ -175,7 +170,16 @@ async function createDTMUser(username, password, displayName, role, userEmail = 
 // Tüm kullanıcıları getir (admin) - e-posta ve doğrulama durumları dahil
 async function getAllUsers() {
   const snap = await db.collection('users').orderBy('displayName').get();
-  return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+  const list = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+  // publicUsers dizinini arka planda senkronize et
+  list.forEach(u => {
+    db.collection('publicUsers').doc(u.uid).set({
+      uid: u.uid,
+      displayName: u.displayName || '',
+      role: u.role || 'user'
+    }, { merge: true }).catch(() => {});
+  });
+  return list;
 }
 
 // Şifre değiştir (mevcut şifre ile yeniden auth gerekli)
@@ -299,24 +303,16 @@ async function epostaDurumunuGuncelle() {
   };
 }
 
-// Giriş ekranı "Şifremi Unuttum" talebi
+// Giriş ekranı "Şifremi Unuttum" talebi (güvenlik için doğrudan kayıtlı e-posta istenir)
 async function sifreSifirlamaGonder(identifier) {
   identifier = (identifier || '').trim();
-  if (!identifier) throw new Error('Kullanıcı adınızı veya e-posta adresinizi giriniz.');
+  if (!identifier) throw new Error('Lütfen kayıtlı e-posta adresinizi giriniz.');
 
-  let targetEmail = '';
-
-  if (identifier.includes('@')) {
-    targetEmail = identifier.toLowerCase();
-  } else {
-    // Kullanıcı adı girildiyse eşleme dokümanından doğrulanmış e-postaya bak
-    const cleanUsername = identifier.toLowerCase();
-    targetEmail = await getEmailByUsername(cleanUsername, true);
-
-    if (!targetEmail) {
-      throw new Error('Lütfen hesabınıza tanımlı e-posta adresinizi giriniz (örn: ornek@karaman.gov.tr).');
-    }
+  if (!identifier.includes('@')) {
+    throw new Error('Şifre sıfırlama bağlantısı alabilmek için lütfen hesabınıza tanımlı e-posta adresinizi giriniz (örn: ornek@karaman.gov.tr).');
   }
+
+  const targetEmail = identifier.toLowerCase();
 
   // Firebase Auth üzerinden şifre sıfırlama bağlantısı gönder
   try {
@@ -411,10 +407,23 @@ async function gonderiProje(projeId, gerceklestirmeciUid, gerceklestirmeciAd, ka
   });
 }
 
-// Gerçekleştirmecileri getir
+// Gerçekleştirmecileri getir (veri sızıntısını önlemek için yalnızca genel ad ve rol içeren publicUsers'tan okur)
 async function getGerceklestirmeciler() {
-  const snap = await db.collection('users').where('role', '==', 'gerceklestirmeci').get();
-  return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+  try {
+    const snap = await db.collection('publicUsers').where('role', '==', 'gerceklestirmeci').get();
+    if (!snap.empty) {
+      return snap.docs.map(d => ({ uid: d.id, displayName: d.data().displayName || '', role: d.data().role }));
+    }
+  } catch (e) {
+    console.warn('publicUsers sorgulanamadı:', e);
+  }
+  // Fallback (admin/superadmin veya ilk kurulum için)
+  try {
+    const snap = await db.collection('users').where('role', '==', 'gerceklestirmeci').get();
+    return snap.docs.map(d => ({ uid: d.id, displayName: d.data().displayName || '', role: d.data().role }));
+  } catch (e) {
+    return [];
+  }
 }
 
 // Projeyi geri gönder (gerçekleştirmeci)
@@ -768,6 +777,7 @@ async function duyuruKendindenGizle(duyuruId) {
 // Kullanıcı rolünü değiştir (superadmin)
 async function changeUserRole(uid, newRole) {
   await db.collection('users').doc(uid).update({ role: newRole });
+  await db.collection('publicUsers').doc(uid).set({ role: newRole }, { merge: true }).catch(() => {});
 }
 
 // Avatar seç ve Firestore'a kaydet (hazır avatarlardan biri)
