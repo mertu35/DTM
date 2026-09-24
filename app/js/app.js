@@ -73,8 +73,8 @@ function showToast(mesaj, tip = 'success', sure = 3000) {
     font-size:14px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px;
     max-width:360px;animation:toastIn 0.25s ease;`;
   const iconSpan = document.createElement('span');
-  iconSpan.style.cssText = 'font-size:16px;font-weight:700';
-  iconSpan.textContent = r.icon;
+  iconSpan.style.cssText = 'font-size:16px;font-weight:700;display:inline-flex;align-items:center;flex-shrink:0;';
+  iconSpan.innerHTML = r.icon;
   const msgSpan = document.createElement('span');
   msgSpan.textContent = mesaj;
   toast.appendChild(iconSpan);
