@@ -4,21 +4,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 auth.languageCode = 'tr'; // Firebase e-postaları ve doğrulama sayfaları Türkçe
 const db = firebase.firestore();
-const remoteConfig = firebase.remoteConfig();
-remoteConfig.settings.minimumFetchIntervalMillis = 3600000; // 1 saat cache
-
-let visionApiKey = null;
-
-async function loadVisionApiKey() {
-  try {
-    await remoteConfig.fetchAndActivate();
-    visionApiKey = remoteConfig.getValue('vision_api_key').asString() || null;
-  } catch(e) {
-    // Remote Config yüklenemedi, Vision API devre dışı
-    visionApiKey = null;
-  }
-}
-
 let currentDTMUser = null; // { uid, username, displayName, role, email, emailVerified, pendingEmail }
 
 function usernameToEmail(username) {

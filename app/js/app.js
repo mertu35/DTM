@@ -485,8 +485,6 @@ async function onAuthReady(user) {
   rolIntervallariTemizle();
   if (user && currentDTMUser) {
     // Referansı buluttan yükle (kullanıcı + global)
-    // Vision API key'i Remote Config'den yükle
-    loadVisionApiKey().catch(e => console.warn('[Vision API] Key yüklenemedi:', e?.code, e?.message));
     try {
       const [cloudRef, globalRef] = await Promise.all([
         loadReferansFromCloud(),
@@ -671,7 +669,7 @@ function renderPage() {
     case 'anasayfa': renderAnaSayfaPage(); break;
     case 'veri-giris': main.innerHTML = renderVeriGirisPage(); bindVeriGiris(); break;
     case 'belgeler': renderBelgelerPage(); break;
-    case 'veri-merkezi': main.innerHTML = renderVeriMerkeziPage(); bindVeriMerkezi(); break;
+    case 'veri-merkezi': main.innerHTML = renderVeriMerkeziPage(); break;
     case 'dashboard': renderDashboardPage(); break;
     case 'kaydet-yukle': renderKaydetYuklePage(); break;
     case 'kullanici-yonetimi': renderKullaniciYonetimiPage(); break;
@@ -2225,75 +2223,7 @@ async function parseOnayBelgesiIsAdi(file) {
   }
 }
 
-// PDF sayfasını canvas'a render edip Vision API'ye gönder
-const VISION_AYLIK_LIMIT = 500;
-
-async function visionKullanımKontrol() {
-  const ayAnahtar = new Date().toISOString().slice(0, 7); // "2026-04"
-  const ref = db.collection('visionUsage').doc(ayAnahtar);
-  const snap = await ref.get();
-  const mevcutSayfa = snap.exists ? (snap.data().sayfaSayisi || 0) : 0;
-  if (mevcutSayfa >= VISION_AYLIK_LIMIT) {
-    throw new Error(`Aylık Vision API limiti (${VISION_AYLIK_LIMIT} sayfa) doldu. Yönetici ile iletişime geçin.`);
-  }
-  return { ref, mevcutSayfa };
-}
-
-async function visionKullanımArtir(ref, sayfaSayisi) {
-  await ref.set({
-    sayfaSayisi: firebase.firestore.FieldValue.increment(sayfaSayisi),
-    sonGuncelleme: firebase.firestore.FieldValue.serverTimestamp(),
-    sonKullanici: currentDTMUser?.displayName || currentDTMUser?.username || ''
-  }, { merge: true });
-}
-
-async function readPdfWithVision(file) {
-  if (!visionApiKey) throw new Error('Vision API anahtarı yüklenmedi.');
-  if (typeof pdfjsLib === 'undefined') throw new Error('PDF okuyucu yüklenemedi.');
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-  // Limit kontrolü
-  const { ref, mevcutSayfa } = await visionKullanımKontrol();
-  const kalanSayfa = VISION_AYLIK_LIMIT - mevcutSayfa;
-  if (pdf.numPages > kalanSayfa) {
-    throw new Error(`Bu ay kalan Vision API kotası (${kalanSayfa} sayfa) bu belge için yetersiz.`);
-  }
-
-  let fullText = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 2 });
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-    const b64 = canvas.toDataURL('image/png').split(',')[1];
-    const resp = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${visionApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requests: [{
-            image: { content: b64 },
-            features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
-            imageContext: { languageHints: ['tr'] }
-          }]
-        })
-      }
-    );
-    const data = await resp.json();
-    if (data.error) throw new Error(data.error.message);
-    fullText += (data.responses?.[0]?.fullTextAnnotation?.text || '') + '\n';
-  }
-
-  // Kullanımı kaydet
-  await visionKullanımArtir(ref, pdf.numPages);
-  return fullText;
-}
-
-// PDF metnini önce PDF.js ile dene, boş gelirse Vision API'ye düş
+// PDF içindeki metin katmanını tarayıcıda oku; harici OCR servisi kullanılmaz.
 async function readPdfText(file) {
   if (typeof pdfjsLib === 'undefined') throw new Error('PDF okuyucu yüklenemedi.');
   const arrayBuffer = await file.arrayBuffer();
@@ -2304,16 +2234,8 @@ async function readPdfText(file) {
     const content = await page.getTextContent();
     fullText += content.items.map(item => item.str).join(' ') + '\n';
   }
-  // Metin kalitesini kontrol et:
-  // Çok boşluk (3+) → bozuk OCR katmanı (örn: "T.C,   KARAMAN   trOznr")
-  const cokBosluk = (fullText.match(/\s{3,}/g) || []).length;
-  const harfOrani = (fullText.match(/[a-zA-ZçşğüöıÇŞĞÜÖİ]/g) || []).length / Math.max(fullText.replace(/\s/g, '').length, 1);
-  const kaliteliMetin = fullText.replace(/\s/g, '').length > 50 && cokBosluk < 15 && harfOrani > 0.45;
-  if (kaliteliMetin) return fullText;
-  // Bozuk OCR veya taranmış belge — Vision API'ye düş
-  if (visionApiKey) {
-    showToast('Taranmış/düşük kaliteli belge algılandı, Vision API ile okunuyor...', 'info');
-    return await readPdfWithVision(file);
+  if (!fullText.trim()) {
+    throw new Error('Bu PDF okunabilir metin içermiyor. Taranmış/görüntü PDF yerine metin içeren bir PDF seçin veya bilgileri elle girin.');
   }
   return fullText;
 }
@@ -2333,7 +2255,7 @@ async function parseTeklifPDF(file, type, fi) {
     const fullText = await readPdfText(file);
 
     // Tutar: önce "Tutarı [sayı]" kalıbını ara (en güvenilir)
-    // Vision API bazen "TL" harflerini yanlış okur, bu yüzden TL'ye bağımlı olmuyoruz
+    // Metin katmanında "TL" bozuk olabileceği için önce tutar etiketini kullan.
     let tutar = 0;
     const tutariMatch = fullText.match(/Tutar[ıi]\s*[\n\r ]*([0-9]+[.,]\d{3})/i);
     if (tutariMatch) {
@@ -3149,51 +3071,8 @@ function renderVeriMerkeziPage() {
       </div>
     </div>
 
-    <div class="card" id="visionUsageCard">
-      <div class="card-header" onclick="toggleCard(this)">
-        <h3 style="display:flex;align-items:center;gap:8px">
-          <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('fileText', 18) : ''}</span>
-          Vision API Belge Tarama Kotası
-        </h3>
-        <span class="toggle-icon">&#9660;</span>
-      </div>
-      <div class="card-body">
-        <div id="visionUsageIcerik" style="font-size:13px;color:var(--gray-600)">Yükleniyor...</div>
-      </div>
-    </div>
     ` : ''}
   `;
-}
-
-function bindVeriMerkezi() {
-  if (currentDTMUser?.role !== 'superadmin') return;
-  const ayAnahtar = new Date().toISOString().slice(0, 7);
-  db.collection('visionUsage').doc(ayAnahtar).get().then(snap => {
-    const el = document.getElementById('visionUsageIcerik');
-    if (!el) return;
-    const sayfa = snap.exists ? (snap.data().sayfaSayisi || 0) : 0;
-    const sonKullanici = snap.exists ? (snap.data().sonKullanici || '-') : '-';
-    const yuzde = Math.min(100, Math.round(sayfa / VISION_AYLIK_LIMIT * 100));
-    const renk = yuzde >= 80 ? '#ef4444' : yuzde >= 50 ? '#f59e0b' : '#22c55e';
-    const bar = `<div style="background:#e5e7eb;border-radius:4px;height:8px;margin:6px 0">
-      <div style="background:${renk};width:${yuzde}%;height:8px;border-radius:4px;transition:width .3s"></div>
-    </div>`;
-    el.innerHTML = `
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <span><strong>${ayAnahtar}</strong></span>
-        <span style="color:${renk};font-weight:600">${sayfa} / ${VISION_AYLIK_LIMIT} sayfa</span>
-      </div>
-      ${bar}
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-500);margin-top:4px">
-        <span>%${yuzde} kullanıldı</span>
-        <span>Son: ${escHtml(sonKullanici)}</span>
-      </div>
-    `;
-  }).catch(err => {
-    console.error('[visionUsage] Firestore hatası:', err?.code, err?.message);
-    const el = document.getElementById('visionUsageIcerik');
-    if (el) el.innerHTML = `<span style="color:var(--gray-400)">Veri alınamadı. (${err?.code || 'bilinmiyor'})</span>`;
-  });
 }
 
 function onRefChange(list, index, field, value) {

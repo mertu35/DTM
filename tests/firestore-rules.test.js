@@ -45,6 +45,15 @@ async function main() {
   for (const [uid, role] of [['owner', 'user'], ['reviewer', 'gerceklestirmeci'], ['other', 'user'], ['admin', 'admin']]) {
     await seed(`users/${uid}`, { role });
   }
+  await seed('visionUsage/retired', { legacy: 'test' });
+  for (const uid of ['owner', 'reviewer', 'admin']) {
+    await check(`retired OCR counter read denied ${uid}`,
+      await request('GET', `${base}/visionUsage/retired`, undefined, uid), false);
+    await check(`retired OCR counter create denied ${uid}`,
+      await request('PATCH', `${base}/visionUsage/new-${uid}`, {
+        fields: { sayfaSayisi: { integerValue: '1' } }
+      }, uid), false);
+  }
   const p = 'projeler/security-test';
   const reset = (status = 'gonderildi', locked = false) => seed(p, {
     userId: 'owner', atananGerceklestirmeciUid: 'reviewer', status, locked, isAdi: 'Original'

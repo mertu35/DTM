@@ -105,11 +105,9 @@ okunamaz; yalnızca sıfırlanabilir.
      Sonuç  : Kullanıcı adını tahmin eden biri (ad.soyad biçimi tahmin
               edilebilir) o kişinin e-posta adresini öğrenebilir.
 
-2.8  visionUsage/{ay}
-     İçerik : sayfaSayisi — aylık Vision API kullanım sayacı
-     Okuma  : admin, superadmin
-     Yazma  : Giriş yapmış herkes (sayaç yalnızca artabilir, tek
-              istekte en fazla 50)
+2.8  Eski OCR kullanım sayacı (kaldırıldı)
+     Uygulama artık harici OCR çağrısı veya sayaç erişimi yapmaz.
+     Eski sayaç verileri silinmedi; istemci erişimi kapalıdır.
 
 2.9  appConfig/version
      İçerik : latest — yayınlanan son sürüm numarası

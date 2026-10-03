@@ -190,23 +190,6 @@ service cloud.firestore {
       );
     }
 
-    // Vision API aylık kullanım sayacı
-    // Sayaç sadece artabilir — reset/azaltma engellenir, aylık tavan (500 sayfa) kontrol edilir
-    match /visionUsage/{ayDoc} {
-      allow read: if request.auth != null;
-      // İlk yazım: en fazla 50 sayfa, tavan 500
-      allow create: if request.auth != null &&
-        request.resource.data.sayfaSayisi is number &&
-        request.resource.data.sayfaSayisi >= 0 &&
-        request.resource.data.sayfaSayisi <= 500;
-      // Güncelleme: sayaç sadece artabilir, tek istekte en fazla 50 artış, tavan 500
-      allow update: if request.auth != null &&
-        request.resource.data.sayfaSayisi is number &&
-        request.resource.data.sayfaSayisi > resource.data.sayfaSayisi &&
-        request.resource.data.sayfaSayisi - resource.data.sayfaSayisi <= 50 &&
-        request.resource.data.sayfaSayisi <= 500;
-    }
-
     // Uygulama sürüm bilgisi ("Hakkında" sayfasındaki güncelleme kontrolü)
     // Herkes okuyabilir, sadece admin/superadmin güncelleyebilir.
     match /appConfig/{docId} {

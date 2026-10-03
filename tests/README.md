@@ -5,11 +5,14 @@ Kurulum gerektirmeyen hesaplama ve belge içeriği kontrolleri:
 ```powershell
 node tests/calculations.test.js
 node tests/finance.test.js
+node tests/pdf-text.test.js
 ```
 
 İkinci test; sıfır KDV, negatif/geçersiz girdiler, önceki hakediş ve avans
 sınırları, kesinti toplamları, kuruş yuvarlaması ve ekran/Word/Excel üretim
 içeriğini kontrol eder. Vergi oranlarının mevzuat doğruluğunu doğrulamaz.
+PDF metin testi, Türkçe ve kısa metinlerin korunduğunu, taranmış PDF için açık
+hata verildiğini ve harici OCR isteği yapılmadığını kontrol eder.
 
 Tarayıcı ve gerçek PDF kontrolü için:
 

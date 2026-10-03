@@ -21,9 +21,9 @@ Son güncelleme: 23.08.2026
    Hardcoded adres/telefonlar repo'da duruyor; globalReferans koleksiyonuna
    taşınmalı.
 
-4. Vision API proxy'si
-   Cloud Function ile anahtarı sunucuda tutun (Blaze planı gerektirir) ya da
-   minimumda Google Cloud Console'da API anahtarına HTTP referrer kısıtı koyun.
+4. Harici OCR entegrasyonu kaldırıldı (03.10.2026)
+   PDF metni tarayıcıda okunur; anahtar yükleme, harici OCR çağrıları ve
+   kota ekranı kaldırıldı. Proxy geliştirmesine gerek kalmadı.
 
 
 MİMARİ (SÜRDÜRÜLEBİLİRLİK)
