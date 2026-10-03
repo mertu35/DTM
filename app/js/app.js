@@ -159,6 +159,7 @@ function showConfirm(mesaj, onayBtn = 'Evet', iptalBtn = 'İptal') {
 // çağrılan asıl indirme/yazdırma fonksiyonudur.
 function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
   if (!proje || !guard) return;
+  if (!belgeHesaplamaKontrol(proje, referans)) return;
 
   const mevcut = document.getElementById('dtmBelgeIndirModal');
   if (mevcut) mevcut.remove();
@@ -282,6 +283,7 @@ function belgeMapOlustur(dtOnayBelgesi) {
 
 // Ortak: seçilen belgeleri tek bir yazdırma penceresinde birleştirip açar.
 function belgeleriYazdirPenceresiAc(secilen, dtOnayBelgesi) {
+  if (!belgeHesaplamaKontrol(proje, referans)) return;
   const belgeMap = belgeMapOlustur(dtOnayBelgesi);
 
   const parts = [];
@@ -906,6 +908,7 @@ function projeAcSayfasinaGit() {
 
 // ===================== VERİ GİRİŞ SAYFASI =====================
 function renderVeriGirisPage() {
+  const hesaplamaHatalari = getHesaplamaHatalari(proje, referans);
   const ymSayisi = proje.ymGorevliSayisi || 1;
   const ymSeciliAdlar = (proje.ymGorevliler || []).slice(0, ymSayisi).map(g => g.ad).filter(Boolean);
   const ymGorevliRows = proje.ymGorevliler.slice(0, ymSayisi).map((g, i) => `
@@ -983,7 +986,7 @@ function renderVeriGirisPage() {
     <tr>
       <td class="merkez">${i + 1}</td>
       <td><input type="text" value="${escAttr(k.ad)}" data-field="isKalemleri" data-index="${i}" data-sub="ad" onchange="onKalemChange(this)"></td>
-      <td><input type="number" value="${k.miktar}" data-field="isKalemleri" data-index="${i}" data-sub="miktar" onchange="onKalemChange(this)" style="width:80px"></td>
+      <td><input type="number" min="0" step="any" value="${k.miktar}" data-field="isKalemleri" data-index="${i}" data-sub="miktar" onchange="onKalemChange(this)" style="width:80px"></td>
       <td><select data-field="isKalemleri" data-index="${i}" data-sub="birim" onchange="onKalemChange(this)">
         <option value="">--</option>
         ${referans.birimList.map(b => `<option value="${b}" ${k.birim === b ? 'selected' : ''}>${b}</option>`).join('')}
@@ -1024,10 +1027,10 @@ function renderVeriGirisPage() {
           <tbody>
             ${aktifKalemler.map((k, ki) => {
               const bf = f.fiyatlar[ki] || 0;
-              const toplam = bf * (parseFloat(k.miktar) || 0);
+              const toplam = hesaplaKalemTutar(bf, k.miktar);
               return `<tr>
                 <td>${escHtml(k.ad || '-')}</td>
-                <td><input type="number" value="${bf || ''}" data-firma="ym" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
+                <td><input type="number" min="0" step="0.01" value="${bf || ''}" data-firma="ym" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
                 <td class="rakam">${toplam > 0 ? formatCurrency(toplam) : '-'}</td>
               </tr>`;
             }).join('')}
@@ -1073,10 +1076,10 @@ function renderVeriGirisPage() {
           <tbody>
             ${aktifKalemler.map((k, ki) => {
               const bf = f.fiyatlar[ki] || 0;
-              const toplam = bf * (parseFloat(k.miktar) || 0);
+              const toplam = hesaplaKalemTutar(bf, k.miktar);
               return `<tr>
                 <td>${escHtml(k.ad || '-')}</td>
-                <td><input type="number" value="${bf || ''}" data-firma="teklif" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
+                <td><input type="number" min="0" step="0.01" value="${bf || ''}" data-firma="teklif" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
                 <td class="rakam">${toplam > 0 ? formatCurrency(toplam) : '-'}</td>
               </tr>`;
             }).join('')}
@@ -1108,6 +1111,7 @@ function renderVeriGirisPage() {
 
   return `
     ${kilitBanner}
+    ${hesaplamaHatalari.length ? renderHesaplamaUyarisi(hesaplamaHatalari) : ''}
     <div class="page-header">
       <h2>Veri Giriş Formu</h2>
       <p>Proje bilgilerini girin, belgeler otomatik oluşturulacaktır.</p>
@@ -1151,8 +1155,8 @@ function renderVeriGirisPage() {
             </div>
             <div class="form-group">
               <label>KDV Oranı (%)</label>
-              <select id="kdvOrani" onchange="onFieldChange('kdvOrani', parseFloat(this.value))">
-                ${referans.kdvOranlari.map(k => `<option value="${k}" ${proje.kdvOrani == k ? 'selected' : ''}>${k}</option>`).join('')}
+              <select id="kdvOrani" onchange="onFieldChange('kdvOrani', this.value)">
+                ${[...new Set([0, ...referans.kdvOranlari])].map(k => `<option value="${k}" ${proje.kdvOrani == k ? 'selected' : ''}>${k}</option>`).join('')}
               </select>
             </div>
             <div class="form-group">
@@ -1272,7 +1276,7 @@ function renderVeriGirisPage() {
         <div class="form-grid">
           <div class="form-group">
             <label>Kullanılabilir Ödenek Tutarı (TL)</label>
-            <input type="number" id="odenek" value="${proje.odenek}" oninput="onFieldChange('odenek', this.value)" placeholder="0.00">
+            <input type="number" min="0" step="0.01" id="odenek" value="${proje.odenek}" oninput="onFieldChange('odenek', this.value)" placeholder="0.00">
           </div>
           <div class="form-group">
             <label>Yatırım Proje Numarası</label>
@@ -1477,31 +1481,31 @@ function renderVeriGirisPage() {
         <div class="form-grid">
           <div class="form-group">
             <label>Önceki Hakediş Tutarı (TL)</label>
-            <input type="number" value="${proje.oncekiHakedisTutar}" onchange="onFieldChange('oncekiHakedisTutar', parseFloat(this.value)||0)">
+            <input type="number" step="0.01" min="0" value="${proje.oncekiHakedisTutar}" onchange="onFieldChange('oncekiHakedisTutar', this.value)">
           </div>
           <div class="form-group">
             <label>Fiyat Farkı (TL)</label>
-            <input type="number" value="${proje.fiyatFarki}" onchange="onFieldChange('fiyatFarki', parseFloat(this.value)||0)">
+            <input type="number" step="0.01" value="${proje.fiyatFarki}" onchange="onFieldChange('fiyatFarki', this.value)">
           </div>
           <div class="form-group">
             <label>Sözleşme Damga Vergisi (TL)</label>
-            <input type="number" value="${proje.sozlesmeDamgaVergisi}" onchange="onFieldChange('sozlesmeDamgaVergisi', parseFloat(this.value)||0)">
+            <input type="number" step="0.01" min="0" value="${proje.sozlesmeDamgaVergisi}" onchange="onFieldChange('sozlesmeDamgaVergisi', this.value)">
           </div>
           <div class="form-group">
             <label>SGK Kesintisi (TL)</label>
-            <input type="number" value="${proje.sgkKesintisi}" onchange="onFieldChange('sgkKesintisi', parseFloat(this.value)||0)">
+            <input type="number" step="0.01" min="0" value="${proje.sgkKesintisi}" onchange="onFieldChange('sgkKesintisi', this.value)">
           </div>
           <div class="form-group">
             <label>Vergi Borcu (TL)</label>
-            <input type="number" value="${proje.vergiBorcu}" onchange="onFieldChange('vergiBorcu', parseFloat(this.value)||0)">
+            <input type="number" step="0.01" min="0" value="${proje.vergiBorcu}" onchange="onFieldChange('vergiBorcu', this.value)">
           </div>
           <div class="form-group">
             <label>Gecikme Cezası (TL)</label>
-            <input type="number" value="${proje.gecikmeCezasi}" onchange="onFieldChange('gecikmeCezasi', parseFloat(this.value)||0)">
+            <input type="number" step="0.01" min="0" value="${proje.gecikmeCezasi}" onchange="onFieldChange('gecikmeCezasi', this.value)">
           </div>
           <div class="form-group">
             <label>Avans Mahsubu (TL)</label>
-            <input type="number" value="${proje.avansMahsubu}" onchange="onFieldChange('avansMahsubu', parseFloat(this.value)||0)">
+            <input type="number" step="0.01" min="0" value="${proje.avansMahsubu}" onchange="onFieldChange('avansMahsubu', this.value)">
           </div>
         </div>
       </div>
@@ -1631,6 +1635,11 @@ async function projeDosyaSilOnayla(yol) {
 }
 
 function onFieldChange(field, value) {
+  if (Object.hasOwn(HESAPLAMA_ALANLARI, field)) {
+    const hata = hesaplamaAlanHatasi(field, value);
+    if (hata) { showToast(hata, 'warning'); renderPage(); return; }
+    value = hesaplamaSayisi(value, field === 'kdvOrani' ? 20 : 0);
+  }
   const eskiDeger = proje[field];
   proje[field] = value;
 
@@ -1787,6 +1796,11 @@ function onKalemChange(el) {
   const sub = el.dataset.sub;
   if (!proje.isKalemleri) proje.isKalemleri = [];
   if (!proje.isKalemleri[idx]) proje.isKalemleri[idx] = { ad: '', miktar: '', birim: '' };
+  if (sub === 'miktar' && (!Number.isFinite(hesaplamaSayisi(el.value, 1)) || hesaplamaSayisi(el.value, 1) < 0)) {
+    showToast('Miktar: sıfır veya pozitif bir sayı girin.', 'warning');
+    el.value = proje.isKalemleri[idx][sub];
+    return;
+  }
   proje.isKalemleri[idx][sub] = el.value;
   autoSave();
   renderPage();
@@ -2395,7 +2409,12 @@ function onFiyatChange(el) {
   const type = el.dataset.firma;
   const fi = parseInt(el.dataset.fi);
   const ki = parseInt(el.dataset.ki);
-  const val = parseFloat(el.value) || 0;
+  const val = hesaplamaSayisi(el.value);
+  if (!Number.isFinite(val) || val < 0) {
+    showToast('Birim fiyat: sıfır veya pozitif bir sayı girin.', 'warning');
+    el.value = (type === 'ym' ? proje.ymFirmalar : proje.teklifFirmalar)[fi].fiyatlar[ki] || '';
+    return;
+  }
   if (type === 'ym') {
     proje.ymFirmalar[fi].fiyatlar[ki] = val;
     checkDtSiniri();
@@ -2760,6 +2779,7 @@ function acTeknikSartnameDuzenleModal() {
 }
 
 function yazdirBelge() {
+  if (!belgeHesaplamaKontrol(proje, referans)) return;
   let html = '';
   let landscape = false;
   switch (currentBelge) {
@@ -2781,6 +2801,7 @@ function yazdirBelge() {
 }
 
 function pdfIndirBelge() {
+  if (!belgeHesaplamaKontrol(proje, referans)) return;
   const belgeAdlari = {
     'yaklasik-maliyet': 'Yaklaşık Maliyet Tutanağı',
     'teklif-tutanagi': 'Teklif Tutanağı',
@@ -2811,7 +2832,7 @@ function pdfIndirBelge() {
     belgeYazdir(html, landscape, true, dosyaAdi);
     return;
   }
-  belgePdfIndir(html, landscape, dosyaAdi);
+  return belgePdfIndir(html, landscape, dosyaAdi);
 }
 
 // ===================== VERİ MERKEZİ SAYFASI =====================
@@ -3652,7 +3673,7 @@ async function cloudProjeAc(projeId) {
 }
 
 function projeValidasyon(p) {
-  const eksikler = [];
+  const eksikler = getHesaplamaHatalari(p, referans);
   if (!p.isAdi?.trim())                                         eksikler.push('İş Adı');
   if (!p.idareAdi?.trim())                                      eksikler.push('İdare Adı');
   if (!p.mudurluk?.trim())                                      eksikler.push('Müdürlük');
@@ -5051,6 +5072,7 @@ async function gerceklestirmeciBelgelerProjeAc(projeId, readOnly = false) {
 }
 
 function gerceklestirmeciBelgeYazdir() {
+  if (!belgeHesaplamaKontrol(proje, referans)) return;
   let html = '';
   let landscape = false;
   switch (currentGerceklestirmeciBelge) {
@@ -5067,6 +5089,7 @@ function gerceklestirmeciBelgeYazdir() {
 }
 
 function gerceklestirmeciBelgePdfIndir() {
+  if (!belgeHesaplamaKontrol(proje, referans)) return;
   const belgeAdlari = {
     'dt-onay-belgesi': 'DT Onay Belgesi',
     'yaklasik-maliyet': 'Yaklaşık Maliyet Tutanağı',
@@ -5106,14 +5129,17 @@ function gerceklestirmeciBelgePdfIndir() {
 function renderProjeOzetPage() {
   const main = document.getElementById('mainContent');
   const p = proje;
+  const hatalar = getHesaplamaHatalari(p, referans);
+  if (hatalar.length) { main.innerHTML = renderHesaplamaUyarisi(hatalar); return; }
   const kalemler = getKalemler(p);
   const ymMaliyet = hesaplaYaklasikMaliyet(p);
   const kazananIndex = (p.kazananFirmaIndex !== undefined && p.kazananFirmaIndex >= 0) ? p.kazananFirmaIndex : hesaplaKazananFirma(p);
   const kazananFirma = (p.teklifFirmalar && kazananIndex >= 0) ? p.teklifFirmalar[kazananIndex] : null;
   const sozlesmeKdvsiz = kazananFirma ? hesaplaTeklifFirmaToplam(kazananFirma, kalemler) : 0;
   const basitUsul = currentProjeKazananBasitUsul === true || (kazananFirma && typeof isFirmaBasitUsul === 'function' ? isFirmaBasitUsul(kazananFirma.ad, referans) : false);
-  const kdvTutar = basitUsul ? 0 : Math.round((sozlesmeKdvsiz * ((parseFloat(p.kdvOrani) || 20) / 100) + Number.EPSILON) * 100) / 100;
-  const sozlesmeToplamKdvli = Math.round((sozlesmeKdvsiz + kdvTutar + Number.EPSILON) * 100) / 100;
+  const vergiler = hesaplaSozlesmeVergileri(p, referans, basitUsul);
+  const kdvTutar = vergiler.kdv;
+  const sozlesmeToplamKdvli = vergiler.toplam;
 
   const satir = (label, value) => value ? `<tr><td style="color:#6b7280;padding:8px 12px;font-size:13px;width:45%">${label}</td><td style="padding:8px 12px;font-size:13px;font-weight:500">${value}</td></tr>` : '';
   const kart = (baslik, icerik) => `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden"><div style="padding:12px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:13px;color:#374151">${baslik}</div>${icerik}</div>`;
@@ -5156,7 +5182,7 @@ function renderProjeOzetPage() {
         ${satir('Müdürlük', escHtml(p.mudurluk))}
         ${satir('İş / Hizmet Adı', escHtml(p.isAdi))}
         ${satir('İş Türü', escHtml(p.isTuru))}
-        ${satir('KDV Oranı', '%' + p.kdvOrani)}
+        ${satir('KDV Oranı', '%' + vergiler.kdvOrani)}
         ${satir('Şehir / İlçe', [p.sehir, p.ilce].filter(Boolean).join(' / '))}
       </table>`)}
 
@@ -5190,7 +5216,7 @@ function renderProjeOzetPage() {
 
       ${kart('💰 Mali Özet', `<table style="width:100%;border-collapse:collapse">
         ${satir(basitUsul ? 'Sözleşme Tutarı' : 'Sözleşme Tutarı (KDV Hariç)', sozlesmeKdvsiz > 0 ? formatCurrency(sozlesmeKdvsiz) + ' TL' : '')}
-        ${basitUsul ? satir('KDV Durumu', '<span style="color:#16a34a;font-weight:600">Basit Usul (KDV Muaf)</span>') : satir('KDV Tutarı (%' + p.kdvOrani + ')', kdvTutar > 0 ? formatCurrency(kdvTutar) + ' TL' : '0,00 TL')}
+        ${basitUsul ? satir('KDV Durumu', '<span style="color:#16a34a;font-weight:600">Basit Usul (KDV Muaf)</span>') : satir('KDV Tutarı (%' + vergiler.kdvOrani + ')', kdvTutar > 0 ? formatCurrency(kdvTutar) + ' TL' : '0,00 TL')}
         ${!basitUsul ? satir('Sözleşme Tutarı (KDV Dahil)', sozlesmeToplamKdvli > 0 ? formatCurrency(sozlesmeToplamKdvli) + ' TL' : '') : ''}
       </table>`)}
 

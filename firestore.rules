@@ -82,6 +82,19 @@ service cloud.firestore {
 
     // Projeler
     match /projeler/{projeId} {
+      // getAfter, aynı batch içindeki onay/kilit değişikliğini de dikkate alır.
+      function dosyaDegistirebilir() {
+        let proje = getAfter(/databases/$(database)/documents/projeler/$(projeId)).data;
+        let kullanici = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+        return kullanici.role in ['admin', 'superadmin'] ||
+          (proje.get('locked', false) != true && (
+            (proje.userId == request.auth.uid && proje.status in ['taslak', 'geri_gonderildi']) ||
+            (kullanici.role == 'gerceklestirmeci' &&
+             proje.get('atananGerceklestirmeciUid', '') == request.auth.uid &&
+             proje.status == 'gonderildi')
+          ));
+      }
+
       allow read: if request.auth != null &&
         (resource.data.userId == request.auth.uid ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
@@ -101,7 +114,12 @@ service cloud.firestore {
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci' &&
          resource.data.atananGerceklestirmeciUid == request.auth.uid &&
          resource.data.status == 'gonderildi' &&
-         request.resource.data.status in ['gonderildi', 'onaylandi', 'geri_gonderildi']) ||
+         (
+           (request.resource.data.status == 'onaylandi' &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'onaylandiAt', 'onaylandiBy'])) ||
+           (request.resource.data.status == 'geri_gonderildi' &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'geriGonderNot', 'geriGonderAt', 'geriGonderBy']))
+         )) ||
         // Proje sahibi:
         // Yalnızca proje taslak veya geri_gonderildi aşamasındayken güncelleyebilir.
         // gonderildi, onaylandi veya arsivlendi aşamasında proje sahibi güncelleyemez.
@@ -139,20 +157,12 @@ service cloud.firestore {
           (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.atananGerceklestirmeciUid == request.auth.uid)
         );
 
-        allow create: if request.auth != null && (
-          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
-          (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.userId == request.auth.uid) ||
-          (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.atananGerceklestirmeciUid == request.auth.uid)
-        ) && (
+        allow create: if request.auth != null && dosyaDegistirebilir() && (
           !('boyut' in request.resource.data) ||
           (request.resource.data.boyut is number && request.resource.data.boyut <= 5242880)
         );
 
-        allow delete: if request.auth != null && (
-          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
-          (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.userId == request.auth.uid) ||
-          (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.atananGerceklestirmeciUid == request.auth.uid)
-        );
+        allow delete: if request.auth != null && dosyaDegistirebilir();
       }
     }
 

@@ -1,7 +1,20 @@
 // ===================== DOCUMENTS.JS =====================
 // Belge şablonları - Excel formatına birebir uygun
 
+function renderHesaplamaUyarisi(hatalar) {
+  return `<div class="belge" data-hesaplama-hatasi="true"><p><strong>Belge oluşturulamadı. Şu alanları düzeltin:</strong></p><ul>${hatalar.map(h => `<li>${escHtml(h)}</li>`).join('')}</ul></div>`;
+}
+
+function belgeHesaplamaKontrol(proje, referans) {
+  const hatalar = getHesaplamaHatalari(proje, referans);
+  if (!hatalar.length) return true;
+  if (typeof showToast === 'function') showToast(hatalar.join(' '), 'warning');
+  return false;
+}
+
 function renderYaklasikMaliyet(proje, referans) {
+  const hatalar = getHesaplamaHatalari(proje, referans, false);
+  if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const kalemler = getKalemler(proje);
   const ymGorevliler = getAktifGorevliler(proje.ymGorevliler);
   const yaklasikMaliyet = hesaplaYaklasikMaliyet(proje);
@@ -17,12 +30,12 @@ function renderYaklasikMaliyet(proje, referans) {
   let kalemRows = '';
   kalemler.forEach((k, i) => {
     const miktar = parseFloat(k.miktar) || 0;
-    const bf1 = firma1.fiyatlar[i] || 0;
-    const bf2 = firma2.fiyatlar[i] || 0;
-    const bf3 = firma3.fiyatlar[i] || 0;
-    const t1 = bf1 * miktar;
-    const t2 = bf2 * miktar;
-    const t3 = bf3 * miktar;
+    const bf1 = hesaplamaSayisi(firma1.fiyatlar[i]);
+    const bf2 = hesaplamaSayisi(firma2.fiyatlar[i]);
+    const bf3 = hesaplamaSayisi(firma3.fiyatlar[i]);
+    const t1 = hesaplaKalemTutar(bf1, miktar);
+    const t2 = hesaplaKalemTutar(bf2, miktar);
+    const t3 = hesaplaKalemTutar(bf3, miktar);
     const ortBF = miktar > 0 ? hesaplaYMKalemOrtalama(proje, i) / miktar : 0;
     const ortT = hesaplaYMKalemOrtalama(proje, i);
 
@@ -145,6 +158,8 @@ function renderYaklasikMaliyet(proje, referans) {
 }
 
 function renderTeklifTutanagi(proje, referans) {
+  const hatalar = getHesaplamaHatalari(proje, referans, false);
+  if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const kalemler = getKalemler(proje);
   const dtGorevliler = getAktifGorevliler(proje.dtGorevliler);
   const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
@@ -180,9 +195,9 @@ function renderTeklifTutanagi(proje, referans) {
   let teklifRows = '';
   kalemler.forEach((k, i) => {
     const miktar = parseFloat(k.miktar) || 0;
-    const bf1 = f1.fiyatlar[i] || 0;
-    const bf2 = f2.fiyatlar[i] || 0;
-    const bf3 = f3.fiyatlar[i] || 0;
+    const bf1 = hesaplamaSayisi(f1.fiyatlar[i]);
+    const bf2 = hesaplamaSayisi(f2.fiyatlar[i]);
+    const bf3 = hesaplamaSayisi(f3.fiyatlar[i]);
     teklifRows += `<tr style="height:26px">
       <td class="merkez">${i + 1}</td>
       <td style="padding:6px 4px">${escHtml(k.ad)}</td>
@@ -201,8 +216,8 @@ function renderTeklifTutanagi(proje, referans) {
     const kazananFirmaFiyatlar = proje.teklifFirmalar[kazananIdx]?.fiyatlar || [];
     kalemler.forEach((k, i) => {
       const miktar = parseFloat(k.miktar) || 0;
-      const bf = kazananFirmaFiyatlar[i] || 0;
-      const toplam = bf * miktar;
+      const bf = hesaplamaSayisi(kazananFirmaFiyatlar[i]);
+      const toplam = hesaplaKalemTutar(bf, miktar);
       kazananRows += `<tr style="height:26px">
         <td class="merkez">${i + 1}</td>
         <td style="padding:6px 4px">${escHtml(k.ad)}</td>
@@ -337,6 +352,8 @@ function renderTeklifTutanagi(proje, referans) {
 }
 
 function renderSozlesme(proje, referans) {
+  const hatalar = getHesaplamaHatalari(proje, referans, false);
+  if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
   const kazanan = kazananIdx >= 0 ? getKazananFirma(proje, referans) : { ad: '', toplam: 0, adres: '', tel: '', tur: 'Kişi' };
   const kazananDetay = kazananIdx >= 0 && proje.teklifFirmalar[kazananIdx] ? getFirmaByAd(proje.teklifFirmalar[kazananIdx].ad, referans) : null;
@@ -650,6 +667,8 @@ Yüklenici, işin yürütülmesi sırasında 6331 sayılı İş Sağlığı ve G
 }
 
 function renderTeknikSartname(proje, referans) {
+  const hatalar = getHesaplamaHatalari(proje, referans, false);
+  if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const ymGorevliler = getAktifGorevliler(proje.ymGorevliler);
   const metin = (proje.teknikSartnameMetni && proje.teknikSartnameMetni.trim()) 
     ? proje.teknikSartnameMetni 
@@ -705,6 +724,8 @@ function renderTeknikSartname(proje, referans) {
 }
 
 function renderBittiTutanagi(proje, referans) {
+  const hatalar = getHesaplamaHatalari(proje, referans, false);
+  if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
   const kazanan = kazananIdx >= 0 ? getKazananFirma(proje, referans) : { ad: '', toplam: 0 };
   const bitisT = proje.fiiliBitimTarihi || calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi);
@@ -754,6 +775,8 @@ function renderBittiTutanagi(proje, referans) {
 }
 
 function renderMuayeneKabulTutanagi(proje, referans) {
+  const hatalar = getHesaplamaHatalari(proje, referans, false);
+  if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   // 1. Kazanan firma ve bedel tespiti (Teklif firmaları veya YM firmaları üzerinden)
   const kalemler = getKalemler(proje);
   const kazananIdx = (proje.kazananFirmaIndex !== undefined && proje.kazananFirmaIndex >= 0)
@@ -873,6 +896,8 @@ function renderMuayeneKabulTutanagi(proje, referans) {
 }
 
 function renderDogrudanTeminOnayBelgesi(proje) {
+  const hatalar = getHesaplamaHatalari(proje, undefined, false);
+  if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const yaklasikMaliyet = hesaplaYaklasikMaliyet(proje);
   const dtGorevliler = getAktifGorevliler(proje.dtGorevliler);
   const isMiktari = !isMalVeyaHizmetTuru(proje.isTuru) ? '1 Adet' : (proje.isMiktari || '-');
@@ -949,6 +974,8 @@ function renderDogrudanTeminOnayBelgesi(proje) {
 }
 
 function renderHakedisRaporu(proje, referans) {
+  const hatalar = getHesaplamaHatalari(proje, referans);
+  if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const hak = hesaplaHakedis(proje, referans);
   if (!hak) return '<div class="belge"><p>Kazanan firma belirlenemedi.</p></div>';
 
@@ -974,7 +1001,7 @@ function renderHakedisRaporu(proje, referans) {
           <tr class="toplam-satir"><td>C</td><td>Toplam Tutar (A+B)</td><td class="rakam">${formatCurrency(hak.toplamTutar)}</td></tr>
           <tr><td>D</td><td>Bir Önceki Hakedişin Toplam Tutarı</td><td class="rakam">${formatCurrency(hak.oncekiHakedis)}</td></tr>
           <tr class="toplam-satir"><td>E</td><td>Bu Hakedişin Tutarı (C – D)</td><td class="rakam">${formatCurrency(hak.buHakedis)}</td></tr>
-          <tr><td>F</td><td>${basitUsul ? 'KDV (Basit Usul - Muaf)' : `KDV (E x %${proje.kdvOrani})`}</td><td class="rakam">${formatCurrency(hak.kdv)}</td></tr>
+          <tr><td>F</td><td>${basitUsul ? 'KDV (Basit Usul - Muaf)' : `KDV (E x %${hak.kdvOrani})`}</td><td class="rakam">${formatCurrency(hak.kdv)}</td></tr>
           <tr class="toplam-satir"><td>G</td><td>Tahakkuk Tutarı</td><td class="rakam">${formatCurrency(hak.tahakkuk)}</td></tr>
         </tbody>
       </table>
@@ -1153,6 +1180,7 @@ function hizalaGorevliIsmi(root) {
 // dosyaAdi verilirse yazdırma penceresinin başlığı olur; tarayıcının
 // "PDF olarak kaydet" hedefinde dosya adı buradan otomatik dolar.
 function belgeYazdir(html, landscape = false, sozlesme = false, dosyaAdi = '') {
+  if (html.includes('data-hesaplama-hatasi="true"')) return false;
   const win = window.open('', '_blank');
   const pageSize = landscape
     ? 'size: A4 landscape; margin: 8mm 10mm;'
@@ -1197,6 +1225,7 @@ function belgeYazdir(html, landscape = false, sozlesme = false, dosyaAdi = '') {
 }
 
 function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge') {
+  if (html.includes('data-hesaplama-hatasi="true"')) return false;
   // A4 @96dpi: portrait=794px(210mm), landscape=1123px(297mm)
   const pageW = landscape ? 1123 : 794;
   const bodyPadding = landscape ? '38px 57px' : '57px 76px';
@@ -1205,7 +1234,7 @@ function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge') {
   container.style.cssText = `position:fixed;left:-9999px;top:0;width:${pageW}px;`;
   container.innerHTML = `
     <style>${belgeOrtakCSS()}</style>
-    <div style="font-family:Times New Roman,serif;font-size:9.5pt;color:#000;padding:${bodyPadding};width:${pageW}px;box-sizing:border-box;">
+    <div class="pdf-content" style="font-family:Times New Roman,serif;font-size:9.5pt;color:#000;padding:${bodyPadding};width:${pageW}px;box-sizing:border-box;">
       ${html}
     </div>`;
   document.body.appendChild(container);
@@ -1231,7 +1260,7 @@ function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge') {
 
   return html2pdf()
     .set(opts)
-    .from(container.firstElementChild)
+    .from(container.querySelector('.pdf-content'))
     .toPdf()
     .output('blob')
     .then(blob => {
@@ -1245,6 +1274,7 @@ function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge') {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
+      return blob;
     })
     .catch(err => {
       if (document.body.contains(container)) document.body.removeChild(container);

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <title>DTM hesaplama kontrolü</title>
+  <link rel="stylesheet" href="../app/css/style.css">
+  <style>
+    body { padding:24px; background:#f1f5f9; }
+    .controls { display:flex; gap:16px; flex-wrap:wrap; align-items:end; background:white; padding:18px; margin-bottom:16px; border-radius:8px; }
+    label { display:flex; flex-direction:column; gap:4px; }
+    #result { max-width:1050px; padding:20px; background:white; margin-top:16px; }
+  </style>
+</head>
+<body>
+  <h1>DTM hesaplama kontrolü</h1>
+  <p>Örnek proje: 200.000 TL sözleşme bedeli, 500 TL sözleşme damga vergisi. Bu sayfa Firebase'e bağlanmaz.</p>
+  <div class="controls">
+    <label>KDV (%)<select id="testKdv" onchange="testField('kdvOrani',this.value)"><option value="0">0</option><option value="20" selected>20</option></select></label>
+    <label>Önceki hakediş (TL)<input id="testOnceki" type="number" value="0" oninput="testField('oncekiHakedisTutar',this.value)"></label>
+    <label>SGK kesintisi (TL)<input id="testSgk" type="number" value="0" oninput="testField('sgkKesintisi',this.value)"></label>
+    <button onclick="testView('hak')">Hakediş önizlemesi</button>
+    <button onclick="testView('summary')">Proje özeti</button>
+    <button onclick="testView('form')">Gerçek veri giriş formu</button>
+    <button onclick="testView('ym')">Yaklaşık maliyet</button>
+    <button onclick="testView('offer')">Teklif tutanağı</button>
+  </div>
+  <div class="controls">
+    <button onclick="testPdf()">PDF indir</button>
+    <button onclick="belgeIdindenWordUret('hakedis-raporu',proje,referans)">Word hakediş indir</button>
+    <button onclick="exportYaklasikMaliyetExcel(proje,referans)">Excel yaklaşık maliyet indir</button>
+    <button onclick="exportTeklifTutanagiExcel(proje,referans)">Excel teklif indir</button>
+  </div>
+  <p id="testState"></p>
+  <div id="result"><div id="mainContent"></div></div>
+  <input id="loginPassword" hidden><input id="loginUsername" hidden>
+  <script src="../app/js/html2pdf.bundle.min.js"></script>
+  <script src="../app/js/data.js"></script>
+  <script src="../app/js/utils.js"></script>
+  <script src="../app/js/calculations.js"></script>
+  <script src="../app/js/documents.js"></script>
+  <script src="../app/js/excel.js"></script>
+  <script src="../app/js/word.js"></script>
+  <script>
+    // Replace cloud/storage entry points before loading the application.
+    loadReferans = () => getDefaultReferans();
+    const auth = { onAuthStateChanged() {} };
+    let currentDTMUser = { displayName:'Test Kullanıcısı', role:'user' };
+  </script>
+  <script src="../app/js/app.js"></script>
+  <script>
+    proje = Object.assign(getDefaultProje(), {
+      isAdi:'Test Çatı Onarımı', isTuru:'Yapım İşi', kdvOrani:20,
+      ymFirmalar:[{ad:'Firma A',fiyatlar:[200000]},{ad:'Firma B',fiyatlar:[220000]},{ad:'Firma C',fiyatlar:[240000]}],
+      teklifFirmalar:[{ad:'Firma A',fiyatlar:[200000]},{ad:'Firma B',fiyatlar:[210000]},{ad:'Firma C',fiyatlar:[230000]}],
+      kazananFirmaIndex:0, sozlesmeDamgaVergisi:500,
+      ymGorevliler:[{ad:'Test Görevlisi',unvan:'Mühendis'}],dtGorevliler:[{ad:'Test Görevlisi',unvan:'Mühendis'}]
+    });
+    referans.firmaList = ['Firma A','Firma B','Firma C'].map(ad=>({ad,adres:'Test adresi',tur:'Şirket',basitUsul:false}));
+    currentBelgelerProjeId = 'local-test';
+    currentBelge = 'hakedis-raporu';
+    let testCurrentView = 'hak';
+    autoSave = () => {};
+    renderPage = () => testView(testCurrentView);
+    function testField(field,value) {
+      onFieldChange(field,value);
+      testView(testCurrentView);
+      document.getElementById('testKdv').value = proje.kdvOrani;
+      document.getElementById('testOnceki').value = proje.oncekiHakedisTutar;
+      document.getElementById('testSgk').value = proje.sgkKesintisi;
+    }
+    async function testPdf() {
+      const blob = await pdfIndirBelge();
+      if (blob) {
+        const saved = await fetch('/test-pdf', {method:'POST',body:blob});
+        document.getElementById('testState').textContent = saved.ok ? 'PDF üretildi ve yerel test çıktısına kaydedildi.' : 'PDF üretildi; test sunucusu kayıt desteği yok.';
+      }
+    }
+    function testView(view) {
+      testCurrentView = view;
+      const main = document.getElementById('mainContent');
+      if (view === 'summary') renderProjeOzetPage();
+      else if (view === 'form') main.innerHTML = renderVeriGirisPage();
+      else {
+        currentBelge = view === 'ym' ? 'yaklasik-maliyet' : view === 'offer' ? 'teklif-tutanagi' : 'hakedis-raporu';
+        main.innerHTML = view === 'ym' ? renderYaklasikMaliyet(proje,referans) : view === 'offer' ? renderTeklifTutanagi(proje,referans) : renderHakedisRaporu(proje,referans);
+      }
+      document.getElementById('testState').textContent = `KDV: %${proje.kdvOrani} | Önceki hakediş: ${proje.oncekiHakedisTutar} TL | SGK: ${proje.sgkKesintisi} TL`;
+    }
+    testView('hak');
+  </script>
+</body>
+</html>

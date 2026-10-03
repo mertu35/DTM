@@ -95,6 +95,7 @@ function tdRakam(sayi, bold) {
 // =============================================
 // 11 sütun: S.NO | İş | Miktar | BF1 | T1 | BF2 | T2 | BF3 | T3 | BFYM | TYM
 function exportYaklasikMaliyetExcel(proje, referans) {
+  if (!belgeHesaplamaKontrol(proje, referans)) return false;
   const kalemler = getKalemler(proje);
   const f1 = proje.ymFirmalar[0] || { ad: '', fiyatlar: [] };
   const f2 = proje.ymFirmalar[1] || { ad: '', fiyatlar: [] };
@@ -123,9 +124,9 @@ function exportYaklasikMaliyetExcel(proje, referans) {
       <td class="center">${i + 1}</td>
       <td>${escHtml(k.ad || '')}</td>
       <td class="center">${mik ? mik.toLocaleString('tr-TR') : ''}</td>
-      ${tdRakam(bf1 || null)}${tdRakam(bf1 * mik || null)}
-      ${tdRakam(bf2 || null)}${tdRakam(bf2 * mik || null)}
-      ${tdRakam(bf3 || null)}${tdRakam(bf3 * mik || null)}
+      ${tdRakam(bf1 || null)}${tdRakam(hesaplaKalemTutar(bf1, mik) || null)}
+      ${tdRakam(bf2 || null)}${tdRakam(hesaplaKalemTutar(bf2, mik) || null)}
+      ${tdRakam(bf3 || null)}${tdRakam(hesaplaKalemTutar(bf3, mik) || null)}
       ${tdRakam(ortBF || null)}${tdRakam(ortT || null)}
     </tr>`;
   });
@@ -240,6 +241,7 @@ function exportYaklasikMaliyetExcel(proje, referans) {
 // O,P   : Firma 4    (14,15) — yok ise boş
 // Q     : boş        (16)
 function exportTeklifTutanagiExcel(proje, referans) {
+  if (!belgeHesaplamaKontrol(proje, referans)) return false;
   const C = 17;
   const kalemler = getKalemler(proje);
   const f1 = proje.teklifFirmalar[0] || { ad: '', fiyatlar: [] };
@@ -503,6 +505,7 @@ function exportTeklifTutanagiExcel(proje, referans) {
 
 // ── Belge ID'sine göre Excel üret ──
 function belgeIdindenExcelUret(belgeId, proje, referans) {
+  if (!belgeHesaplamaKontrol(proje, referans)) return false;
   switch (belgeId) {
     case 'yaklasik-maliyet': exportYaklasikMaliyetExcel(proje, referans); return true;
     case 'teklif-tutanagi':  exportTeklifTutanagiExcel(proje, referans); return true;
