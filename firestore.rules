@@ -2,32 +2,46 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Auth hesabı tek başına uygulama üyeliği vermez. Silinen profilin açık
+    // oturumu da veri okuyamaz veya değiştiremez.
+    function kayitliKullanici() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in
+          ['user', 'gerceklestirmeci', 'admin', 'superadmin'];
+    }
+
+    function kullaniciYonetebilir(userId) {
+      return kayitliKullanici() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin' ||
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+         (!exists(/databases/$(database)/documents/users/$(userId)) ||
+          get(/databases/$(database)/documents/users/$(userId)).data.role != 'superadmin'))
+      );
+    }
+
     // Kullanıcılar
     match /users/{userId} {
       // Herkes kendi kaydını, admin/superadmin herkesi okuyabilir.
       // Sıradan kullanıcıların diğer kullanıcıların profilini (e-posta, son giriş vb.)
       // okuması kesinlikle engellenmiştir (veri sızıntısı koruması).
-      allow read: if request.auth != null &&
+      allow read: if kayitliKullanici() &&
         (request.auth.uid == userId ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']));
 
       // Admin ve superadmin yazabilir; ancak superadmin atama/değiştirme yalnızca mevcut superadmin yapabilir
-      allow write: if request.auth != null &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin' ||
-          (
-            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
-            (request.resource == null || request.resource.data.role != 'superadmin') &&
-            (!exists(/databases/$(database)/documents/users/$(userId)) || resource.data.role != 'superadmin')
-          )
-        );
+      allow create, update: if kullaniciYonetebilir(userId) &&
+        request.resource.data.role in ['user', 'gerceklestirmeci', 'admin', 'superadmin'] &&
+        (request.resource.data.role != 'superadmin' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin') &&
+        (request.auth.uid != userId || request.resource.data.role == resource.data.role);
+      allow delete: if kullaniciYonetebilir(userId) && request.auth.uid != userId;
 
       // Kullanıcı kendi profilini sınırlı alanlarda güncelleyebilir.
       // emailVerified alanını yalnızca Firebase Auth'un kriptografik token doğrulaması (email_verified)
       // true olduğunda true yapabilir; böylece Auth doğrulaması olmadan profil sahteciliği engellenir.
-      allow update: if request.auth != null &&
+      allow update: if kayitliKullanici() &&
         request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'avatar', 'okunanDuyurular', 'silinenDuyurular', 'gorulenGeriGonderilenler', 'lastLogin',
@@ -46,36 +60,33 @@ service cloud.firestore {
 
       // Şifre gibi hassas alanlar: sadece sahibi veya admin/superadmin okuyup yazabilir/silebilir
       match /secret/{secretId} {
-        allow read, write: if request.auth != null &&
-          (request.auth.uid == userId ||
-           (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']));
+        allow read, write: if kayitliKullanici() &&
+          (request.auth.uid == userId || kullaniciYonetebilir(userId));
       }
     }
 
     // Genel Kullanıcı Bilgisi (Gerçekleştirmeci dropdown listesi ve personel görünümü için)
     // Sadece kayıtlı oturum açmış kullanıcılar okuyabilir. Yalnızca displayName ve role içerir.
     match /publicUsers/{userId} {
-      allow read: if request.auth != null;
-      // Admin ve superadmin her şeyi yazabilir / silebilir
-      allow write: if request.auth != null &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
-      // Kullanıcı kendi kaydını oluşturabilir veya güncelleyebilir; ancak 'role' alanını keyfi değiştiremez
-      // (rolü yalnızca admin belirler; kullanıcının yazdığı rol users tablosundaki gerçek rolüyle birebir aynı olmalıdır)
-      allow create, update: if request.auth != null &&
-        request.auth.uid == userId &&
-        (
-          !('role' in request.resource.data) ||
-          (exists(/databases/$(database)/documents/users/$(userId)) &&
-           get(/databases/$(database)/documents/users/$(userId)).data.role == request.resource.data.role)
-        );
+      allow read: if kayitliKullanici();
+      // Dizin yalnızca kanonik profilin genel adını ve rolünü yansıtır.
+      // getAfter sayesinde rol/profil ve dizin aynı atomik batch'te güncellenebilir.
+      allow create, update: if kayitliKullanici() &&
+        (request.auth.uid == userId || kullaniciYonetebilir(userId)) &&
+        request.resource.data.keys().hasOnly(['uid', 'displayName', 'role']) &&
+        request.resource.data.keys().hasAll(['displayName', 'role']) &&
+        request.resource.data.displayName is string &&
+        request.resource.data.role in ['user', 'gerceklestirmeci', 'admin', 'superadmin'] &&
+        request.resource.data.get('uid', userId) == userId &&
+        request.resource.data.displayName == getAfter(/databases/$(database)/documents/users/$(userId)).data.get('displayName', '') &&
+        request.resource.data.role == getAfter(/databases/$(database)/documents/users/$(userId)).data.role;
+      allow delete: if kullaniciYonetebilir(userId);
     }
 
     // Duyurular
     match /duyurular/{duyuruId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null &&
+      allow read: if kayitliKullanici();
+      allow write: if kayitliKullanici() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
@@ -95,19 +106,19 @@ service cloud.firestore {
           ));
       }
 
-      allow read: if request.auth != null &&
+      allow read: if kayitliKullanici() &&
         (resource.data.userId == request.auth.uid ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci' &&
           resource.data.atananGerceklestirmeciUid == request.auth.uid));
 
       // Sadece yetkili kullanıcı kendi adına, taslak olarak oluşturabilir
-      allow create: if request.auth != null &&
+      allow create: if kayitliKullanici() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.status == 'taslak';
 
-      allow update: if request.auth != null && (
+      allow update: if kayitliKullanici() && (
         // Admin/superadmin her alanı değiştirebilir
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
         // Gerçekleştirmeci sadece kendi atandığı ve 'gonderildi' durumundaki projeyi güncelleyebilir
@@ -144,38 +155,38 @@ service cloud.firestore {
         )
       );
 
-      allow delete: if request.auth != null && (
+      allow delete: if kayitliKullanici() && (
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
         (resource.data.userId == request.auth.uid && resource.data.status in ['taslak', 'geri_gonderildi'] && resource.data.get('locked', false) != true)
       );
 
       // Projeye ait ekler / dosyalar (Firestore alt koleksiyonu ve parçaları)
       match /dosyalar/{dosyaId=**} {
-        allow read: if request.auth != null && (
+        allow read: if kayitliKullanici() && (
           (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
           (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.userId == request.auth.uid) ||
           (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.atananGerceklestirmeciUid == request.auth.uid)
         );
 
-        allow create: if request.auth != null && dosyaDegistirebilir() && (
+        allow create: if kayitliKullanici() && dosyaDegistirebilir() && (
           !('boyut' in request.resource.data) ||
           (request.resource.data.boyut is number && request.resource.data.boyut <= 5242880)
         );
 
-        allow delete: if request.auth != null && dosyaDegistirebilir();
+        allow delete: if kayitliKullanici() && dosyaDegistirebilir();
       }
     }
 
     // Referans verileri (kullanıcıya özel)
     match /referans/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      allow read: if request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+      allow read, write: if kayitliKullanici() && request.auth.uid == userId;
+      allow read: if kayitliKullanici() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
     }
 
     // Global referans verileri (admin, superadmin ve gerceklestirmeci yönetir)
     match /globalReferans/{docId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null &&
+      allow read: if kayitliKullanici();
+      allow write: if kayitliKullanici() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'gerceklestirmeci'];
     }
@@ -184,7 +195,7 @@ service cloud.firestore {
     // Oturum açılmadan e-posta sızıntısını önlemek için dışarıdan erişime kapatılmıştır.
     // Yalnızca admin/superadmin erişebilir.
     match /usernameEmailMap/{username} {
-      allow read, write: if request.auth != null && (
+      allow read, write: if kayitliKullanici() && (
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']
       );
@@ -193,8 +204,8 @@ service cloud.firestore {
     // Uygulama sürüm bilgisi ("Hakkında" sayfasındaki güncelleme kontrolü)
     // Herkes okuyabilir, sadece admin/superadmin güncelleyebilir.
     match /appConfig/{docId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null &&
+      allow read: if kayitliKullanici();
+      allow write: if kayitliKullanici() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }

@@ -79,15 +79,22 @@ async function dtmLogin(identifier, password) {
 
   // Firestore profil verisini çek
   const userDocRef = db.collection('users').doc(cred.user.uid);
-  const snap = await userDocRef.get();
+  const snap = await userDocRef.get().catch(async error => {
+    await dtmLogout();
+    throw error;
+  });
   let userData = snap.exists ? snap.data() : {};
+  if (!snap.exists || !['user', 'gerceklestirmeci', 'admin', 'superadmin'].includes(userData.role)) {
+    await dtmLogout();
+    throw new Error('Uygulama kullanıcı kaydınız bulunamadı. Yöneticiyle iletişime geçiniz.');
+  }
 
   // Genel kullanıcı dizinini (publicUsers: yalnızca ad ve rol) arka planda senkronize et
   db.collection('publicUsers').doc(cred.user.uid).set({
     uid: cred.user.uid,
     displayName: userData.displayName || '',
     role: userData.role || 'user'
-  }, { merge: true }).catch(() => {});
+  }).catch(() => {});
 
   // Auth e-posta doğrulama durumunu Firestore ile senkronize et
   if (cred.user.email && !cred.user.email.endsWith('@dtm.local')) {
@@ -116,6 +123,12 @@ async function dtmLogout() {
 
 // Yeni kullanıcı oluştur (admin) - secondary app ile mevcut oturum korunur
 async function createDTMUser(username, password, displayName, role, userEmail = '') {
+  if (!['admin', 'superadmin'].includes(currentDTMUser?.role) ||
+      !['user', 'gerceklestirmeci', 'admin', 'superadmin'].includes(role) ||
+      (role === 'superadmin' && currentDTMUser.role !== 'superadmin')) {
+    throw new Error('Bu kullanıcı rolünü oluşturma yetkiniz yok.');
+  }
+  let createdUser;
   const secondaryApp = firebase.initializeApp(firebaseConfig, 'secondary_' + Date.now());
   try {
     const cleanUsername = username.toLowerCase().trim();
@@ -123,6 +136,7 @@ async function createDTMUser(username, password, displayName, role, userEmail = 
     // Auth hesabı oluştururken öncelik usernameToEmail
     const emailToCreate = cleanEmail || usernameToEmail(cleanUsername);
     const cred = await secondaryApp.auth().createUserWithEmailAndPassword(emailToCreate, password);
+    createdUser = cred.user;
     
     const userDocData = {
       username: cleanUsername,
@@ -136,14 +150,17 @@ async function createDTMUser(username, password, displayName, role, userEmail = 
       userDocData.pendingEmail = cleanEmail;
     }
 
-    await db.collection('users').doc(cred.user.uid).set(userDocData);
-
-    // Genel kullanıcı dizinine (publicUsers) ad ve rol bilgisini yaz
-    await db.collection('publicUsers').doc(cred.user.uid).set({
-      uid: cred.user.uid,
-      displayName: displayName.trim(),
-      role: role || 'user'
-    }).catch(e => console.warn('publicUsers yazılamadı:', e));
+    const batch = db.batch();
+    batch.set(db.collection('users').doc(cred.user.uid), userDocData);
+    batch.set(db.collection('publicUsers').doc(cred.user.uid), {
+      uid: cred.user.uid, displayName: userDocData.displayName, role: userDocData.role
+    });
+    try {
+      await batch.commit();
+    } catch (error) {
+      await createdUser.delete().catch(e => console.warn('Eksik Auth hesabı silinemedi:', e));
+      throw error;
+    }
 
     await secondaryApp.auth().signOut();
     return cred.user.uid;
@@ -162,7 +179,7 @@ async function getAllUsers() {
       uid: u.uid,
       displayName: u.displayName || '',
       role: u.role || 'user'
-    }, { merge: true }).catch(() => {});
+    }).catch(() => {});
   });
   return list;
 }
@@ -764,9 +781,42 @@ async function duyuruKendindenGizle(duyuruId) {
 }
 
 // Kullanıcı rolünü değiştir (superadmin)
+async function yonetilebilirKullanici(uid) {
+  if (!['admin', 'superadmin'].includes(currentDTMUser?.role) || uid === currentDTMUser.uid) {
+    throw new Error('Bu kullanıcı üzerinde yönetim yetkiniz yok.');
+  }
+  const ref = db.collection('users').doc(uid);
+  const snap = await ref.get();
+  if (!snap.exists) throw new Error('Kullanıcı bulunamadı.');
+  const data = snap.data();
+  if (data.role === 'superadmin' && currentDTMUser.role !== 'superadmin') {
+    throw new Error('Superadmin hesabını yalnızca superadmin yönetebilir.');
+  }
+  return { ref, data };
+}
+
 async function changeUserRole(uid, newRole) {
-  await db.collection('users').doc(uid).update({ role: newRole });
-  await db.collection('publicUsers').doc(uid).set({ role: newRole }, { merge: true }).catch(() => {});
+  const { ref, data } = await yonetilebilirKullanici(uid);
+  if (!['user', 'gerceklestirmeci', 'admin', 'superadmin'].includes(newRole) ||
+      (newRole === 'superadmin' && currentDTMUser.role !== 'superadmin')) {
+    throw new Error('Geçersiz veya yetkisiz rol.');
+  }
+  const batch = db.batch();
+  batch.update(ref, { role: newRole });
+  batch.set(db.collection('publicUsers').doc(uid), {
+    uid, displayName: data.displayName || '', role: newRole
+  });
+  await batch.commit();
+}
+
+async function deleteDTMUser(uid) {
+  const { ref, data } = await yonetilebilirKullanici(uid);
+  const batch = db.batch();
+  if (data.username) batch.delete(db.collection('usernameEmailMap').doc(data.username.toLowerCase().trim()));
+  batch.delete(db.collection('publicUsers').doc(uid));
+  batch.delete(ref.collection('secret').doc('info'));
+  batch.delete(ref);
+  await batch.commit();
 }
 
 // Avatar seç ve Firestore'a kaydet (hazır avatarlardan biri)

@@ -34,12 +34,18 @@ function siralaProjeler(projeler, sortKey) {
 
 // HTML attribute içinde güvenli kullanım için escape (XSS önlemi)
 function escAttr(str) {
-  return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Inline olay işleyicisinde JS string'i ve dıştaki HTML attribute'u ayrı kaçır.
+// HTML entity'leri tarayıcıda çözüldüğünden yalnızca escAttr yeterli değildir.
+function escJsAttr(value) {
+  return escAttr(JSON.stringify(String(value ?? '')).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029'));
 }
 
 // HTML içerik için güvenli metin escape (XSS önlemi)
 function escHtml(str) {
-  return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // Butonu kilitleyerek async işlem çalıştır (double-submit önler)

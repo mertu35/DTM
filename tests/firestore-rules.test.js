@@ -31,6 +31,7 @@ async function update(p, data, uid) {
   const mask = Object.keys(data).map(k => `updateMask.fieldPaths=${k}`).join('&');
   return request('PATCH', `${base}/${p}?${mask}`, { fields: fields(data) }, uid);
 }
+async function seedAs(p, data, uid) { return request('PATCH', `${base}/${p}`, { fields: fields(data) }, uid); }
 let count = 0;
 async function check(label, response, allowed) {
   assert.equal(response.status, allowed ? 200 : 403, `${label}: ${await response.text()}`);
@@ -44,6 +45,48 @@ async function main() {
   assert.equal(loaded.status, 200, await loaded.text());
   for (const [uid, role] of [['owner', 'user'], ['reviewer', 'gerceklestirmeci'], ['other', 'user'], ['admin', 'admin']]) {
     await seed(`users/${uid}`, { role });
+  }
+  await seed('users/super', { role: 'superadmin', displayName: 'Super' });
+  await seed('publicUsers/super', { uid: 'super', role: 'superadmin', displayName: 'Super' });
+  await seed('users/super/secret/info', { value: 'private' });
+  await check('self role escalation denied', await update('users/owner', { role: 'admin' }, 'owner'), false);
+  await check('admin cannot demote superadmin', await update('users/super', { role: 'user' }, 'admin'), false);
+  await check('admin cannot create superadmin', await seedAs('users/new-super', { role: 'superadmin' }, 'admin'), false);
+  await check('invalid role denied', await update('users/other', { role: 'unknown' }, 'admin'), false);
+  await check('admin self demotion denied', await update('users/admin', { role: 'user' }, 'admin'), false);
+  await check('self avatar allowed', await update('users/owner', { avatar: 'avatar1' }, 'owner'), true);
+  for (const data of [
+    { uid: 'owner', displayName: '', role: 'admin' },
+    { uid: 'other', displayName: '', role: 'user' },
+    { uid: 'owner', displayName: 'Forged', role: 'user' },
+    { uid: 'owner', displayName: '', role: 'user', email: 'private@example.com' }
+  ]) await check('public directory spoof or extra field denied', await seedAs('publicUsers/owner', data, 'owner'), false);
+  await check('valid public directory allowed', await seedAs('publicUsers/owner', { uid: 'owner', displayName: '', role: 'user' }, 'owner'), true);
+  for (const target of ['users/super', 'publicUsers/super', 'users/super/secret/info']) {
+    await check('admin cannot delete superadmin data ' + target, await request('DELETE', `${base}/${target}`, undefined, 'admin'), false);
+  }
+  await check('atomic profile and directory creation', await request('POST', `${base}:commit`, { writes: [
+    { update: { name: name('users/new-user'), fields: fields({ role: 'user', displayName: 'New' }) } },
+    { update: { name: name('publicUsers/new-user'), fields: fields({ uid: 'new-user', role: 'user', displayName: 'New' }) } }
+  ] }, 'admin'), true);
+  await check('atomic role and directory change', await request('POST', `${base}:commit`, { writes: [
+    { update: { name: name('users/new-user'), fields: fields({ role: 'gerceklestirmeci' }) }, updateMask: { fieldPaths: ['role'] } },
+    { update: { name: name('publicUsers/new-user'), fields: fields({ uid: 'new-user', role: 'gerceklestirmeci', displayName: 'New' }) } }
+  ] }, 'super'), true);
+  await seed('users/deleted', { role: 'user', displayName: 'Deleted' });
+  await seed('publicUsers/deleted', { uid: 'deleted', role: 'user', displayName: 'Deleted' });
+  await seed('users/deleted/secret/info', { value: 'private' });
+  await seed('projeler/deleted-owned', { userId: 'deleted', status: 'taslak' });
+  await seed('projeler/deleted-owned/dosyalar/file', { chunk: 'private' });
+  await seed('referans/deleted', { value: 'private' });
+  await check('atomic user deletion', await request('POST', `${base}:commit`, { writes: [
+    { delete: name('publicUsers/deleted') }, { delete: name('users/deleted/secret/info') }, { delete: name('users/deleted') }
+  ] }, 'admin'), true);
+  for (const uid of ['deleted', 'unregistered']) {
+    for (const target of ['publicUsers/owner', 'projeler/deleted-owned', 'projeler/deleted-owned/dosyalar/file', 'referans/deleted']) {
+      await check('unregistered read denied ' + uid + ' ' + target, await request('GET', `${base}/${target}`, undefined, uid), false);
+    }
+    await check('unregistered project write denied ' + uid, await update('projeler/deleted-owned', { isAdi: 'Changed' }, uid), false);
   }
   await seed('visionUsage/retired', { legacy: 'test' });
   for (const uid of ['owner', 'reviewer', 'admin']) {

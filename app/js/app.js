@@ -180,7 +180,7 @@ function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
 
   const checkboxler = belgeler.map(b => `
     <label style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;border-bottom:1px solid var(--gray-100);">
-      <input type="checkbox" class="belge-indir-cb" value="${b.id}" data-excel="${b.excel}" data-word="${b.word}" checked
+      <input type="checkbox" class="belge-indir-cb" value="${escAttr(b.id)}" data-excel="${b.excel}" data-word="${b.word}" checked
         style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
       <span style="font-size:14px;color:var(--gray-800);flex:1">${b.ad}</span>
       ${b.excel ? '<span style="font-size:10px;background:#10b981;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">XLSX</span>' : ''}
@@ -827,7 +827,7 @@ async function renderAnaSayfaPage() {
       const son5 = projeler.slice(0, 5);
       listEl.innerHTML = son5.map(p => {
         const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
-        return `<div class="home-recent-row" onclick="cloudProjeAc('${p.id}')" style="border-bottom:1px solid var(--gray-100)">
+        return `<div class="home-recent-row" onclick="cloudProjeAc(${escJsAttr(p.id)})" style="border-bottom:1px solid var(--gray-100)">
           <span style="font-weight:500;font-size:13px">${p.locked ? '🔒 ' : ''}${escHtml(p.isAdi || '(İsimsiz)')}</span>
           <span style="font-size:12px;color:var(--gray-400)">${tarih}</span>
         </div>`;
@@ -984,10 +984,10 @@ function renderVeriGirisPage() {
     <tr>
       <td class="merkez">${i + 1}</td>
       <td><input type="text" value="${escAttr(k.ad)}" data-field="isKalemleri" data-index="${i}" data-sub="ad" onchange="onKalemChange(this)"></td>
-      <td><input type="number" min="0" step="any" value="${k.miktar}" data-field="isKalemleri" data-index="${i}" data-sub="miktar" onchange="onKalemChange(this)" style="width:80px"></td>
+      <td><input type="number" min="0" step="any" value="${escAttr(k.miktar)}" data-field="isKalemleri" data-index="${i}" data-sub="miktar" onchange="onKalemChange(this)" style="width:80px"></td>
       <td><select data-field="isKalemleri" data-index="${i}" data-sub="birim" onchange="onKalemChange(this)">
         <option value="">--</option>
-        ${referans.birimList.map(b => `<option value="${b}" ${k.birim === b ? 'selected' : ''}>${b}</option>`).join('')}
+        ${referans.birimList.map(b => `<option value="${escAttr(b)}" ${k.birim === b ? 'selected' : ''}>${escHtml(b)}</option>`).join('')}
       </select></td>
     </tr>`).join('');
 
@@ -1028,7 +1028,7 @@ function renderVeriGirisPage() {
               const toplam = hesaplaKalemTutar(bf, k.miktar);
               return `<tr>
                 <td>${escHtml(k.ad || '-')}</td>
-                <td><input type="number" min="0" step="0.01" value="${bf || ''}" data-firma="ym" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
+                <td><input type="number" min="0" step="0.01" value="${escAttr(bf || '')}" data-firma="ym" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
                 <td class="rakam">${toplam > 0 ? formatCurrency(toplam) : '-'}</td>
               </tr>`;
             }).join('')}
@@ -1077,7 +1077,7 @@ function renderVeriGirisPage() {
               const toplam = hesaplaKalemTutar(bf, k.miktar);
               return `<tr>
                 <td>${escHtml(k.ad || '-')}</td>
-                <td><input type="number" min="0" step="0.01" value="${bf || ''}" data-firma="teklif" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
+                <td><input type="number" min="0" step="0.01" value="${escAttr(bf || '')}" data-firma="teklif" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
                 <td class="rakam">${toplam > 0 ? formatCurrency(toplam) : '-'}</td>
               </tr>`;
             }).join('')}
@@ -1126,13 +1126,13 @@ function renderVeriGirisPage() {
           <div class="form-group">
             <label>İdare Adı</label>
             <select id="idareAdi" onchange="onFieldChange('idareAdi', this.value)">
-              ${referans.idareList.map(i => `<option value="${i}" ${proje.idareAdi === i ? 'selected' : ''}>${i}</option>`).join('')}
+              ${referans.idareList.map(i => `<option value="${escAttr(i)}" ${proje.idareAdi === i ? 'selected' : ''}>${escHtml(i)}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
             <label>Müdürlük</label>
             <select id="mudurluk" onchange="onFieldChange('mudurluk', this.value)">
-              ${referans.mudurlukler.map(m => `<option value="${m}" ${proje.mudurluk === m ? 'selected' : ''}>${m}</option>`).join('')}
+              ${referans.mudurlukler.map(m => `<option value="${escAttr(m)}" ${proje.mudurluk === m ? 'selected' : ''}>${escHtml(m)}</option>`).join('')}
             </select>
           </div>
           <div class="form-group full-width">
@@ -1154,7 +1154,7 @@ function renderVeriGirisPage() {
             <div class="form-group">
               <label>KDV Oranı (%)</label>
               <select id="kdvOrani" onchange="onFieldChange('kdvOrani', this.value)">
-                ${[...new Set([0, ...referans.kdvOranlari])].map(k => `<option value="${k}" ${proje.kdvOrani == k ? 'selected' : ''}>${k}</option>`).join('')}
+                ${[...new Set([0, ...referans.kdvOranlari])].map(k => `<option value="${escAttr(k)}" ${proje.kdvOrani == k ? 'selected' : ''}>${escHtml(k)}</option>`).join('')}
               </select>
             </div>
             <div class="form-group">
@@ -1165,7 +1165,7 @@ function renderVeriGirisPage() {
               <label>İlçe</label>
               <select id="ilce" onchange="onFieldChange('ilce', this.value)">
                 <option value="">-- Seçin --</option>
-                ${referans.ilceler.map(i => `<option value="${i}" ${proje.ilce === i ? 'selected' : ''}>${i}</option>`).join('')}
+                ${referans.ilceler.map(i => `<option value="${escAttr(i)}" ${proje.ilce === i ? 'selected' : ''}>${escHtml(i)}</option>`).join('')}
               </select>
             </div>
           </div>
@@ -1192,7 +1192,7 @@ function renderVeriGirisPage() {
         <div class="form-grid" style="margin-top:12px">
           <div class="form-group">
             <label>Y.M. Onay Tarihi</label>
-            <input type="date" id="ymOnayTarihi" value="${proje.ymOnayTarihi}" onchange="onFieldChange('ymOnayTarihi', this.value)">
+            <input type="date" id="ymOnayTarihi" value="${escAttr(proje.ymOnayTarihi)}" onchange="onFieldChange('ymOnayTarihi', this.value)">
           </div>
           <div class="form-group">
             <label>Onay Sayısı</label>
@@ -1207,7 +1207,7 @@ function renderVeriGirisPage() {
               </label>
               ${proje.ymTutanakTarihiAyni !== false
                 ? `<span style="font-size:13px;color:var(--gray-500)">${proje.ymOnayTarihi ? formatDate(proje.ymOnayTarihi) : '(Önce onay tarihi girin)'}</span>`
-                : `<input type="date" value="${proje.ymTutanakTarihi || ''}" onchange="onFieldChange('ymTutanakTarihi', this.value)">`
+                : `<input type="date" value="${escAttr(proje.ymTutanakTarihi || '')}" onchange="onFieldChange('ymTutanakTarihi', this.value)">`
               }
             </div>
           </div>
@@ -1242,7 +1242,7 @@ function renderVeriGirisPage() {
         <div class="form-grid" style="margin-top:12px">
           <div class="form-group">
             <label>D.T. Onay Tarihi</label>
-            <input type="date" id="dtOnayTarihi" value="${proje.dtOnayTarihi}" onchange="onFieldChange('dtOnayTarihi', this.value)">
+            <input type="date" id="dtOnayTarihi" value="${escAttr(proje.dtOnayTarihi)}" onchange="onFieldChange('dtOnayTarihi', this.value)">
           </div>
           <div class="form-group">
             <label>Onay Sayısı</label>
@@ -1257,7 +1257,7 @@ function renderVeriGirisPage() {
               </label>
               ${proje.dtTutanakTarihiAyni !== false
                 ? `<span style="font-size:13px;color:var(--gray-500)">${proje.dtOnayTarihi ? formatDate(proje.dtOnayTarihi) : '(Önce onay tarihi girin)'}</span>`
-                : `<input type="date" value="${proje.dtTutanakTarihi || ''}" onchange="onFieldChange('dtTutanakTarihi', this.value)">`
+                : `<input type="date" value="${escAttr(proje.dtTutanakTarihi || '')}" onchange="onFieldChange('dtTutanakTarihi', this.value)">`
               }
             </div>
           </div>
@@ -1274,7 +1274,7 @@ function renderVeriGirisPage() {
         <div class="form-grid">
           <div class="form-group">
             <label>Kullanılabilir Ödenek Tutarı (TL)</label>
-            <input type="number" min="0" step="0.01" id="odenek" value="${proje.odenek}" oninput="onFieldChange('odenek', this.value)" placeholder="0.00">
+            <input type="number" min="0" step="0.01" id="odenek" value="${escAttr(proje.odenek)}" oninput="onFieldChange('odenek', this.value)" placeholder="0.00">
           </div>
           <div class="form-group">
             <label>Yatırım Proje Numarası</label>
@@ -1368,22 +1368,22 @@ function renderVeriGirisPage() {
         <div class="form-grid">
           <div class="form-group">
             <label>Sözleşme Tarihi</label>
-            <input type="date" id="sozlesmeTarihi" value="${proje.sozlesmeTarihi}" onchange="onFieldChange('sozlesmeTarihi', this.value)">
+            <input type="date" id="sozlesmeTarihi" value="${escAttr(proje.sozlesmeTarihi)}" onchange="onFieldChange('sozlesmeTarihi', this.value)">
           </div>
           <div class="form-group">
             <label>İş Süresi (Takvim Günü)</label>
-            <input type="number" id="isSuresi" value="${proje.isSuresi}" oninput="onFieldChange('isSuresi', this.value)">
+            <input type="number" id="isSuresi" value="${escAttr(proje.isSuresi)}" oninput="onFieldChange('isSuresi', this.value)">
           </div>
           <div class="form-group">
             <label>İşin Bitirilmesi Gereken Tarih</label>
             <div style="display:flex;align-items:center;gap:8px">
-              <input type="text" id="bitisTarihi" value="${formatDate(calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi))}" readonly style="flex:1">
+              <input type="text" id="bitisTarihi" value="${escAttr(formatDate(calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi)))}" readonly style="flex:1">
               <button type="button" onclick="(function(){ document.getElementById('bitisTarihi').value = formatDate(calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi)); })()" title="Tarihi Güncelle" style="padding:6px 10px;background:#fff;color:#555;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:14px;white-space:nowrap;transition:all 0.15s" onmouseover="this.style.borderColor='#1a56db';this.style.color='#1a56db'" onmouseout="this.style.borderColor='#d1d5db';this.style.color='#555'">&#x21BB;</button>
             </div>
           </div>
           <div class="form-group">
             <label>İşin Fiili Bitim Tarihi</label>
-            <input type="date" id="fiiliBitimTarihi" value="${proje.fiiliBitimTarihi}" onchange="onFieldChange('fiiliBitimTarihi', this.value)">
+            <input type="date" id="fiiliBitimTarihi" value="${escAttr(proje.fiiliBitimTarihi)}" onchange="onFieldChange('fiiliBitimTarihi', this.value)">
           </div>
           <div class="form-group">
             <label>Bitti Tutanağı Ekleri <span style="font-weight:400;color:var(--gray-400);font-size:11px">(opsiyonel)</span></label>
@@ -1391,7 +1391,7 @@ function renderVeriGirisPage() {
               ${(Array.isArray(proje.bittiEkleri) ? proje.bittiEkleri : proje.bittiEkleri ? [proje.bittiEkleri] : []).map((ek, i) => `
                 <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
                   <span style="min-width:20px;font-size:13px;color:var(--gray-500);font-weight:600">${i + 1}-</span>
-                  <input type="text" value="${escHtml(ek)}" data-ek-index="${i}" placeholder="Ek açıklaması"
+                  <input type="text" value="${escAttr(escHtml(ek))}" data-ek-index="${i}" placeholder="Ek açıklaması"
                     style="flex:1" onchange="onBittiEkChange(this)">
                   <button type="button" onclick="onBittiEkSil(${i})"
                     style="padding:5px 9px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;color:#6b7280;font-size:14px;line-height:1;transition:all 0.15s"
@@ -1419,11 +1419,11 @@ function renderVeriGirisPage() {
         <div class="form-grid" style="margin-top:14px">
           <div class="form-group">
             <label>Muayene Kabul Tarihi</label>
-            <input type="date" id="mkKabulTarihi" value="${proje.mkKabulTarihi || ''}" onchange="onFieldChange('mkKabulTarihi', this.value)">
+            <input type="date" id="mkKabulTarihi" value="${escAttr(proje.mkKabulTarihi || '')}" onchange="onFieldChange('mkKabulTarihi', this.value)">
           </div>
           <div class="form-group">
             <label>Komisyon Atama Tarihi</label>
-            <input type="date" id="mkAtamaTarihi" value="${proje.mkAtamaTarihi || ''}" onchange="onFieldChange('mkAtamaTarihi', this.value)">
+            <input type="date" id="mkAtamaTarihi" value="${escAttr(proje.mkAtamaTarihi || '')}" onchange="onFieldChange('mkAtamaTarihi', this.value)">
           </div>
           <div class="form-group">
             <label>Komisyon Atama Olur / Karar Sayısı</label>
@@ -1479,31 +1479,31 @@ function renderVeriGirisPage() {
         <div class="form-grid">
           <div class="form-group">
             <label>Önceki Hakediş Tutarı (TL)</label>
-            <input type="number" step="0.01" min="0" value="${proje.oncekiHakedisTutar}" onchange="onFieldChange('oncekiHakedisTutar', this.value)">
+            <input type="number" step="0.01" min="0" value="${escAttr(proje.oncekiHakedisTutar)}" onchange="onFieldChange('oncekiHakedisTutar', this.value)">
           </div>
           <div class="form-group">
             <label>Fiyat Farkı (TL)</label>
-            <input type="number" step="0.01" value="${proje.fiyatFarki}" onchange="onFieldChange('fiyatFarki', this.value)">
+            <input type="number" step="0.01" value="${escAttr(proje.fiyatFarki)}" onchange="onFieldChange('fiyatFarki', this.value)">
           </div>
           <div class="form-group">
             <label>Sözleşme Damga Vergisi (TL)</label>
-            <input type="number" step="0.01" min="0" value="${proje.sozlesmeDamgaVergisi}" onchange="onFieldChange('sozlesmeDamgaVergisi', this.value)">
+            <input type="number" step="0.01" min="0" value="${escAttr(proje.sozlesmeDamgaVergisi)}" onchange="onFieldChange('sozlesmeDamgaVergisi', this.value)">
           </div>
           <div class="form-group">
             <label>SGK Kesintisi (TL)</label>
-            <input type="number" step="0.01" min="0" value="${proje.sgkKesintisi}" onchange="onFieldChange('sgkKesintisi', this.value)">
+            <input type="number" step="0.01" min="0" value="${escAttr(proje.sgkKesintisi)}" onchange="onFieldChange('sgkKesintisi', this.value)">
           </div>
           <div class="form-group">
             <label>Vergi Borcu (TL)</label>
-            <input type="number" step="0.01" min="0" value="${proje.vergiBorcu}" onchange="onFieldChange('vergiBorcu', this.value)">
+            <input type="number" step="0.01" min="0" value="${escAttr(proje.vergiBorcu)}" onchange="onFieldChange('vergiBorcu', this.value)">
           </div>
           <div class="form-group">
             <label>Gecikme Cezası (TL)</label>
-            <input type="number" step="0.01" min="0" value="${proje.gecikmeCezasi}" onchange="onFieldChange('gecikmeCezasi', this.value)">
+            <input type="number" step="0.01" min="0" value="${escAttr(proje.gecikmeCezasi)}" onchange="onFieldChange('gecikmeCezasi', this.value)">
           </div>
           <div class="form-group">
             <label>Avans Mahsubu (TL)</label>
-            <input type="number" step="0.01" min="0" value="${proje.avansMahsubu}" onchange="onFieldChange('avansMahsubu', this.value)">
+            <input type="number" step="0.01" min="0" value="${escAttr(proje.avansMahsubu)}" onchange="onFieldChange('avansMahsubu', this.value)">
           </div>
         </div>
       </div>
@@ -1592,10 +1592,10 @@ async function projeDosyaListesiYukle() {
     }
     container.innerHTML = dosyalar.map(d => `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
-        <a href="javascript:void(0)" onclick="projeDosyaAc('${escAttr(d.docId)}')" style="flex:1;font-size:13px;color:var(--primary, #1e40af);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Görüntüle / İndir">📎 ${escHtml(d.ad)}</a>
+        <a href="javascript:void(0)" onclick="projeDosyaAc(${escJsAttr(d.docId)})" style="flex:1;font-size:13px;color:var(--primary, #1e40af);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Görüntüle / İndir">📎 ${escHtml(d.ad)}</a>
         <span style="font-size:11.5px;color:var(--gray-400);white-space:nowrap">${formatDosyaBoyutu(d.boyut)}</span>
         <span style="font-size:11.5px;color:var(--gray-400);white-space:nowrap">${escHtml(d.yukleyenAd)}</span>
-        ${!currentProjeKilitli ? `<button type="button" onclick="projeDosyaSilOnayla('${escAttr(d.yol)}')" title="Sil" style="padding:3px 7px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;color:#6b7280;font-size:13px;flex-shrink:0">✕</button>` : ''}
+        ${!currentProjeKilitli ? `<button type="button" onclick="projeDosyaSilOnayla(${escJsAttr(d.yol)})" title="Sil" style="padding:3px 7px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;color:#6b7280;font-size:13px;flex-shrink:0">✕</button>` : ''}
       </div>`).join('');
   } catch(e) {
     container.innerHTML = `<p style="color:#dc2626;font-size:13px">Dosyalar yüklenemedi: ${escHtml(hataMesaji(e))}</p>`;
@@ -2046,7 +2046,7 @@ async function parseIkiOlurBelgesi() {
         ymSonuc.onayTarihi ? `📅 Tarih: ${ymSonuc.onayTarihi.split('-').reverse().join('.')}` : null,
         ymSonuc.gorevliAd  ? `👤 Görevli: ${ymSonuc.gorevliAd}` : null,
       ].filter(Boolean).join('\n');
-      ymKabul = await showConfirm(`📘 Y.M. Onay Belgesi bilgileri:\n\n${ymSatirlar}\n\nBu belgeyi aktaralım mı?`, 'Evet, Aktar', 'Bu Belgeyi Atla');
+      ymKabul = await showConfirm(`📘 Y.M. Onay Belgesi bilgileri:\n\n${escHtml(ymSatirlar)}\n\nBu belgeyi aktaralım mı?`, 'Evet, Aktar', 'Bu Belgeyi Atla');
     }
 
     // DT belgesi ayrı onay
@@ -2059,7 +2059,7 @@ async function parseIkiOlurBelgesi() {
         dtSonuc.gorevliAd   ? `👤 Görevli: ${dtSonuc.gorevliAd}` : null,
         dtSonuc.onaylayanAd ? `✅ Onaylayan: ${dtSonuc.onaylayanAd}${dtSonuc.onaylayanUnvan ? ' / ' + dtSonuc.onaylayanUnvan : ''}` : null,
       ].filter(Boolean).join('\n');
-      dtKabul = await showConfirm(`📗 D.T. Onay Belgesi bilgileri:\n\n${dtSatirlar}\n\nBu belgeyi aktaralım mı?`, 'Evet, Aktar', 'Bu Belgeyi Atla');
+      dtKabul = await showConfirm(`📗 D.T. Onay Belgesi bilgileri:\n\n${escHtml(dtSatirlar)}\n\nBu belgeyi aktaralım mı?`, 'Evet, Aktar', 'Bu Belgeyi Atla');
     }
 
     // İkisi de reddedildiyse iptal
@@ -2184,7 +2184,7 @@ async function parseOnayBelgesiIsAdi(file) {
       gorevliAd  ? `👤 Görevli: ${gorevliAd}` : null,
     ].filter(Boolean).join('\n');
 
-    const onaylandi = await showConfirm(`Aşağıdaki bilgiler okundu:\n\n${satirlar}\n\nForma aktaralım mı?`, 'Evet, Aktar', 'Hayır');
+    const onaylandi = await showConfirm(`Aşağıdaki bilgiler okundu:\n\n${escHtml(satirlar)}\n\nForma aktaralım mı?`, 'Evet, Aktar', 'Hayır');
     if (!onaylandi) {
       const modal = document.getElementById('yeniProjeModal');
       if (modal) {
@@ -2281,7 +2281,7 @@ async function parseTeklifPDF(file, type, fi) {
       firmaAdi ? `🏢 Firma: ${firmaAdi}` : '🏢 Firma: (bulunamadı — listede kayıtlı değil)',
       tutar > 0  ? `💰 Tutar: ${formatCurrency(tutar)} TL` : '💰 Tutar: (bulunamadı)',
     ].join('\n');
-    const onaylandi = await showConfirm(`PDF'den okunan bilgiler:\n\n${satirlar}\n\nAktaralım mı?`, 'Evet, Aktar', 'Hayır');
+    const onaylandi = await showConfirm(`PDF'den okunan bilgiler:\n\n${escHtml(satirlar)}\n\nAktaralım mı?`, 'Evet, Aktar', 'Hayır');
     if (!onaylandi) return;
 
     const liste = type === 'ym' ? proje.ymFirmalar : proje.teklifFirmalar;
@@ -2397,7 +2397,7 @@ async function renderBelgelerPage() {
             </div>
           </div>
           <div class="ky-proje-actions">
-            <button class="ky-btn-open" onclick="belgelerProjeAc('${p.id}')">Belge Oluştur</button>
+            <button class="ky-btn-open" onclick="belgelerProjeAc(${escJsAttr(p.id)})">Belge Oluştur</button>
           </div>
         </div>`;
       };
@@ -2469,7 +2469,7 @@ async function renderBelgelerPage() {
   if (currentBelge === 'sozlesme' && isMalVeyaHizmet) currentBelge = 'yaklasik-maliyet';
 
   const tabs = belgeler.map(b =>
-    `<div class="belge-tab ${currentBelge === b.id ? 'active' : ''}" onclick="currentBelge='${b.id}'; renderPage();">${b.ad}</div>`
+    `<div class="belge-tab ${currentBelge === b.id ? 'active' : ''}" onclick="currentBelge=${escJsAttr(b.id)}; renderPage();">${b.ad}</div>`
   ).join('');
 
   let belgeHTML = '';
@@ -2847,7 +2847,7 @@ function renderVeriMerkeziPage() {
         <div style="display:flex; gap:10px; margin-bottom:16px; align-items:center;">
           <select class="ref-input" style="flex:1; height:40px; padding:0 12px; font-size:13px; border-radius:8px;" onchange="onMuhendisSelect(this.value)">
             <option value="-1">🔍 Kayıtlı personellerden seçin veya düzenleyin...</option>
-            ${sortedMuhendis.map(item => `<option value="${item.i}" ${dtmSeciliMuhendisIndex === item.i ? 'selected' : ''}>${escHtml(item.m.ad)} — ${escHtml(item.m.unvan || 'Belirtilmedi')}</option>`).join('')}
+            ${sortedMuhendis.map(item => `<option value="${escAttr(item.i)}" ${dtmSeciliMuhendisIndex === item.i ? 'selected' : ''}>${escHtml(item.m.ad)} — ${escHtml(item.m.unvan || 'Belirtilmedi')}</option>`).join('')}
           </select>
           <button class="btn-icon-primary" style="height:40px; padding:0 14px; font-size:13px; font-weight:600; border-radius:8px; white-space:nowrap;" onclick="acMuhendisModal()">
             ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Görevli
@@ -2902,7 +2902,7 @@ function renderVeriMerkeziPage() {
           <select class="ref-input" style="flex:1; height:40px; padding:0 12px; font-size:13px; border-radius:8px;" onchange="onFirmaListeSelect(this.value)">
             <option value="-1">🔍 Kayıtlı firmalardan seçin veya düzenleyin...</option>
             ${dtmYeniEklenenFirma ? `<option value="NEW" selected>➕ Yeni Firma (Kaydedilmedi)</option>` : ''}
-            ${sortedFirms.map(item => `<option value="${item.i}" ${!dtmYeniEklenenFirma && dtmSeciliFirmaIndex === item.i ? 'selected' : ''}>${escHtml(item.f.ad)}</option>`).join('')}
+            ${sortedFirms.map(item => `<option value="${escAttr(item.i)}" ${!dtmYeniEklenenFirma && dtmSeciliFirmaIndex === item.i ? 'selected' : ''}>${escHtml(item.f.ad)}</option>`).join('')}
           </select>
           <button class="btn-icon-primary" style="height:40px; padding:0 14px; font-size:13px; font-weight:600; border-radius:8px; white-space:nowrap;" onclick="onFirmaListeEkle()">
             ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Firma
@@ -2916,23 +2916,23 @@ function renderVeriMerkeziPage() {
           return `
           <div style="background:var(--gray-50); padding:18px 20px; border-radius:12px; border:1px solid var(--gray-200);">
             <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:14px;">
-              <div class="form-group"><label>Firma / Kişi Adı <span style="color:var(--danger)">*</span></label><input type="text" class="ref-input" id="firmaInputAd" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" onchange="onFirmaFieldChange('firmaList', '${i}', 'ad', this.value)" oninput="onFirmaFieldChange('firmaList', '${i}', 'ad', this.value)"></div>
-              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select class="ref-input" id="firmaInputTur" onchange="onFirmaFieldChange('firmaList', '${i}', 'tur', this.value); renderPage('veri-merkezi');">
+              <div class="form-group"><label>Firma / Kişi Adı <span style="color:var(--danger)">*</span></label><input type="text" class="ref-input" id="firmaInputAd" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'ad', this.value)" oninput="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'ad', this.value)"></div>
+              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select class="ref-input" id="firmaInputTur" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'tur', this.value); renderPage('veri-merkezi');">
                   <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
-              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" onchange="onFirmaFieldChange('firmaList', '${i}', 'adres', this.value)"></div>
-              <div class="form-group"><label>Telefon</label><input type="text" class="ref-input" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" onchange="onFirmaFieldChange('firmaList', '${i}', 'tel', this.value)"></div>
-              <div class="form-group"><label>Faks</label><input type="text" class="ref-input" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" onchange="onFirmaFieldChange('firmaList', '${i}', 'faks', this.value)"></div>
-              <div class="form-group"><label>E-Posta</label><input type="text" class="ref-input" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" onchange="onFirmaFieldChange('firmaList', '${i}', 'eposta', this.value)"></div>
-              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" class="ref-input" value="${escAttr(f.dogumTarihi || '')}" onchange="onFirmaFieldChange('firmaList', '${i}', 'dogumTarihi', this.value)"></div>`}
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'adres', this.value)"></div>
+              <div class="form-group"><label>Telefon</label><input type="text" class="ref-input" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'tel', this.value)"></div>
+              <div class="form-group"><label>Faks</label><input type="text" class="ref-input" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'faks', this.value)"></div>
+              <div class="form-group"><label>E-Posta</label><input type="text" class="ref-input" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'eposta', this.value)"></div>
+              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" class="ref-input" value="${escAttr(f.dogumTarihi || '')}" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'dogumTarihi', this.value)"></div>`}
               <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
-                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('firmaList', '${i}', 'basitUsul', this.checked)">
+                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'basitUsul', this.checked)">
                 <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:600; color:var(--primary)">Bu Firma / Kişi Basit Usule Tabiidir</label>
               </div>
             </div>
             <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--gray-200); display:flex; justify-content:space-between; align-items:center;">
-              <button class="btn btn-primary" onclick="kaydetFirmaFormu('${i}')" style="display:inline-flex;align-items:center;gap:6px">
+              <button class="btn btn-primary" onclick="kaydetFirmaFormu(${escJsAttr(i)})" style="display:inline-flex;align-items:center;gap:6px">
                 ${typeof getIcon === 'function' ? getIcon('check', 16) : '✓'} Bilgileri Kaydet
               </button>
               ${isNew ? `
@@ -3064,7 +3064,7 @@ function renderVeriMerkeziPage() {
             ${(referans.dtSinirlari || []).map((s, i) => `
               <tr>
                 <td style="font-weight:600;padding-left:14px">${s.yil}</td>
-                <td><input type="number" class="ref-input" value="${s.sinir}" min="0" placeholder="0" onchange="onRefChange('dtSinirlari', ${i}, 'sinir', parseFloat(this.value)||0)"></td>
+                <td><input type="number" class="ref-input" value="${escAttr(s.sinir)}" min="0" placeholder="0" onchange="onRefChange('dtSinirlari', ${i}, 'sinir', parseFloat(this.value)||0)"></td>
               </tr>`).join('')}
           </tbody>
         </table>
@@ -3230,7 +3230,7 @@ async function renderDashboardPage() {
       const tarih = p.onaylandiAt?.toDate
         ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR')
         : (p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-');
-      return `<tr onclick="dashboardProjeAc('${p.id}')" style="cursor:pointer"
+      return `<tr onclick="dashboardProjeAc(${escJsAttr(p.id)})" style="cursor:pointer"
         onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
         <td style="font-weight:600;color:var(--gray-900)">${escHtml(p.isAdi || '(İsimsiz)')}</td>
         <td>
@@ -3425,7 +3425,7 @@ async function renderKaydetYuklePage() {
               </div>
             </div>
             <div class="ky-proje-actions">
-              <button class="ky-btn-open" onclick="dosyaGetir('${p.id}')">📥 İndir</button>
+              <button class="ky-btn-open" onclick="dosyaGetir(${escJsAttr(p.id)})">📥 İndir</button>
             </div>
           </div>`;
         }).join('')}
@@ -3610,12 +3610,12 @@ async function gonderiClick(projeId, isAdi) {
           <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Gerçekleştirmeci Seçin</label>
           <select id="gerceklestirmeciSelect" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
             <option value="">-- Seçin --</option>
-            ${gerceklestirmeciler.map(g => `<option value="${g.uid}" data-ad="${escAttr(g.displayName)}">${escHtml(g.displayName)}</option>`).join('')}
+            ${gerceklestirmeciler.map(g => `<option value="${escAttr(g.uid)}" data-ad="${escAttr(g.displayName)}">${escHtml(g.displayName)}</option>`).join('')}
           </select>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end">
           <button onclick="document.getElementById('gonderiModal').remove()" style="padding:9px 20px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">İptal</button>
-          <button id="gonderiOnaylaBtn" onclick="gonderiOnayla('${projeId}', this)" style="padding:9px 20px;background:#16a34a;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Gönder</button>
+          <button id="gonderiOnaylaBtn" onclick="gonderiOnayla(${escJsAttr(projeId)}, this)" style="padding:9px 20px;background:#16a34a;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Gönder</button>
         </div>
       </div>
     </div>`;
@@ -3988,7 +3988,7 @@ async function renderKullaniciYonetimiPage() {
                   </td>
                   <td>
                     ${u.email && !u.email.endsWith('@dtm.local') ? `
-                      <button type="button" class="btn btn-outline btn-sm" onclick="adminSifreSifirlaClick('${escAttr(u.email)}', '${escAttr(u.username)}', '${escAttr(u.displayName)}')" style="font-size:11.5px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;" title="Kullanıcının e-posta adresine şifre sıfırlama bağlantısı gönder">
+                      <button type="button" class="btn btn-outline btn-sm" onclick="adminSifreSifirlaClick(${escJsAttr(u.email)}, ${escJsAttr(u.username)}, ${escJsAttr(u.displayName)})" style="font-size:11.5px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;" title="Kullanıcının e-posta adresine şifre sıfırlama bağlantısı gönder">
                         🔑 Sıfırla
                       </button>
                     ` : `
@@ -3999,7 +3999,7 @@ async function renderKullaniciYonetimiPage() {
                     (u.role === 'superadmin' && currentDTMUser?.role !== 'superadmin') ? `
                       <span class="badge badge-admin" style="background:#4338ca;color:#fff">${getRoleLabel(u.role)}</span>
                     ` : `
-                      <select onchange="kullaniciRolDegistir('${u.uid}', this.value)" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer">
+                      <select onchange="kullaniciRolDegistir(${escJsAttr(u.uid)}, this.value)" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer">
                         <option value="user" ${u.role === 'user' ? 'selected' : ''}>Kullanıcı</option>
                         <option value="gerceklestirmeci" ${u.role === 'gerceklestirmeci' ? 'selected' : ''}>Gerçekleştirme Görevlisi</option>
                         <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Yönetici</option>
@@ -4013,7 +4013,7 @@ async function renderKullaniciYonetimiPage() {
                       (u.role === 'superadmin' && currentDTMUser?.role !== 'superadmin') ? `
                         <span style="color:var(--gray-400);font-size:12px">(Yetki kısıtlı)</span>
                       ` : `
-                        <button class="btn btn-danger btn-sm" onclick="kullaniciSil('${u.uid}', '${escAttr(u.displayName)}', '${escAttr(u.username)}')">Sil</button>
+                        <button class="btn btn-danger btn-sm" onclick="kullaniciSil(${escJsAttr(u.uid)}, ${escJsAttr(u.displayName)}, ${escJsAttr(u.username)})">Sil</button>
                       `
                     ) : '<span style="color:var(--gray-400);font-size:12px">(Aktif oturum)</span>'}
                   </td>
@@ -4086,12 +4086,7 @@ async function kullaniciRolDegistir(uid, yeniRol) {
 async function kullaniciSil(uid, ad, username) {
   if (!await showConfirm(`"${escHtml(ad)}" kullanıcısı kalıcı olarak silinecek. Emin misiniz?`, 'Sil')) return;
   try {
-    if (username) {
-      await db.collection('usernameEmailMap').doc(username.toLowerCase().trim()).delete().catch(e => console.warn('usernameEmailMap silinemedi:', e));
-    }
-    await db.collection('publicUsers').doc(uid).delete().catch(e => console.warn('publicUsers silinemedi:', e));
-    await db.collection('users').doc(uid).collection('secret').doc('info').delete().catch(e => console.warn('secret silinemedi:', e));
-    await db.collection('users').doc(uid).delete();
+    await deleteDTMUser(uid);
     showToast(`"${ad}" kullanıcısı silindi.`, 'success');
     renderKullaniciYonetimiPage();
   } catch(e) {
@@ -4142,7 +4137,7 @@ async function renderProjelerimPage() {
 
     const projeKart = (p) => {
       const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
-      const isAdiSafe = escAttr(p.isAdi);
+      const isAdiSafe = p.isAdi;
       const kilitli = p.locked === true;
       const gonderildi = p.status === 'gonderildi' || p.status === 'onaylandi';
 
@@ -4163,7 +4158,7 @@ async function renderProjelerimPage() {
           <div class="ky-proje-meta">
             <span class="ky-proje-date">📅 ${tarih}</span>
             ${getIsTuruBadge(p.isTuru)}
-            ${p.atananGerceklestirmeciAd ? `<span class="ky-proje-user">👷 ${p.atananGerceklestirmeciAd}</span>` : ''}
+            ${p.atananGerceklestirmeciAd ? `<span class="ky-proje-user">👷 ${escHtml(p.atananGerceklestirmeciAd)}</span>` : ''}
           </div>
           ${durmBilgisi}
           ${p.status === 'geri_gonderildi' && p.geriGonderNot ? `
@@ -4172,10 +4167,10 @@ async function renderProjelerimPage() {
             </div>` : ''}
         </div>
         <div class="ky-proje-actions">
-          <button class="ky-btn-open" onclick="cloudProjeAc('${p.id}')">Aç</button>
-          ${aktif && !kilitli ? `<button class="ky-btn-lock" onclick="gonderiClick('${p.id}', '${isAdiSafe}')" style="background:#16a34a;color:#fff;border-color:#16a34a">📤 Gönder</button>` : ''}
-          ${aktif ? `<button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" onclick="cloudProjeKilitle('${p.id}', ${!kilitli})">${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>` : ''}
-          ${aktif && !kilitli ? `<button class="ky-btn-delete" onclick="cloudProjeSil('${p.id}', '${isAdiSafe}', ${kilitli})">Sil</button>` : ''}
+          <button class="ky-btn-open" onclick="cloudProjeAc(${escJsAttr(p.id)})">Aç</button>
+          ${aktif && !kilitli ? `<button class="ky-btn-lock" onclick="gonderiClick(${escJsAttr(p.id)}, ${escJsAttr(isAdiSafe)})" style="background:#16a34a;color:#fff;border-color:#16a34a">📤 Gönder</button>` : ''}
+          ${aktif ? `<button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" onclick="cloudProjeKilitle(${escJsAttr(p.id)}, ${!kilitli})">${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>` : ''}
+          ${aktif && !kilitli ? `<button class="ky-btn-delete" onclick="cloudProjeSil(${escJsAttr(p.id)}, ${escJsAttr(isAdiSafe)}, ${kilitli})">Sil</button>` : ''}
         </div>
       </div>`;
     };
@@ -4260,7 +4255,7 @@ async function renderGonderilenProjelerPage() {
     const projeKart = (p, butonlar) => {
       const tarih = p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') :
                     p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
-      const isAdiSafe = escAttr(p.isAdi);
+      const isAdiSafe = p.isAdi;
       return `<div class="ky-proje-item">
         <div class="ky-proje-info">
           <div class="ky-proje-name"><span class="ky-proje-dot"></span>${escHtml(p.isAdi || '(İsimsiz)')}</div>
@@ -4291,15 +4286,15 @@ async function renderGonderilenProjelerPage() {
       const bHTML = bek.length === 0
         ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Bekleyen proje yok.'}</div>`
         : `<div class="ky-proje-grid">${bek.map(p => projeKart(p, (id, ad) => `
-            <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Aç</button>
-            <button class="ky-btn-open" onclick="gonderilenOnaylaClick('${id}', '${ad}')" style="background:#16a34a;color:#fff;border-color:#16a34a">✓ Onayla</button>
-            <button class="ky-btn-delete" onclick="geriGonderClick('${id}', '${ad}')" style="background:#dc2626;color:#fff;border-color:#dc2626">↩ Geri Gönder</button>
+            <button class="ky-btn-open" onclick="cloudProjeAc(${escJsAttr(id)})">Aç</button>
+            <button class="ky-btn-open" onclick="gonderilenOnaylaClick(${escJsAttr(id)}, ${escJsAttr(ad)})" style="background:#16a34a;color:#fff;border-color:#16a34a">✓ Onayla</button>
+            <button class="ky-btn-delete" onclick="geriGonderClick(${escJsAttr(id)}, ${escJsAttr(ad)})" style="background:#dc2626;color:#fff;border-color:#dc2626">↩ Geri Gönder</button>
           `)).join('')}</div>`;
 
       const oHTML = ona.length === 0
         ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Henüz onaylanan proje yok.'}</div>`
         : `<div class="ky-proje-grid">${ona.map(p => projeKart(p, (id, ad) => `
-            <button class="ky-btn-open" onclick="cloudProjeAc('${id}')">Görüntüle</button>
+            <button class="ky-btn-open" onclick="cloudProjeAc(${escJsAttr(id)})">Görüntüle</button>
           `)).join('')}</div>`;
 
       return `
@@ -4413,7 +4408,7 @@ function renderGerceklestirmeciVeriMerkeziPage() {
           <select class="ref-input" style="flex:1; height:40px; padding:0 12px; font-size:13px; border-radius:8px;" onchange="onYukleniciSelect(this.value)">
             <option value="-1">🔍 Kayıtlı firmalardan seçin veya düzenleyin...</option>
             ${dtmYeniEklenenYuklenici ? `<option value="NEW_YUKLENICI" selected>➕ Yeni Firma (Kaydedilmedi)</option>` : ''}
-            ${sortedYuklenici.map(item => `<option value="${item.i}" ${!dtmYeniEklenenYuklenici && dtmSeciliYukleniciIndex === item.i ? 'selected' : ''}>${escHtml(item.f.ad)}</option>`).join('')}
+            ${sortedYuklenici.map(item => `<option value="${escAttr(item.i)}" ${!dtmYeniEklenenYuklenici && dtmSeciliYukleniciIndex === item.i ? 'selected' : ''}>${escHtml(item.f.ad)}</option>`).join('')}
           </select>
           <button class="btn-icon-primary" style="height:40px; padding:0 14px; font-size:13px; font-weight:600; border-radius:8px; white-space:nowrap;" onclick="onYukleniciEkle()">
             ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Firma
@@ -4427,23 +4422,23 @@ function renderGerceklestirmeciVeriMerkeziPage() {
           return `
           <div style="background:var(--gray-50); padding:18px 20px; border-radius:12px; border:1px solid var(--gray-200);">
             <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:14px;">
-              <div class="form-group"><label>Firma / Kişi Adı <span style="color:var(--danger)">*</span></label><input type="text" class="ref-input" id="yukleniciInputAd" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'ad', this.value)" oninput="onFirmaFieldChange('yukleniciList', '${i}', 'ad', this.value)"></div>
-              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select class="ref-input" id="yukleniciInputTur" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'tur', this.value); document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();">
+              <div class="form-group"><label>Firma / Kişi Adı <span style="color:var(--danger)">*</span></label><input type="text" class="ref-input" id="yukleniciInputAd" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'ad', this.value)" oninput="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'ad', this.value)"></div>
+              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select class="ref-input" id="yukleniciInputTur" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'tur', this.value); document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();">
                   <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
-              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'adres', this.value)"></div>
-              <div class="form-group"><label>Telefon</label><input type="text" class="ref-input" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'tel', this.value)"></div>
-              <div class="form-group"><label>Faks</label><input type="text" class="ref-input" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'faks', this.value)"></div>
-              <div class="form-group"><label>E-Posta</label><input type="text" class="ref-input" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'eposta', this.value)"></div>
-              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" class="ref-input" value="${escAttr(f.dogumTarihi || '')}" onchange="onFirmaFieldChange('yukleniciList', '${i}', 'dogumTarihi', this.value)"></div>`}
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'adres', this.value)"></div>
+              <div class="form-group"><label>Telefon</label><input type="text" class="ref-input" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'tel', this.value)"></div>
+              <div class="form-group"><label>Faks</label><input type="text" class="ref-input" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'faks', this.value)"></div>
+              <div class="form-group"><label>E-Posta</label><input type="text" class="ref-input" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'eposta', this.value)"></div>
+              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" class="ref-input" value="${escAttr(f.dogumTarihi || '')}" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'dogumTarihi', this.value)"></div>`}
               <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
-                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('yukleniciList', '${i}', 'basitUsul', this.checked)">
+                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'basitUsul', this.checked)">
                 <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:600; color:var(--primary)">Bu Firma / Kişi Basit Usule Tabiidir</label>
               </div>
             </div>
             <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--gray-200); display:flex; justify-content:space-between; align-items:center;">
-              <button class="btn btn-primary" onclick="kaydetYukleniciFormu('${i}')" style="display:inline-flex;align-items:center;gap:6px">
+              <button class="btn btn-primary" onclick="kaydetYukleniciFormu(${escJsAttr(i)})" style="display:inline-flex;align-items:center;gap:6px">
                 ${typeof getIcon === 'function' ? getIcon('check', 16) : '✓'} Bilgileri Kaydet
               </button>
               ${isNew ? `
@@ -4560,7 +4555,7 @@ window.acMuhendisModal = function(index = null) {
           <span style="color:var(--primary); display:inline-flex">${typeof getIcon === 'function' ? getIcon('users', 22) : ''}</span>
           ${isEdit ? 'Görevli Personeli Düzenle' : 'Yeni Görevli Personel Ekle'}
         </h3>
-        <button onclick="document.getElementById('${modalId}').remove()" style="background:none; border:none; color:var(--gray-400); cursor:pointer; font-size:18px; padding:4px;" title="Kapat">
+        <button onclick="document.getElementById(${escJsAttr(modalId)}).remove()" style="background:none; border:none; color:var(--gray-400); cursor:pointer; font-size:18px; padding:4px;" title="Kapat">
           ${typeof getIcon === 'function' ? getIcon('x', 18) : '✕'}
         </button>
       </div>
@@ -4587,7 +4582,7 @@ window.acMuhendisModal = function(index = null) {
         </div>
       </div>
       <div class="dtm-modal-footer" style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px; padding-top:16px; border-top:1px solid var(--gray-200);">
-        <button class="btn btn-outline" style="padding:10px 20px; font-size:14px; border-radius:8px;" onclick="document.getElementById('${modalId}').remove()">Vazgeç</button>
+        <button class="btn btn-outline" style="padding:10px 20px; font-size:14px; border-radius:8px;" onclick="document.getElementById(${escJsAttr(modalId)}).remove()">Vazgeç</button>
         <button class="btn btn-primary" onclick="kaydetMuhendisModal(${isEdit ? index : 'null'})" style="display:inline-flex; align-items:center; gap:8px; padding:10px 24px; font-size:14px; font-weight:600; border-radius:8px;">
           ${typeof getIcon === 'function' ? getIcon('check', 16) : '✓'} ${isEdit ? 'Güncelle' : 'Kaydet'}
         </button>
@@ -4743,8 +4738,8 @@ async function renderGerceklestirmeciBelgelerPage() {
     const projeKarti = (p, readOnly) => {
       const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : (p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') : '-');
       const btn = readOnly
-        ? `<button class="ky-btn-open" style="background:#6b7280" onclick="gerceklestirmeciBelgelerProjeAc('${p.id}',true)">Belgeleri Gör</button>`
-        : `<button class="ky-btn-open" onclick="gerceklestirmeciBelgelerProjeAc('${p.id}')">Belge Oluştur</button>`;
+        ? `<button class="ky-btn-open" style="background:#6b7280" onclick="gerceklestirmeciBelgelerProjeAc(${escJsAttr(p.id)},true)">Belgeleri Gör</button>`
+        : `<button class="ky-btn-open" onclick="gerceklestirmeciBelgelerProjeAc(${escJsAttr(p.id)})">Belge Oluştur</button>`;
       return `<div class="ky-proje-item">
         <div class="ky-proje-info">
           <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
@@ -4844,7 +4839,7 @@ function renderGerceklestirmeciBelgelerView(main) {
 
   const tabs = belgeler.map(b =>
     `<div class="belge-tab ${currentGerceklestirmeciBelge === b.id ? 'active' : ''}"
-      onclick="currentGerceklestirmeciBelge='${b.id}';renderPage();">${b.ad}</div>`
+      onclick="currentGerceklestirmeciBelge=${escJsAttr(b.id)};renderPage();">${b.ad}</div>`
   ).join('');
 
   let belgeHTML = '';
@@ -5112,7 +5107,7 @@ function renderProjeOzetPage() {
           <div class="form-grid">
             <div class="form-group">
               <label>D.T. Onay Tarihi</label>
-              <input type="date" id="gc_dtOnayTarihi" value="${p.dtOnayTarihi || ''}" ${roInp}>
+              <input type="date" id="gc_dtOnayTarihi" value="${escAttr(p.dtOnayTarihi || '')}" ${roInp}>
             </div>
             <div class="form-group">
               <label>D.T. Onay Sayısı</label>
@@ -5120,7 +5115,7 @@ function renderProjeOzetPage() {
             </div>
             <div class="form-group">
               <label>Kullanılabilir Ödenek Tutarı (TL)</label>
-              <input type="number" id="gc_odenek" value="${p.odenek || ''}" placeholder="0.00" ${roInp}>
+              <input type="number" id="gc_odenek" value="${escAttr(p.odenek || '')}" placeholder="0.00" ${roInp}>
             </div>
             <div class="form-group">
               <label>Yatırım Proje Numarası</label>
@@ -5190,11 +5185,11 @@ function renderProjeOzetPage() {
 
       ${currentDTMUser?.role !== 'gerceklestirmeci' && !currentOnayliBelgelerProjeId && !['onaylandi','arsivlendi'].includes(currentProjeStatus) ? `
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;padding-bottom:32px">
-        <button onclick="geriGonderClick('${currentCloudProjeId}', '${escAttr(p.isAdi)}')"
+        <button onclick="geriGonderClick(${escJsAttr(currentCloudProjeId)}, ${escJsAttr(p.isAdi)})"
           style="padding:10px 24px;background:#fff;border:1px solid #dc2626;color:#dc2626;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ↩ Geri Gönder
         </button>
-        <button onclick="onaylaClick('${currentCloudProjeId}', '${escAttr(p.isAdi)}')"
+        <button onclick="onaylaClick(${escJsAttr(currentCloudProjeId)}, ${escJsAttr(p.isAdi)})"
           style="padding:10px 24px;background:#16a34a;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ✓ Onayla
         </button>
@@ -5313,23 +5308,23 @@ async function renderOnayliBelgelerPage() {
 
       listeEl.innerHTML = `<div class="ky-proje-grid">${liste.map(p => {
         const tarihStr = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
-        const adSafe   = escAttr(p.isAdi||'(İsimsiz)');
+        const adSafe   = p.isAdi||'(İsimsiz)';
         const aksiyonlar = aktifSekme === 'arsiv' ? `
-          <button class="ky-btn-open" onclick="event.stopPropagation();onayliBelgelerProjeAc('${p.id}')">&#128196; Belgeleri Gör</button>
-          <button class="ky-btn" onclick="event.stopPropagation();arsivdenCikarClick('${p.id}','${adSafe}')"
+          <button class="ky-btn-open" onclick="event.stopPropagation();onayliBelgelerProjeAc(${escJsAttr(p.id)})">&#128196; Belgeleri Gör</button>
+          <button class="ky-btn" onclick="event.stopPropagation();arsivdenCikarClick(${escJsAttr(p.id)},${escJsAttr(adSafe)})"
             style="background:#f59e0b;color:#fff;border-color:#f59e0b;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid">
             ↩ Arşivden Çıkar
           </button>` : `
-          <button class="ky-btn-open" onclick="event.stopPropagation();onayliBelgelerProjeAc('${p.id}')">&#128196; Belgeleri Gör</button>
-          <button class="ky-btn" onclick="event.stopPropagation();adminGeriGonderClick('${p.id}','${adSafe}')"
+          <button class="ky-btn-open" onclick="event.stopPropagation();onayliBelgelerProjeAc(${escJsAttr(p.id)})">&#128196; Belgeleri Gör</button>
+          <button class="ky-btn" onclick="event.stopPropagation();adminGeriGonderClick(${escJsAttr(p.id)},${escJsAttr(adSafe)})"
             style="background:#f59e0b;color:#fff;border-color:#f59e0b;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid">
             ↩ Geri Gönder
           </button>
-          <button class="ky-btn" onclick="event.stopPropagation();arsivleClick('${p.id}','${adSafe}')"
+          <button class="ky-btn" onclick="event.stopPropagation();arsivleClick(${escJsAttr(p.id)},${escJsAttr(adSafe)})"
             style="background:#6b7280;color:#fff;border-color:#6b7280;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid">
             🗃️ Arşivle
           </button>`;
-        return `<div class="ky-proje-item" style="cursor:pointer" onclick="onayliBelgelerProjeAc('${p.id}')">
+        return `<div class="ky-proje-item" style="cursor:pointer" onclick="onayliBelgelerProjeAc(${escJsAttr(p.id)})">
           <div class="ky-proje-info">
             <div class="ky-proje-name"><span class="ky-proje-dot" style="background:${aktifSekme==='arsiv'?'#9ca3af':'#16a34a'}"></span>${escHtml(p.isAdi||'(İsimsiz)')}</div>
             <div class="ky-proje-meta">
@@ -5521,7 +5516,7 @@ function renderProfilPage() {
           </div>
           <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;">
             ${AVATARS.map(a => `
-              <div onclick="avatarSec('${a}')" style="cursor:pointer;border-radius:50%;overflow:hidden;width:48px;height:48px;border:3px solid ${u.avatar===a ? 'var(--primary, #1a56db)' : 'transparent'};transition:all .2s;box-shadow:${u.avatar===a ? '0 0 0 2px rgba(26,86,219,0.3)' : 'none'};margin:auto;" id="avatarOpt_${a}">
+              <div onclick="avatarSec(${escJsAttr(a)})" style="cursor:pointer;border-radius:50%;overflow:hidden;width:48px;height:48px;border:3px solid ${u.avatar===a ? 'var(--primary, #1a56db)' : 'transparent'};transition:all .2s;box-shadow:${u.avatar===a ? '0 0 0 2px rgba(26,86,219,0.3)' : 'none'};margin:auto;" id="avatarOpt_${a}">
                 <img src="icons/avatars/${a}.png" style="width:100%;height:100%;object-fit:cover;" />
               </div>
             `).join('')}
@@ -5932,7 +5927,7 @@ async function renderDuyurularPage() {
           const tarih = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('tr-TR') : '-';
           return `
             <div class="duyuru-item ${okundu ? 'duyuru-okundu' : 'duyuru-okunmadi'}">
-              <div class="duyuru-ust" onclick="toggleDuyuru('${d.id}')" style="cursor:pointer">
+              <div class="duyuru-ust" onclick="toggleDuyuru(${escJsAttr(d.id)})" style="cursor:pointer">
                 <div class="duyuru-baslik">
                   ${!okundu ? '<span class="duyuru-yeni">Yeni</span>' : ''}
                   ${escHtml(d.baslik)}
@@ -5945,9 +5940,9 @@ async function renderDuyurularPage() {
               <div class="duyuru-detay" id="duyuruDetay_${d.id}" style="display:none">
                 <div class="duyuru-mesaj">${escHtml(d.mesaj)}</div>
                 <div class="duyuru-actions">
-                  ${!okundu ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();duyuruOku('${d.id}')">Okundu</button>` : ''}
-                  ${okundu ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();duyuruKendindenGizleCagir('${d.id}')">Sil</button>` : ''}
-                  ${canManage ? `<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();duyuruSil('${d.id}')">Herkesten Kaldır</button>` : ''}
+                  ${!okundu ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();duyuruOku(${escJsAttr(d.id)})">Okundu</button>` : ''}
+                  ${okundu ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();duyuruKendindenGizleCagir(${escJsAttr(d.id)})">Sil</button>` : ''}
+                  ${canManage ? `<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();duyuruSil(${escJsAttr(d.id)})">Herkesten Kaldır</button>` : ''}
                 </div>
               </div>
             </div>`;

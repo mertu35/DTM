@@ -41,3 +41,11 @@ node tests/firestore-rules.test.js
 ```
 
 Yetki testi yalnızca yerel `demo-dtm` emülatörünü kullanır.
+
+Ekran XSS regresyonları için `node tests/security-ui.test.js` çalıştırın.
+Gerçek proje listesi oluşturulur; HTML karakterleri, tırnak, ters eğik çizgi ve
+satır sonu içeren adlar düğme işleyicilerine veri olarak aktarılmalıdır.
+
+`node tests/user-management.test.js`, kullanıcı oluşturma/rol değiştirme/silme
+işlemlerinin atomik kaydını ve başarısız profil kaydında Auth hesabının temizlenmesini
+yerel taklitlerle kontrol eder.
