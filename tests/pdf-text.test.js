@@ -14,7 +14,10 @@ const context = vm.createContext({
 vm.runInContext(source.slice(start, end), context);
 const file = { async arrayBuffer() { return new ArrayBuffer(8); } };
 function mockPdf(pages) {
-  context.pdfjsLib = { getDocument() { return { promise: Promise.resolve({
+  context.pdfjsLib = { getDocument(options) {
+    assert.equal(options.isEvalSupported, false);
+    assert.equal(options.useWasm, false);
+    return { promise: Promise.resolve({
     numPages: pages.length,
     async getPage(page) { return { async getTextContent() {
       return { items: pages[page - 1].map(str => ({ str })) };

@@ -15,3 +15,10 @@ package-lock.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Reproducible security-patched vendor build
+!tools/vendor/package-lock.json
+
+# Local Python test artifacts
+__pycache__/
+*.pyc

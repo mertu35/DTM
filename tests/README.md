@@ -60,3 +60,35 @@ girişi, kullanıcı adı/adres eşleşmesini ve anonim e-posta dizini erişimi
 yapılmadığını kontrol eder. E-postası değişen hesabın kullanıcı adıyla girişi
 kayıtlı e-posta alanı üzerinden tamamlanır; yalnızca kullanıcı adından adres
 çözümleme yapılmaz.
+
+Tarayıcı politikası ve dosya bütünlüğü için:
+
+```powershell
+node tests/browser-security.test.js
+```
+
+Finans test sayfasında “CSP engellemesini test et” satır içi script ve olay
+kodunun engellendiğini gösterir. “Metin PDF okuyucusunu test et” yerel
+metin katmanlı PDF örneğini yeni okuyucu ile açar. PDF, Word ve Excel
+düğmeleri gerçek dışa aktarma fonksiyonlarını çalıştırır.
+
+Gerçek Firebase SDK ile e-posta değiştirme akışının **yerel** testi:
+
+```powershell
+firebase emulators:start --only "auth,firestore" --project demo-dtm --config firebase.test.json
+node tests/firestore-rules.test.js
+python tests/finance-server.py
+```
+
+`http://127.0.0.1:8766/test-auth` adresini açın. “Yerel test hesabı oluştur”
+formu yalnızca emülatöre ait bilgilerle doldurur. Giriş yapın, Profilim'de
+alt çubuktaki yeni test adresini kullanarak doğrulama isteyin. “Yerel
+doğrulama bağlantısını uygula” kodu Auth emülatöründe işler. Çıkış yapıp
+kullanıcı adıyla deneyin; kayıtlı e-posta alanını doldurup tekrar girin.
+“Test profilini kontrol et” yeni adresin `emailVerified:true` durumunu
+Firestore'dan gösterir. “Test hesabını temizle” Auth hesabını ve profil,
+kullanıcı dizini, referans kayıtlarını emülatörden siler.
+
+Bu test gerçek posta teslimini ve canlı Firebase ayarlarını doğrulamaz.
+Canlı test, kontrol edilen bir test posta kutusunda doğrulama bağlantısının
+açılmasını gerektirir. Üretim hesabının parolasını test dosyalarına yazmayın.

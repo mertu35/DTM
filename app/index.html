@@ -2,6 +2,8 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://www.gstatic.com/firebasejs/10.12.5/; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://www.karamanozelidare.gov.tr; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com https://fonts.googleapis.com https://fonts.gstatic.com https://www.karamanozelidare.gov.tr; frame-src 'self' blob: https://dtmd-b927d.firebaseapp.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; manifest-src 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Doğrudan Temin Modülü</title>
   <link rel="manifest" href="manifest.json">
@@ -90,19 +92,19 @@
         <div class="login-field" style="margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
             <label style="margin:0;">Şifre</label>
-            <a href="javascript:void(0)" onclick="sifremiUnuttumModalAc()" style="font-size:12px;color:var(--primary);text-decoration:none;font-weight:600;">Şifremi Unuttum?</a>
+            <a href="#" data-dtm-onclick="static-0" style="font-size:12px;color:var(--primary);text-decoration:none;font-weight:600;">Şifremi Unuttum?</a>
           </div>
           <div class="login-input-wrap">
             <span class="login-input-icon">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </span>
             <input type="password" id="loginPassword" placeholder="Şifrenizi giriniz" autocomplete="current-password">
-            <button type="button" class="login-pwd-toggle" id="loginPwdToggle" onclick="toggleLoginPwd(this)" tabindex="-1">
+            <button type="button" class="login-pwd-toggle" id="loginPwdToggle" data-dtm-onclick="static-1" tabindex="-1">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
         </div>
-        <button class="login-btn" id="loginBtn" onclick="doLogin()">
+        <button class="login-btn" id="loginBtn" data-dtm-onclick="static-2">
           <span>Giriş Yap</span>
           <span class="login-btn-arrow">&#8594;</span>
         </button>
@@ -126,7 +128,7 @@
             <p style="margin:2px 0 0;font-size:12px;opacity:0.85;">Doğrulanmış e-posta ile şifre yenileme</p>
           </div>
         </div>
-        <button onclick="sifremiUnuttumModalKapat()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:0.8;padding:4px;line-height:1;">&times;</button>
+        <button data-dtm-onclick="static-3" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:0.8;padding:4px;line-height:1;">&times;</button>
       </div>
       <div style="padding:24px;">
         <p style="margin:0 0 16px;font-size:13.5px;color:var(--gray-600);line-height:1.5;">
@@ -140,8 +142,8 @@
         </div>
         <div id="sifreSifirlamaMsg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;line-height:1.4;"></div>
         <div style="display:flex;gap:10px;justify-content:flex-end;">
-          <button type="button" class="btn btn-secondary" onclick="sifremiUnuttumModalKapat()">Vazgeç</button>
-          <button type="button" class="btn btn-primary" id="btnSifreSifirla" onclick="sifremiUnuttumGonder(this)" style="display:inline-flex;align-items:center;gap:6px;">
+          <button type="button" class="btn btn-secondary" data-dtm-onclick="static-4">Vazgeç</button>
+          <button type="button" class="btn btn-primary" id="btnSifreSifirla" data-dtm-onclick="static-5" style="display:inline-flex;align-items:center;gap:6px;">
             <span>Sıfırlama Bağlantısı Gönder</span>
           </button>
         </div>
@@ -152,7 +154,7 @@
   <!-- ===== ANA UYGULAMA ===== -->
   <div class="app-layout" id="appLayout" style="display:none">
     <!-- Mobil Menü Butonu -->
-    <button class="mobile-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+    <button class="mobile-menu-btn" data-dtm-onclick="static-6">☰</button>
     
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -238,10 +240,10 @@
           </div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
-          <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Tema değiştir">
+          <div class="theme-toggle" id="themeToggle" data-dtm-onclick="static-7" title="Tema değiştir">
             <span id="themeToggleLabel">🌙</span>
           </div>
-          <button class="btn-logout" onclick="doLogout()" title="Çıkış Yap">
+          <button class="btn-logout" data-dtm-onclick="static-8" title="Çıkış Yap">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           </button>
         </div>
@@ -263,42 +265,29 @@
       <h3 style="font-size:18px;font-weight:700;color:#1f2937;margin-bottom:8px">Yeni Duyuru</h3>
       <p id="duyuruPopupCount" style="color:#6b7280;font-size:14px;margin-bottom:24px"></p>
       <div style="display:flex;gap:10px;justify-content:center">
-        <button onclick="duyurularSayfasinaGit()" style="background:#1a56db;color:#fff;border:none;border-radius:7px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer">Duyuruları Gör</button>
-        <button onclick="closeDuyuruPopup()" style="background:#f3f4f6;color:#374151;border:none;border-radius:7px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer">Kapat</button>
+        <button data-dtm-onclick="static-9" style="background:#1a56db;color:#fff;border:none;border-radius:7px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer">Duyuruları Gör</button>
+        <button data-dtm-onclick="static-10" style="background:#f3f4f6;color:#374151;border:none;border-radius:7px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer">Kapat</button>
       </div>
     </div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" integrity="sha384-mLD+wdwynYnAhgHAkdPP5hroWJXJTNy5C2OhPKM55zuiV2vjzFD1LtBohaHq2Ex8" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" integrity="sha384-NiuRnBs5Z0OgJ12kYJLSeWxANeJN369zH3+Zn0TGVPaCH/TKmbPFqfOmmLtrj+wg" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" integrity="sha384-/SBCyt0JELVRyyrOp+QG5CdnpVoAry+uw9hdherLgyZxxePtHjOvQmJU5CHymUhT" crossorigin="anonymous"></script>
   
   <!-- html2pdf.js for PDF exports (lokal) -->
-  <script src="js/html2pdf.bundle.min.js"></script>
-  <!-- SheetJS for Excel exports -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- PDF.js for olur belgesi parsing -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script>if(typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+  <script src="js/html2pdf.bundle.min.js" integrity="sha384-50FHmF9AJXDK1Ihg2Pvm0TQLG8LSee9THVrHrMuzqu4b6MmLkWSGV1QPIutvNkc0" crossorigin="anonymous"></script>
   <!-- App scripts -->
-  <script src="js/icons.js?v=20261003e"></script>
+  <script src="js/icons.js?v=20261003f"></script>
   <script src="js/config.js"></script>
-  <script src="js/firebase.js?v=20261003e"></script>
-  <script src="js/utils.js?v=20261003e"></script>
-  <script src="js/data.js?v=20261003e"></script>
-  <script src="js/calculations.js?v=20261003e"></script>
-  <script src="js/documents.js?v=20261003e"></script>
-  <script src="js/excel.js?v=20261003e"></script>
-  <script src="js/word.js?v=20261003e"></script>
-  <script src="js/app.js?v=20261003e"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker başarıyla kaydedildi:', reg.scope))
-          .catch(err => console.error('Service Worker kaydı başarısız:', err));
-      });
-    }
-  </script>
+  <script src="js/firebase.js?v=20261003f"></script>
+  <script src="js/utils.js?v=20261003f"></script>
+  <script src="js/data.js?v=20261003f"></script>
+  <script src="js/calculations.js?v=20261003f"></script>
+  <script src="js/documents.js?v=20261003f"></script>
+  <script src="js/excel.js?v=20261003f"></script>
+  <script src="js/word.js?v=20261003f"></script>
+  <script src="js/app.js?v=20261003f"></script>
+  <script src="js/bootstrap.js"></script>
 </body>
 </html>

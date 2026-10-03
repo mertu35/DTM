@@ -1,0 +1,6 @@
+# Integrity-pinned vendor bytes must survive Windows/Linux checkouts unchanged.
+app/js/html2pdf.bundle.min.js -text
+app/js/html2pdf.bundle.min.js.LICENSE.txt -text -whitespace
+app/js/vendor/** -text -whitespace
+tools/vendor/package-lock.json text eol=lf
+tests/fixtures/*.pdf -text -diff -whitespace

@@ -13,8 +13,6 @@ const context = vm.createContext({ console, setTimeout() {}, clearTimeout() {},
 for (const file of ['data', 'utils', 'calculations', 'documents', 'excel', 'word', 'app']) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, `../app/js/${file}.js`), 'utf8'), context);
 }
-const decode = value => value.replace(/&(quot|#39|lt|gt|amp);/g, (_, key) =>
-  ({ quot: '"', '#39': "'", lt: '<', gt: '>', amp: '&' })[key]);
 async function mainTest() {
   let count = 0;
   for (const payload of ["O'Brien", "'); globalThis.injected = true; //", '" onclick="globalThis.injected=true',
@@ -31,9 +29,14 @@ async function mainTest() {
     `, context);
     await context.renderProjelerimPage();
     assert.ok(!main.innerHTML.includes('<img'), 'user HTML must remain text');
-    const handlers = [...main.innerHTML.matchAll(/onclick="([^"]*)"/g)].map(m => decode(m[1])).filter(handler => /^(cloudProje|gonderiClick)/.test(handler));
+    const handlers = [...main.innerHTML.matchAll(/data-dtm-onclick="([^"]*)"/g)].map(m => m[1]).filter(id => id.startsWith('dynamic-'));
+    // Four project actions plus the page's new-project button.
+    handlers.shift();
     assert.equal(handlers.length, 4, 'all project action buttons rendered');
-    for (const handler of handlers) vm.runInContext(handler, context);
+    for (const handler of handlers) {
+      context.handlerId = handler;
+      vm.runInContext("dtmDispatchEvent({ type: 'click', target: { getAttribute: () => handlerId }, cancelBubble: false });", context);
+    }
     assert.equal(context.received[0][0], payload);
     assert.equal(context.received[1][1], payload);
     assert.equal(context.received[3][1], payload);

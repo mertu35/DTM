@@ -1,6 +1,47 @@
 // ===================== UTILS.JS =====================
 // Tarih, para, sayıdan yazıya çevirme yardımcıları
 
+// HTML only carries opaque event IDs. All callbacks are trusted source code,
+// and never reconstructed with eval/Function from a user-supplied string.
+const dtmEventHandlers = new Map();
+let dtmEventSequence = 0;
+function dtmRegisterEvent(id, callback) {
+  dtmEventHandlers.set(id, { callback, createdAt: Date.now() });
+}
+function dtmEventAttr(type, callback) {
+  const id = 'dynamic-' + (++dtmEventSequence);
+  dtmRegisterEvent(id, callback);
+  // Reclaim callbacks from removed views while preserving pending markup and
+  // controls in modals. Snapshot the DOM only periodically, not per field.
+  if (dtmEventSequence % 128 === 0 && typeof document.querySelectorAll === 'function') {
+    const active = new Set();
+    document.querySelectorAll('[data-dtm-onclick],[data-dtm-onchange],[data-dtm-oninput],[data-dtm-onkeydown],[data-dtm-onmouseover],[data-dtm-onmouseout]')
+      .forEach(el => Array.from(el.attributes).forEach(attr => {
+        if (attr.name.startsWith('data-dtm-on')) active.add(attr.value);
+      }));
+    for (const [key, entry] of dtmEventHandlers) {
+      if (key.startsWith('dynamic-') && Date.now() - entry.createdAt > 60000 && !active.has(key)) dtmEventHandlers.delete(key);
+    }
+  }
+  return `data-dtm-on${type}="${id}"`;
+}
+function dtmDispatchEvent(event) {
+  const attr = 'data-dtm-on' + event.type;
+  for (let el = event.target; el && el !== document; el = el.parentElement) {
+    const entry = dtmEventHandlers.get(el.getAttribute?.(attr));
+    if (entry) {
+      if (entry.callback.call(el, event) === false) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+    if (event.cancelBubble) break;
+  }
+}
+for (const type of ['click', 'change', 'input', 'keydown', 'mouseover', 'mouseout']) {
+  document.addEventListener(type, dtmDispatchEvent);
+}
+
 // Form input'una .has-error class ekle, ilk yazı/focus'ta temizle
 function markError(...inputs) {
   inputs.forEach(el => {

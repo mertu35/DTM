@@ -1,0 +1,128 @@
+{
+  "build": "npm ci --ignore-scripts && npm run build (in tools/vendor)",
+  "packages": [
+    {
+      "name": "html2pdf.js",
+      "version": "0.14.0",
+      "integrity": "sha512-yvNJgE/8yru2UeGflkPdjW8YEY+nDH5X7/2WG4uiuSCwYiCp8PZ8EKNiTAa6HxJ1NjC51fZSIEq6xld5CADKBQ=="
+    },
+    {
+      "name": "pdfjs-dist",
+      "version": "6.3.289",
+      "integrity": "sha512-ZHjSVpDa3D6izMq8/04lvkhkATUmL9px6ChPaXc1k6nU2Mrhlg1/7F0bdUqCwUjw3NsPTfPZsMDUU6ZIcRaeQw=="
+    },
+    {
+      "name": "jspdf",
+      "version": "4.2.1",
+      "integrity": "sha512-YyAXyvnmjTbR4bHQRLzex3CuINCDlQnBqoSYyjJwTP2x9jDLuKDzy7aKUl0hgx3uhcl7xzg32agn5vlie6HIlQ=="
+    },
+    {
+      "name": "dompurify",
+      "version": "3.4.16",
+      "integrity": "sha512-sqo+pNp3qRhCIpbgRi1y8Tgk27Bo2Ry7w0dC1NBeNTdZChWjz9Xb/KOoZbRP/R6pQZ80Qw8YhXw13hWWBbMRnQ=="
+    },
+    {
+      "name": "html2canvas",
+      "version": "1.4.1",
+      "integrity": "sha512-fPU6BHNpsyIhr8yyMpTLLxAbkaK8ArIBcmZIRiBLiDhjeqvXolaEmDGmELFuX9I4xDcaKKcJl+TKZLqruBbmWA=="
+    }
+  ],
+  "files": [
+    {
+      "path": "app/js/vendor/HTML2PDF-LICENSE",
+      "integrity": "sha384-OOGojr7Hw3BENN3ApCz+PmZV+ZJZI6u1LzP0gNn49AtjHcjIOkC4XIQEQsAklMbr"
+    },
+    {
+      "path": "app/js/vendor/pdf-export-46aeb002f85cf8335343.js",
+      "integrity": "sha384-pIVEnebrzbLTD+Vb7h111L9EbW4iynNd/4TyYrnmYE3aM15xccBcss6zCnLkkjm0"
+    },
+    {
+      "path": "app/js/vendor/pdf-export-46aeb002f85cf8335343.js.LICENSE.txt",
+      "integrity": "sha384-DjtAEPCemeJANUNSD62di+lbsZk5xwXiYa2ZnidD7HCzezRbAtNm25pa2oqxx67k"
+    },
+    {
+      "path": "app/js/vendor/pdf.min.mjs",
+      "integrity": "sha384-z3N/QnTq7KUG0r5jEmpE9EQ2Yw9XQxeHTtq/XWs9uR7UDmdiZAI2xGZ7t151ou8z"
+    },
+    {
+      "path": "app/js/vendor/pdf.worker.min.mjs",
+      "integrity": "sha384-ZsWbdAW9R0tLHblpnT9OlTG0oDnOBndXJiKFJnsmzR2TXBm7oh5eDqIyTrxseosS"
+    },
+    {
+      "path": "app/js/vendor/PDFJS-LICENSE",
+      "integrity": "sha384-dIfJx5IERVwWkDwmUITjq6FFmOOiUluv24tT2o6vrjEpXyjYGE/BIj5rw25rSNr0"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/FoxitDingbats.pfb",
+      "integrity": "sha384-J6D0tuQ7hS4r7c36w4Knq9lCvK5fVNcMVS42w1akJ6d50IRQpIiDUHAx9p5Qauy7"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/FoxitFixed.pfb",
+      "integrity": "sha384-G+pbNzvaEqW9j5UWUdLjo+D48ORIOVf1HvsdEYtoeNQ0q1yk4FrRlUjY/Q6RmM/p"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/FoxitFixedBold.pfb",
+      "integrity": "sha384-4/tnth9xUAxEYByFlQTurvox7hqAD46o8O4eI5JYnZjjystXeppy3lxk0IdoHI4+"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/FoxitFixedBoldItalic.pfb",
+      "integrity": "sha384-ZcJjm20tGM1nvRa8TZqMhFWp34Aip6omaLitE4yxR+iARdaNTs37QISKnM7v9nl5"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/FoxitFixedItalic.pfb",
+      "integrity": "sha384-deS6b1EpY8X1tcrH0HsEJvbVmGoBPbHVTneyT2S3lBBUOjMt+6Dyvb752+6F5Z78"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/FoxitSerif.pfb",
+      "integrity": "sha384-YTEXSjTC9vufA43meRBWaR6NQf4MfeQa6R4flRDqmCaUdX6BCIt+dCpU6Yt8l289"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/FoxitSerifBold.pfb",
+      "integrity": "sha384-meAHQWDB3WCH/yUJJYdOy7OEEhtqiezV9hLWqbhoyhMe4HlFAki3L6Vt8dsZ5QqQ"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/FoxitSerifBoldItalic.pfb",
+      "integrity": "sha384-kp+DLlatORDKvJCvG9IhLhxrJlJ1bQO7CB1rzb/TvZz7QcmZGe+Q1Hb83wnMtkTD"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/FoxitSerifItalic.pfb",
+      "integrity": "sha384-Lk8/p/Z/E9/+hQygIXI0znAyvgUFLjUgfCm5/L82Gpe2Ds8Oh2TfTcvWjAc47QU0"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/FoxitSymbol.pfb",
+      "integrity": "sha384-1x+uMu5vnYoPajnjcUnXfxbInC1i0XOCSLKWzG2C1EIR8nhRyq+pRm5sWWt9ooWL"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/LiberationSans-Bold.ttf",
+      "integrity": "sha384-w8/QMz3l1Xz5nCx5NPZBqeE0IWqmwbhgmcFxRZonV/prVmW+ukvR9EYm9U9VbWIK"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/LiberationSans-BoldItalic.ttf",
+      "integrity": "sha384-qSHhJ4sqYPkb27gHdv84/OV2MG4MLV5YuG0/U/9UhYaAOFKcKI4+W+SqBJYQLQDc"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/LiberationSans-Italic.ttf",
+      "integrity": "sha384-OrFSN+or3P623tOOCiYSeqJndYCnPspnIgrP8yzTlKodcGSo+CyFOqep1ejZN0Qk"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/LiberationSans-Regular.ttf",
+      "integrity": "sha384-SD1vkNhYglih2fyROhymiRHqSpxDyrVyUJZrd0ysZzYzvgy7TwGlYGz847vWirSD"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/LICENSE_FOXIT",
+      "integrity": "sha384-1fHjQMkJb6qgIXOHMyAnwhQVamTqavpeezWjYeNQVnKu98ISGckhCXlLn9NE8TCS"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/LICENSE_LIBERATION",
+      "integrity": "sha384-/8FywW9nSd8oVEn12psdu3hXFVK2Xc46DfoQPmh9ozAgse5+arxrLbKYGgj4b/rj"
+    },
+    {
+      "path": "app/js/html2pdf.bundle.min.js",
+      "integrity": "sha384-50FHmF9AJXDK1Ihg2Pvm0TQLG8LSee9THVrHrMuzqu4b6MmLkWSGV1QPIutvNkc0"
+    },
+    {
+      "path": "app/js/html2pdf.bundle.min.js.LICENSE.txt",
+      "integrity": "sha384-ZWt7uQZ08JcYf5u6odNhC5Y0efSiq8outOlHFwMejH8rWTJyq/ob90WxcEs/sR0h"
+    }
+  ]
+}

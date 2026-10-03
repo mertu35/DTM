@@ -1,0 +1,20 @@
+{
+  "name": "dtm-vendored-libraries",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "webpack --config webpack.config.cjs && node sync-manifest.cjs",
+    "audit:runtime": "npm audit --omit=dev"
+  },
+  "dependencies": {
+    "html2pdf.js": "0.14.0",
+    "pdfjs-dist": "6.3.289",
+    "jspdf": "4.2.1",
+    "dompurify": "3.4.16",
+    "html2canvas": "1.4.1"
+  },
+  "devDependencies": {
+    "webpack": "5.111.1",
+    "webpack-cli": "7.2.3"
+  }
+}

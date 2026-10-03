@@ -742,12 +742,12 @@ async function renderAnaSayfaPage() {
         <p style="color:var(--gray-700);font-size:14px;line-height:1.6">${roleInfo.mesaj}</p>
       </div>` : `
       <div class="home-action-grid">
-        <div class="home-action-card primary" onclick="yeniProjeBaslat()">
+        <div class="home-action-card primary" ${dtmEventAttr('click', function(event) { yeniProjeBaslat() })}>
           <div style="margin-bottom:10px;display:flex;justify-content:center">${typeof getIcon === 'function' ? getIcon('plusCircle', 36) : '📋'}</div>
           <div style="font-weight:700;font-size:16px;margin-bottom:4px">Yeni Proje</div>
           <div style="font-size:12px;opacity:0.85">Yeni bir proje oluştur</div>
         </div>
-        <div class="home-action-card outline" onclick="projeAcSayfasinaGit()">
+        <div class="home-action-card outline" ${dtmEventAttr('click', function(event) { projeAcSayfasinaGit() })}>
           <div style="margin-bottom:10px;display:flex;justify-content:center;color:var(--primary)">${typeof getIcon === 'function' ? getIcon('folder', 36) : '📂'}</div>
           <div style="font-weight:700;font-size:16px;margin-bottom:4px;color:var(--gray-800)">Proje Aç</div>
           <div style="font-size:12px;color:var(--gray-500)">Kayıtlı projeleri görüntüle</div>
@@ -772,29 +772,29 @@ async function renderAnaSayfaPage() {
 
         <!-- Adım 1: Seçim -->
         <div id="yeniProjeAdim1" style="display:flex;flex-direction:column;gap:12px">
-          <button onclick="document.getElementById('yeniProjeAdim1').style.display='none';document.getElementById('yeniProjeAdim2Manuel').style.display='block';setTimeout(()=>document.getElementById('yeniProjeAdi')?.focus(),50)"
+          <button ${dtmEventAttr('click', function(event) { document.getElementById('yeniProjeAdim1').style.display='none';document.getElementById('yeniProjeAdim2Manuel').style.display='block';setTimeout(()=>document.getElementById('yeniProjeAdi')?.focus(),50) })}
             style="padding:16px;border:2px solid var(--gray-200);border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px;transition:border-color 0.15s"
-            onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--gray-200)'">
+            ${dtmEventAttr('mouseover', function(event) { this.style.borderColor='var(--primary)' })} ${dtmEventAttr('mouseout', function(event) { this.style.borderColor='var(--gray-200)' })}>
             <div style="font-weight:600;color:var(--gray-800)">✏️ Manuel Oluştur</div>
             <div style="font-size:12px;color:var(--gray-500);margin-top:4px">İş adını kendiniz yazarak başlayın</div>
           </button>
-          <button onclick="document.getElementById('yeniProjeAdim1').style.display='none';document.getElementById('yeniProjeAdim2Olur').style.display='block'"
+          <button ${dtmEventAttr('click', function(event) { document.getElementById('yeniProjeAdim1').style.display='none';document.getElementById('yeniProjeAdim2Olur').style.display='block' })}
             style="padding:16px;border:2px solid var(--gray-200);border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px;transition:border-color 0.15s"
-            onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--gray-200)'">
+            ${dtmEventAttr('mouseover', function(event) { this.style.borderColor='var(--primary)' })} ${dtmEventAttr('mouseout', function(event) { this.style.borderColor='var(--gray-200)' })}>
             <div style="font-weight:600;color:var(--gray-800)">📄 Olur Dosyasından Oluştur</div>
             <div style="font-size:12px;color:var(--gray-500);margin-top:4px">Onay belgesi yükleyerek iş adını otomatik doldurun</div>
           </button>
-          <button onclick="document.getElementById('yeniProjeModal').style.display='none'" style="padding:8px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--gray-400)">İptal</button>
+          <button ${dtmEventAttr('click', function(event) { document.getElementById('yeniProjeModal').style.display='none' })} style="padding:8px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--gray-400)">İptal</button>
         </div>
 
         <!-- Adım 2a: Manuel -->
         <div id="yeniProjeAdim2Manuel" style="display:none">
           <label style="font-size:13px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:6px">İş / Hizmet Adı</label>
           <input id="yeniProjeAdi" type="text" placeholder="Örn: Çatı Onarım İşi" style="width:100%;padding:10px 12px;border:1px solid var(--gray-300);border-radius:6px;font-size:14px;margin-bottom:20px;box-sizing:border-box"
-            onkeydown="if(event.key==='Enter')yeniProjeOlustur()">
+            ${dtmEventAttr('keydown', function(event) { if(event.key==='Enter')yeniProjeOlustur() })}>
           <div style="display:flex;gap:10px;justify-content:flex-end">
-            <button onclick="document.getElementById('yeniProjeAdim2Manuel').style.display='none';document.getElementById('yeniProjeAdim1').style.display='flex'" style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">← Geri</button>
-            <button onclick="yeniProjeOlustur()" class="btn btn-primary" style="padding:8px 20px">Oluştur</button>
+            <button ${dtmEventAttr('click', function(event) { document.getElementById('yeniProjeAdim2Manuel').style.display='none';document.getElementById('yeniProjeAdim1').style.display='flex' })} style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">← Geri</button>
+            <button ${dtmEventAttr('click', function(event) { yeniProjeOlustur() })} class="btn btn-primary" style="padding:8px 20px">Oluştur</button>
           </div>
         </div>
 
@@ -808,7 +808,7 @@ async function renderAnaSayfaPage() {
               <span id="ymDosyaAdi" style="font-size:12px;color:#374151;flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
               <label style="cursor:pointer;padding:6px 16px;background:#2563eb;color:#fff;border-radius:6px;font-size:12px;display:inline-block;white-space:nowrap;flex-shrink:0">
                 PDF Seç
-                <input type="file" accept=".pdf" id="ymPdfInput" style="display:none" onchange="document.getElementById('ymDosyaAdi').textContent=this.files[0]?this.files[0].name:''">
+                <input type="file" accept=".pdf" id="ymPdfInput" style="display:none" ${dtmEventAttr('change', function(event) { document.getElementById('ymDosyaAdi').textContent=this.files[0]?this.files[0].name:'' })}>
               </label>
             </div>
             <!-- DT Belgesi -->
@@ -817,13 +817,13 @@ async function renderAnaSayfaPage() {
               <span id="dtDosyaAdi" style="font-size:12px;color:#374151;flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
               <label style="cursor:pointer;padding:6px 16px;background:#16a34a;color:#fff;border-radius:6px;font-size:12px;display:inline-block;white-space:nowrap;flex-shrink:0">
                 PDF Seç
-                <input type="file" accept=".pdf" id="dtPdfInput" style="display:none" onchange="document.getElementById('dtDosyaAdi').textContent=this.files[0]?this.files[0].name:''">
+                <input type="file" accept=".pdf" id="dtPdfInput" style="display:none" ${dtmEventAttr('change', function(event) { document.getElementById('dtDosyaAdi').textContent=this.files[0]?this.files[0].name:'' })}>
               </label>
             </div>
           </div>
           <div style="display:flex;gap:10px;justify-content:flex-end">
-            <button onclick="document.getElementById('yeniProjeAdim2Olur').style.display='none';document.getElementById('yeniProjeAdim1').style.display='flex'" style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">← Geri</button>
-            <button onclick="parseIkiOlurBelgesi()" style="padding:8px 24px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;border:none;cursor:pointer;font-weight:600">Oku ve Devam Et →</button>
+            <button ${dtmEventAttr('click', function(event) { document.getElementById('yeniProjeAdim2Olur').style.display='none';document.getElementById('yeniProjeAdim1').style.display='flex' })} style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">← Geri</button>
+            <button ${dtmEventAttr('click', function(event) { parseIkiOlurBelgesi() })} style="padding:8px 24px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;border:none;cursor:pointer;font-weight:600">Oku ve Devam Et →</button>
           </div>
         </div>
       </div>
@@ -842,7 +842,7 @@ async function renderAnaSayfaPage() {
       const son5 = projeler.slice(0, 5);
       listEl.innerHTML = son5.map(p => {
         const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
-        return `<div class="home-recent-row" onclick="cloudProjeAc(${escJsAttr(p.id)})" style="border-bottom:1px solid var(--gray-100)">
+        return `<div class="home-recent-row" ${dtmEventAttr('click', function(event) { cloudProjeAc(String(p.id ?? '')) })} style="border-bottom:1px solid var(--gray-100)">
           <span style="font-weight:500;font-size:13px">${p.locked ? '🔒 ' : ''}${escHtml(p.isAdi || '(İsimsiz)')}</span>
           <span style="font-size:12px;color:var(--gray-400)">${tarih}</span>
         </div>`;
@@ -929,9 +929,9 @@ function renderVeriGirisPage() {
       <div class="form-group">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <label style="margin-bottom:0">Y.M. Görevlisi ${i + 1}</label>
-          ${i > 0 ? `<button type="button" onclick="onGorevliSil('ym', ${i})" title="Bu görevliyi kaldır" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕ Sil</button>` : ''}
+          ${i > 0 ? `<button type="button" ${dtmEventAttr('click', function(event) { onGorevliSil('ym', (i)) })} title="Bu görevliyi kaldır" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px" ${dtmEventAttr('mouseover', function(event) { this.style.background='#fee2e2' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='none' })}>✕ Sil</button>` : ''}
         </div>
-        <select data-field="ymGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'ym')">
+        <select data-field="ymGorevliler" data-index="${i}" data-sub="ad" ${dtmEventAttr('change', function(event) { onGorevliChange(this, 'ym') })}>
           <option value="">-- Seçin --</option>
           ${referans.muhendisList.map(m => {
             const baskaSecili = g.ad !== m.ad && ymSeciliAdlar.includes(m.ad);
@@ -944,7 +944,7 @@ function renderVeriGirisPage() {
         <input type="text" value="${escAttr(g.unvan || getUnvanByAd(g.ad, referans))}" readonly>
       </div>
     </div>`).join('');
-  const ymEkleBtn = ymSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('ym')" style="margin-top:6px;">+ Y.M. Görevlisi Ekle</button>` : '';
+  const ymEkleBtn = ymSayisi < 3 ? `<button class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { onGorevliEkle('ym') })} style="margin-top:6px;">+ Y.M. Görevlisi Ekle</button>` : '';
 
   const dtSayisi = proje.dtGorevliSayisi || 1;
   const dtSeciliAdlar = (proje.dtGorevliler || []).slice(0, dtSayisi).map(g => g.ad).filter(Boolean);
@@ -953,9 +953,9 @@ function renderVeriGirisPage() {
       <div class="form-group">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <label style="margin-bottom:0">D.T. Görevlisi ${i + 1} ${proje.dtGorevlilerYmIleAyni ? '<span style="font-weight:400;color:var(--primary);font-size:11px">(Y.M. Görevlisi ' + (i+1) + ')</span>' : ''}</label>
-          ${i > 0 && !proje.dtGorevlilerYmIleAyni ? `<button type="button" onclick="onGorevliSil('dt', ${i})" title="Bu görevliyi kaldır" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕ Sil</button>` : ''}
+          ${i > 0 && !proje.dtGorevlilerYmIleAyni ? `<button type="button" ${dtmEventAttr('click', function(event) { onGorevliSil('dt', (i)) })} title="Bu görevliyi kaldır" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px" ${dtmEventAttr('mouseover', function(event) { this.style.background='#fee2e2' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='none' })}>✕ Sil</button>` : ''}
         </div>
-        <select data-field="dtGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'dt')" ${proje.dtGorevlilerYmIleAyni ? 'disabled style="background:#f8fafc;cursor:not-allowed"' : ''}>
+        <select data-field="dtGorevliler" data-index="${i}" data-sub="ad" ${dtmEventAttr('change', function(event) { onGorevliChange(this, 'dt') })} ${proje.dtGorevlilerYmIleAyni ? 'disabled style="background:#f8fafc;cursor:not-allowed"' : ''}>
           <option value="">-- Seçin --</option>
           ${referans.muhendisList.map(m => {
             const baskaSecili = g.ad !== m.ad && dtSeciliAdlar.includes(m.ad);
@@ -968,7 +968,7 @@ function renderVeriGirisPage() {
         <input type="text" value="${escAttr(g.unvan || getUnvanByAd(g.ad, referans))}" readonly ${proje.dtGorevlilerYmIleAyni ? 'style="background:#f8fafc"' : ''}>
       </div>
     </div>`).join('');
-  const dtEkleBtn = dtSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('dt')" style="margin-top:6px;">+ D.T. Görevlisi Ekle</button>` : '';
+  const dtEkleBtn = dtSayisi < 3 ? `<button class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { onGorevliEkle('dt') })} style="margin-top:6px;">+ D.T. Görevlisi Ekle</button>` : '';
 
   if (!proje.mkGorevliler) proje.mkGorevliler = [{ad:'', unvan:''}, {ad:'', unvan:''}, {ad:'', unvan:''}];
   const mkSayisi = proje.mkGorevliSayisi || 1;
@@ -978,9 +978,9 @@ function renderVeriGirisPage() {
       <div class="form-group">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <label style="margin-bottom:0">Muayene Kabul Görevlisi ${i + 1}</label>
-          ${i > 0 ? `<button type="button" onclick="onGorevliSil('mk', ${i})" title="Bu görevliyi kaldır" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕ Sil</button>` : ''}
+          ${i > 0 ? `<button type="button" ${dtmEventAttr('click', function(event) { onGorevliSil('mk', (i)) })} title="Bu görevliyi kaldır" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px" ${dtmEventAttr('mouseover', function(event) { this.style.background='#fee2e2' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='none' })}>✕ Sil</button>` : ''}
         </div>
-        <select data-field="mkGorevliler" data-index="${i}" data-sub="ad" onchange="onGorevliChange(this, 'mk')">
+        <select data-field="mkGorevliler" data-index="${i}" data-sub="ad" ${dtmEventAttr('change', function(event) { onGorevliChange(this, 'mk') })}>
           <option value="">-- Seçin --</option>
           ${referans.muhendisList.map(m => {
             const baskaSecili = g.ad !== m.ad && mkSeciliAdlar.includes(m.ad);
@@ -993,14 +993,14 @@ function renderVeriGirisPage() {
         <input type="text" value="${escAttr(g.unvan || getUnvanByAd(g.ad, referans))}" readonly>
       </div>
     </div>`).join('');
-  const mkEkleBtn = mkSayisi < 3 ? `<button class="btn btn-outline btn-sm" onclick="onGorevliEkle('mk')" style="margin-top:6px;">+ Muayene Kabul Görevlisi Ekle</button>` : '';
+  const mkEkleBtn = mkSayisi < 3 ? `<button class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { onGorevliEkle('mk') })} style="margin-top:6px;">+ Muayene Kabul Görevlisi Ekle</button>` : '';
 
   const kalemler = !isMalVeyaHizmetTuru(proje.isTuru) ? '' : proje.isKalemleri.map((k, i) => `
     <tr>
       <td class="merkez">${i + 1}</td>
-      <td><input type="text" value="${escAttr(k.ad)}" data-field="isKalemleri" data-index="${i}" data-sub="ad" onchange="onKalemChange(this)"></td>
-      <td><input type="number" min="0" step="any" value="${escAttr(k.miktar)}" data-field="isKalemleri" data-index="${i}" data-sub="miktar" onchange="onKalemChange(this)" style="width:80px"></td>
-      <td><select data-field="isKalemleri" data-index="${i}" data-sub="birim" onchange="onKalemChange(this)">
+      <td><input type="text" value="${escAttr(k.ad)}" data-field="isKalemleri" data-index="${i}" data-sub="ad" ${dtmEventAttr('change', function(event) { onKalemChange(this) })}></td>
+      <td><input type="number" min="0" step="any" value="${escAttr(k.miktar)}" data-field="isKalemleri" data-index="${i}" data-sub="miktar" ${dtmEventAttr('change', function(event) { onKalemChange(this) })} style="width:80px"></td>
+      <td><select data-field="isKalemleri" data-index="${i}" data-sub="birim" ${dtmEventAttr('change', function(event) { onKalemChange(this) })}>
         <option value="">--</option>
         ${referans.birimList.map(b => `<option value="${escAttr(b)}" ${k.birim === b ? 'selected' : ''}>${escHtml(b)}</option>`).join('')}
       </select></td>
@@ -1027,10 +1027,10 @@ function renderVeriGirisPage() {
             <label style="margin:0">${fi + 1}. Firma</label>
             <label title="PDF'den oku" style="cursor:pointer;padding:3px 8px;background:#eff6ff;border:1px solid #93c5fd;border-radius:5px;font-size:11px;color:#1e40af;white-space:nowrap">
               📄 PDF'den Oku
-              <input type="file" accept=".pdf" style="display:none" onchange="parseTeklifPDF(this.files[0],'ym',${fi});this.value=''">
+              <input type="file" accept=".pdf" style="display:none" ${dtmEventAttr('change', function(event) { parseTeklifPDF(this.files[0],'ym',(fi));this.value='' })}>
             </label>
           </div>
-          <select data-field="ymFirmalar" data-index="${fi}" data-sub="ad" onchange="onFirmaChange(this, 'ym')">
+          <select data-field="ymFirmalar" data-index="${fi}" data-sub="ad" ${dtmEventAttr('change', function(event) { onFirmaChange(this, 'ym') })}>
             <option value="">-- Firma Seçin --</option>
             ${[...referans.firmaList].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')).map(fr => `<option value="${escAttr(fr.ad)}" ${f.ad === fr.ad ? 'selected' : ''}>${escHtml(fr.ad)}</option>`).join('')}
           </select>
@@ -1043,7 +1043,7 @@ function renderVeriGirisPage() {
               const toplam = hesaplaKalemTutar(bf, k.miktar);
               return `<tr>
                 <td>${escHtml(k.ad || '-')}</td>
-                <td><input type="number" min="0" step="0.01" value="${escAttr(bf || '')}" data-firma="ym" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
+                <td><input type="number" min="0" step="0.01" value="${escAttr(bf || '')}" data-firma="ym" data-fi="${fi}" data-ki="${ki}" ${dtmEventAttr('change', function(event) { onFiyatChange(this) })} style="width:120px"></td>
                 <td class="rakam">${toplam > 0 ? formatCurrency(toplam) : '-'}</td>
               </tr>`;
             }).join('')}
@@ -1076,10 +1076,10 @@ function renderVeriGirisPage() {
             <label style="margin:0">${fi + 1}. Firma ${isKazanan ? '(KAZANAN)' : ''}</label>
             <label title="PDF'den oku" style="cursor:pointer;padding:3px 8px;background:#f0fdf4;border:1px solid #86efac;border-radius:5px;font-size:11px;color:#166534;white-space:nowrap">
               📄 PDF'den Oku
-              <input type="file" accept=".pdf" style="display:none" onchange="parseTeklifPDF(this.files[0],'teklif',${fi});this.value=''">
+              <input type="file" accept=".pdf" style="display:none" ${dtmEventAttr('change', function(event) { parseTeklifPDF(this.files[0],'teklif',(fi));this.value='' })}>
             </label>
           </div>
-          <select data-field="teklifFirmalar" data-index="${fi}" data-sub="ad" onchange="onFirmaChange(this, 'teklif')">
+          <select data-field="teklifFirmalar" data-index="${fi}" data-sub="ad" ${dtmEventAttr('change', function(event) { onFirmaChange(this, 'teklif') })}>
             <option value="">-- Firma Seçin --</option>
             ${[...referans.firmaList].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')).map(fr => `<option value="${escAttr(fr.ad)}" ${f.ad === fr.ad ? 'selected' : ''}>${escHtml(fr.ad)}</option>`).join('')}
           </select>
@@ -1092,7 +1092,7 @@ function renderVeriGirisPage() {
               const toplam = hesaplaKalemTutar(bf, k.miktar);
               return `<tr>
                 <td>${escHtml(k.ad || '-')}</td>
-                <td><input type="number" min="0" step="0.01" value="${escAttr(bf || '')}" data-firma="teklif" data-fi="${fi}" data-ki="${ki}" onchange="onFiyatChange(this)" style="width:120px"></td>
+                <td><input type="number" min="0" step="0.01" value="${escAttr(bf || '')}" data-firma="teklif" data-fi="${fi}" data-ki="${ki}" ${dtmEventAttr('change', function(event) { onFiyatChange(this) })} style="width:120px"></td>
                 <td class="rakam">${toplam > 0 ? formatCurrency(toplam) : '-'}</td>
               </tr>`;
             }).join('')}
@@ -1132,7 +1132,7 @@ function renderVeriGirisPage() {
 
     <!-- PROJE BİLGİLERİ -->
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3>Proje Bilgileri</h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
@@ -1140,24 +1140,24 @@ function renderVeriGirisPage() {
         <div class="form-grid">
           <div class="form-group">
             <label>İdare Adı</label>
-            <select id="idareAdi" onchange="onFieldChange('idareAdi', this.value)">
+            <select id="idareAdi" ${dtmEventAttr('change', function(event) { onFieldChange('idareAdi', this.value) })}>
               ${referans.idareList.map(i => `<option value="${escAttr(i)}" ${proje.idareAdi === i ? 'selected' : ''}>${escHtml(i)}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
             <label>Müdürlük</label>
-            <select id="mudurluk" onchange="onFieldChange('mudurluk', this.value)">
+            <select id="mudurluk" ${dtmEventAttr('change', function(event) { onFieldChange('mudurluk', this.value) })}>
               ${referans.mudurlukler.map(m => `<option value="${escAttr(m)}" ${proje.mudurluk === m ? 'selected' : ''}>${escHtml(m)}</option>`).join('')}
             </select>
           </div>
           <div class="form-group full-width">
             <label>Yapılan İş / Hizmet Adı</label>
-            <input type="text" id="isAdi" value="${escAttr(proje.isAdi)}" onchange="onFieldChange('isAdi', this.value)">
+            <input type="text" id="isAdi" value="${escAttr(proje.isAdi)}" ${dtmEventAttr('change', function(event) { onFieldChange('isAdi', this.value) })}>
           </div>
           <div class="form-group full-width" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:16px">
             <div class="form-group">
               <label>İş Türü</label>
-              <select id="isTuru" onchange="onFieldChange('isTuru', this.value); renderPage();">
+              <select id="isTuru" ${dtmEventAttr('change', function(event) { onFieldChange('isTuru', this.value); renderPage(); })}>
                 ${referans.isTurleri.map(t => {
                   // Hangi türün seçilebilir olduğu data.js'teki IS_TURLERI listesinde tanımlı
                   const tanim = getIsTuruTanim(t);
@@ -1168,17 +1168,17 @@ function renderVeriGirisPage() {
             </div>
             <div class="form-group">
               <label>KDV Oranı (%)</label>
-              <select id="kdvOrani" onchange="onFieldChange('kdvOrani', this.value)">
+              <select id="kdvOrani" ${dtmEventAttr('change', function(event) { onFieldChange('kdvOrani', this.value) })}>
                 ${[...new Set([0, ...referans.kdvOranlari])].map(k => `<option value="${escAttr(k)}" ${proje.kdvOrani == k ? 'selected' : ''}>${escHtml(k)}</option>`).join('')}
               </select>
             </div>
             <div class="form-group">
               <label>Şehir</label>
-              <input type="text" id="sehir" value="${escAttr(proje.sehir)}" onchange="onFieldChange('sehir', this.value)">
+              <input type="text" id="sehir" value="${escAttr(proje.sehir)}" ${dtmEventAttr('change', function(event) { onFieldChange('sehir', this.value) })}>
             </div>
             <div class="form-group">
               <label>İlçe</label>
-              <select id="ilce" onchange="onFieldChange('ilce', this.value)">
+              <select id="ilce" ${dtmEventAttr('change', function(event) { onFieldChange('ilce', this.value) })}>
                 <option value="">-- Seçin --</option>
                 ${referans.ilceler.map(i => `<option value="${escAttr(i)}" ${proje.ilce === i ? 'selected' : ''}>${escHtml(i)}</option>`).join('')}
               </select>
@@ -1190,7 +1190,7 @@ function renderVeriGirisPage() {
 
     <!-- GÖREVLİLER -->
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3>Y.M. Görevlileri</h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
@@ -1199,7 +1199,7 @@ function renderVeriGirisPage() {
           <span style="font-size:13px;color:#1e40af;">📄 Olur belgesinden otomatik doldur</span>
           <label style="cursor:pointer;padding:6px 16px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;white-space:nowrap;user-select:none">
             PDF Seç
-            <input type="file" accept=".pdf" style="display:none" onchange="parseYMOluru(this.files[0]);this.value=''">
+            <input type="file" accept=".pdf" style="display:none" ${dtmEventAttr('change', function(event) { parseYMOluru(this.files[0]);this.value='' })}>
           </label>
         </div>
         ${ymGorevliRows}
@@ -1207,22 +1207,22 @@ function renderVeriGirisPage() {
         <div class="form-grid" style="margin-top:12px">
           <div class="form-group">
             <label>Y.M. Onay Tarihi</label>
-            <input type="date" id="ymOnayTarihi" value="${escAttr(proje.ymOnayTarihi)}" onchange="onFieldChange('ymOnayTarihi', this.value)">
+            <input type="date" id="ymOnayTarihi" value="${escAttr(proje.ymOnayTarihi)}" ${dtmEventAttr('change', function(event) { onFieldChange('ymOnayTarihi', this.value) })}>
           </div>
           <div class="form-group">
             <label>Onay Sayısı</label>
-            <input type="text" id="ymOnayNo" value="${escAttr(proje.ymOnayNo)}" onchange="onFieldChange('ymOnayNo', this.value)">
+            <input type="text" id="ymOnayNo" value="${escAttr(proje.ymOnayNo)}" ${dtmEventAttr('change', function(event) { onFieldChange('ymOnayNo', this.value) })}>
           </div>
           <div class="form-group" style="grid-column:1/-1">
             <label>Y.M. Tutanak Tarihi</label>
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px">
               <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:normal;font-size:13px">
-                <input type="checkbox" ${proje.ymTutanakTarihiAyni !== false ? 'checked' : ''} onchange="onFieldChange('ymTutanakTarihiAyni', this.checked);renderPage()">
+                <input type="checkbox" ${proje.ymTutanakTarihiAyni !== false ? 'checked' : ''} ${dtmEventAttr('change', function(event) { onFieldChange('ymTutanakTarihiAyni', this.checked);renderPage() })}>
                 Onay tarihi ile aynı
               </label>
               ${proje.ymTutanakTarihiAyni !== false
                 ? `<span style="font-size:13px;color:var(--gray-500)">${proje.ymOnayTarihi ? formatDate(proje.ymOnayTarihi) : '(Önce onay tarihi girin)'}</span>`
-                : `<input type="date" value="${escAttr(proje.ymTutanakTarihi || '')}" onchange="onFieldChange('ymTutanakTarihi', this.value)">`
+                : `<input type="date" value="${escAttr(proje.ymTutanakTarihi || '')}" ${dtmEventAttr('change', function(event) { onFieldChange('ymTutanakTarihi', this.value) })}>`
               }
             </div>
           </div>
@@ -1231,7 +1231,7 @@ function renderVeriGirisPage() {
     </div>
 
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3>D.T. Görevlileri</h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
@@ -1240,13 +1240,13 @@ function renderVeriGirisPage() {
           <span style="font-size:13px;color:#1e40af;">📄 Olur belgesinden otomatik doldur</span>
           <label style="cursor:pointer;padding:6px 16px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;white-space:nowrap;user-select:none">
             PDF Seç
-            <input type="file" accept=".pdf" style="display:none" onchange="parseDTOluru(this.files[0]);this.value=''">
+            <input type="file" accept=".pdf" style="display:none" ${dtmEventAttr('change', function(event) { parseDTOluru(this.files[0]);this.value='' })}>
           </label>
         </div>
 
         <div style="margin-bottom:14px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#1e293b;user-select:none">
-            <input type="checkbox" id="dtGorevliAyniCb" ${proje.dtGorevlilerYmIleAyni ? 'checked' : ''} onchange="onDtGorevliAyniToggle(this.checked)" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
+            <input type="checkbox" id="dtGorevliAyniCb" ${proje.dtGorevlilerYmIleAyni ? 'checked' : ''} ${dtmEventAttr('change', function(event) { onDtGorevliAyniToggle(this.checked) })} style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
             <span>👥 Yaklaşık Maliyet Görevlileri ile aynı kişiler</span>
           </label>
           ${proje.dtGorevlilerYmIleAyni ? '<p style="margin:4px 0 0 24px;font-size:12px;color:#64748b">Y.M. görevlilerinde yapılan değişiklikler otomatik olarak buraya yansıtılır.</p>' : ''}
@@ -1257,22 +1257,22 @@ function renderVeriGirisPage() {
         <div class="form-grid" style="margin-top:12px">
           <div class="form-group">
             <label>D.T. Onay Tarihi</label>
-            <input type="date" id="dtOnayTarihi" value="${escAttr(proje.dtOnayTarihi)}" onchange="onFieldChange('dtOnayTarihi', this.value)">
+            <input type="date" id="dtOnayTarihi" value="${escAttr(proje.dtOnayTarihi)}" ${dtmEventAttr('change', function(event) { onFieldChange('dtOnayTarihi', this.value) })}>
           </div>
           <div class="form-group">
             <label>Onay Sayısı</label>
-            <input type="text" id="dtOnayNo" value="${escAttr(proje.dtOnayNo)}" onchange="onFieldChange('dtOnayNo', this.value)">
+            <input type="text" id="dtOnayNo" value="${escAttr(proje.dtOnayNo)}" ${dtmEventAttr('change', function(event) { onFieldChange('dtOnayNo', this.value) })}>
           </div>
           <div class="form-group" style="grid-column:1/-1">
             <label>Teklif Tutanağı Tarihi</label>
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px">
               <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:normal;font-size:13px">
-                <input type="checkbox" ${proje.dtTutanakTarihiAyni !== false ? 'checked' : ''} onchange="onFieldChange('dtTutanakTarihiAyni', this.checked);renderPage()">
+                <input type="checkbox" ${proje.dtTutanakTarihiAyni !== false ? 'checked' : ''} ${dtmEventAttr('change', function(event) { onFieldChange('dtTutanakTarihiAyni', this.checked);renderPage() })}>
                 Onay tarihi ile aynı
               </label>
               ${proje.dtTutanakTarihiAyni !== false
                 ? `<span style="font-size:13px;color:var(--gray-500)">${proje.dtOnayTarihi ? formatDate(proje.dtOnayTarihi) : '(Önce onay tarihi girin)'}</span>`
-                : `<input type="date" value="${escAttr(proje.dtTutanakTarihi || '')}" onchange="onFieldChange('dtTutanakTarihi', this.value)">`
+                : `<input type="date" value="${escAttr(proje.dtTutanakTarihi || '')}" ${dtmEventAttr('change', function(event) { onFieldChange('dtTutanakTarihi', this.value) })}>`
               }
             </div>
           </div>
@@ -1281,7 +1281,7 @@ function renderVeriGirisPage() {
     </div>
 
     ${currentDTMUser?.role === 'gerceklestirmeci' ? `<div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3>Onay Belgesi Bilgileri</h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
@@ -1289,46 +1289,46 @@ function renderVeriGirisPage() {
         <div class="form-grid">
           <div class="form-group">
             <label>Kullanılabilir Ödenek Tutarı (TL)</label>
-            <input type="number" min="0" step="0.01" id="odenek" value="${escAttr(proje.odenek)}" oninput="onFieldChange('odenek', this.value)" placeholder="0.00">
+            <input type="number" min="0" step="0.01" id="odenek" value="${escAttr(proje.odenek)}" ${dtmEventAttr('input', function(event) { onFieldChange('odenek', this.value) })} placeholder="0.00">
           </div>
           <div class="form-group">
             <label>Yatırım Proje Numarası</label>
-            <input type="text" id="yatirimProjeNo" value="${escAttr(proje.yatirimProjeNo)}" oninput="onFieldChange('yatirimProjeNo', this.value)" placeholder="Varsa giriniz">
+            <input type="text" id="yatirimProjeNo" value="${escAttr(proje.yatirimProjeNo)}" ${dtmEventAttr('input', function(event) { onFieldChange('yatirimProjeNo', this.value) })} placeholder="Varsa giriniz">
           </div>
           <div class="form-group">
             <label>Bütçe Tertibi</label>
-            <input type="text" id="butceTertibi" value="${escAttr(proje.butceTertibi)}" oninput="onFieldChange('butceTertibi', this.value)" placeholder="Örn: 09.1.2.00.000/05/03.8">
+            <input type="text" id="butceTertibi" value="${escAttr(proje.butceTertibi)}" ${dtmEventAttr('input', function(event) { onFieldChange('butceTertibi', this.value) })} placeholder="Örn: 09.1.2.00.000/05/03.8">
           </div>
           <div class="form-group">
             <label>İşin Miktarı</label>
             <input type="text" id="isMiktari" value="${!isMalVeyaHizmetTuru(proje.isTuru) ? '1 Adet' : escAttr(proje.isMiktari || '')}"
               ${!isMalVeyaHizmetTuru(proje.isTuru) ? 'readonly style="background:#f3f4f6"' : ''}
-              oninput="onFieldChange('isMiktari', this.value)" placeholder="Örn: 5 Adet">
+              ${dtmEventAttr('input', function(event) { onFieldChange('isMiktari', this.value) })} placeholder="Örn: 5 Adet">
           </div>
           <div class="form-group">
             <label>Avans Verilecek mi</label>
-            <select id="avansVar" onchange="onFieldChange('avansVar', this.value)">
+            <select id="avansVar" ${dtmEventAttr('change', function(event) { onFieldChange('avansVar', this.value) })}>
               <option value="Hayır" ${(proje.avansVar||'Hayır')==='Hayır'?'selected':''}>Hayır</option>
               <option value="Evet" ${proje.avansVar==='Evet'?'selected':''}>Evet</option>
             </select>
           </div>
           <div class="form-group">
             <label>Fiyat Farkı Uygulanacak mı</label>
-            <select id="fiyatFarkiVar" onchange="onFieldChange('fiyatFarkiVar', this.value)">
+            <select id="fiyatFarkiVar" ${dtmEventAttr('change', function(event) { onFieldChange('fiyatFarkiVar', this.value) })}>
               <option value="Hayır" ${(proje.fiyatFarkiVar||'Hayır')==='Hayır'?'selected':''}>Hayır</option>
               <option value="Evet" ${proje.fiyatFarkiVar==='Evet'?'selected':''}>Evet</option>
             </select>
           </div>
           <div class="form-group">
             <label>Şartname Düzenlenecek mi</label>
-            <select id="sartnameVar" onchange="onFieldChange('sartnameVar', this.value)">
+            <select id="sartnameVar" ${dtmEventAttr('change', function(event) { onFieldChange('sartnameVar', this.value) })}>
               <option value="Düzenlenecek" ${(proje.sartnameVar||'Düzenlenecek')==='Düzenlenecek'?'selected':''}>Düzenlenecek</option>
               <option value="Düzenlenmeyecek" ${proje.sartnameVar==='Düzenlenmeyecek'?'selected':''}>Düzenlenmeyecek</option>
             </select>
           </div>
           <div class="form-group">
             <label>Sözleşme Düzenlenecek mi</label>
-            <select id="sozlesmeVar" onchange="onFieldChange('sozlesmeVar', this.value)">
+            <select id="sozlesmeVar" ${dtmEventAttr('change', function(event) { onFieldChange('sozlesmeVar', this.value) })}>
               <option value="Düzenlenecek" ${(proje.sozlesmeVar||'Düzenlenecek')==='Düzenlenecek'?'selected':''}>Düzenlenecek</option>
               <option value="Düzenlenmeyecek" ${proje.sozlesmeVar==='Düzenlenmeyecek'?'selected':''}>Düzenlenmeyecek</option>
             </select>
@@ -1339,19 +1339,19 @@ function renderVeriGirisPage() {
           <div class="form-group">
             <label>Adı Soyadı</label>
             <input type="text" id="gerceklestirmeAd" value="${escAttr(proje.gerceklestirmeGorevlisi?.ad||'')}"
-              oninput="onFieldChange('gerceklestirmeGorevlisi', {ad:this.value,unvan:document.getElementById('gerceklestirmeUnvan').value})">
+              ${dtmEventAttr('input', function(event) { onFieldChange('gerceklestirmeGorevlisi', {ad:this.value,unvan:document.getElementById('gerceklestirmeUnvan').value}) })}>
           </div>
           <div class="form-group">
             <label>Ünvanı</label>
             <input type="text" id="gerceklestirmeUnvan" value="${escAttr(proje.gerceklestirmeGorevlisi?.unvan||'Gerçekleştirme Görevlisi')}"
-              oninput="onFieldChange('gerceklestirmeGorevlisi', {ad:document.getElementById('gerceklestirmeAd').value,unvan:this.value})">
+              ${dtmEventAttr('input', function(event) { onFieldChange('gerceklestirmeGorevlisi', {ad:document.getElementById('gerceklestirmeAd').value,unvan:this.value}) })}>
           </div>
         </div>
       </div>
     </div>` : ''}
 
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3>Onaylayan Amir</h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
@@ -1359,7 +1359,7 @@ function renderVeriGirisPage() {
         <div class="form-grid">
           <div class="form-group">
             <label>Amir Adı</label>
-            <select id="onaylayanAmir" onchange="onAmirChange(this)">
+            <select id="onaylayanAmir" ${dtmEventAttr('change', function(event) { onAmirChange(this) })}>
               <option value="">-- Seçin --</option>
               ${referans.onaylayanList.filter(o=>o.ad).map(o => `<option value="${escAttr(o.ad)}" ${proje.onaylayanAmir.ad === o.ad ? 'selected' : ''}>${escHtml(o.ad)}</option>`).join('')}
             </select>
@@ -1375,7 +1375,7 @@ function renderVeriGirisPage() {
     ${!isMalVeyaHizmetTuru(proje.isTuru) ? `
     <!-- TARİHLER -->
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3>Sözleşme ve Tarihler</h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
@@ -1383,22 +1383,22 @@ function renderVeriGirisPage() {
         <div class="form-grid">
           <div class="form-group">
             <label>Sözleşme Tarihi</label>
-            <input type="date" id="sozlesmeTarihi" value="${escAttr(proje.sozlesmeTarihi)}" onchange="onFieldChange('sozlesmeTarihi', this.value)">
+            <input type="date" id="sozlesmeTarihi" value="${escAttr(proje.sozlesmeTarihi)}" ${dtmEventAttr('change', function(event) { onFieldChange('sozlesmeTarihi', this.value) })}>
           </div>
           <div class="form-group">
             <label>İş Süresi (Takvim Günü)</label>
-            <input type="number" id="isSuresi" value="${escAttr(proje.isSuresi)}" oninput="onFieldChange('isSuresi', this.value)">
+            <input type="number" id="isSuresi" value="${escAttr(proje.isSuresi)}" ${dtmEventAttr('input', function(event) { onFieldChange('isSuresi', this.value) })}>
           </div>
           <div class="form-group">
             <label>İşin Bitirilmesi Gereken Tarih</label>
             <div style="display:flex;align-items:center;gap:8px">
               <input type="text" id="bitisTarihi" value="${escAttr(formatDate(calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi)))}" readonly style="flex:1">
-              <button type="button" onclick="(function(){ document.getElementById('bitisTarihi').value = formatDate(calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi)); })()" title="Tarihi Güncelle" style="padding:6px 10px;background:#fff;color:#555;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:14px;white-space:nowrap;transition:all 0.15s" onmouseover="this.style.borderColor='#1a56db';this.style.color='#1a56db'" onmouseout="this.style.borderColor='#d1d5db';this.style.color='#555'">&#x21BB;</button>
+              <button type="button" ${dtmEventAttr('click', function(event) { (function(){ document.getElementById('bitisTarihi').value = formatDate(calculateEndDate(proje.sozlesmeTarihi, proje.isSuresi)); })() })} title="Tarihi Güncelle" style="padding:6px 10px;background:#fff;color:#555;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:14px;white-space:nowrap;transition:all 0.15s" ${dtmEventAttr('mouseover', function(event) { this.style.borderColor='#1a56db';this.style.color='#1a56db' })} ${dtmEventAttr('mouseout', function(event) { this.style.borderColor='#d1d5db';this.style.color='#555' })}>&#x21BB;</button>
             </div>
           </div>
           <div class="form-group">
             <label>İşin Fiili Bitim Tarihi</label>
-            <input type="date" id="fiiliBitimTarihi" value="${escAttr(proje.fiiliBitimTarihi)}" onchange="onFieldChange('fiiliBitimTarihi', this.value)">
+            <input type="date" id="fiiliBitimTarihi" value="${escAttr(proje.fiiliBitimTarihi)}" ${dtmEventAttr('change', function(event) { onFieldChange('fiiliBitimTarihi', this.value) })}>
           </div>
           <div class="form-group">
             <label>Bitti Tutanağı Ekleri <span style="font-weight:400;color:var(--gray-400);font-size:11px">(opsiyonel)</span></label>
@@ -1407,14 +1407,14 @@ function renderVeriGirisPage() {
                 <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
                   <span style="min-width:20px;font-size:13px;color:var(--gray-500);font-weight:600">${i + 1}-</span>
                   <input type="text" value="${escAttr(escHtml(ek))}" data-ek-index="${i}" placeholder="Ek açıklaması"
-                    style="flex:1" onchange="onBittiEkChange(this)">
-                  <button type="button" onclick="onBittiEkSil(${i})"
+                    style="flex:1" ${dtmEventAttr('change', function(event) { onBittiEkChange(this) })}>
+                  <button type="button" ${dtmEventAttr('click', function(event) { onBittiEkSil((i)) })}
                     style="padding:5px 9px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;color:#6b7280;font-size:14px;line-height:1;transition:all 0.15s"
-                    onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'"
-                    onmouseout="this.style.borderColor='#d1d5db';this.style.color='#6b7280'">✕</button>
+                    ${dtmEventAttr('mouseover', function(event) { this.style.borderColor='#ef4444';this.style.color='#ef4444' })}
+                    ${dtmEventAttr('mouseout', function(event) { this.style.borderColor='#d1d5db';this.style.color='#6b7280' })}>✕</button>
                 </div>`).join('')}
             </div>
-            <button type="button" onclick="onBittiEkEkle()"
+            <button type="button" ${dtmEventAttr('click', function(event) { onBittiEkEkle() })}
               class="btn btn-outline btn-sm" style="margin-top:4px">+ Ek Ekle</button>
           </div>
         </div>
@@ -1424,7 +1424,7 @@ function renderVeriGirisPage() {
     ${isMalVeyaHizmetTuru(proje.isTuru) ? `
     <!-- MUAYENE VE KABUL KOMİSYONU / HEYETİ -->
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3>Muayene ve Kabul Komisyonu (Heyeti)</h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
@@ -1434,15 +1434,15 @@ function renderVeriGirisPage() {
         <div class="form-grid" style="margin-top:14px">
           <div class="form-group">
             <label>Muayene Kabul Tarihi</label>
-            <input type="date" id="mkKabulTarihi" value="${escAttr(proje.mkKabulTarihi || '')}" onchange="onFieldChange('mkKabulTarihi', this.value)">
+            <input type="date" id="mkKabulTarihi" value="${escAttr(proje.mkKabulTarihi || '')}" ${dtmEventAttr('change', function(event) { onFieldChange('mkKabulTarihi', this.value) })}>
           </div>
           <div class="form-group">
             <label>Komisyon Atama Tarihi</label>
-            <input type="date" id="mkAtamaTarihi" value="${escAttr(proje.mkAtamaTarihi || '')}" onchange="onFieldChange('mkAtamaTarihi', this.value)">
+            <input type="date" id="mkAtamaTarihi" value="${escAttr(proje.mkAtamaTarihi || '')}" ${dtmEventAttr('change', function(event) { onFieldChange('mkAtamaTarihi', this.value) })}>
           </div>
           <div class="form-group">
             <label>Komisyon Atama Olur / Karar Sayısı</label>
-            <input type="text" id="mkAtamaSayisi" value="${escAttr(proje.mkAtamaSayisi || '')}" oninput="onFieldChange('mkAtamaSayisi', this.value)" placeholder="Örn: E-12345678-xxx-987">
+            <input type="text" id="mkAtamaSayisi" value="${escAttr(proje.mkAtamaSayisi || '')}" ${dtmEventAttr('input', function(event) { onFieldChange('mkAtamaSayisi', this.value) })} placeholder="Örn: E-12345678-xxx-987">
           </div>
         </div>
       </div>
@@ -1450,7 +1450,7 @@ function renderVeriGirisPage() {
 
     <!-- İŞ KALEMLERİ -->
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3>İş Kalemleri</h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
@@ -1459,7 +1459,7 @@ function renderVeriGirisPage() {
 
     <!-- YAKLAŞIK MALİYET FİRMALARI -->
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3>Yaklaşık Maliyet - Firma Teklifleri</h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
@@ -1475,7 +1475,7 @@ function renderVeriGirisPage() {
 
     <!-- TEKLİF FİRMALARI -->
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3>Resmi Teklif - Firma Teklifleri</h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
@@ -1486,7 +1486,7 @@ function renderVeriGirisPage() {
 
     <!-- HAKEDİŞ KESİNTİLERİ -->
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3>Hakediş Kesintileri</h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
@@ -1494,38 +1494,38 @@ function renderVeriGirisPage() {
         <div class="form-grid">
           <div class="form-group">
             <label>Önceki Hakediş Tutarı (TL)</label>
-            <input type="number" step="0.01" min="0" value="${escAttr(proje.oncekiHakedisTutar)}" onchange="onFieldChange('oncekiHakedisTutar', this.value)">
+            <input type="number" step="0.01" min="0" value="${escAttr(proje.oncekiHakedisTutar)}" ${dtmEventAttr('change', function(event) { onFieldChange('oncekiHakedisTutar', this.value) })}>
           </div>
           <div class="form-group">
             <label>Fiyat Farkı (TL)</label>
-            <input type="number" step="0.01" value="${escAttr(proje.fiyatFarki)}" onchange="onFieldChange('fiyatFarki', this.value)">
+            <input type="number" step="0.01" value="${escAttr(proje.fiyatFarki)}" ${dtmEventAttr('change', function(event) { onFieldChange('fiyatFarki', this.value) })}>
           </div>
           <div class="form-group">
             <label>Sözleşme Damga Vergisi (TL)</label>
-            <input type="number" step="0.01" min="0" value="${escAttr(proje.sozlesmeDamgaVergisi)}" onchange="onFieldChange('sozlesmeDamgaVergisi', this.value)">
+            <input type="number" step="0.01" min="0" value="${escAttr(proje.sozlesmeDamgaVergisi)}" ${dtmEventAttr('change', function(event) { onFieldChange('sozlesmeDamgaVergisi', this.value) })}>
           </div>
           <div class="form-group">
             <label>SGK Kesintisi (TL)</label>
-            <input type="number" step="0.01" min="0" value="${escAttr(proje.sgkKesintisi)}" onchange="onFieldChange('sgkKesintisi', this.value)">
+            <input type="number" step="0.01" min="0" value="${escAttr(proje.sgkKesintisi)}" ${dtmEventAttr('change', function(event) { onFieldChange('sgkKesintisi', this.value) })}>
           </div>
           <div class="form-group">
             <label>Vergi Borcu (TL)</label>
-            <input type="number" step="0.01" min="0" value="${escAttr(proje.vergiBorcu)}" onchange="onFieldChange('vergiBorcu', this.value)">
+            <input type="number" step="0.01" min="0" value="${escAttr(proje.vergiBorcu)}" ${dtmEventAttr('change', function(event) { onFieldChange('vergiBorcu', this.value) })}>
           </div>
           <div class="form-group">
             <label>Gecikme Cezası (TL)</label>
-            <input type="number" step="0.01" min="0" value="${escAttr(proje.gecikmeCezasi)}" onchange="onFieldChange('gecikmeCezasi', this.value)">
+            <input type="number" step="0.01" min="0" value="${escAttr(proje.gecikmeCezasi)}" ${dtmEventAttr('change', function(event) { onFieldChange('gecikmeCezasi', this.value) })}>
           </div>
           <div class="form-group">
             <label>Avans Mahsubu (TL)</label>
-            <input type="number" step="0.01" min="0" value="${escAttr(proje.avansMahsubu)}" onchange="onFieldChange('avansMahsubu', this.value)">
+            <input type="number" step="0.01" min="0" value="${escAttr(proje.avansMahsubu)}" ${dtmEventAttr('change', function(event) { onFieldChange('avansMahsubu', this.value) })}>
           </div>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3>📁 İşe Ait Dosyalar</h3>
         <span class="toggle-icon">&#9660;</span>
       </div>
@@ -1537,8 +1537,8 @@ function renderVeriGirisPage() {
             <p style="color:var(--gray-400);font-size:13px">Yükleniyor...</p>
           </div>
           ${!currentProjeKilitli ? `
-            <input type="file" id="projeDosyaInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="projeDosyaSecildi(this.files)">
-            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('projeDosyaInput').click()">+ Dosya Ekle</button>
+            <input type="file" id="projeDosyaInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none" ${dtmEventAttr('change', function(event) { projeDosyaSecildi(this.files) })}>
+            <button type="button" class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { document.getElementById('projeDosyaInput').click() })}>+ Dosya Ekle</button>
             <p style="font-size:11.5px;color:var(--gray-400);margin-top:6px">Fotoğraf, fatura, vergi borcu yoktur belgesi vb. — Resim, PDF, Word veya Excel, dosya başına en fazla 10 MB.</p>
           ` : ''}
         `}
@@ -1550,7 +1550,7 @@ function renderVeriGirisPage() {
       <span style="font-size:13px;color:#6b7280">
         ${currentCloudProjeId ? '💡 Değişikliklerinizi kaydetmeyi unutmayın.' : '💡 Proje henüz kaydedilmedi.'}
       </span>
-      <button class="btn btn-primary" onclick="cloudKaydet()" style="min-width:140px">
+      <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { cloudKaydet() })} style="min-width:140px">
         💾 Kaydet
       </button>
     </div>` : ''}
@@ -1607,10 +1607,10 @@ async function projeDosyaListesiYukle() {
     }
     container.innerHTML = dosyalar.map(d => `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
-        <a href="javascript:void(0)" onclick="projeDosyaAc(${escJsAttr(d.docId)})" style="flex:1;font-size:13px;color:var(--primary, #1e40af);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Görüntüle / İndir">📎 ${escHtml(d.ad)}</a>
+        <a href="javascript:void(0)" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')) })} style="flex:1;font-size:13px;color:var(--primary, #1e40af);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Görüntüle / İndir">📎 ${escHtml(d.ad)}</a>
         <span style="font-size:11.5px;color:var(--gray-400);white-space:nowrap">${formatDosyaBoyutu(d.boyut)}</span>
         <span style="font-size:11.5px;color:var(--gray-400);white-space:nowrap">${escHtml(d.yukleyenAd)}</span>
-        ${!currentProjeKilitli ? `<button type="button" onclick="projeDosyaSilOnayla(${escJsAttr(d.yol)})" title="Sil" style="padding:3px 7px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;color:#6b7280;font-size:13px;flex-shrink:0">✕</button>` : ''}
+        ${!currentProjeKilitli ? `<button type="button" ${dtmEventAttr('click', function(event) { projeDosyaSilOnayla(String(d.yol ?? '')) })} title="Sil" style="padding:3px 7px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;color:#6b7280;font-size:13px;flex-shrink:0">✕</button>` : ''}
       </div>`).join('');
   } catch(e) {
     container.innerHTML = `<p style="color:#dc2626;font-size:13px">Dosyalar yüklenemedi: ${escHtml(hataMesaji(e))}</p>`;
@@ -1848,17 +1848,9 @@ function onBittiEkSil(idx) {
 
 async function parseDTOluru(file) {
   if (!file) return;
-  if (typeof pdfjsLib === 'undefined') { showToast('PDF okuyucu yüklenemedi.', 'error'); return; }
   try {
     showToast('PDF okunuyor...', 'info');
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      fullText += content.items.map(item => item.str).join(' ') + '\n';
-    }
+    const fullText = await readPdfText(file);
 
     // Sayı + Tarih: "Sayı : E-xxx-xxx-79656 08.04.2026"
     // PDF.js bazen araya boşluk ekler, bu yüzden ayrı ayrı arıyoruz
@@ -1904,17 +1896,9 @@ async function parseDTOluru(file) {
 
 async function parseYMOluru(file) {
   if (!file) return;
-  if (typeof pdfjsLib === 'undefined') { showToast('PDF okuyucu yüklenemedi.', 'error'); return; }
   try {
     showToast('PDF okunuyor...', 'info');
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      fullText += content.items.map(item => item.str).join(' ') + '\n';
-    }
+    const fullText = await readPdfText(file);
 
     // Sayı + Tarih
     const sayiIdx = fullText.search(/Sayı\s*:/);
@@ -1967,7 +1951,6 @@ async function parseIkiOlurBelgesi() {
     return;
   }
 
-  if (typeof pdfjsLib === 'undefined') { showToast('PDF okuyucu yüklenemedi.', 'error'); return; }
 
   showToast('PDF(ler) okunuyor...', 'info');
 
@@ -2125,7 +2108,6 @@ async function parseIkiOlurBelgesi() {
 
 async function parseOnayBelgesiIsAdi(file) {
   if (!file) return;
-  if (typeof pdfjsLib === 'undefined') { showToast('PDF okuyucu yüklenemedi.', 'error'); return; }
   try {
     showToast('PDF okunuyor...', 'info');
     const fullText = await readPdfText(file);
@@ -2240,10 +2222,9 @@ async function parseOnayBelgesiIsAdi(file) {
 
 // PDF içindeki metin katmanını tarayıcıda oku; harici OCR servisi kullanılmaz.
 async function readPdfText(file) {
-  if (typeof pdfjsLib === 'undefined') throw new Error('PDF okuyucu yüklenemedi.');
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await dtmLoadPdf(file);
   let fullText = '';
+  try {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
@@ -2253,6 +2234,20 @@ async function readPdfText(file) {
     throw new Error('Bu PDF okunabilir metin içermiyor. Taranmış/görüntü PDF yerine metin içeren bir PDF seçin veya bilgileri elle girin.');
   }
   return fullText;
+  } finally {
+    await pdf.destroy?.();
+  }
+}
+
+async function dtmLoadPdf(file) {
+  if (typeof window !== 'undefined' && window.pdfjsReady) await window.pdfjsReady;
+  if (typeof pdfjsLib === 'undefined') throw new Error('PDF okuyucu yüklenemedi.');
+  const data = await file.arrayBuffer();
+  const options = { data, isEvalSupported: false, useWasm: false, disableFontFace: true };
+  if (typeof document !== 'undefined' && document.baseURI) {
+    options.standardFontDataUrl = window.pdfStandardFontDataUrl || new URL('js/vendor/standard_fonts/', document.baseURI).href;
+  }
+  return pdfjsLib.getDocument(options).promise;
 }
 
 function parseTLTutar(str) {
@@ -2264,7 +2259,6 @@ function parseTLTutar(str) {
 
 async function parseTeklifPDF(file, type, fi) {
   if (!file) return;
-  if (typeof pdfjsLib === 'undefined') { showToast('PDF okuyucu yüklenemedi.', 'error'); return; }
   showToast('PDF okunuyor...', 'info');
   try {
     const fullText = await readPdfText(file);
@@ -2394,7 +2388,7 @@ async function renderBelgelerPage() {
             <div class="dtm-empty-title">Henüz proje yok</div>
             <div class="dtm-empty-desc">Belge oluşturmak için önce bir proje oluşturun.</div>
             <div class="dtm-empty-action">
-              <button class="btn btn-primary" onclick="yeniProjeBaslat()">Yeni Proje</button>
+              <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { yeniProjeBaslat() })}>Yeni Proje</button>
             </div>
           </div>`;
         return;
@@ -2412,7 +2406,7 @@ async function renderBelgelerPage() {
             </div>
           </div>
           <div class="ky-proje-actions">
-            <button class="ky-btn-open" onclick="belgelerProjeAc(${escJsAttr(p.id)})">Belge Oluştur</button>
+            <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { belgelerProjeAc(String(p.id ?? '')) })}>Belge Oluştur</button>
           </div>
         </div>`;
       };
@@ -2431,9 +2425,9 @@ async function renderBelgelerPage() {
 
       listEl.innerHTML = `
         <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-          <input id="belgelerProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." oninput="belgelerProjeFiltrele()"
+          <input id="belgelerProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." ${dtmEventAttr('input', function(event) { belgelerProjeFiltrele() })}
             style="flex:1;min-width:200px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
-          <select id="belgelerProjeDurum" onchange="belgelerProjeFiltrele()"
+          <select id="belgelerProjeDurum" ${dtmEventAttr('change', function(event) { belgelerProjeFiltrele() })}
             style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
             <option value="hepsi">Tüm Durumlar</option>
             <option value="taslak">Taslak</option>
@@ -2442,7 +2436,7 @@ async function renderBelgelerPage() {
             <option value="onaylandi">Onaylandı</option>
             <option value="arsivlendi">Arşivlendi</option>
           </select>
-          <select id="belgelerProjeSirala" onchange="belgelerProjeFiltrele()"
+          <select id="belgelerProjeSirala" ${dtmEventAttr('change', function(event) { belgelerProjeFiltrele() })}
             style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
             <option value="tarih-yeni">Tarihe göre (Yeni → Eski)</option>
             <option value="tarih-eski">Tarihe göre (Eski → Yeni)</option>
@@ -2484,7 +2478,7 @@ async function renderBelgelerPage() {
   if (currentBelge === 'sozlesme' && isMalVeyaHizmet) currentBelge = 'yaklasik-maliyet';
 
   const tabs = belgeler.map(b =>
-    `<div class="belge-tab ${currentBelge === b.id ? 'active' : ''}" onclick="currentBelge=${escJsAttr(b.id)}; renderPage();">${b.ad}</div>`
+    `<div class="belge-tab ${currentBelge === b.id ? 'active' : ''}" ${dtmEventAttr('click', function(event) { currentBelge=String(b.id ?? ''); renderPage(); })}>${b.ad}</div>`
   ).join('');
 
   let belgeHTML = '';
@@ -2500,7 +2494,7 @@ async function renderBelgelerPage() {
 
   main.innerHTML = `
     <div class="page-header" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-      <button onclick="currentBelgelerProjeId=null; renderPage();"
+      <button ${dtmEventAttr('click', function(event) { currentBelgelerProjeId=null; renderPage(); })}
         style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:6px 12px;
                cursor:pointer;font-size:13px;color:var(--gray-600);white-space:nowrap;margin-top:4px">
         &#8592; Proje Listesi
@@ -2513,34 +2507,34 @@ async function renderBelgelerPage() {
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       ${currentBelge === 'teknik-sartname' ? `
-        <button onclick="acTeknikSartnameDuzenleModal()"
+        <button ${dtmEventAttr('click', function(event) { acTeknikSartnameDuzenleModal() })}
           style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
-          onmouseover="this.style.background='#d97706'" onmouseout="this.style.background='#f59e0b'">
+          ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
           <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           Şartname Metnini Düzenle
         </button>
       ` : ''}
       ${currentBelge === 'sozlesme' ? `
-        <button onclick="acSozlesmeMaddeleriDuzenleModal()"
+        <button ${dtmEventAttr('click', function(event) { acSozlesmeMaddeleriDuzenleModal() })}
           style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
-          onmouseover="this.style.background='#d97706'" onmouseout="this.style.background='#f59e0b'">
+          ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
           <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           Sözleşme Maddelerini Düzenle
         </button>
       ` : ''}
-      <button onclick="yazdirBelge()"
+      <button ${dtmEventAttr('click', function(event) { yazdirBelge() })}
         style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
-        onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+        ${dtmEventAttr('mouseover', function(event) { this.style.background='#2563eb' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#3b82f6' })}>
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
         Yazdır
       </button>
-      <button onclick="acBelgeIndirModal()"
+      <button ${dtmEventAttr('click', function(event) { acBelgeIndirModal() })}
         style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,0.35)"
-        onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+        ${dtmEventAttr('mouseover', function(event) { this.style.background='#059669' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#10b981' })}>
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         İndir
       </button>
-      <button onclick="pdfIndirBelge()" style="display:none">PDF İndir</button>
+      <button ${dtmEventAttr('click', function(event) { pdfIndirBelge() })} style="display:none">PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
@@ -2808,10 +2802,10 @@ function renderVeriMerkeziPage() {
 
   const onaylayanRows = referans.onaylayanList.map((o, i) => `
     <tr>
-      <td style="width:46%"><input type="text" class="ref-input" value="${escAttr(o.ad)}" placeholder="Ad Soyad giriniz" onchange="onRefChange('onaylayanList', ${i}, 'ad', this.value)"></td>
-      <td style="width:46%"><input type="text" class="ref-input" value="${escAttr(o.unvan)}" placeholder="Ünvan (Örn: Şube Müdürü)" onchange="onRefChange('onaylayanList', ${i}, 'unvan', this.value)"></td>
+      <td style="width:46%"><input type="text" class="ref-input" value="${escAttr(o.ad)}" placeholder="Ad Soyad giriniz" ${dtmEventAttr('change', function(event) { onRefChange('onaylayanList', (i), 'ad', this.value) })}></td>
+      <td style="width:46%"><input type="text" class="ref-input" value="${escAttr(o.unvan)}" placeholder="Ünvan (Örn: Şube Müdürü)" ${dtmEventAttr('change', function(event) { onRefChange('onaylayanList', (i), 'unvan', this.value) })}></td>
       <td style="width:8%; text-align:center;">
-        <button class="btn-icon-danger" onclick="onRefDelete('onaylayanList', ${i})" title="Amiri Sil">
+        <button class="btn-icon-danger" ${dtmEventAttr('click', function(event) { onRefDelete('onaylayanList', (i)) })} title="Amiri Sil">
           ${typeof getIcon === 'function' ? getIcon('trash', 16) : '✕'}
         </button>
       </td>
@@ -2830,7 +2824,7 @@ function renderVeriMerkeziPage() {
   const ilceRows = referans.ilceler.map((il, i) => `
     <span class="ref-tag-pill">
       ${escHtml(il)} 
-      <button onclick="onRefDelete('ilceler', ${i})" title="İlçeyi Sil">
+      <button ${dtmEventAttr('click', function(event) { onRefDelete('ilceler', (i)) })} title="İlçeyi Sil">
         ${typeof getIcon === 'function' ? getIcon('x', 14) : '×'}
       </button>
     </span>`).join('');
@@ -2846,11 +2840,11 @@ function renderVeriMerkeziPage() {
           <p>Projelerde ve resmi belgelerde kullanılan personel, kurum ve firma rehberini yönetin.</p>
         </div>
       </div>
-      ${isSuperAdmin ? `<button class="btn btn-primary" onclick="forceMergeYukleniciHavuzu()" style="display:flex;align-items:center;gap:6px">${typeof getIcon === 'function' ? getIcon('sliders', 16) : '🔄'} Tüm Firmaları Havuza Çek</button>` : ''}
+      ${isSuperAdmin ? `<button class="btn btn-primary" ${dtmEventAttr('click', function(event) { forceMergeYukleniciHavuzu() })} style="display:flex;align-items:center;gap:6px">${typeof getIcon === 'function' ? getIcon('sliders', 16) : '🔄'} Tüm Firmaları Havuza Çek</button>` : ''}
     </div>
 
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="display:flex;align-items:center;gap:8px">
           <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('users', 18) : ''}</span>
           Görevli Personel Rehberi
@@ -2860,11 +2854,11 @@ function renderVeriMerkeziPage() {
       </div>
       <div class="card-body">
         <div style="display:flex; gap:10px; margin-bottom:16px; align-items:center;">
-          <select class="ref-input" style="flex:1; height:40px; padding:0 12px; font-size:13px; border-radius:8px;" onchange="onMuhendisSelect(this.value)">
+          <select class="ref-input" style="flex:1; height:40px; padding:0 12px; font-size:13px; border-radius:8px;" ${dtmEventAttr('change', function(event) { onMuhendisSelect(this.value) })}>
             <option value="-1">🔍 Kayıtlı personellerden seçin veya düzenleyin...</option>
             ${sortedMuhendis.map(item => `<option value="${escAttr(item.i)}" ${dtmSeciliMuhendisIndex === item.i ? 'selected' : ''}>${escHtml(item.m.ad)} — ${escHtml(item.m.unvan || 'Belirtilmedi')}</option>`).join('')}
           </select>
-          <button class="btn-icon-primary" style="height:40px; padding:0 14px; font-size:13px; font-weight:600; border-radius:8px; white-space:nowrap;" onclick="acMuhendisModal()">
+          <button class="btn-icon-primary" style="height:40px; padding:0 14px; font-size:13px; font-weight:600; border-radius:8px; white-space:nowrap;" ${dtmEventAttr('click', function(event) { acMuhendisModal() })}>
             ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Görevli
           </button>
         </div>
@@ -2886,10 +2880,10 @@ function renderVeriMerkeziPage() {
               </div>
             </div>
             <div style="display:flex; gap:8px;">
-              <button class="btn-icon-primary" style="height:36px; padding:0 14px;" onclick="acMuhendisModal(${dtmSeciliMuhendisIndex})" title="Düzenle">
+              <button class="btn-icon-primary" style="height:36px; padding:0 14px;" ${dtmEventAttr('click', function(event) { acMuhendisModal((dtmSeciliMuhendisIndex)) })} title="Düzenle">
                 ${typeof getIcon === 'function' ? getIcon('edit', 14) : '✏️'} Bilgileri Düzenle
               </button>
-              <button class="btn-icon-danger" style="height:36px; padding:0 12px;" onclick="onRefDelete('muhendisList', ${dtmSeciliMuhendisIndex}); onMuhendisSelect(-1);" title="Sil">
+              <button class="btn-icon-danger" style="height:36px; padding:0 12px;" ${dtmEventAttr('click', function(event) { onRefDelete('muhendisList', (dtmSeciliMuhendisIndex)); onMuhendisSelect(-1); })} title="Sil">
                 ${typeof getIcon === 'function' ? getIcon('trash', 14) : '🗑️'} Personeli Sil
               </button>
             </div>
@@ -2904,7 +2898,7 @@ function renderVeriMerkeziPage() {
 
     ${!isSuperAdmin ? `
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="display:flex;align-items:center;gap:8px">
           <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('building', 18) : ''}</span>
           Firma & Yüklenici Rehberi
@@ -2914,12 +2908,12 @@ function renderVeriMerkeziPage() {
       </div>
       <div class="card-body">
         <div style="display:flex; gap:10px; margin-bottom:16px; align-items:center;">
-          <select class="ref-input" style="flex:1; height:40px; padding:0 12px; font-size:13px; border-radius:8px;" onchange="onFirmaListeSelect(this.value)">
+          <select class="ref-input" style="flex:1; height:40px; padding:0 12px; font-size:13px; border-radius:8px;" ${dtmEventAttr('change', function(event) { onFirmaListeSelect(this.value) })}>
             <option value="-1">🔍 Kayıtlı firmalardan seçin veya düzenleyin...</option>
             ${dtmYeniEklenenFirma ? `<option value="NEW" selected>➕ Yeni Firma (Kaydedilmedi)</option>` : ''}
             ${sortedFirms.map(item => `<option value="${escAttr(item.i)}" ${!dtmYeniEklenenFirma && dtmSeciliFirmaIndex === item.i ? 'selected' : ''}>${escHtml(item.f.ad)}</option>`).join('')}
           </select>
-          <button class="btn-icon-primary" style="height:40px; padding:0 14px; font-size:13px; font-weight:600; border-radius:8px; white-space:nowrap;" onclick="onFirmaListeEkle()">
+          <button class="btn-icon-primary" style="height:40px; padding:0 14px; font-size:13px; font-weight:600; border-radius:8px; white-space:nowrap;" ${dtmEventAttr('click', function(event) { onFirmaListeEkle() })}>
             ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Firma
           </button>
         </div>
@@ -2931,29 +2925,29 @@ function renderVeriMerkeziPage() {
           return `
           <div style="background:var(--gray-50); padding:18px 20px; border-radius:12px; border:1px solid var(--gray-200);">
             <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:14px;">
-              <div class="form-group"><label>Firma / Kişi Adı <span style="color:var(--danger)">*</span></label><input type="text" class="ref-input" id="firmaInputAd" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'ad', this.value)" oninput="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'ad', this.value)"></div>
-              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select class="ref-input" id="firmaInputTur" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'tur', this.value); renderPage('veri-merkezi');">
+              <div class="form-group"><label>Firma / Kişi Adı <span style="color:var(--danger)">*</span></label><input type="text" class="ref-input" id="firmaInputAd" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'ad', this.value) })} ${dtmEventAttr('input', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'ad', this.value) })}></div>
+              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select class="ref-input" id="firmaInputTur" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'tur', this.value); renderPage('veri-merkezi'); })}>
                   <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
-              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'adres', this.value)"></div>
-              <div class="form-group"><label>Telefon</label><input type="text" class="ref-input" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'tel', this.value)"></div>
-              <div class="form-group"><label>Faks</label><input type="text" class="ref-input" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'faks', this.value)"></div>
-              <div class="form-group"><label>E-Posta</label><input type="text" class="ref-input" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'eposta', this.value)"></div>
-              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" class="ref-input" value="${escAttr(f.dogumTarihi || '')}" onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'dogumTarihi', this.value)"></div>`}
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'adres', this.value) })}></div>
+              <div class="form-group"><label>Telefon</label><input type="text" class="ref-input" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'tel', this.value) })}></div>
+              <div class="form-group"><label>Faks</label><input type="text" class="ref-input" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'faks', this.value) })}></div>
+              <div class="form-group"><label>E-Posta</label><input type="text" class="ref-input" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'eposta', this.value) })}></div>
+              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" class="ref-input" value="${escAttr(f.dogumTarihi || '')}" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'dogumTarihi', this.value) })}></div>`}
               <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
-                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('firmaList', ${escJsAttr(i)}, 'basitUsul', this.checked)">
+                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'basitUsul', this.checked) })}>
                 <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:600; color:var(--primary)">Bu Firma / Kişi Basit Usule Tabiidir</label>
               </div>
             </div>
             <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--gray-200); display:flex; justify-content:space-between; align-items:center;">
-              <button class="btn btn-primary" onclick="kaydetFirmaFormu(${escJsAttr(i)})" style="display:inline-flex;align-items:center;gap:6px">
+              <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { kaydetFirmaFormu(String(i ?? '')) })} style="display:inline-flex;align-items:center;gap:6px">
                 ${typeof getIcon === 'function' ? getIcon('check', 16) : '✓'} Bilgileri Kaydet
               </button>
               ${isNew ? `
-                <button class="btn btn-outline btn-sm" onclick="vazgecFirmaFormu()">Vazgeç</button>
+                <button class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { vazgecFirmaFormu() })}>Vazgeç</button>
               ` : `
-                <button class="btn btn-danger btn-sm" style="display:inline-flex;align-items:center;gap:4px" onclick="onRefDelete('firmaList', ${i}); onFirmaListeSelect(-1);">
+                <button class="btn btn-danger btn-sm" style="display:inline-flex;align-items:center;gap:4px" ${dtmEventAttr('click', function(event) { onRefDelete('firmaList', (i)); onFirmaListeSelect(-1); })}>
                   ${typeof getIcon === 'function' ? getIcon('trash', 14) : ''} Firmayı Sil
                 </button>
               `}
@@ -2967,7 +2961,7 @@ function renderVeriMerkeziPage() {
 
     ${isSuperAdmin ? `
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="display:flex;align-items:center;gap:8px">
           <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('userCheck', 18) : ''}</span>
           Onaylayan Amir Listesi
@@ -2987,7 +2981,7 @@ function renderVeriMerkeziPage() {
           <tbody>${onaylayanRows}</tbody>
         </table>
         <div style="margin-top:14px">
-          <button class="btn btn-outline btn-sm" style="display:inline-flex;align-items:center;gap:6px" onclick="onRefAdd('onaylayanList', {ad:'', unvan:''})">
+          <button class="btn btn-outline btn-sm" style="display:inline-flex;align-items:center;gap:6px" ${dtmEventAttr('click', function(event) { onRefAdd('onaylayanList', {ad:'', unvan:''}) })}>
             ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Amir Ekle
           </button>
         </div>
@@ -2995,7 +2989,7 @@ function renderVeriMerkeziPage() {
     </div>
 
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="display:flex;align-items:center;gap:8px">
           <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('home', 18) : ''}</span>
           İdare Tanımları
@@ -3007,20 +3001,20 @@ function renderVeriMerkeziPage() {
           ${referans.idareList.map((il, i) => `
             <span class="ref-tag-pill">
               ${escHtml(il)} 
-              <button onclick="onRefDelete('idareList', ${i})" title="Sil">
+              <button ${dtmEventAttr('click', function(event) { onRefDelete('idareList', (i)) })} title="Sil">
                 ${typeof getIcon === 'function' ? getIcon('x', 14) : '×'}
               </button>
             </span>`).join('')}
         </div>
         <div style="display:flex;gap:8px;max-width:480px">
           <input type="text" class="ref-input" id="yeniIdare" placeholder="Yeni idare adı giriniz">
-          <button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="const v=document.getElementById('yeniIdare').value;if(v){referans.idareList.push(v);saveGlobalReferans(referans);renderPage();}">+ Ekle</button>
+          <button class="btn btn-outline btn-sm" style="white-space:nowrap" ${dtmEventAttr('click', function(event) { const v=document.getElementById('yeniIdare').value;if(v){referans.idareList.push(v);saveGlobalReferans(referans);renderPage();} })}>+ Ekle</button>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="display:flex;align-items:center;gap:8px">
           <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('briefcase', 18) : ''}</span>
           Müdürlük Tanımları
@@ -3032,20 +3026,20 @@ function renderVeriMerkeziPage() {
           ${referans.mudurlukler.map((m, i) => `
             <span class="ref-tag-pill">
               ${escHtml(m)} 
-              <button onclick="onRefDelete('mudurlukler', ${i})" title="Sil">
+              <button ${dtmEventAttr('click', function(event) { onRefDelete('mudurlukler', (i)) })} title="Sil">
                 ${typeof getIcon === 'function' ? getIcon('x', 14) : '×'}
               </button>
             </span>`).join('')}
         </div>
         <div style="display:flex;gap:8px;max-width:480px">
           <input type="text" class="ref-input" id="yeniMudurluk" placeholder="Yeni müdürlük adı giriniz">
-          <button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="const v=document.getElementById('yeniMudurluk').value;if(v){referans.mudurlukler.push(v);saveGlobalReferans(referans);renderPage();}">+ Ekle</button>
+          <button class="btn btn-outline btn-sm" style="white-space:nowrap" ${dtmEventAttr('click', function(event) { const v=document.getElementById('yeniMudurluk').value;if(v){referans.mudurlukler.push(v);saveGlobalReferans(referans);renderPage();} })}>+ Ekle</button>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="display:flex;align-items:center;gap:8px">
           <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('mapPin', 18) : ''}</span>
           İlçe Tanımları
@@ -3058,13 +3052,13 @@ function renderVeriMerkeziPage() {
         </div>
         <div style="display:flex;gap:8px;max-width:480px">
           <input type="text" class="ref-input" id="yeniIlce" placeholder="Yeni ilçe adı giriniz">
-          <button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="const v=document.getElementById('yeniIlce').value;if(v){referans.ilceler.push(v);saveGlobalReferans(referans);renderPage();}">+ Ekle</button>
+          <button class="btn btn-outline btn-sm" style="white-space:nowrap" ${dtmEventAttr('click', function(event) { const v=document.getElementById('yeniIlce').value;if(v){referans.ilceler.push(v);saveGlobalReferans(referans);renderPage();} })}>+ Ekle</button>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="display:flex;align-items:center;gap:8px">
           <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('chart', 18) : ''}</span>
           D.T. Yıllık Sınır Tutarları
@@ -3079,7 +3073,7 @@ function renderVeriMerkeziPage() {
             ${(referans.dtSinirlari || []).map((s, i) => `
               <tr>
                 <td style="font-weight:600;padding-left:14px">${s.yil}</td>
-                <td><input type="number" class="ref-input" value="${escAttr(s.sinir)}" min="0" placeholder="0" onchange="onRefChange('dtSinirlari', ${i}, 'sinir', parseFloat(this.value)||0)"></td>
+                <td><input type="number" class="ref-input" value="${escAttr(s.sinir)}" min="0" placeholder="0" ${dtmEventAttr('change', function(event) { onRefChange('dtSinirlari', (i), 'sinir', parseFloat(this.value)||0) })}></td>
               </tr>`).join('')}
           </tbody>
         </table>
@@ -3245,8 +3239,8 @@ async function renderDashboardPage() {
       const tarih = p.onaylandiAt?.toDate
         ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR')
         : (p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-');
-      return `<tr onclick="dashboardProjeAc(${escJsAttr(p.id)})" style="cursor:pointer"
-        onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
+      return `<tr ${dtmEventAttr('click', function(event) { dashboardProjeAc(String(p.id ?? '')) })} style="cursor:pointer"
+        ${dtmEventAttr('mouseover', function(event) { this.style.background='#f0f7ff' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='' })}>
         <td style="font-weight:600;color:var(--gray-900)">${escHtml(p.isAdi || '(İsimsiz)')}</td>
         <td>
           <span style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;color:var(--gray-700);padding:3px 8px;border-radius:6px;font-size:11.5px;font-weight:500;">
@@ -3396,10 +3390,10 @@ async function renderKaydetYuklePage() {
             <span class="ky-file-icon">📄</span>
             <span class="ky-file-text">Dosya seçmek için tıklayın</span>
             <input type="file" id="fileInput" accept=".json"
-              onchange="if(this.files[0]){document.getElementById('kyFileLabel').querySelector('.ky-file-text').textContent=this.files[0].name;document.getElementById('kyFileLabel').classList.add('ky-file-selected')}">
+              ${dtmEventAttr('change', function(event) { if(this.files[0]){document.getElementById('kyFileLabel').querySelector('.ky-file-text').textContent=this.files[0].name;document.getElementById('kyFileLabel').classList.add('ky-file-selected')} })}>
           </label>
         </div>
-        <button class="btn btn-primary" onclick="yukleProjeCloud()">📥 Getir</button>
+        <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { yukleProjeCloud() })}>📥 Getir</button>
       </div>
     </div>
 
@@ -3440,7 +3434,7 @@ async function renderKaydetYuklePage() {
               </div>
             </div>
             <div class="ky-proje-actions">
-              <button class="ky-btn-open" onclick="dosyaGetir(${escJsAttr(p.id)})">📥 İndir</button>
+              <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { dosyaGetir(String(p.id ?? '')) })}>📥 İndir</button>
             </div>
           </div>`;
         }).join('')}
@@ -3629,8 +3623,8 @@ async function gonderiClick(projeId, isAdi) {
           </select>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button onclick="document.getElementById('gonderiModal').remove()" style="padding:9px 20px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">İptal</button>
-          <button id="gonderiOnaylaBtn" onclick="gonderiOnayla(${escJsAttr(projeId)}, this)" style="padding:9px 20px;background:#16a34a;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Gönder</button>
+          <button ${dtmEventAttr('click', function(event) { document.getElementById('gonderiModal').remove() })} style="padding:9px 20px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">İptal</button>
+          <button id="gonderiOnaylaBtn" ${dtmEventAttr('click', function(event) { gonderiOnayla(String(projeId ?? ''), this) })} style="padding:9px 20px;background:#16a34a;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Gönder</button>
         </div>
       </div>
     </div>`;
@@ -3952,7 +3946,7 @@ async function renderKullaniciYonetimiPage() {
             </div>
           </div>
           <div id="kullaniciMsg" style="margin:8px 0;font-size:13px"></div>
-          <button class="btn btn-primary" onclick="kullaniciEkle(this)">+ Kullanıcı Ekle</button>
+          <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { kullaniciEkle(this) })}>+ Kullanıcı Ekle</button>
         </div>
       </div>
 
@@ -4003,7 +3997,7 @@ async function renderKullaniciYonetimiPage() {
                   </td>
                   <td>
                     ${u.email && !u.email.endsWith('@dtm.local') ? `
-                      <button type="button" class="btn btn-outline btn-sm" onclick="adminSifreSifirlaClick(${escJsAttr(u.email)}, ${escJsAttr(u.username)}, ${escJsAttr(u.displayName)})" style="font-size:11.5px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;" title="Kullanıcının e-posta adresine şifre sıfırlama bağlantısı gönder">
+                      <button type="button" class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { adminSifreSifirlaClick(String(u.email ?? ''), String(u.username ?? ''), String(u.displayName ?? '')) })} style="font-size:11.5px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;" title="Kullanıcının e-posta adresine şifre sıfırlama bağlantısı gönder">
                         🔑 Sıfırla
                       </button>
                     ` : `
@@ -4014,7 +4008,7 @@ async function renderKullaniciYonetimiPage() {
                     (u.role === 'superadmin' && currentDTMUser?.role !== 'superadmin') ? `
                       <span class="badge badge-admin" style="background:#4338ca;color:#fff">${getRoleLabel(u.role)}</span>
                     ` : `
-                      <select onchange="kullaniciRolDegistir(${escJsAttr(u.uid)}, this.value)" style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer">
+                      <select ${dtmEventAttr('change', function(event) { kullaniciRolDegistir(String(u.uid ?? ''), this.value) })} style="padding:4px 8px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer">
                         <option value="user" ${u.role === 'user' ? 'selected' : ''}>Kullanıcı</option>
                         <option value="gerceklestirmeci" ${u.role === 'gerceklestirmeci' ? 'selected' : ''}>Gerçekleştirme Görevlisi</option>
                         <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Yönetici</option>
@@ -4028,7 +4022,7 @@ async function renderKullaniciYonetimiPage() {
                       (u.role === 'superadmin' && currentDTMUser?.role !== 'superadmin') ? `
                         <span style="color:var(--gray-400);font-size:12px">(Yetki kısıtlı)</span>
                       ` : `
-                        <button class="btn btn-danger btn-sm" onclick="kullaniciSil(${escJsAttr(u.uid)}, ${escJsAttr(u.displayName)}, ${escJsAttr(u.username)})">Sil</button>
+                        <button class="btn btn-danger btn-sm" ${dtmEventAttr('click', function(event) { kullaniciSil(String(u.uid ?? ''), String(u.displayName ?? ''), String(u.username ?? '')) })}>Sil</button>
                       `
                     ) : '<span style="color:var(--gray-400);font-size:12px">(Aktif oturum)</span>'}
                   </td>
@@ -4182,10 +4176,10 @@ async function renderProjelerimPage() {
             </div>` : ''}
         </div>
         <div class="ky-proje-actions">
-          <button class="ky-btn-open" onclick="cloudProjeAc(${escJsAttr(p.id)})">Aç</button>
-          ${aktif && !kilitli ? `<button class="ky-btn-lock" onclick="gonderiClick(${escJsAttr(p.id)}, ${escJsAttr(isAdiSafe)})" style="background:#16a34a;color:#fff;border-color:#16a34a">📤 Gönder</button>` : ''}
-          ${aktif ? `<button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" onclick="cloudProjeKilitle(${escJsAttr(p.id)}, ${!kilitli})">${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>` : ''}
-          ${aktif && !kilitli ? `<button class="ky-btn-delete" onclick="cloudProjeSil(${escJsAttr(p.id)}, ${escJsAttr(isAdiSafe)}, ${kilitli})">Sil</button>` : ''}
+          <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { cloudProjeAc(String(p.id ?? '')) })}>Aç</button>
+          ${aktif && !kilitli ? `<button class="ky-btn-lock" ${dtmEventAttr('click', function(event) { gonderiClick(String(p.id ?? ''), String(isAdiSafe ?? '')) })} style="background:#16a34a;color:#fff;border-color:#16a34a">📤 Gönder</button>` : ''}
+          ${aktif ? `<button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" ${dtmEventAttr('click', function(event) { cloudProjeKilitle(String(p.id ?? ''), (!kilitli)) })}>${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>` : ''}
+          ${aktif && !kilitli ? `<button class="ky-btn-delete" ${dtmEventAttr('click', function(event) { cloudProjeSil(String(p.id ?? ''), String(isAdiSafe ?? ''), (kilitli)) })}>Sil</button>` : ''}
         </div>
       </div>`;
     };
@@ -4211,19 +4205,19 @@ async function renderProjelerimPage() {
     main.innerHTML = `
       <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
         <div><h2>Projelerim</h2><p>Tüm projeleriniz ve durumları.</p></div>
-        <button class="btn btn-primary" onclick="yeniProjeBaslat()">&#43; Yeni Proje</button>
+        <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { yeniProjeBaslat() })}>&#43; Yeni Proje</button>
       </div>
       <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-        <input id="projelerimArama" type="text" placeholder="🔍 Proje adına göre ara..." oninput="projelerimFiltrele()"
+        <input id="projelerimArama" type="text" placeholder="🔍 Proje adına göre ara..." ${dtmEventAttr('input', function(event) { projelerimFiltrele() })}
           style="flex:1;min-width:200px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
-        <select id="projelerimDurum" onchange="projelerimFiltrele()"
+        <select id="projelerimDurum" ${dtmEventAttr('change', function(event) { projelerimFiltrele() })}
           style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
           <option value="hepsi">Tüm Durumlar</option>
           <option value="taslak">Devam Edenler</option>
           <option value="geri_gonderildi">İşlem Bekleyenler</option>
           <option value="gonderildi">Onaylananlar</option>
         </select>
-        <select id="projelerimSirala" onchange="projelerimFiltrele()"
+        <select id="projelerimSirala" ${dtmEventAttr('change', function(event) { projelerimFiltrele() })}
           style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
           <option value="tarih-yeni">Tarihe göre (Yeni → Eski)</option>
           <option value="tarih-eski">Tarihe göre (Eski → Yeni)</option>
@@ -4301,15 +4295,15 @@ async function renderGonderilenProjelerPage() {
       const bHTML = bek.length === 0
         ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Bekleyen proje yok.'}</div>`
         : `<div class="ky-proje-grid">${bek.map(p => projeKart(p, (id, ad) => `
-            <button class="ky-btn-open" onclick="cloudProjeAc(${escJsAttr(id)})">Aç</button>
-            <button class="ky-btn-open" onclick="gonderilenOnaylaClick(${escJsAttr(id)}, ${escJsAttr(ad)})" style="background:#16a34a;color:#fff;border-color:#16a34a">✓ Onayla</button>
-            <button class="ky-btn-delete" onclick="geriGonderClick(${escJsAttr(id)}, ${escJsAttr(ad)})" style="background:#dc2626;color:#fff;border-color:#dc2626">↩ Geri Gönder</button>
+            <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { cloudProjeAc(String(id ?? '')) })}>Aç</button>
+            <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { gonderilenOnaylaClick(String(id ?? ''), String(ad ?? '')) })} style="background:#16a34a;color:#fff;border-color:#16a34a">✓ Onayla</button>
+            <button class="ky-btn-delete" ${dtmEventAttr('click', function(event) { geriGonderClick(String(id ?? ''), String(ad ?? '')) })} style="background:#dc2626;color:#fff;border-color:#dc2626">↩ Geri Gönder</button>
           `)).join('')}</div>`;
 
       const oHTML = ona.length === 0
         ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Henüz onaylanan proje yok.'}</div>`
         : `<div class="ky-proje-grid">${ona.map(p => projeKart(p, (id, ad) => `
-            <button class="ky-btn-open" onclick="cloudProjeAc(${escJsAttr(id)})">Görüntüle</button>
+            <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { cloudProjeAc(String(id ?? '')) })}>Görüntüle</button>
           `)).join('')}</div>`;
 
       return `
@@ -4330,7 +4324,7 @@ async function renderGonderilenProjelerPage() {
     main.innerHTML = `
       <div class="page-header"><h2>Projeler</h2><p>Size iletilen projeler.</p></div>
       <div style="margin-bottom:16px">
-        <input id="gonderilenArama" type="text" placeholder="🔍 Proje adı veya kullanıcıya göre ara..." oninput="gonderilenFiltrele()"
+        <input id="gonderilenArama" type="text" placeholder="🔍 Proje adı veya kullanıcıya göre ara..." ${dtmEventAttr('input', function(event) { gonderilenFiltrele() })}
           style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
       </div>
       <div id="gonderilenListe">${renderGonderilenListe('')}</div>`;
@@ -4351,10 +4345,10 @@ function renderGerceklestirmeciVeriMerkeziPage() {
   );
   const rows = liste.map((bt, i) => `
     <tr>
-      <td style="width:40%"><input type="text" class="ref-input" value="${escAttr(bt.no || '')}" onchange="btGuncelle(${i},'no',this.value)" placeholder="Tertip No"></td>
-      <td><input type="text" class="ref-input" value="${escAttr(bt.aciklama || '')}" onchange="btGuncelle(${i},'aciklama',this.value)" placeholder="Açıklama (Örn: Yapım İşleri)"></td>
+      <td style="width:40%"><input type="text" class="ref-input" value="${escAttr(bt.no || '')}" ${dtmEventAttr('change', function(event) { btGuncelle((i),'no',this.value) })} placeholder="Tertip No"></td>
+      <td><input type="text" class="ref-input" value="${escAttr(bt.aciklama || '')}" ${dtmEventAttr('change', function(event) { btGuncelle((i),'aciklama',this.value) })} placeholder="Açıklama (Örn: Yapım İşleri)"></td>
       <td style="width:60px;text-align:center">
-        <button class="btn-icon-danger" onclick="onRefDelete('butceTertibiList', ${i})" title="Sil">
+        <button class="btn-icon-danger" ${dtmEventAttr('click', function(event) { onRefDelete('butceTertibiList', (i)) })} title="Sil">
           ${typeof getIcon === 'function' ? getIcon('trash', 16) : '✕'}
         </button>
       </td>
@@ -4384,7 +4378,7 @@ function renderGerceklestirmeciVeriMerkeziPage() {
       </div>
     </div>
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="display:flex;align-items:center;gap:8px">
           <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('chart', 18) : ''}</span>
           Bütçe Tertibi Listesi
@@ -4400,17 +4394,15 @@ function renderGerceklestirmeciVeriMerkeziPage() {
         <div style="margin-top:14px;display:flex;gap:8px;max-width:600px">
           <input type="text" class="ref-input" id="yeniBtNo" placeholder="Örn: 09.1.2.00.000/05/03.8" style="flex:1">
           <input type="text" class="ref-input" id="yeniBtAciklama" placeholder="Açıklama (Örn: Yol Yapım)" style="flex:1">
-          <button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="
-            const no=document.getElementById('yeniBtNo').value.trim();
+          <button class="btn btn-outline btn-sm" style="white-space:nowrap" ${dtmEventAttr('click', function(event) { const no=document.getElementById('yeniBtNo').value.trim();
             const ac=document.getElementById('yeniBtAciklama').value.trim();
-            if(no){if(!referans.butceTertibiList)referans.butceTertibiList=[];referans.butceTertibiList.push({no,aciklama:ac});saveReferans(referans);renderPage();}
-          ">+ Ekle</button>
+            if(no){if(!referans.butceTertibiList)referans.butceTertibiList=[];referans.butceTertibiList.push({no,aciklama:ac});saveReferans(referans);renderPage();} })}>+ Ekle</button>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header" onclick="toggleCard(this)">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="display:flex;align-items:center;gap:8px">
           <span style="color:var(--primary);display:inline-flex">${typeof getIcon === 'function' ? getIcon('building', 18) : ''}</span>
           Ortak Yüklenici & Firma Havuzu
@@ -4420,12 +4412,12 @@ function renderGerceklestirmeciVeriMerkeziPage() {
       </div>
       <div class="card-body">
         <div style="display:flex; gap:10px; margin-bottom:16px; align-items:center;">
-          <select class="ref-input" style="flex:1; height:40px; padding:0 12px; font-size:13px; border-radius:8px;" onchange="onYukleniciSelect(this.value)">
+          <select class="ref-input" style="flex:1; height:40px; padding:0 12px; font-size:13px; border-radius:8px;" ${dtmEventAttr('change', function(event) { onYukleniciSelect(this.value) })}>
             <option value="-1">🔍 Kayıtlı firmalardan seçin veya düzenleyin...</option>
             ${dtmYeniEklenenYuklenici ? `<option value="NEW_YUKLENICI" selected>➕ Yeni Firma (Kaydedilmedi)</option>` : ''}
             ${sortedYuklenici.map(item => `<option value="${escAttr(item.i)}" ${!dtmYeniEklenenYuklenici && dtmSeciliYukleniciIndex === item.i ? 'selected' : ''}>${escHtml(item.f.ad)}</option>`).join('')}
           </select>
-          <button class="btn-icon-primary" style="height:40px; padding:0 14px; font-size:13px; font-weight:600; border-radius:8px; white-space:nowrap;" onclick="onYukleniciEkle()">
+          <button class="btn-icon-primary" style="height:40px; padding:0 14px; font-size:13px; font-weight:600; border-radius:8px; white-space:nowrap;" ${dtmEventAttr('click', function(event) { onYukleniciEkle() })}>
             ${typeof getIcon === 'function' ? getIcon('plus', 15) : '+'} Yeni Firma
           </button>
         </div>
@@ -4437,29 +4429,29 @@ function renderGerceklestirmeciVeriMerkeziPage() {
           return `
           <div style="background:var(--gray-50); padding:18px 20px; border-radius:12px; border:1px solid var(--gray-200);">
             <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:14px;">
-              <div class="form-group"><label>Firma / Kişi Adı <span style="color:var(--danger)">*</span></label><input type="text" class="ref-input" id="yukleniciInputAd" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'ad', this.value)" oninput="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'ad', this.value)"></div>
-              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select class="ref-input" id="yukleniciInputTur" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'tur', this.value); document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();">
+              <div class="form-group"><label>Firma / Kişi Adı <span style="color:var(--danger)">*</span></label><input type="text" class="ref-input" id="yukleniciInputAd" value="${escAttr(f.ad || '')}" placeholder="Firma / Kişi Adı Giriniz" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'ad', this.value) })} ${dtmEventAttr('input', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'ad', this.value) })}></div>
+              <div class="form-group"><label>Tür <span style="color:var(--danger)">*</span></label><select class="ref-input" id="yukleniciInputTur" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'tur', this.value); document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage(); })}>
                   <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
-              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'adres', this.value)"></div>
-              <div class="form-group"><label>Telefon</label><input type="text" class="ref-input" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'tel', this.value)"></div>
-              <div class="form-group"><label>Faks</label><input type="text" class="ref-input" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'faks', this.value)"></div>
-              <div class="form-group"><label>E-Posta</label><input type="text" class="ref-input" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'eposta', this.value)"></div>
-              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" class="ref-input" value="${escAttr(f.dogumTarihi || '')}" onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'dogumTarihi', this.value)"></div>`}
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'adres', this.value) })}></div>
+              <div class="form-group"><label>Telefon</label><input type="text" class="ref-input" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'tel', this.value) })}></div>
+              <div class="form-group"><label>Faks</label><input type="text" class="ref-input" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'faks', this.value) })}></div>
+              <div class="form-group"><label>E-Posta</label><input type="text" class="ref-input" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'eposta', this.value) })}></div>
+              ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" class="ref-input" value="${escAttr(f.dogumTarihi || '')}" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'dogumTarihi', this.value) })}></div>`}
               <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
-                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} onchange="onFirmaFieldChange('yukleniciList', ${escJsAttr(i)}, 'basitUsul', this.checked)">
+                <input type="checkbox" id="basitUsul_${i}" ${f.basitUsul ? 'checked' : ''} ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'basitUsul', this.checked) })}>
                 <label for="basitUsul_${i}" style="margin:0; cursor:pointer; font-weight:600; color:var(--primary)">Bu Firma / Kişi Basit Usule Tabiidir</label>
               </div>
             </div>
             <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--gray-200); display:flex; justify-content:space-between; align-items:center;">
-              <button class="btn btn-primary" onclick="kaydetYukleniciFormu(${escJsAttr(i)})" style="display:inline-flex;align-items:center;gap:6px">
+              <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { kaydetYukleniciFormu(String(i ?? '')) })} style="display:inline-flex;align-items:center;gap:6px">
                 ${typeof getIcon === 'function' ? getIcon('check', 16) : '✓'} Bilgileri Kaydet
               </button>
               ${isNew ? `
-                <button class="btn btn-outline btn-sm" onclick="vazgecYukleniciFormu()">Vazgeç</button>
+                <button class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { vazgecYukleniciFormu() })}>Vazgeç</button>
               ` : `
-                <button class="btn btn-danger btn-sm" style="display:inline-flex;align-items:center;gap:4px" onclick="onRefDelete('yukleniciList', ${i}); onYukleniciSelect(-1);">
+                <button class="btn btn-danger btn-sm" style="display:inline-flex;align-items:center;gap:4px" ${dtmEventAttr('click', function(event) { onRefDelete('yukleniciList', (i)); onYukleniciSelect(-1); })}>
                   ${typeof getIcon === 'function' ? getIcon('trash', 14) : ''} Firmayı Sil
                 </button>
               `}
@@ -4570,7 +4562,7 @@ window.acMuhendisModal = function(index = null) {
           <span style="color:var(--primary); display:inline-flex">${typeof getIcon === 'function' ? getIcon('users', 22) : ''}</span>
           ${isEdit ? 'Görevli Personeli Düzenle' : 'Yeni Görevli Personel Ekle'}
         </h3>
-        <button onclick="document.getElementById(${escJsAttr(modalId)}).remove()" style="background:none; border:none; color:var(--gray-400); cursor:pointer; font-size:18px; padding:4px;" title="Kapat">
+        <button ${dtmEventAttr('click', function(event) { document.getElementById(String(modalId ?? '')).remove() })} style="background:none; border:none; color:var(--gray-400); cursor:pointer; font-size:18px; padding:4px;" title="Kapat">
           ${typeof getIcon === 'function' ? getIcon('x', 18) : '✕'}
         </button>
       </div>
@@ -4582,8 +4574,8 @@ window.acMuhendisModal = function(index = null) {
           <input type="text" id="muhendisModalAd" class="ref-input" value="${escAttr(mevcut.ad || '')}" 
             placeholder="Örn: Aziz AÇIKGÖZ"
             style="padding:12px 16px; font-size:14px; border-radius:8px; width:100%; box-sizing:border-box;"
-            oninput="this.value = this.value.replace(/[^a-zA-ZçğıöşüÇĞİÖŞÜ\\s]/g, '');"
-            onkeydown="if(event.key==='Enter') kaydetMuhendisModal(${isEdit ? index : 'null'})">
+            ${dtmEventAttr('input', function(event) { this.value = this.value.replace(/[^a-zA-ZçğıöşüÇĞİÖŞÜ\s]/g, ''); })}
+            ${dtmEventAttr('keydown', function(event) { if(event.key==='Enter') kaydetMuhendisModal((isEdit ? index : null)) })}>
           <small style="color:var(--gray-500); font-size:12px; margin-top:6px; display:block;">Sadece harf ve boşluk girilebilir (Rakam kabul edilmez).</small>
         </div>
         <div class="form-group" style="margin-bottom:8px;">
@@ -4597,8 +4589,8 @@ window.acMuhendisModal = function(index = null) {
         </div>
       </div>
       <div class="dtm-modal-footer" style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px; padding-top:16px; border-top:1px solid var(--gray-200);">
-        <button class="btn btn-outline" style="padding:10px 20px; font-size:14px; border-radius:8px;" onclick="document.getElementById(${escJsAttr(modalId)}).remove()">Vazgeç</button>
-        <button class="btn btn-primary" onclick="kaydetMuhendisModal(${isEdit ? index : 'null'})" style="display:inline-flex; align-items:center; gap:8px; padding:10px 24px; font-size:14px; font-weight:600; border-radius:8px;">
+        <button class="btn btn-outline" style="padding:10px 20px; font-size:14px; border-radius:8px;" ${dtmEventAttr('click', function(event) { document.getElementById(String(modalId ?? '')).remove() })}>Vazgeç</button>
+        <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { kaydetMuhendisModal((isEdit ? index : null)) })} style="display:inline-flex; align-items:center; gap:8px; padding:10px 24px; font-size:14px; font-weight:600; border-radius:8px;">
           ${typeof getIcon === 'function' ? getIcon('check', 16) : '✓'} ${isEdit ? 'Güncelle' : 'Kaydet'}
         </button>
       </div>
@@ -4753,8 +4745,8 @@ async function renderGerceklestirmeciBelgelerPage() {
     const projeKarti = (p, readOnly) => {
       const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : (p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') : '-');
       const btn = readOnly
-        ? `<button class="ky-btn-open" style="background:#6b7280" onclick="gerceklestirmeciBelgelerProjeAc(${escJsAttr(p.id)},true)">Belgeleri Gör</button>`
-        : `<button class="ky-btn-open" onclick="gerceklestirmeciBelgelerProjeAc(${escJsAttr(p.id)})">Belge Oluştur</button>`;
+        ? `<button class="ky-btn-open" style="background:#6b7280" ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgelerProjeAc(String(p.id ?? ''),true) })}>Belgeleri Gör</button>`
+        : `<button class="ky-btn-open" ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgelerProjeAc(String(p.id ?? '')) })}>Belge Oluştur</button>`;
       return `<div class="ky-proje-item">
         <div class="ky-proje-info">
           <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
@@ -4802,9 +4794,9 @@ async function renderGerceklestirmeciBelgelerPage() {
 
     listEl.innerHTML = `
       <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-        <input id="gcBelgeProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." oninput="gcBelgeProjeFiltrele()"
+        <input id="gcBelgeProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." ${dtmEventAttr('input', function(event) { gcBelgeProjeFiltrele() })}
           style="flex:1;min-width:200px;max-width:400px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
-        <select id="gcBelgeProjeSirala" onchange="gcBelgeProjeFiltrele()"
+        <select id="gcBelgeProjeSirala" ${dtmEventAttr('change', function(event) { gcBelgeProjeFiltrele() })}
           style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
           <option value="tarih-yeni">Tarihe göre (Yeni → Eski)</option>
           <option value="tarih-eski">Tarihe göre (Eski → Yeni)</option>
@@ -4854,7 +4846,7 @@ function renderGerceklestirmeciBelgelerView(main) {
 
   const tabs = belgeler.map(b =>
     `<div class="belge-tab ${currentGerceklestirmeciBelge === b.id ? 'active' : ''}"
-      onclick="currentGerceklestirmeciBelge=${escJsAttr(b.id)};renderPage();">${b.ad}</div>`
+      ${dtmEventAttr('click', function(event) { currentGerceklestirmeciBelge=String(b.id ?? '');renderPage(); })}>${b.ad}</div>`
   ).join('');
 
   let belgeHTML = '';
@@ -4871,7 +4863,7 @@ function renderGerceklestirmeciBelgelerView(main) {
 
   main.innerHTML = `
     <div class="page-header" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-      <button onclick="currentGerceklestirmeciBelgelerProjeId=null;currentGerceklestirmeciReadOnly=false;renderPage();"
+      <button ${dtmEventAttr('click', function(event) { currentGerceklestirmeciBelgelerProjeId=null;currentGerceklestirmeciReadOnly=false;renderPage(); })}
         style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:6px 12px;
                cursor:pointer;font-size:13px;color:var(--gray-600);white-space:nowrap;margin-top:4px">
         ← Proje Listesi
@@ -4884,26 +4876,26 @@ function renderGerceklestirmeciBelgelerView(main) {
     <div class="belge-tabs">${tabs}</div>
     <div class="action-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       ${currentGerceklestirmeciBelge === 'teknik-sartname' && !currentGerceklestirmeciReadOnly ? `
-        <button onclick="acTeknikSartnameDuzenleModal()"
+        <button ${dtmEventAttr('click', function(event) { acTeknikSartnameDuzenleModal() })}
           style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
-          onmouseover="this.style.background='#d97706'" onmouseout="this.style.background='#f59e0b'">
+          ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
           <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           Şartname Metnini Düzenle
         </button>
       ` : ''}
-      <button onclick="gerceklestirmeciBelgeYazdir()"
+      <button ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgeYazdir() })}
         style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
-        onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+        ${dtmEventAttr('mouseover', function(event) { this.style.background='#2563eb' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#3b82f6' })}>
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
         Yazdır
       </button>
-      <button onclick="acGerceklestirmeciIndirModal()"
+      <button ${dtmEventAttr('click', function(event) { acGerceklestirmeciIndirModal() })}
         style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,0.35)"
-        onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+        ${dtmEventAttr('mouseover', function(event) { this.style.background='#059669' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#10b981' })}>
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         İndir
       </button>
-      <button onclick="gerceklestirmeciBelgePdfIndir()" style="display:none">PDF İndir</button>
+      <button ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgePdfIndir() })} style="display:none">PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
@@ -5059,7 +5051,7 @@ function renderProjeOzetPage() {
   main.innerHTML = `
     <div style="max-width:800px;margin:0 auto;padding:24px 16px">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-        <button onclick="${currentOnayliBelgelerProjeId ? 'currentOnayliBelgelerProjeId=null' : "currentPage='gonderilen-projeler'"};renderPage();" style="padding:7px 14px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">← Geri</button>
+        <button ${dtmEventAttr('click', function(event) { if(currentOnayliBelgelerProjeId){currentOnayliBelgelerProjeId=null;}else{currentPage='gonderilen-projeler';}renderPage(); })} style="padding:7px 14px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">← Geri</button>
         <div>
           <h2 style="font-size:20px;font-weight:700;color:#111827;margin:0">${escHtml(p.isAdi || '(İsimsiz Proje)')}</h2>
           <div style="font-size:12px;color:#6b7280;margin-top:2px">${getStatusBadge(currentProjeStatus || 'gonderildi')} Proje Özeti</div>
@@ -5179,7 +5171,7 @@ function renderProjeOzetPage() {
               </select>
             </div>
           </div>
-          ${!ro ? `<div style="margin-top:14px"><button class="btn btn-primary" onclick="gcOnayBilgiKaydet()">💾 Kaydet</button></div>` : ''}
+          ${!ro ? `<div style="margin-top:14px"><button class="btn btn-primary" ${dtmEventAttr('click', function(event) { gcOnayBilgiKaydet() })}>💾 Kaydet</button></div>` : ''}
         </div>
       </div>`;
       })() : ''}
@@ -5200,11 +5192,11 @@ function renderProjeOzetPage() {
 
       ${currentDTMUser?.role !== 'gerceklestirmeci' && !currentOnayliBelgelerProjeId && !['onaylandi','arsivlendi'].includes(currentProjeStatus) ? `
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;padding-bottom:32px">
-        <button onclick="geriGonderClick(${escJsAttr(currentCloudProjeId)}, ${escJsAttr(p.isAdi)})"
+        <button ${dtmEventAttr('click', function(event) { geriGonderClick(String(currentCloudProjeId ?? ''), String(p.isAdi ?? '')) })}
           style="padding:10px 24px;background:#fff;border:1px solid #dc2626;color:#dc2626;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ↩ Geri Gönder
         </button>
-        <button onclick="onaylaClick(${escJsAttr(currentCloudProjeId)}, ${escJsAttr(p.isAdi)})"
+        <button ${dtmEventAttr('click', function(event) { onaylaClick(String(currentCloudProjeId ?? ''), String(p.isAdi ?? '')) })}
           style="padding:10px 24px;background:#16a34a;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
           ✓ Onayla
         </button>
@@ -5218,7 +5210,7 @@ function renderOnayBelgesiPage() {
   main.innerHTML = `
     <div style="max-width:800px;margin:0 auto;padding:24px 16px">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-        <button onclick="currentPage='gonderilen-projeler';renderPage();" style="padding:7px 14px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">← Geri</button>
+        <button ${dtmEventAttr('click', function(event) { currentPage='gonderilen-projeler';renderPage(); })} style="padding:7px 14px;border:1px solid #d1d5db;background:#fff;border-radius:7px;cursor:pointer;font-size:13px">← Geri</button>
         <div>
           <h2 style="font-size:20px;font-weight:700;color:#111827;margin:0">Onay Belgesi Oluştur</h2>
           <div style="font-size:12px;color:#6b7280;margin-top:2px">${escHtml(proje.isAdi || '(İsimsiz Proje)')}</div>
@@ -5228,7 +5220,7 @@ function renderOnayBelgesiPage() {
         <div style="font-size:48px;margin-bottom:16px">✅</div>
         <div style="font-size:16px;font-weight:700;color:#15803d;margin-bottom:8px">Proje Onaylandı</div>
         <div style="font-size:13px;color:#166534;margin-bottom:24px">Belge formatı tamamlandıktan sonra buradan Doğrudan Temin Onay Belgesi oluşturabileceksiniz.</div>
-        <button onclick="currentPage='gonderilen-projeler';renderPage();" style="padding:10px 24px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">Proje Listesine Dön</button>
+        <button ${dtmEventAttr('click', function(event) { currentPage='gonderilen-projeler';renderPage(); })} style="padding:10px 24px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">Proje Listesine Dön</button>
       </div>
     </div>`;
 }
@@ -5325,21 +5317,21 @@ async function renderOnayliBelgelerPage() {
         const tarihStr = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
         const adSafe   = p.isAdi||'(İsimsiz)';
         const aksiyonlar = aktifSekme === 'arsiv' ? `
-          <button class="ky-btn-open" onclick="event.stopPropagation();onayliBelgelerProjeAc(${escJsAttr(p.id)})">&#128196; Belgeleri Gör</button>
-          <button class="ky-btn" onclick="event.stopPropagation();arsivdenCikarClick(${escJsAttr(p.id)},${escJsAttr(adSafe)})"
+          <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { event.stopPropagation();onayliBelgelerProjeAc(String(p.id ?? '')) })}>&#128196; Belgeleri Gör</button>
+          <button class="ky-btn" ${dtmEventAttr('click', function(event) { event.stopPropagation();arsivdenCikarClick(String(p.id ?? ''),String(adSafe ?? '')) })}
             style="background:#f59e0b;color:#fff;border-color:#f59e0b;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid">
             ↩ Arşivden Çıkar
           </button>` : `
-          <button class="ky-btn-open" onclick="event.stopPropagation();onayliBelgelerProjeAc(${escJsAttr(p.id)})">&#128196; Belgeleri Gör</button>
-          <button class="ky-btn" onclick="event.stopPropagation();adminGeriGonderClick(${escJsAttr(p.id)},${escJsAttr(adSafe)})"
+          <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { event.stopPropagation();onayliBelgelerProjeAc(String(p.id ?? '')) })}>&#128196; Belgeleri Gör</button>
+          <button class="ky-btn" ${dtmEventAttr('click', function(event) { event.stopPropagation();adminGeriGonderClick(String(p.id ?? ''),String(adSafe ?? '')) })}
             style="background:#f59e0b;color:#fff;border-color:#f59e0b;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid">
             ↩ Geri Gönder
           </button>
-          <button class="ky-btn" onclick="event.stopPropagation();arsivleClick(${escJsAttr(p.id)},${escJsAttr(adSafe)})"
+          <button class="ky-btn" ${dtmEventAttr('click', function(event) { event.stopPropagation();arsivleClick(String(p.id ?? ''),String(adSafe ?? '')) })}
             style="background:#6b7280;color:#fff;border-color:#6b7280;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid">
             🗃️ Arşivle
           </button>`;
-        return `<div class="ky-proje-item" style="cursor:pointer" onclick="onayliBelgelerProjeAc(${escJsAttr(p.id)})">
+        return `<div class="ky-proje-item" style="cursor:pointer" ${dtmEventAttr('click', function(event) { onayliBelgelerProjeAc(String(p.id ?? '')) })}>
           <div class="ky-proje-info">
             <div class="ky-proje-name"><span class="ky-proje-dot" style="background:${aktifSekme==='arsiv'?'#9ca3af':'#16a34a'}"></span>${escHtml(p.isAdi||'(İsimsiz)')}</div>
             <div class="ky-proje-meta">
@@ -5374,11 +5366,11 @@ async function renderOnayliBelgelerPage() {
       </div>
 
       <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #e5e7eb">
-        <button id="sekmeBekleyen" onclick="switchSekme('bekleyenler')"
+        <button id="sekmeBekleyen" ${dtmEventAttr('click', function(event) { switchSekme('bekleyenler') })}
           style="padding:10px 20px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid #f59e0b;color:#b45309;margin-bottom:-2px">
           📥 İşlem Bekleyenler <span style="background:#fef3c7;color:#92400e;font-size:11px;padding:2px 7px;border-radius:10px;margin-left:4px">${bekleyenler.length}</span>
         </button>
-        <button id="sekmeArsiv" onclick="switchSekme('arsiv')"
+        <button id="sekmeArsiv" ${dtmEventAttr('click', function(event) { switchSekme('arsiv') })}
           style="padding:10px 20px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;color:#6b7280;margin-bottom:-2px">
           🗃️ Arşiv <span style="background:#f3f4f6;color:#374151;font-size:11px;padding:2px 7px;border-radius:10px;margin-left:4px">${arsivdekiler.length}</span>
         </button>
@@ -5409,7 +5401,7 @@ async function renderOnayliBelgelerPage() {
         <input type="date" id="onayliBaslangic" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff">
         <span style="font-size:13px;color:#374151;font-weight:500">Bitiş:</span>
         <input type="date" id="onayliBitis" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff">
-        <button onclick="el.querySelector('#onayliTarih').value='hepsi';el.querySelector('#onayliAralikWrap').style.display='none';renderListe()"
+        <button ${dtmEventAttr('click', function(event) { el.querySelector('#onayliTarih').value='hepsi';el.querySelector('#onayliAralikWrap').style.display='none';renderListe() })}
           style="padding:7px 12px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:7px;font-size:12px;cursor:pointer;color:#374151">✕ Temizle</button>
       </div>
       <div id="onayliSonucBilgi" style="font-size:12px;color:#6b7280;margin-bottom:8px"></div>
@@ -5485,9 +5477,9 @@ function renderProfilPage() {
         <div style="display:flex;align-items:center;gap:24px;position:relative;z-index:1;">
           
           <!-- Avatar - hover ile düzenle -->
-          <div onclick="openAvatarPicker()" title="Profil resmini değiştir"
-               onmouseover="document.getElementById('avatarEditOverlay').style.opacity='1'"
-               onmouseout="document.getElementById('avatarEditOverlay').style.opacity='0'"
+          <div ${dtmEventAttr('click', function(event) { openAvatarPicker() })} title="Profil resmini değiştir"
+               ${dtmEventAttr('mouseover', function(event) { document.getElementById('avatarEditOverlay').style.opacity='1' })}
+               ${dtmEventAttr('mouseout', function(event) { document.getElementById('avatarEditOverlay').style.opacity='0' })}
                style="position:relative;width:80px;height:80px;cursor:pointer;flex-shrink:0;border-radius:50%;box-shadow:0 4px 14px rgba(0,0,0,0.25);">
             <div id="profilAvatarCircle" style="width:80px;height:80px;background:rgba(255,255,255,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;border:3px solid rgba(255,255,255,0.85);backdrop-filter:blur(4px);">
               ${avatarSrc(u.avatar)
@@ -5527,11 +5519,11 @@ function renderProfilPage() {
               <span style="color:var(--primary);display:inline-flex;">${typeof getIcon === 'function' ? getIcon('camera', 18) : '📷'}</span>
               <span>Profil Resmi Seç</span>
             </div>
-            <button onclick="closeAvatarPicker()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-400);line-height:1;padding:4px 8px;border-radius:6px;">&times;</button>
+            <button ${dtmEventAttr('click', function(event) { closeAvatarPicker() })} style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-400);line-height:1;padding:4px 8px;border-radius:6px;">&times;</button>
           </div>
           <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;">
             ${AVATARS.map(a => `
-              <div onclick="avatarSec(${escJsAttr(a)})" style="cursor:pointer;border-radius:50%;overflow:hidden;width:48px;height:48px;border:3px solid ${u.avatar===a ? 'var(--primary, #1a56db)' : 'transparent'};transition:all .2s;box-shadow:${u.avatar===a ? '0 0 0 2px rgba(26,86,219,0.3)' : 'none'};margin:auto;" id="avatarOpt_${a}">
+              <div ${dtmEventAttr('click', function(event) { avatarSec(String(a ?? '')) })} style="cursor:pointer;border-radius:50%;overflow:hidden;width:48px;height:48px;border:3px solid ${u.avatar===a ? 'var(--primary, #1a56db)' : 'transparent'};transition:all .2s;box-shadow:${u.avatar===a ? '0 0 0 2px rgba(26,86,219,0.3)' : 'none'};margin:auto;" id="avatarOpt_${a}">
                 <img src="icons/avatars/${a}.png" style="width:100%;height:100%;object-fit:cover;" />
               </div>
             `).join('')}
@@ -5615,7 +5607,7 @@ function renderProfilPage() {
               <input type="password" id="yeniSifreTekrar" placeholder="Yeni şifrenizi tekrar girin" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:14px;box-sizing:border-box;">
             </div>
             <div id="sifreMsg" style="font-size:13px;margin-bottom:12px;min-height:18px;"></div>
-            <button class="btn btn-primary" onclick="sifreDegistir()" style="width:100%;padding:11px 16px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;border-radius:8px;">
+            <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { sifreDegistir() })} style="width:100%;padding:11px 16px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;border-radius:8px;">
               <span style="display:inline-flex;">${typeof getIcon === 'function' ? getIcon('shieldCheck', 16) : ''}</span>
               <span>Şifreyi Güncelle</span>
             </button>
@@ -5631,7 +5623,7 @@ function renderProfilPage() {
             <span style="color:var(--primary);display:inline-flex;">${typeof getIcon === 'function' ? getIcon('mail', 18) : ''}</span>
             <h3 style="font-size:15px;margin:0;font-weight:700;color:var(--gray-900);">E-Posta & Güvenlik Doğrulaması</h3>
           </div>
-          <button onclick="epostaDurumYenile(this)" title="Doğrulama durumunu sunucudan yenile" class="btn btn-sm btn-secondary" style="padding:5px 10px;font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+          <button ${dtmEventAttr('click', function(event) { epostaDurumYenile(this) })} title="Doğrulama durumunu sunucudan yenile" class="btn btn-sm btn-secondary" style="padding:5px 10px;font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;">
             <span>🔄 Durumu Yenile</span>
           </button>
         </div>
@@ -5661,7 +5653,7 @@ function renderProfilPage() {
             </p>
           </div>
           <div id="epostaMsg" style="font-size:13px;margin-bottom:14px;min-height:16px;"></div>
-          <button class="btn btn-secondary" onclick="epostaDogrulamaIstegiGonder(this)" style="padding:11px 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;border-radius:8px;cursor:pointer;">
+          <button class="btn btn-secondary" ${dtmEventAttr('click', function(event) { epostaDogrulamaIstegiGonder(this) })} style="padding:11px 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;border-radius:8px;cursor:pointer;">
             <span style="display:inline-flex;">${typeof getIcon === 'function' ? getIcon('send', 15) : ''}</span>
             <span>Doğrulama Bağlantısı Gönder / E-Postayı Güncelle</span>
           </button>
@@ -5932,7 +5924,7 @@ async function renderDuyurularPage() {
           <div class="form-group"><label>Başlık</label><input type="text" id="duyuruBaslik" placeholder="Duyuru başlığı"></div>
           <div class="form-group"><label>Mesaj</label><textarea id="duyuruMesaj" rows="4" placeholder="Duyuru içeriği..." style="width:100%;padding:8px;border:1px solid var(--gray-200);border-radius:6px;font-size:14px;resize:vertical"></textarea></div>
           <div id="duyuruMsg" style="margin:8px 0;font-size:13px"></div>
-          <button class="btn btn-primary" onclick="duyuruOlustur(this)">Yayınla</button>
+          <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { duyuruOlustur(this) })}>Yayınla</button>
         </div>
       </div>` : '';
     const listHTML = duyurular.length === 0
@@ -5942,7 +5934,7 @@ async function renderDuyurularPage() {
           const tarih = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('tr-TR') : '-';
           return `
             <div class="duyuru-item ${okundu ? 'duyuru-okundu' : 'duyuru-okunmadi'}">
-              <div class="duyuru-ust" onclick="toggleDuyuru(${escJsAttr(d.id)})" style="cursor:pointer">
+              <div class="duyuru-ust" ${dtmEventAttr('click', function(event) { toggleDuyuru(String(d.id ?? '')) })} style="cursor:pointer">
                 <div class="duyuru-baslik">
                   ${!okundu ? '<span class="duyuru-yeni">Yeni</span>' : ''}
                   ${escHtml(d.baslik)}
@@ -5955,9 +5947,9 @@ async function renderDuyurularPage() {
               <div class="duyuru-detay" id="duyuruDetay_${d.id}" style="display:none">
                 <div class="duyuru-mesaj">${escHtml(d.mesaj)}</div>
                 <div class="duyuru-actions">
-                  ${!okundu ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();duyuruOku(${escJsAttr(d.id)})">Okundu</button>` : ''}
-                  ${okundu ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();duyuruKendindenGizleCagir(${escJsAttr(d.id)})">Sil</button>` : ''}
-                  ${canManage ? `<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();duyuruSil(${escJsAttr(d.id)})">Herkesten Kaldır</button>` : ''}
+                  ${!okundu ? `<button class="btn btn-sm btn-outline" ${dtmEventAttr('click', function(event) { event.stopPropagation();duyuruOku(String(d.id ?? '')) })}>Okundu</button>` : ''}
+                  ${okundu ? `<button class="btn btn-sm btn-outline" ${dtmEventAttr('click', function(event) { event.stopPropagation();duyuruKendindenGizleCagir(String(d.id ?? '')) })}>Sil</button>` : ''}
+                  ${canManage ? `<button class="btn btn-sm btn-danger" ${dtmEventAttr('click', function(event) { event.stopPropagation();duyuruSil(String(d.id ?? '')) })}>Herkesten Kaldır</button>` : ''}
                 </div>
               </div>
             </div>`;
@@ -6083,8 +6075,8 @@ async function renderHakkindaPage() {
             Güncelleme durumu kontrol ediliyor...
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn btn-primary" onclick="guncellemeyiKontrolEt()">🔍 Güncellemeleri Denetle</button>
-            <button id="guncellemeyiUygulaBttn" class="btn btn-success" onclick="uygulamaGuncelle()" style="display:none;">🔄 Güncellemeyi Uygula</button>
+            <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { guncellemeyiKontrolEt() })}>🔍 Güncellemeleri Denetle</button>
+            <button id="guncellemeyiUygulaBttn" class="btn btn-success" ${dtmEventAttr('click', function(event) { uygulamaGuncelle() })} style="display:none;">🔄 Güncellemeyi Uygula</button>
           </div>
         </div>
       </div>
