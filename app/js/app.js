@@ -364,22 +364,33 @@ function updateSidebarAvatar() {
 }
 
 // ===== AUTH =====
+let loginFormPending = false;
 async function doLogin() {
+  if (loginFormPending) return;
   const username = document.getElementById('loginUsername').value.trim();
   const password = document.getElementById('loginPassword').value;
   const btn = document.getElementById('loginBtn');
   const errDiv = document.getElementById('loginError');
-  if (!username || !password) { showLoginError('Kullanıcı adı ve şifre gerekli.'); return; }
+  if (!username || !password) { showLoginError('Kullanıcı adı/e-posta ve şifre gerekli.'); return; }
   btn.disabled = true;
   btn.innerHTML = '<span>Giriş yapılıyor...</span>';
   errDiv.style.display = 'none';
   try {
-    await dtmLogin(username, password);
+    loginFormPending = true;
+    await dtmLogin(username, password, document.getElementById('loginRegisteredEmail')?.value || '');
+    await onAuthReady(auth.currentUser);
   } catch(e) {
     // Ağ/sistem hatası: spesifik mesaj. Kimlik hatası: generic mesaj (güvenlik).
     const ozelKodlar = ['auth/network-request-failed', 'auth/too-many-requests', 'auth/requires-recent-login'];
-    const mesaj = ozelKodlar.includes(e?.code) ? hataMesaji(e) : 'Kullanıcı adı veya şifre hatalı.';
+    if (e?.code === 'dtm/email-required') {
+      document.getElementById('loginEmailField').style.display = '';
+      document.getElementById('loginRegisteredEmail').focus();
+    }
+    const mesaj = e?.code === 'dtm/email-required' ? e.message :
+      ozelKodlar.includes(e?.code) ? hataMesaji(e) : 'Kullanıcı adı/e-posta veya şifre hatalı.';
     showLoginError(mesaj);
+  } finally {
+    loginFormPending = false;
     btn.disabled = false;
     btn.innerHTML = '<span>Giriş Yap</span><span class="login-btn-arrow">&#8594;</span>';
   }
@@ -577,8 +588,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('loginUsername').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('loginPassword').focus();
   });
+  document.getElementById('loginRegisteredEmail')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
   // Firebase auth state dinleyici
   auth.onAuthStateChanged(async user => {
+    if (loginFormPending) return;
     if (user) {
       if (!currentDTMUser) {
         const snap = await db.collection('users').doc(user.uid).get();

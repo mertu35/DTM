@@ -20,61 +20,24 @@ function maskEmail(email) {
   return `${visibleName}@${restDomain ? restDomain + '.' : ''}${tld}`;
 }
 
-// Kullanıcı adı → e-posta eşlemesi. Giriş ekranı ve "Şifremi Unuttum" akışı henüz
-// oturum açılmadan bu eşlemeyi okuyabilmeli (users koleksiyonu auth ister), bu yüzden
-// sadece {email, verified} tutan ayrı, herkese açık okunabilir bir dokümana yazılır.
-//
-// verified=false kayıt, e-posta değişikliği TALEP edildiği anda yazılır: doğrulama
-// linkine tıklanınca Firebase auth e-postasını değiştirip oturumu düşürdüğü için,
-// eşleme o an yazılamazsa kullanıcı kendi kullanıcı adıyla bir daha giriş yapamaz.
-async function syncUsernameEmailMap(username, email, verified) {
-  if (!username || !email) return;
-  try {
-    await db.collection('usernameEmailMap').doc(username.toLowerCase().trim())
-      .set({ email: email.toLowerCase(), verified: Boolean(verified) });
-  } catch(e) {
-    console.warn('usernameEmailMap senkron hatası:', e);
-  }
-}
-
-// Kullanıcı adından e-postayı bulur (auth gerektirmez).
-// requireVerified: şifre sıfırlama gibi, linkin yanlış adrese gitmesinin hesap
-// devralınmasına yol açabileceği akışlarda yalnızca doğrulanmış adresi döndürür.
-async function getEmailByUsername(username, requireVerified = false) {
-  try {
-    const doc = await db.collection('usernameEmailMap').doc(username.toLowerCase().trim()).get();
-    if (!doc.exists) return null;
-    const data = doc.data();
-    if (requireVerified && !data.verified) return null;
-    return data.email || null;
-  } catch(e) {
-    console.warn('usernameEmailMap okuma hatası:', e);
-    return null;
-  }
-}
-
 // Giriş yap (kullanıcı adı veya e-posta ile)
-async function dtmLogin(identifier, password) {
+async function dtmLogin(identifier, password, registeredEmail = '') {
   identifier = (identifier || '').trim();
   if (!identifier) throw new Error('Kullanıcı adı veya e-posta giriniz.');
 
-  let emailToAuth = identifier.includes('@') ? identifier.toLowerCase() : usernameToEmail(identifier);
+  const isUsername = !identifier.includes('@');
+  const fallbackEmail = registeredEmail.trim().toLowerCase();
+  const emailToAuth = isUsername ? (fallbackEmail || usernameToEmail(identifier)) : identifier.toLowerCase();
   let cred;
-
   try {
     cred = await auth.signInWithEmailAndPassword(emailToAuth, password);
-  } catch (err) {
-    // Eğer kullanıcı adı girilmişse ve kullanıcının auth emaili gerçek e-posta ile güncellenmişse eşleme dokümanından bak
-    if (!identifier.includes('@') && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password')) {
-      const gercekEmail = await getEmailByUsername(identifier);
-      if (gercekEmail && gercekEmail !== emailToAuth) {
-        cred = await auth.signInWithEmailAndPassword(gercekEmail, password);
-      } else {
-        throw err;
-      }
-    } else {
-      throw err;
+  } catch (error) {
+    if (isUsername && !fallbackEmail && ['auth/user-not-found', 'auth/invalid-credential', 'auth/wrong-password'].includes(error.code)) {
+      const emailError = new Error('E-posta ile açılan veya e-postası güncellenen hesaplarda kayıtlı e-posta adresinizi de giriniz.');
+      emailError.code = 'dtm/email-required';
+      throw emailError;
     }
+    throw error;
   }
 
   // Firestore profil verisini çek
@@ -87,6 +50,13 @@ async function dtmLogin(identifier, password) {
   if (!snap.exists || !['user', 'gerceklestirmeci', 'admin', 'superadmin'].includes(userData.role)) {
     await dtmLogout();
     throw new Error('Uygulama kullanıcı kaydınız bulunamadı. Yöneticiyle iletişime geçiniz.');
+  }
+
+  if (isUsername && (userData.username || '').toLowerCase().trim() !== identifier.toLowerCase().trim()) {
+    await dtmLogout();
+    const error = new Error('Kullanıcı bilgileri eşleşmiyor.');
+    error.code = 'auth/invalid-credential';
+    throw error;
   }
 
   // Genel kullanıcı dizinini (publicUsers: yalnızca ad ve rol) arka planda senkronize et
@@ -255,13 +225,6 @@ async function epostaDogrulamaGonder(yeniEmail) {
     currentDTMUser.emailVerified = false;
   }
 
-  // Eşlemeyi ŞİMDİ yaz (doğrulanmamış olarak). Kullanıcı linke tıkladığında Firebase
-  // auth e-postasını değiştirip mevcut oturumun token'larını iptal ediyor; o andan
-  // sonra oturum içinden yazma şansımız kalmayabilir ve kullanıcı adıyla giriş
-  // kalıcı olarak bozulur. Şifre sıfırlama bu kaydı doğrulanana kadar kullanmaz.
-  const mapUsername = currentDTMUser?.username;
-  if (mapUsername) await syncUsernameEmailMap(mapUsername, cleanEmail, false);
-
   return cleanEmail;
 }
 
@@ -296,7 +259,6 @@ async function epostaDurumunuGuncelle() {
       currentDTMUser.emailVerified = true;
       currentDTMUser.pendingEmail = null;
     }
-    if (currentDTMUser?.username) syncUsernameEmailMap(currentDTMUser.username, authEmail, true);
   }
 
   return {

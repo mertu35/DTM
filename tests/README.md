@@ -54,3 +54,9 @@ E-posta senkronu için `node tests/email-auth.test.js` çalıştırın. Auth tok
 yenilemesinin kayıttan önce gerçekleştiğini ve hatalarda yerel doğrulama
 bilgisinin başarılı gibi güncellenmediğini kontrol eder. Firestore testleri
 e-posta/verified alanlarının Auth adresiyle eşleşmesini de doğrular.
+
+`node tests/login.test.js`, eski kullanıcı adı girişini, güncel e-posta ile
+girişi, kullanıcı adı/adres eşleşmesini ve anonim e-posta dizini erişimi
+yapılmadığını kontrol eder. E-postası değişen hesabın kullanıcı adıyla girişi
+kayıtlı e-posta alanı üzerinden tamamlanır; yalnızca kullanıcı adından adres
+çözümleme yapılmaz.
