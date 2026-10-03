@@ -10,12 +10,13 @@ const base = `${host}/v1/projects/${project}/databases/(default)/documents`;
 const name = p => `projects/${project}/databases/(default)/documents/${p}`;
 const field = v => typeof v === 'boolean' ? { booleanValue: v } : { stringValue: v };
 const fields = data => Object.fromEntries(Object.entries(data).map(([k, v]) => [k, field(v)]));
+const authClaims = {};
 function token(uid) {
   const encode = v => Buffer.from(JSON.stringify(v)).toString('base64url');
   return `${encode({ alg: 'none', typ: 'JWT' })}.${encode({
     sub: uid, user_id: uid, aud: project, iss: `https://securetoken.google.com/${project}`,
     iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600,
-    firebase: { sign_in_provider: 'password' }
+    firebase: { sign_in_provider: 'password' }, ...(authClaims[uid] || {})
   })}.`;
 }
 async function request(method, url, body, uid = 'owner', admin = false) {
@@ -46,6 +47,33 @@ async function main() {
   for (const [uid, role] of [['owner', 'user'], ['reviewer', 'gerceklestirmeci'], ['other', 'user'], ['admin', 'admin']]) {
     await seed(`users/${uid}`, { role });
   }
+  const emailUser = 'email-user';
+  const resetEmail = (verified = false) => seed(`users/${emailUser}`, {
+    role: 'user', email: 'real@example.com', emailVerified: verified
+  });
+  await resetEmail();
+  authClaims[emailUser] = { email: 'real@example.com', email_verified: false };
+  await check('unverified Auth cannot verify profile', await update(`users/${emailUser}`, { emailVerified: true }, emailUser), false);
+  authClaims[emailUser].email_verified = true;
+  await check('matching verified Auth email allowed', await update(`users/${emailUser}`, { emailVerified: true }, emailUser), true);
+  await check('email-only change cannot retain verification', await update(`users/${emailUser}`, { email: 'fake@example.com' }, emailUser), false);
+  await check('verified Auth cannot verify another address', await update(`users/${emailUser}`, { email: 'fake@example.com', emailVerified: true }, emailUser), false);
+  await check('email change with verification reset allowed', await update(`users/${emailUser}`, { email: 'new@example.com', emailVerified: false }, emailUser), true);
+  await check('pending email update allowed', await update(`users/${emailUser}`, { pendingEmail: 'pending@example.com', emailVerified: false }, emailUser), true);
+  authClaims[emailUser] = { email: 'new@example.com', email_verified: true };
+  await check('newly verified Auth address sync allowed', await update(`users/${emailUser}`, { email: 'new@example.com', emailVerified: true }, emailUser), true);
+  authClaims[emailUser] = { email: 'real@example.com', email_verified: false };
+  await check('unrelated avatar with stale token allowed', await update(`users/${emailUser}`, { avatar: 'avatar2' }, emailUser), true);
+  await check('admin cannot falsely verify another profile', await update(`users/${emailUser}`, { email: 'fake@example.com', emailVerified: true }, 'admin'), false);
+  await check('admin unrelated role change preserves verified profile', await update(`users/${emailUser}`, { role: 'gerceklestirmeci' }, 'admin'), true);
+  await seed('users/admin', { role: 'admin', email: 'admin@example.com', emailVerified: false });
+  authClaims.admin = { email: 'admin@example.com', email_verified: true };
+  await check('admin self verification cannot bypass address match', await update('users/admin', { email: 'fake@example.com', emailVerified: true }, 'admin'), false);
+  await check('admin matching self verification allowed', await update('users/admin', { emailVerified: true }, 'admin'), true);
+  await check('admin cannot create falsely verified profile', await seedAs('users/fake-verified', { role: 'user', email: 'fake@example.com', emailVerified: true }, 'admin'), false);
+  await resetEmail();
+  authClaims[emailUser] = {};
+  await check('missing Auth claims cannot verify profile', await update(`users/${emailUser}`, { emailVerified: true }, emailUser), false);
   await seed('users/super', { role: 'superadmin', displayName: 'Super' });
   await seed('publicUsers/super', { uid: 'super', role: 'superadmin', displayName: 'Super' });
   await seed('users/super/secret/info', { value: 'private' });

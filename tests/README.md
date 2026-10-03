@@ -49,3 +49,8 @@ satır sonu içeren adlar düğme işleyicilerine veri olarak aktarılmalıdır.
 `node tests/user-management.test.js`, kullanıcı oluşturma/rol değiştirme/silme
 işlemlerinin atomik kaydını ve başarısız profil kaydında Auth hesabının temizlenmesini
 yerel taklitlerle kontrol eder.
+
+E-posta senkronu için `node tests/email-auth.test.js` çalıştırın. Auth token
+yenilemesinin kayıttan önce gerçekleştiğini ve hatalarda yerel doğrulama
+bilgisinin başarılı gibi güncellenmediğini kontrol eder. Firestore testleri
+e-posta/verified alanlarının Auth adresiyle eşleşmesini de doğrular.

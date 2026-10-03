@@ -272,8 +272,9 @@ async function epostaDurumunuGuncelle() {
 
   try {
     await user.reload();
+    await user.getIdToken(true);
   } catch(e) {
-    console.warn('User reload hatası:', e);
+    throw new Error('E-posta doğrulama durumu yenilenemedi. Lütfen tekrar deneyiniz.');
   }
 
   const authEmail = user.email;
@@ -288,7 +289,7 @@ async function epostaDurumunuGuncelle() {
       email: authEmail,
       emailVerified: true,
       pendingEmail: null
-    }).catch(e => console.warn('Firestore email sync error:', e));
+    });
 
     if (currentDTMUser) {
       currentDTMUser.email = authEmail;

@@ -20,6 +20,21 @@ service cloud.firestore {
       );
     }
 
+    // Doğrulanmış profil adresi, aynı kullanıcının Auth token'ındaki adres olmalı.
+    function dogrulanmisEposta(userId) {
+      return request.auth.uid == userId &&
+        request.auth.token.get('email_verified', false) == true &&
+        request.resource.data.get('email', '') is string &&
+        request.resource.data.get('email', '') != '' &&
+        request.resource.data.get('email', '') == request.auth.token.get('email', '');
+    }
+
+    function epostaGuncellemesiGecerli(userId) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['email', 'emailVerified']) ||
+        request.resource.data.get('emailVerified', false) == false ||
+        (request.resource.data.get('emailVerified', false) == true && dogrulanmisEposta(userId));
+    }
+
     // Kullanıcılar
     match /users/{userId} {
       // Herkes kendi kaydını, admin/superadmin herkesi okuyabilir.
@@ -31,7 +46,13 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']));
 
       // Admin ve superadmin yazabilir; ancak superadmin atama/değiştirme yalnızca mevcut superadmin yapabilir
-      allow create, update: if kullaniciYonetebilir(userId) &&
+      allow create: if kullaniciYonetebilir(userId) &&
+        request.resource.data.get('emailVerified', false) == false &&
+        request.resource.data.role in ['user', 'gerceklestirmeci', 'admin', 'superadmin'] &&
+        (request.resource.data.role != 'superadmin' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin');
+      allow update: if kullaniciYonetebilir(userId) &&
+        epostaGuncellemesiGecerli(userId) &&
         request.resource.data.role in ['user', 'gerceklestirmeci', 'admin', 'superadmin'] &&
         (request.resource.data.role != 'superadmin' ||
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin') &&
@@ -39,8 +60,7 @@ service cloud.firestore {
       allow delete: if kullaniciYonetebilir(userId) && request.auth.uid != userId;
 
       // Kullanıcı kendi profilini sınırlı alanlarda güncelleyebilir.
-      // emailVerified alanını yalnızca Firebase Auth'un kriptografik token doğrulaması (email_verified)
-      // true olduğunda true yapabilir; böylece Auth doğrulaması olmadan profil sahteciliği engellenir.
+      // E-posta veya doğrulama değişirse Auth adresi de eşleşmelidir.
       allow update: if kayitliKullanici() &&
         request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -48,11 +68,7 @@ service cloud.firestore {
           'lastGonderilenVisit', 'lastOnayliVisit',
           'email', 'emailVerified', 'pendingEmail', 'emailUpdatedAt'
         ]) &&
-        (
-          !('emailVerified' in request.resource.data.diff(resource.data).affectedKeys()) ||
-          request.resource.data.emailVerified == false ||
-          request.auth.token.email_verified == true
-        ) &&
+        epostaGuncellemesiGecerli(userId) &&
         (
           !('avatar' in request.resource.data.diff(resource.data).affectedKeys()) ||
           request.resource.data.avatar in ['avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6', null, '']
