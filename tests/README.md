@@ -92,3 +92,6 @@ kullanıcı dizini, referans kayıtlarını emülatörden siler.
 Bu test gerçek posta teslimini ve canlı Firebase ayarlarını doğrulamaz.
 Canlı test, kontrol edilen bir test posta kutusunda doğrulama bağlantısının
 açılmasını gerektirir. Üretim hesabının parolasını test dosyalarına yazmayın.
+
+Kayıt/iş akışı regresyonları: `node tests/project-workflow.test.js`
+PDF aktarımı, tutar ayrıştırma, tekrar giriş ve yazdırma: `node tests/feature-regressions.test.js`

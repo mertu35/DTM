@@ -644,6 +644,8 @@ function updateNavLock() {
 
 function init() {
   document.querySelectorAll('.nav-item').forEach(item => {
+    if (item.dataset.dtmNavBound === 'true') return;
+    item.dataset.dtmNavBound = 'true';
     item.addEventListener('click', async (e) => {
       const targetPage = item.dataset.page;
       if (currentPage === targetPage) return;
@@ -1406,7 +1408,7 @@ function renderVeriGirisPage() {
               ${(Array.isArray(proje.bittiEkleri) ? proje.bittiEkleri : proje.bittiEkleri ? [proje.bittiEkleri] : []).map((ek, i) => `
                 <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
                   <span style="min-width:20px;font-size:13px;color:var(--gray-500);font-weight:600">${i + 1}-</span>
-                  <input type="text" value="${escAttr(escHtml(ek))}" data-ek-index="${i}" placeholder="Ek açıklaması"
+                  <input type="text" value="${escAttr(ek)}" data-ek-index="${i}" placeholder="Ek açıklaması"
                     style="flex:1" ${dtmEventAttr('change', function(event) { onBittiEkChange(this) })}>
                   <button type="button" ${dtmEventAttr('click', function(event) { onBittiEkSil((i)) })}
                     style="padding:5px 9px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;color:#6b7280;font-size:14px;line-height:1;transition:all 0.15s"
@@ -1539,7 +1541,7 @@ function renderVeriGirisPage() {
           ${!currentProjeKilitli ? `
             <input type="file" id="projeDosyaInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none" ${dtmEventAttr('change', function(event) { projeDosyaSecildi(this.files) })}>
             <button type="button" class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { document.getElementById('projeDosyaInput').click() })}>+ Dosya Ekle</button>
-            <p style="font-size:11.5px;color:var(--gray-400);margin-top:6px">Fotoğraf, fatura, vergi borcu yoktur belgesi vb. — Resim, PDF, Word veya Excel, dosya başına en fazla 10 MB.</p>
+            <p style="font-size:11.5px;color:var(--gray-400);margin-top:6px">Fotoğraf, fatura, vergi borcu yoktur belgesi vb. — Resim, PDF, Word veya Excel, dosya başına en fazla 5 MB.</p>
           ` : ''}
         `}
       </div>
@@ -2251,10 +2253,11 @@ async function dtmLoadPdf(file) {
 }
 
 function parseTLTutar(str) {
-  let s = str.replace(/[TLtl\s₺]/g, '');
-  // Türkçe format: nokta binler ayırıcısı, virgül ondalık ayırıcısı → "12.500,00" = 12500.00
-  s = s.replace(/\./g, '').replace(',', '.');
-  return parseFloat(s) || 0;
+  let s = String(str).replace(/[TLtl\s₺]/g, '');
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) return 0;
+  return Number(s) || 0;
 }
 
 async function parseTeklifPDF(file, type, fi) {
@@ -2266,7 +2269,7 @@ async function parseTeklifPDF(file, type, fi) {
     // Tutar: önce "Tutarı [sayı]" kalıbını ara (en güvenilir)
     // Metin katmanında "TL" bozuk olabileceği için önce tutar etiketini kullan.
     let tutar = 0;
-    const tutariMatch = fullText.match(/Tutar[ıi]\s*[\n\r ]*([0-9]+[.,]\d{3})/i);
+    const tutariMatch = fullText.match(/Tutar[ıi]\s*[:\-]?\s*([0-9][0-9.,]*)/i);
     if (tutariMatch) {
       tutar = parseTLTutar(tutariMatch[1]);
     } else {
@@ -2294,13 +2297,16 @@ async function parseTeklifPDF(file, type, fi) {
     if (!onaylandi) return;
 
     const liste = type === 'ym' ? proje.ymFirmalar : proje.teklifFirmalar;
-    if (firmaAdi) liste[fi].ad = firmaAdi;
+    if (!liste[fi]) throw new Error('Firma satırı bulunamadı.');
     if (tutar > 0) {
       const aktifKi = proje.isKalemleri.findIndex(k => k.ad?.trim());
-      const miktarVal = parseFloat(proje.isKalemleri[ki]?.miktar);
-      const miktar = (!isNaN(miktarVal) && miktarVal > 0) ? miktarVal : 1;
-      liste[fi].fiyatlar[ki] = Math.round((tutar / miktar) * 100) / 100;
+      if (aktifKi < 0) throw new Error('Önce bir iş kalemi giriniz.');
+      const miktarVal = parseFloat(proje.isKalemleri[aktifKi]?.miktar);
+      if (!Number.isFinite(miktarVal) || miktarVal <= 0) throw new Error('İş kalemi miktarı sıfırdan büyük olmalıdır.');
+      const miktar = miktarVal;
+      liste[fi].fiyatlar[aktifKi] = Math.round((tutar / miktar) * 100) / 100;
     }
+    if (firmaAdi) liste[fi].ad = firmaAdi;
     saveProje(proje);
     renderPage();
     showToast('Firma bilgileri aktarıldı!', 'success');
@@ -3448,7 +3454,7 @@ async function renderKaydetYuklePage() {
 
 async function dosyaGetir(projeId) {
   try {
-    const doc = await getProjeFromCloud(projeId);
+    const doc = await getProjeFromCloud(projeId, false);
     const projData = Object.assign(getDefaultProje(), doc.data);
     exportProjeJSON(projData);
   } catch(e) {
@@ -3479,29 +3485,17 @@ async function yukleProjeCloud() {
 async function cloudKaydet() {
   if (currentProjeBaskaKullanici) { showToast('Bu proje başka bir kullanıcıya ait.', 'warning'); return; }
   if (currentProjeKilitli) { showToast('Bu proje kilitli. Değişiklikler kaydedilemez.', 'warning'); return; }
+  const savedSnapshot = JSON.stringify(proje);
+  const savedData = JSON.parse(savedSnapshot);
   try {
     if (currentCloudProjeId) {
-      await updateProjeInCloud(currentCloudProjeId, proje);
-      // Geri gönderildi ise taslağa al ve notu temizle
-      const extraUpdate = { geriGonderNot: null, geriGonderAt: null, geriGonderBy: null };
-      if (currentProjeStatus === 'geri_gonderildi') {
-        extraUpdate.status = 'taslak';
-      }
-      try {
-        await db.collection('projeler').doc(currentCloudProjeId).update(extraUpdate);
-        if (currentProjeStatus === 'geri_gonderildi') currentProjeStatus = 'taslak';
-      } catch(e) {
-        console.warn('[proje] Durum güncellenemedi:', e?.code, e?.message);
-        lastSavedProjeSnapshot = JSON.stringify(proje);
-        showToast('Proje kaydedildi, ancak durum güncellenemedi: ' + hataMesaji(e), 'warning');
-        renderPage();
-        return;
-      }
-      lastSavedProjeSnapshot = JSON.stringify(proje);
+      await updateProjeInCloud(currentCloudProjeId, savedData);
+      // Geri gönderme notu ve durum, yeniden gönderilene kadar korunur.
+      lastSavedProjeSnapshot = savedSnapshot;
       showToast('Proje başarıyla kaydedildi!');
     } else {
-      currentCloudProjeId = await saveProjeToCloud(proje);
-      lastSavedProjeSnapshot = JSON.stringify(proje);
+      currentCloudProjeId = await saveProjeToCloud(savedData);
+      lastSavedProjeSnapshot = savedSnapshot;
       showToast('Proje başarıyla kaydedildi!');
     }
     renderPage();
@@ -3587,7 +3581,7 @@ async function gonderiClick(projeId, isAdi) {
   // Validasyon: önce projeyi cloud'dan çek, kontrol et
   let projeDoc;
   try {
-    projeDoc = await getProjeFromCloud(projeId);
+    projeDoc = await getProjeFromCloud(projeId, false);
   } catch(e) {
     showToast('Proje yüklenemedi: ' + e.message, 'error'); return;
   }
@@ -3639,13 +3633,13 @@ async function gonderiOnayla(projeId, btn) {
   await butonKilitli(btn, 'Gönderiliyor...', async () => {
     try {
       // Kazanan firmanın basit usul durumunu, gönderilen projeye ait veriden yakala
-      const projeDoc = await getProjeFromCloud(projeId);
+      const projeDoc = await getProjeFromCloud(projeId, false);
       const p = Object.assign(getDefaultProje(), projeDoc.data);
       const kIdx = p.kazananFirmaIndex >= 0 ? p.kazananFirmaIndex : hesaplaKazananFirma(p);
       const kFirma = p.teklifFirmalar[kIdx];
       const basitUsul = kFirma ? isFirmaBasitUsul(kFirma.ad, referans) : false;
 
-      await gonderiProje(projeId, uid, ad, basitUsul);
+      await gonderiProje(projeId, uid, ad, basitUsul, projeDoc.revision || 0);
       document.getElementById('gonderiModal')?.remove();
       if (currentCloudProjeId === projeId) currentProjeKilitli = true;
       renderPage();
@@ -3762,14 +3756,14 @@ async function adminGeriGonderClick(projeId, isAdi) {
 
 async function gonderilenOnaylaClick(projeId, isAdi) {
   try {
-    const doc = await getProjeFromCloud(projeId);
+    const doc = await getProjeFromCloud(projeId, false);
     const data = Object.assign(getDefaultProje(), doc.data);
     if (!data.odenek || !data.butceTertibi) {
       showToast('Onay belgesi bilgileri eksik! Gerçekleştirme görevlisi önce ödenek ve bütçe tertibi bilgilerini girmelidir.', 'warning');
       return;
     }
     if (!await showConfirm(`"${escHtml(isAdi)}" projesi onaylanacak.<br><br>Bu işlem geri alınamaz. Emin misiniz?`, 'Onayla')) return;
-    await onaylaProje(projeId);
+    await onaylaProje(projeId, doc.revision || 0);
     renderPage();
   } catch(e) {
     showToast('Hata: ' + hataMesaji(e), 'error');
@@ -5285,6 +5279,7 @@ async function renderOnayliBelgelerPage() {
       });
       if (siralama === 'az') liste = [...liste].sort((a,b)=>(a.isAdi||'').localeCompare(b.isAdi||'','tr'));
       else if (siralama === 'za') liste = [...liste].sort((a,b)=>(b.isAdi||'').localeCompare(a.isAdi||'','tr'));
+      else if (siralama === 'yeni') liste = [...liste].sort((a,b)=>(b.onaylandiAt?.toMillis?.()??0)-(a.onaylandiAt?.toMillis?.()??0));
       else if (siralama === 'eski') liste = [...liste].sort((a,b)=>(a.onaylandiAt?.toMillis?.()??0)-(b.onaylandiAt?.toMillis?.()??0));
       return liste;
     };

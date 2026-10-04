@@ -134,7 +134,15 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.status == 'taslak';
 
-      allow update: if kayitliKullanici() && (
+      // Finansal veri değişikliği mutlaka yeni sürüm üretir. Eski projeler 0'dan başlar.
+      function projeSurumuGecerli() {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        return (!changed.hasAny(['data', 'revision']) ||
+          (request.resource.data.get('revision', -1) is int &&
+           request.resource.data.revision == resource.data.get('revision', 0) + 1));
+      }
+
+      allow update: if kayitliKullanici() && projeSurumuGecerli() && (
         // Admin/superadmin her alanı değiştirebilir
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
         // Gerçekleştirmeci sadece kendi atandığı ve 'gonderildi' durumundaki projeyi güncelleyebilir
@@ -143,9 +151,9 @@ service cloud.firestore {
          resource.data.status == 'gonderildi' &&
          (
            (request.resource.data.status == 'onaylandi' &&
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'onaylandiAt', 'onaylandiBy'])) ||
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'onaylandiAt', 'onaylandiBy', 'revision'])) ||
            (request.resource.data.status == 'geri_gonderildi' &&
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'geriGonderNot', 'geriGonderAt', 'geriGonderBy']))
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'geriGonderNot', 'geriGonderAt', 'geriGonderBy', 'revision']))
          )) ||
         // Proje sahibi:
         // Yalnızca proje taslak veya geri_gonderildi aşamasındayken güncelleyebilir.

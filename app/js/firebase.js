@@ -88,6 +88,7 @@ async function dtmLogin(identifier, password, registeredEmail = '') {
 // Çıkış yap
 async function dtmLogout() {
   currentDTMUser = null;
+  projeSurumleri.clear();
   await auth.signOut();
 }
 
@@ -342,6 +343,39 @@ async function saveGlobalReferansToCloud(data) {
 
 // ===== PROJE FIRESTORE FONKSİYONLARI =====
 
+// Açılan kopyanın sürümü, başka oturumdaki kaydı sessizce ezmemek için tutulur.
+const projeSurumleri = new Map();
+function projeCakismaHatasi() {
+  const error = new Error('Bu proje başka bir oturumda değiştirildi. Değişikliklerinizi dışa aktararak koruyun ve projeyi yeniden açın.');
+  error.code = 'dtm/conflict';
+  return error;
+}
+async function projeAtomikGuncelle(projeId, patch, izinliDurumlar = null, surumKontrol = false, beklenenSurum = undefined) {
+  const ref = db.collection('projeler').doc(projeId);
+  const expected = beklenenSurum ?? projeSurumleri.get(projeId);
+  if (surumKontrol && expected === undefined) throw projeCakismaHatasi();
+  const before = await db.runTransaction(async transaction => {
+    const snap = await transaction.get(ref);
+    if (!snap.exists) throw new Error('Proje bulunamadı');
+    const data = snap.data();
+    if (izinliDurumlar && !izinliDurumlar.includes(data.status)) {
+      throw new Error('Projenin durumu değişti. Listeyi yenileyip tekrar deneyiniz.');
+    }
+    if (surumKontrol && (data.revision || 0) !== expected) throw projeCakismaHatasi();
+    if (data.locked === true && !['admin', 'superadmin'].includes(currentDTMUser?.role)) {
+      throw new Error('Bu proje kilitli.');
+    }
+    transaction.update(ref, { ...patch, revision: (data.revision || 0) + 1 });
+    return data;
+  });
+  // Sunucu zamanını tekrar okumak yerine sürüm alanını kullan: eşzamanlı
+  // yeni bir yazıyı yanlışlıkla bu istemcinin kaydı sayma.
+  if (projeSurumleri.get(projeId) === (before.revision || 0)) {
+    projeSurumleri.set(projeId, (before.revision || 0) + 1);
+  }
+  return before;
+}
+
 // Projeyi buluta kaydet (yeni)
 async function saveProjeToCloud(projeData) {
   const user = auth.currentUser;
@@ -354,22 +388,24 @@ async function saveProjeToCloud(projeData) {
     isTuru: projeData.isTuru || 'Yapım İşi',
     data: projeData,
     status: 'taslak',
+    revision: 0,
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   });
+  projeSurumleri.set(ref.id, 0);
   return ref.id;
 }
 
 // Projeyi gerçekleştirmeciye gönder
-async function gonderiProje(projeId, gerceklestirmeciUid, gerceklestirmeciAd, kazananBasitUsul = false) {
-  await db.collection('projeler').doc(projeId).update({
+async function gonderiProje(projeId, gerceklestirmeciUid, gerceklestirmeciAd, kazananBasitUsul = false, beklenenSurum = undefined) {
+  await projeAtomikGuncelle(projeId, {
     status: 'gonderildi',
     gonderildiAt: firebase.firestore.FieldValue.serverTimestamp(),
     gonderildiBy: currentDTMUser?.displayName || '',
     atananGerceklestirmeciUid: gerceklestirmeciUid,
     atananGerceklestirmeciAd: gerceklestirmeciAd,
     kazananBasitUsul: kazananBasitUsul
-  });
+  }, ['taslak', 'geri_gonderildi'], true, beklenenSurum);
 }
 
 // Gerçekleştirmecileri getir (veri sızıntısını önlemek için yalnızca genel ad ve rol içeren publicUsers'tan okur)
@@ -393,31 +429,32 @@ async function getGerceklestirmeciler() {
 
 // Projeyi geri gönder (gerçekleştirmeci)
 async function geriGonderProje(projeId, not) {
-  await db.collection('projeler').doc(projeId).update({
+  await projeAtomikGuncelle(projeId, {
     status: 'geri_gonderildi',
     geriGonderNot: not,
     geriGonderAt: firebase.firestore.FieldValue.serverTimestamp(),
     geriGonderBy: currentDTMUser?.displayName || ''
-  });
+  }, ['gonderildi'], false);
 }
 
 // Projeyi onayla (gerçekleştirmeci)
-async function onaylaProje(projeId) {
-  await db.collection('projeler').doc(projeId).update({
+async function onaylaProje(projeId, beklenenSurum = undefined) {
+  await projeAtomikGuncelle(projeId, {
     status: 'onaylandi',
     onaylandiAt: firebase.firestore.FieldValue.serverTimestamp(),
     onaylandiBy: currentDTMUser?.displayName || ''
-  });
+  }, ['gonderildi'], true, beklenenSurum);
 }
 
 // Mevcut projeyi güncelle
 async function updateProjeInCloud(projeId, projeData) {
-  await db.collection('projeler').doc(projeId).update({
+  projeData = JSON.parse(JSON.stringify(projeData));
+  await projeAtomikGuncelle(projeId, {
     isAdi: projeData.isAdi || '(İsimsiz)',
     isTuru: projeData.isTuru || 'Yapım İşi',
     data: projeData,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  }, ['taslak', 'geri_gonderildi', 'gonderildi', 'onaylandi', 'arsivlendi'], true);
 }
 
 // Kullanıcının projelerini getir (en fazla PROJE_LIMIT kayıt)
@@ -460,9 +497,10 @@ async function deleteProjeFromCloud(projeId) {
 }
 
 // Tekil proje getir
-async function getProjeFromCloud(projeId) {
+async function getProjeFromCloud(projeId, duzenlemeKopyasi = true) {
   const snap = await db.collection('projeler').doc(projeId).get();
   if (!snap.exists) throw new Error('Proje bulunamadı');
+  if (duzenlemeKopyasi) projeSurumleri.set(projeId, snap.data().revision || 0);
   return { id: snap.id, ...snap.data() };
 }
 

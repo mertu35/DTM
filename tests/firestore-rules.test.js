@@ -8,7 +8,7 @@ const host = 'http://127.0.0.1:8080';
 const project = 'demo-dtm';
 const base = `${host}/v1/projects/${project}/databases/(default)/documents`;
 const name = p => `projects/${project}/databases/(default)/documents/${p}`;
-const field = v => typeof v === 'boolean' ? { booleanValue: v } : { stringValue: v };
+const field = v => typeof v === 'number' ? { integerValue: String(v) } : typeof v === 'boolean' ? { booleanValue: v } : { stringValue: v };
 const fields = data => Object.fromEntries(Object.entries(data).map(([k, v]) => [k, field(v)]));
 const authClaims = {};
 function token(uid) {
@@ -173,6 +173,20 @@ async function main() {
       { update: { name: name(p), fields: fields({ status: 'onaylandi' }) }, updateMask: { fieldPaths: ['status'] } },
       { delete: name(`${p}/dosyalar/file`) }
     ] }, 'reviewer'), false);
+  const versioned = 'projeler/versioned';
+  await seed(versioned, { userId: 'owner', status: 'taslak', data: 'before' });
+  await check('financial data without revision denied', await update(versioned, { data: 'new' }, 'owner'), false);
+  await check('legacy project first version allowed', await update(versioned, { data: 'new', revision: 1 }, 'owner'), true);
+  await check('stale version denied', await update(versioned, { data: 'lost', revision: 1 }, 'owner'), false);
+  await check('skipped version denied', await update(versioned, { data: 'lost', revision: 4 }, 'owner'), false);
+  await check('next version allowed', await update(versioned, { data: 'next', revision: 2 }, 'owner'), true);
+  await check('revision rollback denied', await update(versioned, { revision: 0 }, 'admin'), false);
+  await check('admin financial change without revision denied', await update(versioned, { data: 'unversioned' }, 'admin'), false);
+  await seed(versioned, { userId: 'owner', status: 'gonderildi', atananGerceklestirmeciUid: 'reviewer', revision: 2 });
+  await check('reviewer approval with next version allowed', await update(versioned, { status: 'onaylandi', onaylandiBy: 'Reviewer', revision: 3 }, 'reviewer'), true);
+  await check('reviewer repeated approval denied', await update(versioned, { onaylandiBy: 'Changed', revision: 4 }, 'reviewer'), false);
+  await seed(versioned, { userId: 'owner', status: 'gonderildi', atananGerceklestirmeciUid: 'reviewer', revision: 3 });
+  await check('reviewer return with next version allowed', await update(versioned, { status: 'geri_gonderildi', geriGonderNot: 'Düzelt', revision: 4 }, 'reviewer'), true);
   console.log(`${count} security checks passed.`);
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

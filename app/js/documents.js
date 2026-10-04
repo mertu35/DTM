@@ -1182,6 +1182,7 @@ function hizalaGorevliIsmi(root) {
 function belgeYazdir(html, landscape = false, sozlesme = false, dosyaAdi = '') {
   if (html.includes('data-hesaplama-hatasi="true"')) return false;
   const win = window.open('', '_blank');
+  if (!win) { showToast('Yazdırmak için tarayıcınızda açılır pencerelere izin veriniz.', 'warning'); return false; }
   const pageSize = landscape
     ? 'size: A4 landscape; margin: 8mm 10mm;'
     : sozlesme
