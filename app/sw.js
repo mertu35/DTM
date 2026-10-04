@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dtm-v90';
+const CACHE_NAME = 'dtm-v91';
 const STATIC_ASSETS = [
   './index.html',
   './css/style.css',

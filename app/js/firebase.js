@@ -358,6 +358,7 @@ async function projeAtomikGuncelle(projeId, patch, izinliDurumlar = null, surumK
     const snap = await transaction.get(ref);
     if (!snap.exists) throw new Error('Proje bulunamadı');
     const data = snap.data();
+    if (data.deleting === true) throw new Error('Bu proje siliniyor. İşlem tamamlanana kadar değiştirilemez.');
     if (izinliDurumlar && !izinliDurumlar.includes(data.status)) {
       throw new Error('Projenin durumu değişti. Listeyi yenileyip tekrar deneyiniz.');
     }
@@ -378,6 +379,9 @@ async function projeAtomikGuncelle(projeId, patch, izinliDurumlar = null, surumK
 
 // Projeyi buluta kaydet (yeni)
 async function saveProjeToCloud(projeData) {
+  projeData = JSON.parse(JSON.stringify(projeData));
+  delete projeData.belgeReferans;
+  delete projeData.kayitliKazananBasitUsul;
   const user = auth.currentUser;
   if (!user) throw new Error('Giriş yapılmamış');
   const ref = db.collection('projeler').doc();
@@ -397,14 +401,15 @@ async function saveProjeToCloud(projeData) {
 }
 
 // Projeyi gerçekleştirmeciye gönder
-async function gonderiProje(projeId, gerceklestirmeciUid, gerceklestirmeciAd, kazananBasitUsul = false, beklenenSurum = undefined) {
+async function gonderiProje(projeId, gerceklestirmeciUid, gerceklestirmeciAd, kazananBasitUsul = false, beklenenSurum = undefined, belgeReferans = null) {
   await projeAtomikGuncelle(projeId, {
     status: 'gonderildi',
     gonderildiAt: firebase.firestore.FieldValue.serverTimestamp(),
     gonderildiBy: currentDTMUser?.displayName || '',
     atananGerceklestirmeciUid: gerceklestirmeciUid,
     atananGerceklestirmeciAd: gerceklestirmeciAd,
-    kazananBasitUsul: kazananBasitUsul
+    kazananBasitUsul: kazananBasitUsul,
+    ...(belgeReferans ? { belgeReferans } : {})
   }, ['taslak', 'geri_gonderildi'], true, beklenenSurum);
 }
 
@@ -449,6 +454,8 @@ async function onaylaProje(projeId, beklenenSurum = undefined) {
 // Mevcut projeyi güncelle
 async function updateProjeInCloud(projeId, projeData) {
   projeData = JSON.parse(JSON.stringify(projeData));
+  delete projeData.belgeReferans;
+  delete projeData.kayitliKazananBasitUsul;
   await projeAtomikGuncelle(projeId, {
     isAdi: projeData.isAdi || '(İsimsiz)',
     isTuru: projeData.isTuru || 'Yapım İşi',
@@ -493,7 +500,39 @@ async function getUserProjeler() {
 
 // Projeyi sil
 async function deleteProjeFromCloud(projeId) {
-  await db.collection('projeler').doc(projeId).delete();
+  const ref = db.collection('projeler').doc(projeId);
+  const revision = await db.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new Error('Proje bulunamadı');
+    const p = snap.data();
+    const admin = ['admin', 'superadmin'].includes(currentDTMUser?.role);
+    if (!admin && (p.userId !== auth.currentUser?.uid || !['taslak', 'geri_gonderildi'].includes(p.status) || p.locked === true)) throw new Error('Bu proje silinemez.');
+    if (p.deleting === true) return p.revision || 0; // Kesilmiş silme işlemi tekrar denenebilir.
+    const next = (p.revision || 0) + 1;
+    tx.update(ref, { deleting: true, revision: next }); return next;
+  });
+  try {
+    const files = await ref.collection('dosyalar').get();
+    const refs = [];
+    for (const file of files.docs) {
+      const parts = await file.ref.collection('parcalar').get();
+      refs.push(...parts.docs.map(d => d.ref), file.ref);
+      if (refs.length > 450) throw new Error('Bu projede çok sayıda ek var. Önce bazı ekleri silip tekrar deneyiniz.');
+    }
+    // Silme işareti yeni yüklemeleri durdurur; mevcut eklerle proje atomik silinir.
+    await db.runTransaction(async tx => {
+      const snap = await tx.get(ref);
+      if (!snap.exists || snap.data().deleting !== true || snap.data().revision !== revision) throw projeCakismaHatasi();
+      refs.forEach(r => tx.delete(r)); tx.delete(ref);
+    });
+    projeSurumleri.delete(projeId);
+  } catch (error) {
+    await db.runTransaction(async tx => {
+      const snap = await tx.get(ref);
+      if (snap.exists && snap.data().deleting === true && snap.data().revision === revision) tx.update(ref, { deleting: false, revision: revision + 1 });
+    }).catch(() => {});
+    throw error;
+  }
 }
 
 // Tekil proje getir
@@ -501,46 +540,35 @@ async function getProjeFromCloud(projeId, duzenlemeKopyasi = true) {
   const snap = await db.collection('projeler').doc(projeId).get();
   if (!snap.exists) throw new Error('Proje bulunamadı');
   if (duzenlemeKopyasi) projeSurumleri.set(projeId, snap.data().revision || 0);
-  return { id: snap.id, ...snap.data() };
+  const doc = snap.data();
+  const data = { ...doc.data };
+  delete data.belgeReferans; delete data.kayitliKazananBasitUsul;
+  const sabit = ['gonderildi', 'onaylandi', 'arsivlendi'].includes(doc.status);
+  return { id: snap.id, ...doc, data: { ...data,
+    ...(sabit && doc.belgeReferans ? { belgeReferans: doc.belgeReferans } : {}),
+    ...(sabit && typeof doc.kazananBasitUsul === 'boolean' ? { kayitliKazananBasitUsul: doc.kazananBasitUsul } : {})
+  } };
 }
 
 // ===== İŞE AİT DOSYALAR (Firestore Alt-Koleksiyonu & Base64) =====
 // Fotoğraf, fatura, vergi borcu belgesi vb. harici depolama gerektirmeden
 // doğrudan Firestore'da 'projeler/{projeId}/dosyalar' koleksiyonuna kaydedilir.
 const PROJE_DOSYA_MAX_BOYUT = 5 * 1024 * 1024; // Maksimum dosya boyutu: 5 MB
-const PROJE_DOSYA_IZIN_VERILEN_UZANTILAR = [
-  '.pdf', '.doc', '.docx', '.xls', '.xlsx',
-  '.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif'
-];
-const PROJE_DOSYA_IZIN_VERILEN_TIPLER = [
-  'image/', 'application/pdf', 'application/msword',
-  'application/vnd.openxmlformats-officedocument.', 'application/vnd.ms-excel',
-  'application/x-pdf'
-];
-
 function projeDosyaTipiIzinli(dosya) {
-  const ad = (dosya.name || '').toLowerCase();
-  const uzantiGecerli = PROJE_DOSYA_IZIN_VERILEN_UZANTILAR.some(u => ad.endsWith(u));
-  if (!uzantiGecerli) return false;
-  // Eğer tarayıcı MIME tipi veriyorsa izinli tiplerle uyuşmalıdır (sahte uzantılı HTML/EXE engellenir)
-  if (dosya.type && dosya.type !== 'application/octet-stream') {
-    return PROJE_DOSYA_IZIN_VERILEN_TIPLER.some(t => dosya.type.startsWith(t));
-  }
-  return true;
+  const expected = dosyaMimeTipiBelirle(dosya);
+  const actual = (dosya.type || '').toLowerCase();
+  return Boolean(expected) && (!actual || actual === 'application/octet-stream' || actual === expected ||
+    (expected === 'application/pdf' && actual === 'application/x-pdf'));
 }
 
 function dosyaMimeTipiBelirle(dosya) {
-  if (dosya.type && dosya.type !== 'application/octet-stream') return dosya.type;
-  const ad = (dosya.name || '').toLowerCase();
-  if (ad.endsWith('.pdf')) return 'application/pdf';
-  if (ad.endsWith('.doc')) return 'application/msword';
-  if (ad.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  if (ad.endsWith('.xls')) return 'application/vnd.ms-excel';
-  if (ad.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-  if (ad.endsWith('.jpg') || ad.endsWith('.jpeg')) return 'image/jpeg';
-  if (ad.endsWith('.png')) return 'image/png';
-  if (ad.endsWith('.webp')) return 'image/webp';
-  return 'application/pdf';
+  const tipler = {
+    pdf: 'application/pdf', doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', bmp: 'image/bmp', gif: 'image/gif'
+  };
+  return tipler[(dosya.name || '').toLowerCase().split('.').pop()] || '';
 }
 
 // Resimleri tarayıcıda kayıpsız sıkıştırıp Base64 JPEG üretir
@@ -601,17 +629,17 @@ function base64ToBlob(base64Data, contentType) {
 
 // Dosyayı yeni sekmede önizler veya doğrudan indirir
 window.projeDosyaGoruntule = function(base64Data, dosyaAdi, contentType) {
-  try {
-    const mime = contentType || dosyaMimeTipiBelirle({ name: dosyaAdi, type: '' });
-    const blob = base64ToBlob(base64Data, mime);
-    const blobUrl = URL.createObjectURL(blob);
-    window.open(blobUrl, '_blank');
-  } catch(e) {
-    const a = document.createElement('a');
-    a.href = base64Data;
-    a.download = dosyaAdi || 'dosya';
-    a.click();
+  const mime = dosyaMimeTipiBelirle({ name: dosyaAdi });
+  if (!mime) throw new Error('Bu dosya türü desteklenmiyor.');
+  const blob = base64ToBlob(base64Data, mime);
+  const blobUrl = URL.createObjectURL(blob);
+  // Eski veya sahte MIME bilgisine güvenme; Office dosyaları doğrudan indirilir.
+  const win = (mime === 'application/pdf' || mime.startsWith('image/')) ? window.open(blobUrl, '_blank') : null;
+  if (win) win.opener = null;
+  if (!win) {
+    const a = document.createElement('a'); a.href = blobUrl; a.download = dosyaAdi || 'dosya'; a.click();
   }
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
 };
 
 // Projeye dosya yükle (Firestore alt-koleksiyonuna)
@@ -624,30 +652,36 @@ async function projeDosyaYukle(projeId, dosya) {
     throw new Error('Bu dosya türü desteklenmiyor. Resim, PDF, Word veya Excel dosyası yükleyin.');
   }
 
-  const mimeTipi = dosyaMimeTipiBelirle(dosya);
+  let mimeTipi = dosyaMimeTipiBelirle(dosya);
+  let dosyaAdi = dosya.name;
   let dataUrl = '';
   let sonBoyut = dosya.size;
 
   if (mimeTipi.startsWith('image/')) {
     // Fotoğrafları otomatik optimize et (mobil kamera fotoları 200-300 KB'a iner)
     dataUrl = await compressImage(dosya);
-    sonBoyut = Math.round((dataUrl.length * 3) / 4);
+    const encoded = dataUrl.split(';base64,')[1];
+    sonBoyut = encoded.length * 3 / 4 - (encoded.endsWith('==') ? 2 : encoded.endsWith('=') ? 1 : 0);
+    mimeTipi = 'image/jpeg';
+    dosyaAdi = dosya.name.replace(/\.[^.]+$/, '') + '.jpg';
   } else {
     // PDF / Word / Excel dosyaları
     dataUrl = await fileToBase64(dosya);
   }
 
+  if (!Number.isInteger(sonBoyut) || sonBoyut <= 0 || sonBoyut > PROJE_DOSYA_MAX_BOYUT) throw new Error('Dosya boyutu geçersiz veya 5 MB sınırını aşıyor.');
+  dataUrl = 'data:' + mimeTipi + ';base64,' + dataUrl.split(';base64,')[1];
   const docRef = db.collection('projeler').doc(projeId).collection('dosyalar').doc();
   const CHUNK_SIZE = 700 * 1024; // 700 KB chunk (Firestore 1 MB doküman sınırına tam uyar)
 
   if (dataUrl.length <= CHUNK_SIZE) {
     // Tek doküman olarak sığıyor
     await docRef.set({
-      ad: dosya.name,
+      ad: dosyaAdi,
       boyut: sonBoyut,
       tip: mimeTipi,
       yukleyenAd: currentDTMUser?.displayName || currentDTMUser?.username || '',
-      yukleyenUid: currentDTMUser?.uid || '',
+      yukleyenUid: auth.currentUser?.uid || '',
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       parcali: false,
       data: dataUrl
@@ -662,11 +696,11 @@ async function projeDosyaYukle(projeId, dosya) {
     // Meta dokümanı ve parçaları tek bir atomik batch içinde yaz (yarım kalma/boş kayıt riskini sıfırlar)
     const batch = db.batch();
     batch.set(docRef, {
-      ad: dosya.name,
+      ad: dosyaAdi,
       boyut: sonBoyut,
       tip: mimeTipi,
       yukleyenAd: currentDTMUser?.displayName || currentDTMUser?.username || '',
-      yukleyenUid: currentDTMUser?.uid || '',
+      yukleyenUid: auth.currentUser?.uid || '',
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       parcali: true,
       parcaSayisi: chunks.length
@@ -684,15 +718,18 @@ async function projeDosyaYukle(projeId, dosya) {
 
 // Büyük parçalı dosyaların içeriğini birleştirerek getirir
 async function projeDosyaIcerigiGetir(projeId, docId, dosyaMeta) {
-  if (!dosyaMeta.parcali && dosyaMeta.url) {
-    return dosyaMeta.url;
+  if (!dosyaMeta.parcali) return dosyaMeta.url || '';
+  const snap = await db.collection('projeler').doc(projeId).collection('dosyalar').doc(docId)
+    .collection('parcalar').orderBy('index', 'asc').get();
+  if (!Number.isInteger(dosyaMeta.parcaSayisi) || dosyaMeta.parcaSayisi < 1 || dosyaMeta.parcaSayisi > 10 || snap.size !== dosyaMeta.parcaSayisi) {
+    throw new Error('Dosyanın parçaları eksik veya geçersiz.');
   }
-  const snap = await db.collection('projeler').doc(projeId)
-    .collection('dosyalar').doc(docId)
-    .collection('parcalar').orderBy('index', 'asc')
-    .get();
-
-  const fullData = snap.docs.map(d => d.data().chunk).join('');
+  const fullData = snap.docs.map((d, index) => {
+    const chunk = d.data();
+    if (chunk.index !== index || typeof chunk.chunk !== 'string' || chunk.chunk.length > 716800) throw new Error('Dosya parçası geçersiz.');
+    return chunk.chunk;
+  }).join('');
+  if (fullData.length > 6990650) throw new Error('Dosya 5 MB sınırını aşıyor.');
   return fullData;
 }
 
@@ -712,6 +749,7 @@ async function projeDosyalariGetir(projeId) {
       boyut: d.boyut || 0,
       tip: d.tip || 'application/pdf',
       parcali: Boolean(d.parcali),
+      parcaSayisi: d.parcaSayisi || 0,
       yukleyenAd: d.yukleyenAd || '',
       yuklenmeTarihi: d.createdAt?.toDate ? d.createdAt.toDate().toISOString() : new Date().toISOString(),
       url: d.data || ''

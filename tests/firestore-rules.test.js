@@ -8,7 +8,7 @@ const host = 'http://127.0.0.1:8080';
 const project = 'demo-dtm';
 const base = `${host}/v1/projects/${project}/databases/(default)/documents`;
 const name = p => `projects/${project}/databases/(default)/documents/${p}`;
-const field = v => typeof v === 'number' ? { integerValue: String(v) } : typeof v === 'boolean' ? { booleanValue: v } : { stringValue: v };
+const field = v => v === null ? { nullValue: null } : v instanceof Date ? { timestampValue: v.toISOString() } : typeof v === 'number' ? { integerValue: String(v) } : typeof v === 'boolean' ? { booleanValue: v } : typeof v === 'string' ? { stringValue: v } : Array.isArray(v) ? { arrayValue: { values: v.map(field) } } : { mapValue: { fields: fields(v) } };
 const fields = data => Object.fromEntries(Object.entries(data).map(([k, v]) => [k, field(v)]));
 const authClaims = {};
 function token(uid) {
@@ -33,6 +33,12 @@ async function update(p, data, uid) {
   return request('PATCH', `${base}/${p}?${mask}`, { fields: fields(data) }, uid);
 }
 async function seedAs(p, data, uid) { return request('PATCH', `${base}/${p}`, { fields: fields(data) }, uid); }
+const header = 'data:application/pdf;base64,';
+function fileMeta(uid = 'owner', multi = false) { return {
+  ad: 'test.pdf', boyut: multi ? 537600 : 3, tip: 'application/pdf', yukleyenUid: uid,
+  yukleyenAd: 'Test', createdAt: new Date(), parcali: multi,
+  ...(multi ? { parcaSayisi: 2 } : { data: header + 'YWJj' })
+}; }
 let count = 0;
 async function check(label, response, allowed) {
   assert.equal(response.status, allowed ? 200 : 403, `${label}: ${await response.text()}`);
@@ -155,8 +161,9 @@ async function main() {
         for (const suffix of ['dosyalar/file', 'dosyalar/file/parcalar/000']) {
           const file = `${p}/${suffix}`;
           await request('DELETE', `${base}/${file}`, undefined, '', true);
+          if (suffix.includes('parcalar')) await seed(`${p}/dosyalar/file`, fileMeta(uid, true));
           await check(`create ${suffix} ${uid} ${status} locked=${locked}`,
-            await request('PATCH', `${base}/${file}`, { fields: fields({ chunk: 'test' }) }, uid), allowed);
+            await request('PATCH', `${base}/${file}`, { fields: fields(suffix.includes('parcalar') ? { index: 0, chunk: header + 'A'.repeat(716800 - header.length) } : fileMeta(uid)) }, uid), allowed);
           await seed(file, { chunk: 'test' });
           await check(`read ${suffix} ${uid} ${status} locked=${locked}`,
             await request('GET', `${base}/${file}`, undefined, uid), uid !== 'other');
@@ -187,6 +194,57 @@ async function main() {
   await check('reviewer repeated approval denied', await update(versioned, { onaylandiBy: 'Changed', revision: 4 }, 'reviewer'), false);
   await seed(versioned, { userId: 'owner', status: 'gonderildi', atananGerceklestirmeciUid: 'reviewer', revision: 3 });
   await check('reviewer return with next version allowed', await update(versioned, { status: 'geri_gonderildi', geriGonderNot: 'Düzelt', revision: 4 }, 'reviewer'), true);
+  await reset('taslak');
+  const frozen = { version: 1, firmaList: [], yukleniciList: [] };
+  await check('snapshot can be captured at submission', await update(p, { status: 'gonderildi', belgeReferans: frozen }, 'owner'), true);
+  await check('admin cannot rewrite stored tax exemption', await update(p, { kazananBasitUsul: true }, 'admin'), false);
+  await check('admin cannot rewrite submitted snapshot', await update(p, { belgeReferans: { ...frozen, firmaList: [{ ad: 'Forged' }] } }, 'admin'), false);
+  await seed(p, { userId: 'owner', status: 'geri_gonderildi', belgeReferans: frozen });
+  await check('return snapshot cannot change before resubmission', await update(p, { belgeReferans: { ...frozen, firmaList: [{ ad: 'New' }] } }, 'owner'), false);
+  await check('resubmission can refresh snapshot', await update(p, { status: 'gonderildi', atananGerceklestirmeciUid: 'reviewer', belgeReferans: { ...frozen, firmaList: [{ ad: 'New' }] } }, 'owner'), true);
+  await reset('taslak');
+  for (const [label, patch] of [
+    ['HTML MIME', { tip: 'text/html', ad: 'fake.html' }], ['MIME-extension mismatch', { tip: 'application/pdf', ad: 'fake.png' }],
+    ['HTML data URL', { data: 'data:text/html;base64,YWJj' }], ['extra field', { secret: 'extra' }],
+    ['missing data', { data: null }], ['negative size', { boyut: -1 }], ['size exceeds limit', { boyut: 5242881 }],
+    ['fake size', { boyut: 1000 }], ['forged uploader', { yukleyenUid: 'other' }], ['wrong timestamp type', { createdAt: 'fake' }],
+    ['too many parts', { parcali: true, parcaSayisi: 60 }], ['unlisted nested path', { ad: 'test.pdf' }]
+  ]) {
+    const target = label === 'unlisted nested path' ? `${p}/dosyalar/security/unknown/child` : `${p}/dosyalar/security`;
+    await request('DELETE', `${base}/${target}`, undefined, '', true);
+    await check(label + ' denied', await seedAs(target, { ...fileMeta(), ...patch }, 'owner'), false);
+  }
+  const multipart = `${p}/dosyalar/multi`;
+  await seed(multipart, fileMeta('owner', true));
+  await check('last part exact aggregate size allowed', await seedAs(`${multipart}/parcalar/001`, { index: 1, chunk: 'A'.repeat(header.length) }, 'owner'), true);
+  await request('DELETE', `${base}/${multipart}/parcalar/001`, undefined, '', true);
+  await check('oversized aggregate part denied', await seedAs(`${multipart}/parcalar/001`, { index: 1, chunk: 'A'.repeat(header.length + 100) }, 'owner'), false);
+  await check('mismatched part id denied', await seedAs(`${multipart}/parcalar/009`, { index: 1, chunk: 'AAAA' }, 'owner'), false);
+  await check('out of range part denied', await seedAs(`${multipart}/parcalar/002`, { index: 2, chunk: 'AAAA' }, 'owner'), false);
+  await check('malformed base64 denied', await seedAs(`${multipart}/parcalar/001`, { index: 1, chunk: '<script>' }, 'owner'), false);
+  const raw = Buffer.alloc(5242880).toString('base64');
+  const full = header + raw;
+  const chunks = Array.from({ length: Math.ceil(full.length / 716800) }, (_, i) => full.slice(i * 716800, (i + 1) * 716800));
+  await check('5 MB upload with ten chunks in atomic batch', await request('POST', `${base}:commit`, { writes: [
+    { update: { name: name(`${p}/dosyalar/full`), fields: fields({ ...fileMeta('owner', true), boyut: 5242880, parcaSayisi: chunks.length }) } },
+    ...chunks.map((chunk, index) => ({ update: { name: name(`${p}/dosyalar/full/parcalar/${String(index).padStart(3,'0')}`), fields: fields({ index, chunk }) } }))
+  ] }, 'owner'), true);
+  await reset('taslak');
+  await check('project delete needs deletion phase', await request('DELETE', `${base}/${p}`, undefined, 'owner'), false);
+  await check('start deletion phase', await update(p, { deleting: true, revision: 1 }, 'owner'), true);
+  await check('new attachment during deletion denied', await seedAs(`${p}/dosyalar/during-delete`, fileMeta(), 'owner'), false);
+  await check('new submission during deletion denied', await update(p, { status: 'gonderildi', atananGerceklestirmeciUid: 'reviewer' }, 'owner'), false);
+  await check('edit during deletion denied', await update(p, { data: 'edit', revision: 2 }, 'owner'), false);
+  await check('cancel deletion phase', await update(p, { deleting: false, revision: 2 }, 'owner'), true);
+  await update(p, { deleting: true, revision: 3 }, 'owner');
+  await check('atomic project and attachment cleanup', await request('POST', `${base}:commit`, { writes: [
+    { delete: name(`${p}/dosyalar/full/parcalar/000`) }, { delete: name(`${p}/dosyalar/full`) }, { delete: name(p) }
+  ] }, 'owner'), true);
+  await seed(p, { userId: 'owner', status: 'taslak', deleting: true, revision: 1 });
+  const manyFiles = Array.from({ length: 450 }, (_, i) => `${p}/dosyalar/bulk-${i}`);
+  const bulkSeed = await request('POST', `${base}:commit`, { writes: manyFiles.map(path => ({ update: { name: name(path), fields: fields({ legacy: 'test' }) } })) }, '', true);
+  assert.equal(bulkSeed.status, 200, await bulkSeed.text());
+  await check('450 attachments and parent can be atomically deleted', await request('POST', `${base}:commit`, { writes: [...manyFiles.map(path => ({ delete: name(path) })), { delete: name(p) }] }, 'owner'), true);
   console.log(`${count} security checks passed.`);
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

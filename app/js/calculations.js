@@ -36,9 +36,38 @@ function hesaplaKalemTutar(fiyat, miktar) {
   return f >= 0 && m >= 0 ? paraYuvarla(f * m) : NaN;
 }
 
+// Belgeyi etkileyen firma bilgileri gönderimde sabitlenir; taslak canlı referansı kullanır.
+function belgeReferansiOlustur(proje, referans) {
+  const adlar = new Set([...(proje.ymFirmalar || []), ...(proje.teklifFirmalar || [])]
+    .map(f => normalizeStr(f.ad || '')));
+  const sec = list => (list || []).filter(f => adlar.has(normalizeStr(f.ad || ''))).map(f => ({
+    ad: f.ad || '', adres: f.adres || '', tel: f.tel || '', faks: f.faks || '', eposta: f.eposta || '', tur: f.tur || 'Kişi',
+    basitUsul: f.basitUsul === true
+  }));
+  return { version: 1, firmaList: sec(referans.firmaList), yukleniciList: sec(referans.yukleniciList) };
+}
+function getBelgeReferansi(proje, referans) {
+  const snapshot = proje.belgeReferans;
+  if (snapshot?.version === 1) return { ...referans, firmaList: snapshot.firmaList || [], yukleniciList: snapshot.yukleniciList || [] };
+  // Eski projelerde en azından gönderimde saklanmış true VE false değeri korunur.
+  if (typeof proje.kayitliKazananBasitUsul === 'boolean') {
+    const index = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
+    const ad = proje.teklifFirmalar?.[index]?.ad;
+    if (ad) {
+      const duzelt = list => (list || []).filter(f => normalizeStr(f.ad) !== normalizeStr(ad));
+      return { ...referans, firmaList: [...duzelt(referans.firmaList), {
+        ...(typeof getFirmaByAd === 'function' ? getFirmaByAd(ad, referans) : {}), ad, basitUsul: proje.kayitliKazananBasitUsul
+      }], yukleniciList: duzelt(referans.yukleniciList) };
+    }
+  }
+  return referans;
+}
+
 function hesaplaSozlesmeVergileri(proje, referans, basitUsul = false) {
+  referans = getBelgeReferansi(proje, referans);
   const kazanan = getKazananFirma(proje, referans);
-  const muaf = basitUsul || (kazanan && isFirmaBasitUsul(kazanan.ad, referans));
+  const sabit = proje.belgeReferans?.version === 1 || typeof proje.kayitliKazananBasitUsul === 'boolean';
+  const muaf = (!sabit && basitUsul) || (kazanan && isFirmaBasitUsul(kazanan.ad, referans));
   const kdvOrani = muaf ? 0 : hesaplamaSayisi(proje.kdvOrani, 20);
   const sozlesmeBedeli = kazanan ? kazanan.toplam : 0;
   const kdv = paraYuvarla(sozlesmeBedeli * kdvOrani / 100);
@@ -166,6 +195,7 @@ function hesaplaKazananFirma(proje) {
 }
 
 function getKazananFirma(proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   const idx = (proje.kazananFirmaIndex !== undefined && proje.kazananFirmaIndex >= 0)
     ? proje.kazananFirmaIndex
     : hesaplaKazananFirma(proje);
@@ -185,6 +215,7 @@ function getKazananFirma(proje, referans) {
 
 // Hakediş hesaplama
 function hesaplaHakedis(proje, referans, dogrula = true) {
+  referans = getBelgeReferansi(proje, referans);
   if (dogrula && getHesaplamaHatalari(proje, referans).length) return null;
   const idx = (proje.kazananFirmaIndex !== undefined && proje.kazananFirmaIndex >= 0)
     ? proje.kazananFirmaIndex

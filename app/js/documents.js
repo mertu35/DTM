@@ -6,6 +6,7 @@ function renderHesaplamaUyarisi(hatalar) {
 }
 
 function belgeHesaplamaKontrol(proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   const hatalar = getHesaplamaHatalari(proje, referans);
   if (!hatalar.length) return true;
   if (typeof showToast === 'function') showToast(hatalar.join(' '), 'warning');
@@ -13,6 +14,7 @@ function belgeHesaplamaKontrol(proje, referans) {
 }
 
 function renderYaklasikMaliyet(proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   const hatalar = getHesaplamaHatalari(proje, referans, false);
   if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const kalemler = getKalemler(proje);
@@ -158,6 +160,7 @@ function renderYaklasikMaliyet(proje, referans) {
 }
 
 function renderTeklifTutanagi(proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   const hatalar = getHesaplamaHatalari(proje, referans, false);
   if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const kalemler = getKalemler(proje);
@@ -352,6 +355,7 @@ function renderTeklifTutanagi(proje, referans) {
 }
 
 function renderSozlesme(proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   const hatalar = getHesaplamaHatalari(proje, referans, false);
   if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
@@ -667,6 +671,7 @@ Yüklenici, işin yürütülmesi sırasında 6331 sayılı İş Sağlığı ve G
 }
 
 function renderTeknikSartname(proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   const hatalar = getHesaplamaHatalari(proje, referans, false);
   if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const ymGorevliler = getAktifGorevliler(proje.ymGorevliler);
@@ -724,6 +729,7 @@ function renderTeknikSartname(proje, referans) {
 }
 
 function renderBittiTutanagi(proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   const hatalar = getHesaplamaHatalari(proje, referans, false);
   if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
@@ -775,6 +781,7 @@ function renderBittiTutanagi(proje, referans) {
 }
 
 function renderMuayeneKabulTutanagi(proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   const hatalar = getHesaplamaHatalari(proje, referans, false);
   if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   // 1. Kazanan firma ve bedel tespiti (Teklif firmaları veya YM firmaları üzerinden)
@@ -974,6 +981,7 @@ function renderDogrudanTeminOnayBelgesi(proje) {
 }
 
 function renderHakedisRaporu(proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   const hatalar = getHesaplamaHatalari(proje, referans);
   if (hatalar.length) return renderHesaplamaUyarisi(hatalar);
   const hak = hesaplaHakedis(proje, referans);

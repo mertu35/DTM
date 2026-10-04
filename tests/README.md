@@ -95,3 +95,7 @@ açılmasını gerektirir. Üretim hesabının parolasını test dosyalarına ya
 
 Kayıt/iş akışı regresyonları: `node tests/project-workflow.test.js`
 PDF aktarımı, tutar ayrıştırma, tekrar giriş ve yazdırma: `node tests/feature-regressions.test.js`
+
+Belge referansı sabitleme: `node tests/frozen-documents.test.js`
+Dosya yükleme/okuma/güvenli görüntüleme ve atomik proje silme: `node tests/project-files.test.js`
+Gönderim ekranının kaydedilmemiş/eski kopya kontrolü: `node tests/submission-ui.test.js`

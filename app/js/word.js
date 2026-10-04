@@ -95,6 +95,7 @@ ${icerik}
 
 // ── Belge ID'sine göre Word üret ──
 function belgeIdindenWordUret(belgeId, proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   if (!belgeHesaplamaKontrol(proje, referans)) return false;
   let icerik = '';
   let landscape = false;

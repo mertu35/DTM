@@ -111,7 +111,8 @@ service cloud.firestore {
     match /projeler/{projeId} {
       // getAfter, aynı batch içindeki onay/kilit değişikliğini de dikkate alır.
       function dosyaDegistirebilir() {
-        let proje = getAfter(/databases/$(database)/documents/projeler/$(projeId)).data;
+        let yol = /databases/$(database)/documents/projeler/$(projeId);
+        let proje = existsAfter(yol) ? getAfter(yol).data : get(yol).data;
         let kullanici = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
         return kullanici.role in ['admin', 'superadmin'] ||
           (proje.get('locked', false) != true && (
@@ -134,6 +135,15 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.status == 'taslak';
 
+      function belgeReferansiGecerli() {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        let snapshot = request.resource.data.get('belgeReferans', {});
+        return !changed.hasAny(['belgeReferans', 'kazananBasitUsul']) ||
+          (resource.data.status in ['taslak', 'geri_gonderildi'] && request.resource.data.status == 'gonderildi' &&
+           snapshot is map && snapshot.keys().hasOnly(['version', 'firmaList', 'yukleniciList']) &&
+           snapshot.version == 1 && snapshot.firmaList is list && snapshot.yukleniciList is list);
+      }
+
       // Finansal veri değişikliği mutlaka yeni sürüm üretir. Eski projeler 0'dan başlar.
       function projeSurumuGecerli() {
         let changed = request.resource.data.diff(resource.data).affectedKeys();
@@ -142,7 +152,9 @@ service cloud.firestore {
            request.resource.data.revision == resource.data.get('revision', 0) + 1));
       }
 
-      allow update: if kayitliKullanici() && projeSurumuGecerli() && (
+      allow update: if kayitliKullanici() && projeSurumuGecerli() && belgeReferansiGecerli() &&
+        (resource.data.get('deleting', false) != true ||
+         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleting', 'revision']) && request.resource.data.deleting == false)) && (
         // Admin/superadmin her alanı değiştirebilir
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
         // Gerçekleştirmeci sadece kendi atandığı ve 'gonderildi' durumundaki projeyi güncelleyebilir
@@ -179,26 +191,70 @@ service cloud.firestore {
         )
       );
 
-      allow delete: if kayitliKullanici() && (
+      allow delete: if kayitliKullanici() && resource.data.get('deleting', false) == true && (
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
         (resource.data.userId == request.auth.uid && resource.data.status in ['taslak', 'geri_gonderildi'] && resource.data.get('locked', false) != true)
       );
 
       // Projeye ait ekler / dosyalar (Firestore alt koleksiyonu ve parçaları)
-      match /dosyalar/{dosyaId=**} {
+      function dosyaMetaGecerli(d) {
+        let header = 'data:' + d.tip + ';base64,';
+        return d.keys().hasOnly(['ad', 'boyut', 'tip', 'yukleyenAd', 'yukleyenUid', 'createdAt', 'parcali', 'data', 'parcaSayisi']) &&
+          d.ad is string && d.ad.size() > 0 && d.ad.size() <= 255 &&
+          d.boyut is int && d.boyut > 0 && d.boyut <= 5242880 &&
+          d.yukleyenUid == request.auth.uid && d.yukleyenAd is string && d.yukleyenAd.size() <= 200 && d.createdAt is timestamp &&
+          ((d.tip == 'application/pdf' && d.ad.lower().matches('.*[.]pdf')) ||
+           (d.tip == 'application/msword' && d.ad.lower().matches('.*[.]doc')) ||
+           (d.tip == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && d.ad.lower().matches('.*[.]docx')) ||
+           (d.tip == 'application/vnd.ms-excel' && d.ad.lower().matches('.*[.]xls')) ||
+           (d.tip == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && d.ad.lower().matches('.*[.]xlsx')) ||
+           (d.tip == 'image/jpeg' && d.ad.lower().matches('.*[.](jpg|jpeg)')) ||
+           (d.tip == 'image/png' && d.ad.lower().matches('.*[.]png')) ||
+           (d.tip == 'image/webp' && d.ad.lower().matches('.*[.]webp')) ||
+           (d.tip == 'image/bmp' && d.ad.lower().matches('.*[.]bmp')) ||
+           (d.tip == 'image/gif' && d.ad.lower().matches('.*[.]gif'))) &&
+          ((d.parcali == false && !('parcaSayisi' in d) && d.data is string && d.data.size() <= 716800 &&
+            d.data.split(';base64,')[0] == 'data:' + d.tip && d.data.matches('data:[^;]+;base64,[A-Za-z0-9+/]+={0,2}') &&
+            (d.data.size() - header.size()) * 3 / 4 >= d.boyut && (d.data.size() - header.size()) * 3 / 4 <= d.boyut + 2) ||
+           (d.parcali == true && !('data' in d) && d.parcaSayisi is int && d.parcaSayisi >= 2 && d.parcaSayisi <= 10 &&
+            d.boyut * 4 / 3 + header.size() > (d.parcaSayisi - 1) * 716800 &&
+            (d.boyut + 2) * 4 / 3 + header.size() <= d.parcaSayisi * 716800));
+      }
+      match /dosyalar/{dosyaId} {
         allow read: if kayitliKullanici() && (
           (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
           (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.userId == request.auth.uid) ||
           (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.atananGerceklestirmeciUid == request.auth.uid)
         );
 
-        allow create: if kayitliKullanici() && dosyaDegistirebilir() && (
-          !('boyut' in request.resource.data) ||
-          (request.resource.data.boyut is number && request.resource.data.boyut <= 5242880)
+        allow create: if kayitliKullanici() && getAfter(/databases/$(database)/documents/projeler/$(projeId)).data.get('deleting', false) != true && dosyaDegistirebilir() && dosyaMetaGecerli(request.resource.data);
+        allow delete: if kayitliKullanici() && dosyaDegistirebilir();
+        match /parcalar/{parcaId} {
+        allow read: if kayitliKullanici() && (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
+          (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.userId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/projeler/$(projeId)) && get(/databases/$(database)/documents/projeler/$(projeId)).data.atananGerceklestirmeciUid == request.auth.uid)
         );
 
-        allow delete: if kayitliKullanici() && dosyaDegistirebilir();
+          function parcaGecerli() {
+            let d = request.resource.data;
+            let meta = getAfter(/databases/$(database)/documents/projeler/$(projeId)/dosyalar/$(dosyaId)).data;
+            let header = 'data:' + meta.tip + ';base64,';
+            let total = (meta.parcaSayisi - 1) * 716800 + d.chunk.size() - header.size();
+            return d.keys().hasOnly(['index', 'chunk']) && d.index is int && d.index >= 0 && d.index < meta.parcaSayisi &&
+              meta.parcali == true && meta.parcaSayisi <= 10 && meta.boyut <= 5242880 &&
+              parcaId == ['000','001','002','003','004','005','006','007','008','009'][d.index] &&
+              d.chunk is string && d.chunk.size() > 0 && d.chunk.size() <= 716800 &&
+              (d.index == 0 ? (d.chunk.size() == 716800 && d.chunk.split(';base64,')[0] == 'data:' + meta.tip &&
+                d.chunk.matches('data:[^;]+;base64,[A-Za-z0-9+/]+')) :
+                (d.chunk.matches('[A-Za-z0-9+/]+={0,2}') &&
+                 (d.index == meta.parcaSayisi - 1 ? (total * 3 / 4 >= meta.boyut && total * 3 / 4 <= meta.boyut + 2) : d.chunk.size() == 716800)));
+          }
+          allow create: if kayitliKullanici() && getAfter(/databases/$(database)/documents/projeler/$(projeId)).data.get('deleting', false) != true && dosyaDegistirebilir() && parcaGecerli();
+          allow delete: if kayitliKullanici() && dosyaDegistirebilir();
+        }
       }
+
     }
 
     // Referans verileri (kullanıcıya özel)

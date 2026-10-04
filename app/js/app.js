@@ -3578,6 +3578,7 @@ function projeValidasyon(p) {
 }
 
 async function gonderiClick(projeId, isAdi) {
+  if (currentCloudProjeId === projeId && (!lastSavedProjeSnapshot || JSON.stringify(proje) !== lastSavedProjeSnapshot)) { showToast('Göndermeden önce değişikliklerinizi kaydediniz.', 'warning'); return; }
   // Validasyon: önce projeyi cloud'dan çek, kontrol et
   let projeDoc;
   try {
@@ -3626,6 +3627,7 @@ async function gonderiClick(projeId, isAdi) {
 }
 
 async function gonderiOnayla(projeId, btn) {
+  if (currentCloudProjeId === projeId && (!lastSavedProjeSnapshot || JSON.stringify(proje) !== lastSavedProjeSnapshot)) { showToast('Göndermeden önce değişikliklerinizi kaydediniz.', 'warning'); return; }
   const select = document.getElementById('gerceklestirmeciSelect');
   const uid = select.value;
   const ad = select.options[select.selectedIndex]?.dataset?.ad || '';
@@ -3639,9 +3641,15 @@ async function gonderiOnayla(projeId, btn) {
       const kFirma = p.teklifFirmalar[kIdx];
       const basitUsul = kFirma ? isFirmaBasitUsul(kFirma.ad, referans) : false;
 
-      await gonderiProje(projeId, uid, ad, basitUsul, projeDoc.revision || 0);
+      if (currentCloudProjeId === projeId && projeSurumleri.get(projeId) !== (projeDoc.revision || 0)) throw projeCakismaHatasi();
+      const belgeRef = belgeReferansiOlustur(p, referans);
+      await gonderiProje(projeId, uid, ad, basitUsul, projeDoc.revision || 0, belgeRef);
       document.getElementById('gonderiModal')?.remove();
-      if (currentCloudProjeId === projeId) currentProjeKilitli = true;
+      if (currentCloudProjeId === projeId) {
+        currentProjeKilitli = true; currentProjeStatus = 'gonderildi';
+        proje.belgeReferans = belgeRef; proje.kayitliKazananBasitUsul = basitUsul;
+        lastSavedProjeSnapshot = JSON.stringify(proje);
+      }
       renderPage();
     } catch(e) {
       showToast('Hata: ' + hataMesaji(e), 'error');
@@ -5011,7 +5019,8 @@ function renderProjeOzetPage() {
   const kazananIndex = (p.kazananFirmaIndex !== undefined && p.kazananFirmaIndex >= 0) ? p.kazananFirmaIndex : hesaplaKazananFirma(p);
   const kazananFirma = (p.teklifFirmalar && kazananIndex >= 0) ? p.teklifFirmalar[kazananIndex] : null;
   const sozlesmeKdvsiz = kazananFirma ? hesaplaTeklifFirmaToplam(kazananFirma, kalemler) : 0;
-  const basitUsul = currentProjeKazananBasitUsul === true || (kazananFirma && typeof isFirmaBasitUsul === 'function' ? isFirmaBasitUsul(kazananFirma.ad, referans) : false);
+  const belgeRef = getBelgeReferansi(p, referans);
+  const basitUsul = (kazananFirma && typeof isFirmaBasitUsul === 'function' ? isFirmaBasitUsul(kazananFirma.ad, belgeRef) : false);
   const vergiler = hesaplaSozlesmeVergileri(p, referans, basitUsul);
   const kdvTutar = vergiler.kdv;
   const sozlesmeToplamKdvli = vergiler.toplam;

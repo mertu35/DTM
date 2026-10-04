@@ -1,0 +1,35 @@
+const assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
+const context = vm.createContext({ console, setTimeout(){}, clearTimeout(){}, localStorage: { getItem(){return null;},setItem(){} },
+ document:{getElementById(){return null;},createElement(){return {};},head:{appendChild(){}},addEventListener(){}},window:{addEventListener(){}} });
+for(const file of ['data','utils','calculations','documents','excel','word']) vm.runInContext(fs.readFileSync(`app/js/${file}.js`,'utf8'),context);
+const run = code => vm.runInContext(code,context);
+context.p = Object.assign(context.getDefaultProje(), {isAdi:'Çatı',isTuru:'Yapım İşi',kdvOrani:20,kazananFirmaIndex:0,
+ ymFirmalar:[{ad:'A',fiyatlar:[200000]}], teklifFirmalar:[{ad:'A',fiyatlar:[200000]}]});
+context.r = context.getDefaultReferans();
+context.r.firmaList = [{ad:'A',basitUsul:false,tur:'Şirket',adres:'Eski adres',tel:'123',faks:'456',eposta:'old@example.test'}, {ad:'Unrelated',basitUsul:true}];
+context.r.yukleniciList = [];
+context.p.belgeReferans = run('belgeReferansiOlustur(p,r)');
+assert.equal(context.p.belgeReferans.firmaList.length,1);
+const before = run('JSON.stringify(hesaplaHakedis(p,r))');
+const documentBefore = run('renderSozlesme(p,r)');
+run("var captured=''; htmlIndirXls = htmlIndirDoc = html => { captured = html; }; exportTeklifTutanagiExcel(p,r)");
+const excelBefore = run('captured');
+run("belgeIdindenWordUret('sozlesme',p,r)"); const wordBefore = run('captured');
+context.r.firmaList[0].basitUsul = true; context.r.firmaList[0].adres='Yeni adres'; context.r.firmaList[0].eposta='new@example.test';
+context.r.yukleniciList = [{ad:'A',basitUsul:true}];
+assert.equal(run('JSON.stringify(hesaplaHakedis(p,r))'),before);
+assert.equal(run('renderSozlesme(p,r)'),documentBefore);
+run('exportTeklifTutanagiExcel(p,r)'); assert.equal(run('captured'),excelBefore);
+run("belgeIdindenWordUret('sozlesme',p,r)"); assert.equal(run('captured'),wordBefore);
+assert.equal(run('hesaplaSozlesmeVergileri(p,r,true).kdvOrani'),20);
+assert.ok(documentBefore.includes('old@example.test'));
+delete context.p.belgeReferans;
+assert.equal(run('hesaplaHakedis(p,r).kdvOrani'),0,'draft uses changed reference');
+context.p.kayitliKazananBasitUsul = false;
+assert.equal(run('hesaplaHakedis(p,r).kdvOrani'),20,'legacy false stays false');
+context.p.kayitliKazananBasitUsul = true; context.r.firmaList[0].basitUsul=false; context.r.yukleniciList=[];
+assert.equal(run('hesaplaHakedis(p,r).kdvOrani'),0,'legacy true stays true');
+delete context.p.kayitliKazananBasitUsul; context.r.firmaList[0].basitUsul=true;
+context.p.belgeReferans=run('belgeReferansiOlustur(p,r)');context.r.firmaList[0].basitUsul=false;
+assert.equal(run('hesaplaHakedis(p,r).kdvOrani'),0,'new frozen true stays true');
+console.log('PASS: frozen true/false, legacy true/false, draft reference, payment/contract/Word/Excel consistency and participant-only snapshot');

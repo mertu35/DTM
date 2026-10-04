@@ -95,6 +95,7 @@ function tdRakam(sayi, bold) {
 // =============================================
 // 11 sütun: S.NO | İş | Miktar | BF1 | T1 | BF2 | T2 | BF3 | T3 | BFYM | TYM
 function exportYaklasikMaliyetExcel(proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   if (!belgeHesaplamaKontrol(proje, referans)) return false;
   const kalemler = getKalemler(proje);
   const f1 = proje.ymFirmalar[0] || { ad: '', fiyatlar: [] };
@@ -241,6 +242,7 @@ function exportYaklasikMaliyetExcel(proje, referans) {
 // O,P   : Firma 4    (14,15) — yok ise boş
 // Q     : boş        (16)
 function exportTeklifTutanagiExcel(proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   if (!belgeHesaplamaKontrol(proje, referans)) return false;
   const C = 17;
   const kalemler = getKalemler(proje);
@@ -505,6 +507,7 @@ function exportTeklifTutanagiExcel(proje, referans) {
 
 // ── Belge ID'sine göre Excel üret ──
 function belgeIdindenExcelUret(belgeId, proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
   if (!belgeHesaplamaKontrol(proje, referans)) return false;
   switch (belgeId) {
     case 'yaklasik-maliyet': exportYaklasikMaliyetExcel(proje, referans); return true;
