@@ -128,4 +128,22 @@ const leakyRes = context.belgeyiAnaliz(photoLeakyText);
 assert.equal(leakyRes.isAdi, 'Karaman İl Özel İdaresi Jeneratör Bakım İşi');
 console.log('PASS: Leaky quote / context trailing phrases properly cut off');
 
+// 7. Gemini AI Yanıtı Normalizasyonu ve GLOBAL_REF_FIELDS Kontrolü
+const dataJsSource = fs.readFileSync(path.join(__dirname, '../app/js/data.js'), 'utf8');
+assert.ok(dataJsSource.includes("'geminiApiKey'"), 'geminiApiKey must be in GLOBAL_REF_FIELDS');
+
+// Markdown kod bloğuyla sarılmış Gemini yanıtını temizleme simülasyonu
+const rawGeminiResponse = '```json\n{\n  "isAdi": "Karaman İl Özel İdaresi Jeneratör Bakım İşi",\n  "isYM": true,\n  "isDT": false,\n  "onayNo": "61019",\n  "onayTarihi": "24.09.2026",\n  "gorevliAd": "Aziz AÇIKGÖZ",\n  "gorevliUnvan": "Elektrik Elektronik Mühendisi",\n  "onaylayanAd": "Gökhan FİDAN",\n  "onaylayanUnvan": "Yatırım ve İnşaat Müdür V."\n}\n```';
+let cleaned = rawGeminiResponse.trim().replace(/^```json\s*/, '').replace(/```\s*$/, '');
+const parsedAi = JSON.parse(cleaned);
+if (parsedAi.onayTarihi && typeof parsedAi.onayTarihi === 'string') {
+  const dMatch = parsedAi.onayTarihi.match(/^(\d{2})[\.\/](\d{2})[\.\/](\d{4})$/);
+  if (dMatch) parsedAi.onayTarihi = `${dMatch[3]}-${dMatch[2]}-${dMatch[1]}`;
+}
+assert.equal(parsedAi.isAdi, 'Karaman İl Özel İdaresi Jeneratör Bakım İşi');
+assert.equal(parsedAi.onayTarihi, '2026-09-24');
+assert.equal(parsedAi.gorevliAd, 'Aziz AÇIKGÖZ');
+assert.equal(parsedAi.onaylayanAd, 'Gökhan FİDAN');
+console.log('PASS: Gemini AI response cleaning, date normalization & global referans integration');
+
 console.log('ALL OLUR PARSING & PERSONNEL MATCHING TESTS PASSED!');

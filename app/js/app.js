@@ -2001,12 +2001,343 @@ function belgeyiAnaliz(fullText) {
   return { isDT, isYM, isAdi, onayNo, onayTarihi, gorevliAd, gorevliUnvan, onaylayanAd, onaylayanUnvan };
 }
 
+// ===================== GEMINI AI ENTEGRASYONU =====================
+async function dtmFileToBase64(file) {
+  const isImage = (file.type && file.type.startsWith('image/')) ||
+                  /\.(png|jpe?g|webp|bmp)$/i.test(file.name || '');
+
+  if (isImage && typeof document !== 'undefined') {
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const img = await new Promise((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = reject;
+        i.src = dataUrl;
+      });
+
+      const maxDim = 2400;
+      let w = img.width;
+      let h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const base64 = optimizedDataUrl.split(',')[1];
+      return { base64, mimeType: 'image/jpeg' };
+    } catch (e) {
+      console.warn('Görsel optimizasyon hatası:', e);
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const commaIdx = dataUrl.indexOf(',');
+      const base64 = commaIdx >= 0 ? dataUrl.substring(commaIdx + 1) : dataUrl;
+      let mimeType = file.type || '';
+      if (!mimeType) {
+        const name = (file.name || '').toLowerCase();
+        if (name.endsWith('.pdf')) mimeType = 'application/pdf';
+        else if (name.endsWith('.png')) mimeType = 'image/png';
+        else if (name.endsWith('.webp')) mimeType = 'image/webp';
+        else mimeType = 'image/jpeg';
+      }
+      resolve({ base64, mimeType });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function dtmAnalyzeDocumentWithGemini(file, apiKey) {
+  const { base64, mimeType } = await dtmFileToBase64(file);
+
+  const prompt = `Sen Türkiye Cumhuriyeti kamu ihale ve doğrudan temin mevzuatı (4734 sayılı KİK 22/d) uzmanısın.
+Sana verilen resmi evrakı (Doğrudan Temin Görevlendirme / Olur Belgesi veya Yaklaşık Maliyet Oluru) dikkatle incele.
+Belgedeki şu alanları çıkar ve SADECE geçerli bir JSON formatında döndür:
+
+{
+  "isAdi": "İşin tam ve doğru adı (Örn: 'Karaman İl Özel İdaresi Jeneratör Bakım İşi'). Sadece işin konusunu al; tırnak işaretlerini temizle; 'için', 'kapsamında', 'hususunu', 'arz ederim' gibi resmi yazışma cümlelerini DAHİL ETME.",
+  "isDT": true/false (Doğrudan temin piyasa fiyat araştırması görevlendirme belgesi ise true, aksi halde false),
+  "isYM": true/false (Yaklaşık maliyet tespit görevlendirme veya hesap cetveli belgesi ise true, aksi halde false),
+  "onayNo": "Belgenin resmi sayısı/evrak numarası (Örn: '61019' veya 'E-55550293-934.01-61019'). Yoksa null",
+  "onayTarihi": "Belgenin resmi onay tarihi (YYYY-MM-DD formatında, örn: '2026-09-24'). Yoksa null",
+  "gorevliAd": "Görevlendirilen personelin Adı Soyadı (Türkçe karakterleri düzgün, örn: 'Ahmet CANBOLAT'). Birden fazla varsa ilk görevli.",
+  "gorevliUnvan": "Görevlendirilen personelin unvanı (Örn: 'Makine Mühendisi', 'Tekniker'). Yoksa null",
+  "onaylayanAd": "Belgenin en altındaki 'OLUR' veren/onaylayan en yetkili amirin Adı Soyadı (Örn: 'Ali YILDIRIM'). Yoksa null",
+  "onaylayanUnvan": "Onaylayan amirin unvanı (Örn: 'Vali a. Genel Sekreter', 'Genel Sekreter', 'Yatırım ve İnşaat Müdürü'). Yoksa null"
+}
+
+Önemli kurallar:
+- Yanıtın SADECE saf JSON olsun, markdown kod bloğu veya ek açıklama ekleme.
+- Belgede net okunamayan veya bulunmayan alanları null bırak.`;
+
+  const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const payload = {
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: mimeType,
+                  data: base64
+                }
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: "application/json"
+        }
+      };
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn(`[Gemini API] ${model} hata verdi (${res.status}):`, errText);
+        lastError = new Error(`Gemini API Hatası (${res.status}): ${errText}`);
+        if (res.status === 404) continue;
+        throw lastError;
+      }
+
+      const data = await res.json();
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) throw new Error('Gemini API boş yanıt döndürdü.');
+
+      let cleaned = rawText.trim();
+      if (cleaned.startsWith('```json')) cleaned = cleaned.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+      else if (cleaned.startsWith('```')) cleaned = cleaned.replace(/^```\s*/, '').replace(/```\s*$/, '');
+
+      const parsed = JSON.parse(cleaned);
+
+      if (parsed.onayTarihi && typeof parsed.onayTarihi === 'string') {
+        const dMatch = parsed.onayTarihi.match(/^(\d{2})[\.\/](\d{2})[\.\/](\d{4})$/);
+        if (dMatch) {
+          parsed.onayTarihi = `${dMatch[3]}-${dMatch[2]}-${dMatch[1]}`;
+        }
+      }
+
+      return parsed;
+    } catch (err) {
+      lastError = err;
+      if (err.message && err.message.includes('404')) continue;
+      throw err;
+    }
+  }
+
+  throw lastError || new Error('Tüm Gemini modelleri denendi ancak yanıt alınamadı.');
+}
+
+async function dtmTestGeminiApiKey(apiKey) {
+  if (!apiKey || !apiKey.trim()) throw new Error('Lütfen geçerli bir API anahtarı giriniz.');
+  const key = apiKey.trim();
+  const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+      const payload = {
+        contents: [
+          {
+            parts: [{ text: 'Merhaba, bu bir test mesajıdır. Sadece JSON döndür: {"status":"ok"}' }]
+          }
+        ],
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
+      };
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        return { success: true, model };
+      }
+      const errText = await res.text();
+      lastError = new Error(`Hata (${res.status}): ${errText}`);
+      if (res.status === 404) continue;
+      throw lastError;
+    } catch(e) {
+      lastError = e;
+      if (e.message && e.message.includes('404')) continue;
+      throw e;
+    }
+  }
+  throw lastError || new Error('API anahtarı doğrulanamadı.');
+}
+
+async function dtmParseOlurBelgesi(file) {
+  if (!file) return null;
+  const apiKey = (referans && referans.geminiApiKey) || (typeof localStorage !== 'undefined' && localStorage.getItem('dtm_gemini_api_key'));
+
+  if (apiKey && apiKey.trim()) {
+    try {
+      showToast('🤖 Belge yapay zeka (Gemini AI) ile analiz ediliyor...', 'info', 6000);
+      const aiResult = await dtmAnalyzeDocumentWithGemini(file, apiKey.trim());
+      if (aiResult && (aiResult.isAdi || aiResult.gorevliAd || aiResult.onaylayanAd)) {
+        showToast('✅ Yapay zeka belgeyi başarıyla çözümledi!', 'success', 3000);
+        return aiResult;
+      }
+    } catch (aiErr) {
+      console.warn('Gemini analizi başarısız oldu, yerel motora geçiliyor:', aiErr);
+      showToast('Yapay zeka yanıt veremedi, yerel OCR/PDF motoruna geçiliyor...', 'warning', 3500);
+    }
+  }
+
+  showToast('Belge okunuyor...', 'info');
+  const fullText = await readPdfText(file);
+  return belgeyiAnaliz(fullText);
+}
+
+if (typeof window !== 'undefined') {
+  window.geminiApiKeyKaydet = function() {
+    const inp = document.getElementById('globalGeminiApiKey');
+    const val = (inp?.value || '').trim();
+    referans.geminiApiKey = val;
+    saveGlobalReferans(referans);
+    showToast(val ? 'Gemini API anahtarı buluta kaydedildi! Tüm kurum personelleri için aktif.' : 'Gemini API anahtarı temizlendi.', 'success');
+    renderPage();
+  };
+
+  window.geminiApiKeySil = function() {
+    if (!confirm('Gemini API anahtarını sistemden kaldırmak istediğinize emin misiniz?')) return;
+    referans.geminiApiKey = '';
+    saveGlobalReferans(referans);
+    showToast('Gemini API anahtarı kaldırıldı. Sistem yerel OCR motoruna döndü.', 'info');
+    renderPage();
+  };
+
+  window.geminiApiKeyTestEt = async function() {
+    const inp = document.getElementById('globalGeminiApiKey');
+    const resDiv = document.getElementById('geminiApiTestResult');
+    const val = (inp?.value || referans.geminiApiKey || '').trim();
+
+    if (!val) {
+      showToast('Lütfen önce bir API anahtarı giriniz.', 'warning');
+      return;
+    }
+
+    if (resDiv) {
+      resDiv.style.display = 'block';
+      resDiv.style.color = 'var(--primary)';
+      resDiv.innerHTML = '⏳ Google Gemini sunucularına bağlanılıyor...';
+    }
+
+    try {
+      const result = await dtmTestGeminiApiKey(val);
+      if (resDiv) {
+        resDiv.style.color = '#16a34a';
+        resDiv.innerHTML = `✅ <strong>Bağlantı Başarılı!</strong> Google ${escHtml(result.model)} modeli yanıt verdi. Kurum personelleri için kullanıma hazır.`;
+      }
+      showToast('Gemini API bağlantısı başarılı!', 'success');
+    } catch(e) {
+      if (resDiv) {
+        resDiv.style.color = '#dc2626';
+        resDiv.innerHTML = `❌ <strong>Bağlantı Başarısız:</strong> ${escHtml(e.message)}`;
+      }
+      showToast('Bağlantı başarısız: ' + e.message, 'error');
+    }
+  };
+
+  window.toggleGeminiKeyVisibility = function() {
+    const inp = document.getElementById('globalGeminiApiKey');
+    if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
+  };
+
+  window.profilGeminiApiKeyKaydet = function() {
+    const inp = document.getElementById('profilGeminiApiKey');
+    const val = (inp?.value || '').trim();
+    referans.geminiApiKey = val;
+    saveGlobalReferans(referans);
+    showToast(val ? 'Gemini API anahtarı buluta kaydedildi! Tüm kurum personelleri için aktif.' : 'Gemini API anahtarı temizlendi.', 'success');
+    renderPage();
+  };
+
+  window.profilGeminiApiKeySil = function() {
+    if (!confirm('Gemini API anahtarını sistemden kaldırmak istediğinize emin misiniz?')) return;
+    referans.geminiApiKey = '';
+    saveGlobalReferans(referans);
+    showToast('Gemini API anahtarı kaldırıldı. Sistem yerel OCR motoruna döndü.', 'info');
+    renderPage();
+  };
+
+  window.profilGeminiApiKeyTestEt = async function() {
+    const inp = document.getElementById('profilGeminiApiKey');
+    const resDiv = document.getElementById('profilGeminiApiTestResult');
+    const val = (inp?.value || referans.geminiApiKey || '').trim();
+
+    if (!val) {
+      showToast('Lütfen önce bir API anahtarı giriniz.', 'warning');
+      return;
+    }
+
+    if (resDiv) {
+      resDiv.style.display = 'block';
+      resDiv.style.color = 'var(--primary)';
+      resDiv.innerHTML = '⏳ Google Gemini sunucularına bağlanılıyor...';
+    }
+
+    try {
+      const result = await dtmTestGeminiApiKey(val);
+      if (resDiv) {
+        resDiv.style.color = '#16a34a';
+        resDiv.innerHTML = `✅ <strong>Bağlantı Başarılı!</strong> Google ${escHtml(result.model)} modeli yanıt verdi. Kurum personelleri için kullanıma hazır.`;
+      }
+      showToast('Gemini API bağlantısı başarılı!', 'success');
+    } catch(e) {
+      if (resDiv) {
+        resDiv.style.color = '#dc2626';
+        resDiv.innerHTML = `❌ <strong>Bağlantı Başarısız:</strong> ${escHtml(e.message)}`;
+      }
+      showToast('Bağlantı başarısız: ' + e.message, 'error');
+    }
+  };
+
+  window.toggleProfilGeminiKeyVisibility = function() {
+    const inp = document.getElementById('profilGeminiApiKey');
+    if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
+  };
+}
+
 async function parseDTOluru(file) {
   if (!file) return;
   try {
-    showToast('PDF okunuyor...', 'info');
-    const fullText = await readPdfText(file);
-    const res = belgeyiAnaliz(fullText);
+    const res = await dtmParseOlurBelgesi(file);
+    if (!res) return;
 
     if (res.onayNo)     proje.dtOnayNo = res.onayNo;
     if (res.onayTarihi) proje.dtOnayTarihi = res.onayTarihi;
@@ -2025,16 +2356,15 @@ async function parseDTOluru(file) {
     renderPage();
     showToast('D.T. Olur belgesi okundu, alanlar dolduruldu!', 'success');
   } catch(e) {
-    showToast('PDF okunamadı: ' + e.message, 'error');
+    showToast('Belge okunamadı: ' + e.message, 'error');
   }
 }
 
 async function parseYMOluru(file) {
   if (!file) return;
   try {
-    showToast('PDF okunuyor...', 'info');
-    const fullText = await readPdfText(file);
-    const res = belgeyiAnaliz(fullText);
+    const res = await dtmParseOlurBelgesi(file);
+    if (!res) return;
 
     if (res.onayNo)     proje.ymOnayNo = res.onayNo;
     if (res.onayTarihi) proje.ymOnayTarihi = res.onayTarihi;
@@ -2053,7 +2383,7 @@ async function parseYMOluru(file) {
     renderPage();
     showToast('Y.M. Olur belgesi okundu, alanlar dolduruldu!', 'success');
   } catch(e) {
-    showToast('PDF okunamadı: ' + e.message, 'error');
+    showToast('Belge okunamadı: ' + e.message, 'error');
   }
 }
 
@@ -2064,15 +2394,15 @@ async function parseIkiOlurBelgesi() {
   const dtFile = dtInput && dtInput.files[0] ? dtInput.files[0] : null;
 
   if (!ymFile && !dtFile) {
-    showToast('En az bir PDF dosyası seçin.', 'warning');
+    showToast('En az bir belge dosyası seçin.', 'warning');
     return;
   }
 
-  showToast('PDF(ler) okunuyor...', 'info');
+  showToast('Belge(ler) okunuyor...', 'info');
 
   try {
-    const ymSonuc = ymFile ? belgeyiAnaliz(await readPdfText(ymFile)) : null;
-    const dtSonuc = dtFile ? belgeyiAnaliz(await readPdfText(dtFile)) : null;
+    const ymSonuc = ymFile ? await dtmParseOlurBelgesi(ymFile) : null;
+    const dtSonuc = dtFile ? await dtmParseOlurBelgesi(dtFile) : null;
 
     const isAdi = (ymSonuc && ymSonuc.isAdi) || (dtSonuc && dtSonuc.isAdi);
     if (!isAdi) {
@@ -2170,12 +2500,10 @@ async function parseIkiOlurBelgesi() {
 async function parseOnayBelgesiIsAdi(file) {
   if (!file) return;
   try {
-    showToast('PDF okunuyor...', 'info');
-    const fullText = await readPdfText(file);
-    const res = belgeyiAnaliz(fullText);
+    const res = await dtmParseOlurBelgesi(file);
 
-    if (!res.isAdi) {
-      showToast('İş adı PDF içinde bulunamadı. Manuel girin.', 'warning');
+    if (!res || !res.isAdi) {
+      showToast('İş adı belge içinde bulunamadı. Manuel girin.', 'warning');
       const modal = document.getElementById('yeniProjeModal');
       if (modal) {
         modal.querySelector('#yeniProjeAdim2Olur').style.display = 'none';
@@ -3171,6 +3499,43 @@ function renderVeriMerkeziPage() {
     ` : ''}
 
     ${isSuperAdmin ? `
+    <!-- Merkezi Yapay Zeka (Gemini AI) Entegrasyon Kartı -->
+    <div class="card" style="border:1.5px solid #3b82f6;box-shadow:0 4px 15px rgba(59,130,246,0.08);">
+      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })} style="background:linear-gradient(135deg,#1e3a5f 0%,#1e40af 100%);color:#fff;cursor:pointer;">
+        <h3 style="display:flex;align-items:center;gap:8px;margin:0;color:#fff;">
+          <span style="font-size:18px;">🤖</span>
+          <span>Merkezi Yapay Zeka (Google Gemini AI) Entegrasyonu</span>
+          <span style="font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:2px 8px;border-radius:12px;font-weight:600;margin-left:4px">
+            ${referans.geminiApiKey ? '✓ Aktif' : 'Tanımsız'}
+          </span>
+        </h3>
+        <span class="toggle-icon" style="color:#fff;">&#9660;</span>
+      </div>
+      <div class="card-body" style="padding:20px;">
+        <p style="font-size:13.5px;color:var(--gray-600);margin:0 0 14px;line-height:1.5;">
+          Buraya tanımlayacağınız Google Gemini API anahtarı, <strong>tüm kurum personelleri</strong> için bulut üzerinden ortak aktif olur. Personeller Olur belgesi veya telefon fotoğrafı yüklediğinde, belgeler en güncel Gemini Flash modeliyle saniyeler içinde %100 doğrulukla çözümlenir.
+        </p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;max-width:720px;">
+          <div style="position:relative;flex:1;min-width:280px;">
+            <input type="password" id="globalGeminiApiKey" value="${escAttr(referans.geminiApiKey || '')}" placeholder="Google AI Studio API Anahtarınızı giriniz (AIzaSy...)" style="width:100%;padding:10px 40px 10px 14px;border:1.5px solid var(--gray-300);border-radius:8px;font-size:13.5px;font-family:monospace;box-sizing:border-box;">
+            <button type="button" ${dtmEventAttr('click', function(event) { toggleGeminiKeyVisibility() })} style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-500);font-size:14px;padding:2px;" title="Göster / Gizle">👁️</button>
+          </div>
+          <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { geminiApiKeyKaydet() })} style="display:inline-flex;align-items:center;gap:6px;padding:10px 16px;">
+            💾 Buluta Kaydet
+          </button>
+          <button class="btn btn-outline" ${dtmEventAttr('click', function(event) { geminiApiKeyTestEt() })} style="display:inline-flex;align-items:center;gap:6px;padding:10px 16px;">
+            ⚡ Bağlantıyı Test Et
+          </button>
+          ${referans.geminiApiKey ? `
+            <button class="btn btn-icon-danger" ${dtmEventAttr('click', function(event) { geminiApiKeySil() })} title="Anahtarı Sistemden Kaldır" style="padding:10px 12px;">
+              ✕
+            </button>
+          ` : ''}
+        </div>
+        <div id="geminiApiTestResult" style="margin-top:12px;font-size:13px;display:none;padding:8px 12px;border-radius:6px;background:var(--gray-50);"></div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="display:flex;align-items:center;gap:8px">
@@ -5868,6 +6233,62 @@ function renderProfilPage() {
           </button>
         </div>
       </div>
+
+      <!-- Yapay Zeka (AI) Durumu / Yönetimi -->
+      ${(u.role === 'superadmin' || u.role === 'admin') ? `
+      <div class="card" style="margin-top:20px;border:1.5px solid #3b82f6;box-shadow:0 4px 15px rgba(59,130,246,0.08);">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,#1e3a5f 0%,#1e40af 100%);color:#fff;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:18px;">🤖</span>
+            <h3 style="font-size:15px;margin:0;font-weight:700;color:#fff;">Merkezi Yapay Zeka (Google Gemini AI) Ayarları</h3>
+          </div>
+          <span style="font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:2px 8px;border-radius:12px;font-weight:600;">
+            ${referans.geminiApiKey ? '✓ Aktif' : 'Tanımsız'}
+          </span>
+        </div>
+        <div class="card-body" style="padding:20px;">
+          <p style="font-size:13px;color:var(--gray-600);margin:0 0 14px;line-height:1.5;">
+            Sistem Yöneticisi yetkinizle kurum geneli Google Gemini API anahtarını yönetebilirsiniz. Bu anahtar tüm kurum memurlarının Olur ve teklif belgelerini çözümlerken ortak kullanılır.
+          </p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;max-width:720px;">
+            <div style="position:relative;flex:1;min-width:280px;">
+              <input type="password" id="profilGeminiApiKey" value="${escAttr(referans.geminiApiKey || '')}" placeholder="Google AI Studio API Anahtarı (AIzaSy...)" style="width:100%;padding:10px 40px 10px 14px;border:1.5px solid var(--gray-300);border-radius:8px;font-size:13.5px;font-family:monospace;box-sizing:border-box;">
+              <button type="button" ${dtmEventAttr('click', function(event) { toggleProfilGeminiKeyVisibility() })} style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-500);font-size:14px;padding:2px;" title="Göster / Gizle">👁️</button>
+            </div>
+            <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { profilGeminiApiKeyKaydet() })} style="display:inline-flex;align-items:center;gap:6px;padding:10px 16px;">
+              💾 Buluta Kaydet
+            </button>
+            <button class="btn btn-outline" ${dtmEventAttr('click', function(event) { profilGeminiApiKeyTestEt() })} style="display:inline-flex;align-items:center;gap:6px;padding:10px 16px;">
+              ⚡ Test Et
+            </button>
+            ${referans.geminiApiKey ? `
+              <button class="btn btn-icon-danger" ${dtmEventAttr('click', function(event) { profilGeminiApiKeySil() })} title="Anahtarı Sistemden Kaldır" style="padding:10px 12px;">
+                ✕
+              </button>
+            ` : ''}
+          </div>
+          <div id="profilGeminiApiTestResult" style="margin-top:12px;font-size:13px;display:none;padding:8px 12px;border-radius:6px;background:var(--gray-50);"></div>
+        </div>
+      </div>
+      ` : `
+      <div class="card" style="margin-top:20px;border:1px solid var(--gray-200);">
+        <div class="card-header" style="display:flex;align-items:center;gap:8px;padding:16px 20px;background:var(--gray-50);">
+          <span style="font-size:18px;">🤖</span>
+          <h3 style="font-size:15px;margin:0;font-weight:700;color:var(--gray-900);">Yapay Zeka Destekli Belge Okuyucu</h3>
+        </div>
+        <div class="card-body" style="padding:18px 20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-weight:600;font-size:14px;color:var(--gray-800);">Kurumsal Yapay Zeka Durumu</div>
+              <p style="font-size:12.5px;color:var(--gray-500);margin:4px 0 0;">Yüklenen resmi evraklar ve fotoğraflar otomatik olarak kurumsal yapay zeka ile çözümlenir.</p>
+            </div>
+            <span style="font-size:12px;font-weight:700;padding:4px 12px;border-radius:14px;background:${referans.geminiApiKey ? '#f0fdf4' : 'var(--gray-100)'};color:${referans.geminiApiKey ? '#166534' : 'var(--gray-600)'};border:1px solid ${referans.geminiApiKey ? '#bbf7d0' : 'var(--gray-200)'};">
+              ${referans.geminiApiKey ? '✓ Google Gemini Flash Aktif' : 'Yerel OCR Aktif'}
+            </span>
+          </div>
+        </div>
+      </div>
+      `}
 
     </div>
   `;

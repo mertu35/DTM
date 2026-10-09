@@ -111,7 +111,8 @@ function getDefaultReferans() {
       { yil: 2026, sinir: 0 },
       { yil: 2027, sinir: 0 },
       { yil: 2028, sinir: 0 }
-    ]
+    ],
+    geminiApiKey: ''
   };
 }
 
@@ -239,7 +240,7 @@ function loadProje() {
   return getDefaultProje();
 }
 
-const GLOBAL_REF_FIELDS = ['onaylayanList', 'idareList', 'mudurlukler', 'ilceler', 'dtSinirlari', 'yukleniciList'];
+const GLOBAL_REF_FIELDS = ['onaylayanList', 'idareList', 'mudurlukler', 'ilceler', 'dtSinirlari', 'yukleniciList', 'geminiApiKey'];
 const GLOBAL_REF_KEY = 'dtm_global_referans';
 
 function saveReferans(ref) {
