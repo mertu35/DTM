@@ -2227,18 +2227,90 @@ async function readPdfText(file) {
   const pdf = await dtmLoadPdf(file);
   let fullText = '';
   try {
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    fullText += content.items.map(item => item.str).join(' ') + '\n';
-  }
-  if (!fullText.trim()) {
-    throw new Error('Bu PDF okunabilir metin içermiyor. Taranmış/görüntü PDF yerine metin içeren bir PDF seçin veya bilgileri elle girin.');
-  }
-  return fullText;
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      fullText += content.items.map(item => item.str).join(' ') + '\n';
+    }
+    if (!fullText.trim()) {
+      // Dijital metin yok (Taranmış veya çizim/vektör PDF): %100 yerel çevrimdışı OCR'ı devreye sok
+      if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+        try {
+          showToast('Taranmış/çizim belge algılandı, yerel OCR ile okunuyor...', 'info', 5000);
+          const ocrResult = await dtmLocalOcrPdf(pdf);
+          if (ocrResult && ocrResult.trim()) {
+            return ocrResult;
+          }
+        } catch(ocrErr) {
+          console.warn('Yerel OCR denemesi başarısız:', ocrErr);
+        }
+      }
+      throw new Error('Bu PDF okunabilir metin içermiyor. Taranmış/görüntü PDF yerine metin içeren bir PDF seçin veya bilgileri elle girin.');
+    }
+    return fullText;
   } finally {
     await pdf.destroy?.();
   }
+}
+
+async function dtmEnsureTesseract() {
+  if (typeof window !== 'undefined' && window.Tesseract) return window.Tesseract;
+  const base = (typeof document !== 'undefined' && document.baseURI) ? document.baseURI : (typeof window !== 'undefined' ? window.location.href : '');
+  const scriptUrl = new URL('js/vendor/tesseract/tesseract.min.js', base).href;
+  await new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[src*="tesseract.min.js"]');
+    if (existing) {
+      if (window.Tesseract) return resolve();
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', reject);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = scriptUrl;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Yerel OCR kütüphanesi yüklenemedi.'));
+    document.head.appendChild(script);
+  });
+  return window.Tesseract;
+}
+
+async function dtmLocalOcrPdf(pdf) {
+  const Tesseract = await dtmEnsureTesseract();
+  if (!Tesseract || !Tesseract.createWorker) throw new Error('OCR motoru başlatılamadı.');
+
+  const base = (typeof document !== 'undefined' && document.baseURI) ? document.baseURI : window.location.href;
+  const workerPath = new URL('js/vendor/tesseract/worker.min.js', base).href;
+  const corePath = new URL('js/vendor/tesseract/tesseract-core-lstm.wasm.js', base).href;
+  const langPath = new URL('js/vendor/tesseract/lang-data', base).href;
+
+  const worker = await Tesseract.createWorker('tur', 1, {
+    workerPath,
+    corePath,
+    langPath,
+    workerBlobURL: false
+  });
+
+  let ocrText = '';
+  try {
+    const maxPages = Math.min(pdf.numPages, 3);
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 2.0 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      const { data } = await worker.recognize(canvas);
+      ocrText += (data.text || '') + '\n';
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+  } finally {
+    await worker.terminate();
+  }
+  return ocrText;
 }
 
 async function dtmLoadPdf(file) {

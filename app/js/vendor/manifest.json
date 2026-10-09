@@ -29,6 +29,14 @@
   ],
   "files": [
     {
+      "path": "app/js/html2pdf.bundle.min.js",
+      "integrity": "sha384-50FHmF9AJXDK1Ihg2Pvm0TQLG8LSee9THVrHrMuzqu4b6MmLkWSGV1QPIutvNkc0"
+    },
+    {
+      "path": "app/js/html2pdf.bundle.min.js.LICENSE.txt",
+      "integrity": "sha384-ZWt7uQZ08JcYf5u6odNhC5Y0efSiq8outOlHFwMejH8rWTJyq/ob90WxcEs/sR0h"
+    },
+    {
       "path": "app/js/vendor/HTML2PDF-LICENSE",
       "integrity": "sha384-OOGojr7Hw3BENN3ApCz+PmZV+ZJZI6u1LzP0gNn49AtjHcjIOkC4XIQEQsAklMbr"
     },
@@ -93,6 +101,14 @@
       "integrity": "sha384-1x+uMu5vnYoPajnjcUnXfxbInC1i0XOCSLKWzG2C1EIR8nhRyq+pRm5sWWt9ooWL"
     },
     {
+      "path": "app/js/vendor/standard_fonts/LICENSE_FOXIT",
+      "integrity": "sha384-1fHjQMkJb6qgIXOHMyAnwhQVamTqavpeezWjYeNQVnKu98ISGckhCXlLn9NE8TCS"
+    },
+    {
+      "path": "app/js/vendor/standard_fonts/LICENSE_LIBERATION",
+      "integrity": "sha384-/8FywW9nSd8oVEn12psdu3hXFVK2Xc46DfoQPmh9ozAgse5+arxrLbKYGgj4b/rj"
+    },
+    {
       "path": "app/js/vendor/standard_fonts/LiberationSans-Bold.ttf",
       "integrity": "sha384-w8/QMz3l1Xz5nCx5NPZBqeE0IWqmwbhgmcFxRZonV/prVmW+ukvR9EYm9U9VbWIK"
     },
@@ -109,20 +125,24 @@
       "integrity": "sha384-SD1vkNhYglih2fyROhymiRHqSpxDyrVyUJZrd0ysZzYzvgy7TwGlYGz847vWirSD"
     },
     {
-      "path": "app/js/vendor/standard_fonts/LICENSE_FOXIT",
-      "integrity": "sha384-1fHjQMkJb6qgIXOHMyAnwhQVamTqavpeezWjYeNQVnKu98ISGckhCXlLn9NE8TCS"
+      "path": "app/js/vendor/tesseract/lang-data/tur.traineddata.gz",
+      "integrity": "sha384-bwDax0dNOeroqJTx3wGWkVCyB8V6lHLvRiC3m+ScbG4yybCo/WE0LUXWyzulaqWG"
     },
     {
-      "path": "app/js/vendor/standard_fonts/LICENSE_LIBERATION",
-      "integrity": "sha384-/8FywW9nSd8oVEn12psdu3hXFVK2Xc46DfoQPmh9ozAgse5+arxrLbKYGgj4b/rj"
+      "path": "app/js/vendor/tesseract/tesseract-core-lstm.wasm",
+      "integrity": "sha384-33o1qRC8HFLRnfe3qtvu9cIyRl52tksnz88TyW9mF+SXuZDGhcX6pHnEIleZDB8S"
     },
     {
-      "path": "app/js/html2pdf.bundle.min.js",
-      "integrity": "sha384-50FHmF9AJXDK1Ihg2Pvm0TQLG8LSee9THVrHrMuzqu4b6MmLkWSGV1QPIutvNkc0"
+      "path": "app/js/vendor/tesseract/tesseract-core-lstm.wasm.js",
+      "integrity": "sha384-/g/sRSh93g4aI/29sRO3yru++WEMaPkkq3snPSbedkVM5c0BH5pO/qmDB72CpHAp"
     },
     {
-      "path": "app/js/html2pdf.bundle.min.js.LICENSE.txt",
-      "integrity": "sha384-ZWt7uQZ08JcYf5u6odNhC5Y0efSiq8outOlHFwMejH8rWTJyq/ob90WxcEs/sR0h"
+      "path": "app/js/vendor/tesseract/tesseract.min.js",
+      "integrity": "sha384-2BQ3U3OdKOb0Uczxqr41I9UvZkzr4V9Hv8uSzMMZAlmhsFClvdZX5wi5fDCzG+tM"
+    },
+    {
+      "path": "app/js/vendor/tesseract/worker.min.js",
+      "integrity": "sha384-iUyp1FxLBc4DYaSwxT1/G6elMdSh3vvQffNSmMiySoXDpk2XfS9ZcM4RjPSiqiw3"
     }
   ]
 }

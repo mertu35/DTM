@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dtm-v93';
+const CACHE_NAME = 'dtm-v94';
 const STATIC_ASSETS = [
   './index.html',
   './css/style.css',
@@ -75,7 +75,14 @@ self.addEventListener('fetch', event => {
 
   event.respondWith(
     caches.match(event.request).then(cached => {
-      return cached || fetch(event.request).catch(() => caches.match('./index.html'));
+      if (cached) return cached;
+      return fetch(event.request).then(response => {
+        if (response && response.status === 200 && response.type === 'basic' && url.includes('/js/vendor/tesseract/')) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match('./index.html'));
     })
   );
 });
