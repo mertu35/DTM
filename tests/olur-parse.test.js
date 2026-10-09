@@ -9,6 +9,12 @@ const appJsSource = fs.readFileSync(path.join(__dirname, '../app/js/app.js'), 'u
 // Test ortamı için minimal context
 const sandbox = {
   console,
+  localStorage: {
+    _data: {},
+    getItem(k) { return this._data[k] || null; },
+    setItem(k, v) { this._data[k] = String(v); },
+    removeItem(k) { delete this._data[k]; }
+  },
   referans: {
     muhendisList: [
       { ad: 'Aziz AÇIKGÖZ', unvan: 'Elektrik Elektronik Mühendisi' },
@@ -18,6 +24,10 @@ const sandbox = {
     onaylayanList: [
       { ad: 'Sinan ÖZYER', unvan: 'Yatırım ve İnşaat Müdür V.' },
       { ad: '', unvan: 'Genel Sekreter' }
+    ],
+    firmaList: [
+      { ad: 'Alper YAMAÇ', adres: 'Abbas Mh. No:44', tur: 'Kişi', tel: '05433600756', faks: '', eposta: '', vkn: '1111111111' },
+      { ad: 'Gültes Enerji', adres: 'Karaman', tur: 'Şirket', tel: '', faks: '', eposta: '', vkn: '2222222222' }
     ]
   },
   saveReferans(ref) {
@@ -26,6 +36,13 @@ const sandbox = {
 };
 
 const context = vm.createContext(sandbox);
+
+// data.js ve calculations.js içerisindeki modelleri yükle
+const dataJsSource = fs.readFileSync(path.join(__dirname, '../app/js/data.js'), 'utf8');
+const calcJsSource = fs.readFileSync(path.join(__dirname, '../app/js/calculations.js'), 'utf8');
+vm.runInContext(dataJsSource, context);
+vm.runInContext(calcJsSource, context);
+context.saveReferans = function(ref) { sandbox.referans = ref; };
 
 // app.js içerisindeki yardımcı fonksiyonları yükle
 const fnSnippets = [
@@ -129,7 +146,6 @@ assert.equal(leakyRes.isAdi, 'Karaman İl Özel İdaresi Jeneratör Bakım İşi
 console.log('PASS: Leaky quote / context trailing phrases properly cut off');
 
 // 7. Gemini AI Yanıtı Normalizasyonu ve GLOBAL_REF_FIELDS Kontrolü
-const dataJsSource = fs.readFileSync(path.join(__dirname, '../app/js/data.js'), 'utf8');
 assert.ok(dataJsSource.includes("'geminiApiKey'"), 'geminiApiKey must be in GLOBAL_REF_FIELDS');
 assert.ok(dataJsSource.includes("'geminiModel'"), 'geminiModel must be in GLOBAL_REF_FIELDS');
 
@@ -147,4 +163,161 @@ assert.equal(parsedAi.gorevliAd, 'Aziz AÇIKGÖZ');
 assert.equal(parsedAi.onaylayanAd, 'Gökhan FİDAN');
 console.log('PASS: Gemini AI response cleaning, date normalization & global referans integration');
 
-console.log('ALL OLUR PARSING & PERSONNEL MATCHING TESTS PASSED!');
+// 8. matchOrAddFirma testleri
+// a. Mevcut firma isimle eşleşmeli (büyük/küçük harf duyarsız)
+const fMatch1 = context.matchOrAddFirma('alper yamac');
+assert.equal(fMatch1.isNew, false);
+assert.equal(fMatch1.firma.ad, 'Alper YAMAÇ');
+
+// b. Mevcut firma VKN ile eşleşmeli ve eksik adres/tel zenginleştirilmeli
+const fMatch2 = context.matchOrAddFirma({
+  ad: 'Gültes Enerji Elektrik Ltd.',
+  vkn: '2222222222',
+  adres: 'Yeni Sanayi Sitesi No:12 Karaman',
+  tel: '0338 212 00 00'
+});
+assert.equal(fMatch2.isNew, false);
+assert.equal(fMatch2.firma.ad, 'Gültes Enerji');
+assert.equal(fMatch2.firma.adres, 'Yeni Sanayi Sitesi No:12 Karaman');
+assert.equal(fMatch2.firma.tel, '0338 212 00 00');
+
+// c. Yeni kurumsal firma ekleme ('Şirket' tespiti)
+const fYeniSirket = context.matchOrAddFirma({
+  ad: 'Özkan Mühendislik İnşaat San. ve Tic. Ltd. Şti.',
+  vkn: '3333333333',
+  adres: 'Atatürk Cad. No:50',
+  tel: '0532 111 22 33'
+});
+assert.equal(fYeniSirket.isNew, true);
+assert.equal(fYeniSirket.firma.tur, 'Şirket');
+assert.equal(fYeniSirket.firma.vkn, '3333333333');
+assert.ok(context.referans.firmaList.some(f => f.ad === 'Özkan Mühendislik İnşaat San. ve Tic. Ltd. Şti.'));
+
+// d. Yeni şahıs firması ekleme ('Kişi' tespiti)
+const fYeniKisi = context.matchOrAddFirma({
+  ad: 'Mehmet KAYA',
+  vkn: '44444444444',
+  adres: 'Kirişçi Mh.',
+  tel: '0505 555 44 33'
+});
+assert.equal(fYeniKisi.isNew, true);
+assert.equal(fYeniKisi.firma.tur, 'Kişi');
+console.log('PASS: matchOrAddFirma matching, enrichment & auto-adding new companies');
+
+// 9. dtmTopluBelgeleriDerleVeHazirla (Tüm Belgeleri Yükle sentezleme motoru)
+const topluBelgelerSample = [
+  // 1. Belge: YM Olur Belgesi
+  {
+    belgeTuru: 'olur',
+    olur: {
+      isAdi: 'Köy Konağı Çatı ve Dış Cephe Onarımı',
+      isYM: true,
+      isDT: false,
+      onayNo: '99887',
+      onayTarihi: '2026-10-01',
+      gorevliAd: 'Aziz AÇIKGÖZ',
+      gorevliUnvan: 'Elektrik Elektronik Mühendisi',
+      onaylayanAd: 'Sinan ÖZYER',
+      onaylayanUnvan: 'Yatırım ve İnşaat Müdür V.',
+      isTuru: 'Onarım İşi'
+    }
+  },
+  // 2. Belge: 1. Firma Teklifi
+  {
+    belgeTuru: 'teklif',
+    teklif: {
+      firmaAdi: 'Alper YAMAÇ',
+      vkn: '1111111111',
+      toplamTeklifTutari: 110000,
+      kalemler: [
+        { ad: 'Çatı ve Dış Cephe Onarımı', miktar: 1, birim: 'Adet', birimFiyat: 110000, toplamTutar: 110000 }
+      ]
+    }
+  },
+  // 3. Belge: 2. Firma Teklifi (En düşük teklif veren - KAZANAN)
+  {
+    belgeTuru: 'teklif',
+    teklif: {
+      firmaAdi: 'Gültes Enerji',
+      vkn: '2222222222',
+      toplamTeklifTutari: 95000,
+      kalemler: [
+        { ad: 'Çatı ve Dış Cephe Onarımı', miktar: 1, birim: 'Adet', birimFiyat: 95000, toplamTutar: 95000 }
+      ]
+    }
+  },
+  // 4. Belge: 3. Firma Teklifi (Yeni Firma)
+  {
+    belgeTuru: 'teklif',
+    teklif: {
+      firmaAdi: 'Özkan Mühendislik İnşaat San. ve Tic. Ltd. Şti.',
+      vkn: '3333333333',
+      toplamTeklifTutari: 105000,
+      kalemler: [
+        { ad: 'Çatı ve Dış Cephe Onarımı', miktar: 1, birim: 'Adet', birimFiyat: 105000, toplamTutar: 105000 }
+      ]
+    }
+  }
+];
+
+const derlemeSonuc = context.dtmTopluBelgeleriDerleVeHazirla(topluBelgelerSample);
+assert.ok(derlemeSonuc, 'Derleme sonucu boş olmamalı');
+assert.equal(derlemeSonuc.proje.isAdi, 'Köy Konağı Çatı ve Dış Cephe Onarımı');
+assert.equal(derlemeSonuc.proje.ymOnayNo, '99887');
+assert.equal(derlemeSonuc.proje.ymOnayTarihi, '2026-10-01');
+assert.equal(derlemeSonuc.proje.ymGorevliler[0].ad, 'Aziz AÇIKGÖZ');
+assert.equal(derlemeSonuc.proje.onaylayanAmir.ad, 'Sinan ÖZYER');
+assert.equal(derlemeSonuc.okunanOlurSayisi, 1);
+assert.equal(derlemeSonuc.okunanTeklifSayisi, 3);
+// Kazanan firma indeksi Gültes Enerji (95.000 TL) olmalı
+assert.equal(derlemeSonuc.kazananIdx, 1);
+assert.equal(derlemeSonuc.proje.teklifFirmalar[1].ad, 'Gültes Enerji');
+assert.equal(derlemeSonuc.proje.teklifFirmalar[1].fiyatlar[0], 95000);
+// Yaklaşık maliyet: 3 firma ortalaması: (110.000 + 95.000 + 105.000) / 3 = 103.333,33 TL
+assert.equal(derlemeSonuc.yaklasikMaliyet, 103333.33);
+console.log('PASS: dtmTopluBelgeleriDerleVeHazirla batch synthesis, pricing & winner calculation');
+
+// 10. Mal Alımı çoklu kalem sentezleme testi
+const malAlimiSample = [
+  {
+    belgeTuru: 'olur',
+    olur: {
+      isAdi: 'Kırtasiye ve Malzeme Alımı',
+      onayNo: '5544',
+      isTuru: 'Mal Alımı'
+    }
+  },
+  {
+    belgeTuru: 'teklif',
+    teklif: {
+      firmaAdi: 'Alper YAMAÇ',
+      kalemler: [
+        { ad: 'A4 Fotokopi Kağıdı', miktar: 50, birim: 'koli', birimFiyat: 1000 },
+        { ad: 'Tükenmez Kalem', miktar: 100, birim: 'Adet', birimFiyat: 15 }
+      ]
+    }
+  },
+  {
+    belgeTuru: 'teklif',
+    teklif: {
+      firmaAdi: 'Gültes Enerji',
+      kalemler: [
+        { ad: 'A4 Fotokopi Kağıdı', miktar: 50, birim: 'koli', birimFiyat: 900 },
+        { ad: 'Tükenmez Kalem', miktar: 100, birim: 'Adet', birimFiyat: 20 }
+      ]
+    }
+  }
+];
+const malSonuc = context.dtmTopluBelgeleriDerleVeHazirla(malAlimiSample);
+assert.equal(malSonuc.proje.isTuru, 'Mal Alımı');
+assert.equal(malSonuc.masterKalemler.length, 2);
+assert.equal(malSonuc.masterKalemler[0].ad, 'A4 Fotokopi Kağıdı');
+assert.equal(malSonuc.masterKalemler[0].miktar, 50);
+assert.equal(malSonuc.masterKalemler[1].ad, 'Tükenmez Kalem');
+assert.equal(malSonuc.masterKalemler[1].miktar, 100);
+// Alper: 50*1000 + 100*15 = 51.500 TL
+// Gültes: 50*900 + 100*20 = 47.000 TL (Kazanan Gültes)
+assert.equal(malSonuc.kazananIdx, 1);
+console.log('PASS: Multi-item Mal Alımı batch parsing, item synchronization & winner selection');
+
+console.log('ALL OLUR PARSING, COMPANY MATCHING & BATCH SYNTHESIS TESTS PASSED!');

@@ -16,6 +16,7 @@ let currentGerceklestirmeciTab = 'projeler';
 let currentGerceklestirmeciReadOnly = false;
 let currentOnayliBelgelerProjeId = null;
 let lastSavedProjeSnapshot = null;
+let topluSecilenDosyalar = [];
 
 function hasUnsavedChanges() {
   if (currentPage !== 'veri-giris' || !proje || currentProjeKilitli) return false;
@@ -768,12 +769,21 @@ async function renderAnaSayfaPage() {
 
     <!-- Yeni Proje Modal -->
     <div id="yeniProjeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
-      <div style="background:#fff;border-radius:12px;padding:32px;width:460px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+      <div style="background:#fff;border-radius:12px;padding:32px;width:520px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto">
         <h3 style="margin-bottom:8px;font-size:18px;color:var(--gray-800)">📋 Yeni Proje Oluştur</h3>
-        <p style="font-size:13px;color:var(--gray-500);margin-bottom:24px">Nasıl oluşturmak istersiniz?</p>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:20px">Nasıl oluşturmak istersiniz?</p>
 
         <!-- Adım 1: Seçim -->
         <div id="yeniProjeAdim1" style="display:flex;flex-direction:column;gap:12px">
+          <button ${dtmEventAttr('click', function(event) { acYeniProjeTopluAdim() })}
+            style="padding:16px;border:2px solid #3b82f6;border-radius:10px;background:#f0f7ff;cursor:pointer;text-align:left;font-size:14px;transition:all 0.15s"
+            ${dtmEventAttr('mouseover', function(event) { this.style.borderColor='#1d4ed8';this.style.background='#e0f0fe' })} ${dtmEventAttr('mouseout', function(event) { this.style.borderColor='#3b82f6';this.style.background='#f0f7ff' })}>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font-weight:700;color:#1e40af;font-size:15px">⚡ Tüm Belgeleri Yükle</div>
+              <span style="background:#2563eb;color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px">Önerilen</span>
+            </div>
+            <div style="font-size:12px;color:#1d4ed8;margin-top:4px">Olur belgesi ve firma teklif mektuplarını tek seferde yükleyerek projeyi otomatik oluşturun</div>
+          </button>
           <button ${dtmEventAttr('click', function(event) { document.getElementById('yeniProjeAdim1').style.display='none';document.getElementById('yeniProjeAdim2Manuel').style.display='block';setTimeout(()=>document.getElementById('yeniProjeAdi')?.focus(),50) })}
             style="padding:16px;border:2px solid var(--gray-200);border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:14px;transition:border-color 0.15s"
             ${dtmEventAttr('mouseover', function(event) { this.style.borderColor='var(--primary)' })} ${dtmEventAttr('mouseout', function(event) { this.style.borderColor='var(--gray-200)' })}>
@@ -828,6 +838,54 @@ async function renderAnaSayfaPage() {
             <button ${dtmEventAttr('click', function(event) { parseIkiOlurBelgesi() })} style="padding:8px 24px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;border:none;cursor:pointer;font-weight:600">Oku ve Devam Et →</button>
           </div>
         </div>
+
+        <!-- Adım 2c: Tüm Belgeleri Yükle -->
+        <div id="yeniProjeAdim2Toplu" style="display:none">
+          <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px">
+            İşe ait <strong>Olur Belgesi</strong> ve <strong>Firma Teklif Mektuplarını</strong> (PDF veya telefonla çekilmiş Fotoğraf) sürükleyin veya seçin.
+          </p>
+
+          <!-- Dropzone -->
+          <div id="topluDropzone" style="border:2px dashed #3b82f6;border-radius:10px;padding:24px 16px;text-align:center;background:#f8fafc;cursor:pointer;transition:all 0.2s"
+            ${dtmEventAttr('click', function(event) { document.getElementById('topluBelgelerInput').click(); })}>
+            <input type="file" id="topluBelgelerInput" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,image/*" style="display:none"
+              ${dtmEventAttr('change', function(event) { topluDosyalarEkle(this.files); })}>
+            <div style="font-size:32px;margin-bottom:6px">📁</div>
+            <div style="font-size:14px;font-weight:600;color:#1e40af">Belgeleri buraya sürükleyin veya tıklayarak seçin</div>
+            <div style="font-size:12px;color:var(--gray-500);margin-top:4px">PDF, JPG, PNG veya WEBP (Birden fazla dosya seçebilirsiniz)</div>
+          </div>
+
+          <!-- Seçilen dosyalar listesi -->
+          <div id="topluDosyalarWrap" style="margin-top:14px;max-height:160px;overflow-y:auto;display:none">
+            <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+              <span>Seçilen Belgeler (<span id="topluDosyaSayisi">0</span>)</span>
+              <button type="button" style="background:none;border:none;color:#ef4444;font-size:11px;cursor:pointer" ${dtmEventAttr('click', function(event) { topluDosyalariTemizle(); })}>Tümünü Kaldır</button>
+            </div>
+            <div id="topluDosyalarListesi" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+
+          <!-- İlerleme / Durum -->
+          <div id="topluIlerlemeDurumu" style="display:none;margin-top:14px;padding:12px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span id="topluSpinner" style="font-size:18px">⏳</span>
+              <div style="flex:1">
+                <div id="topluDurumBaslik" style="font-size:13px;font-weight:600;color:#0369a1">Analiz Başlatılıyor...</div>
+                <div id="topluDurumDetay" style="font-size:11px;color:#0284c7;margin-top:2px">Lütfen bekleyin</div>
+              </div>
+            </div>
+            <div style="width:100%;height:6px;background:#e0f2fe;border-radius:3px;margin-top:8px;overflow:hidden">
+              <div id="topluIlerlemeBar" style="width:0%;height:100%;background:#0284c7;transition:width 0.3s"></div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button id="btnTopluGeri" ${dtmEventAttr('click', function(event) { document.getElementById('yeniProjeAdim2Toplu').style.display='none';document.getElementById('yeniProjeAdim1').style.display='flex'; })} style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">← Geri</button>
+            <button id="btnTopluAnalizBaslat" class="btn btn-primary" style="padding:8px 22px;display:flex;align-items:center;gap:6px"
+              ${dtmEventAttr('click', function(event) { topluAnaliziBaslat(); })}>
+              <span>🚀 Belgeleri Çözümle ve Projeyi Oluştur</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -879,9 +937,11 @@ function yeniProjeModalSifirla(modal) {
   const adim1 = modal.querySelector('#yeniProjeAdim1');
   const adim2m = modal.querySelector('#yeniProjeAdim2Manuel');
   const adim2o = modal.querySelector('#yeniProjeAdim2Olur');
+  const adim2t = modal.querySelector('#yeniProjeAdim2Toplu');
   if (adim1) adim1.style.display = 'flex';
   if (adim2m) adim2m.style.display = 'none';
   if (adim2o) adim2o.style.display = 'none';
+  if (adim2t) adim2t.style.display = 'none';
   const inp = modal.querySelector('#yeniProjeAdi');
   if (inp) inp.value = '';
   // Dosya seçimlerini temizle
@@ -893,6 +953,23 @@ function yeniProjeModalSifirla(modal) {
   const dtLabel = modal.querySelector('#dtDosyaAdi');
   if (ymLabel) ymLabel.textContent = '';
   if (dtLabel) dtLabel.textContent = '';
+
+  // Toplu dosya seçimlerini temizle
+  topluSecilenDosyalar = [];
+  const topluInput = modal.querySelector('#topluBelgelerInput');
+  if (topluInput) topluInput.value = '';
+  const topluWrap = modal.querySelector('#topluDosyalarWrap');
+  if (topluWrap) topluWrap.style.display = 'none';
+  const topluList = modal.querySelector('#topluDosyalarListesi');
+  if (topluList) topluList.innerHTML = '';
+  const topluSayi = modal.querySelector('#topluDosyaSayisi');
+  if (topluSayi) topluSayi.textContent = '0';
+  const ilerleme = modal.querySelector('#topluIlerlemeDurumu');
+  if (ilerleme) ilerleme.style.display = 'none';
+  const btnBaslat = modal.querySelector('#btnTopluAnalizBaslat');
+  if (btnBaslat) { btnBaslat.disabled = false; btnBaslat.style.opacity = '1'; }
+  const btnGeri = modal.querySelector('#btnTopluGeri');
+  if (btnGeri) { btnGeri.disabled = false; btnGeri.style.opacity = '1'; }
 }
 
 function yeniProjeOlustur() {
@@ -1911,6 +1988,266 @@ function matchOrAddOnaylayanAmir(ad, unvan) {
   return yeni;
 }
 
+function matchOrAddFirma(firmaData) {
+  if (!firmaData) return { firma: null, isNew: false };
+
+  const rawAd = typeof firmaData === 'string' ? firmaData : (firmaData.ad || firmaData.firmaAdi || '');
+  if (!rawAd || !rawAd.trim()) return { firma: null, isNew: false };
+
+  const temizAd = rawAd.trim().replace(/^['"“«]+|['"”»]+$/g, '').trim();
+  if (!referans.firmaList || !Array.isArray(referans.firmaList)) referans.firmaList = [];
+
+  const rawVkn = (typeof firmaData === 'object' && firmaData.vkn) ? String(firmaData.vkn).replace(/\D/g, '') : '';
+  const norm = dtmNormalizeTurkish(temizAd);
+
+  // 1. VKN ile tam eşleşme (10 veya 11 haneli vergi/TC kimlik no)
+  let match = null;
+  if (rawVkn && rawVkn.length >= 10) {
+    match = referans.firmaList.find(f => f && f.vkn && String(f.vkn).replace(/\D/g, '') === rawVkn);
+  }
+
+  // 2. Normalize edilmiş Türkçe isimle tam eşleşme
+  if (!match) {
+    match = referans.firmaList.find(f => f && f.ad && dtmNormalizeTurkish(f.ad) === norm);
+  }
+
+  // 3. İçerik / alt dize eşleşmesi (örn: "Özkan İnşaat" ile "Özkan İnşaat Ltd. Şti.")
+  if (!match) {
+    match = referans.firmaList.find(f => {
+      if (!f || !f.ad) return false;
+      const fNorm = dtmNormalizeTurkish(f.ad);
+      return (fNorm.length >= 6 && norm.length >= 6) && (norm.includes(fNorm) || fNorm.includes(norm));
+    });
+  }
+
+  if (match) {
+    let degisti = false;
+    if (typeof firmaData === 'object') {
+      if ((!match.adres || match.adres.length < 10) && firmaData.adres && firmaData.adres.trim().length >= 10) {
+        match.adres = firmaData.adres.trim();
+        degisti = true;
+      } else if (!match.adres && firmaData.adres) {
+        match.adres = firmaData.adres.trim();
+        degisti = true;
+      }
+      if (!match.tel && firmaData.tel) { match.tel = firmaData.tel.trim(); degisti = true; }
+      if (!match.eposta && firmaData.eposta) { match.eposta = firmaData.eposta.trim(); degisti = true; }
+      if (!match.vkn && rawVkn) { match.vkn = rawVkn; degisti = true; }
+      if (!match.vergiDairesi && firmaData.vergiDairesi) { match.vergiDairesi = firmaData.vergiDairesi.trim(); degisti = true; }
+      if (match.basitUsul === undefined && firmaData.basitUsul !== undefined) { match.basitUsul = !!firmaData.basitUsul; degisti = true; }
+    }
+    if (degisti) saveReferans(referans);
+    return { firma: match, isNew: false };
+  }
+
+  // Yeni firma oluştur ve kaydet
+  const tespitTur = (typeof firmaData === 'object' && (firmaData.tur === 'Şirket' || firmaData.tur === 'Kişi'))
+    ? firmaData.tur
+    : (/ltd|a\.ş|şti|şirket|ticaret|sanayi|san\.|tic\./i.test(temizAd) ? 'Şirket' : 'Kişi');
+
+  const yeni = {
+    ad: temizAd,
+    tur: tespitTur,
+    adres: (typeof firmaData === 'object' && firmaData.adres) ? firmaData.adres.trim() : '',
+    tel: (typeof firmaData === 'object' && firmaData.tel) ? firmaData.tel.trim() : '',
+    faks: (typeof firmaData === 'object' && firmaData.faks) ? firmaData.faks.trim() : '',
+    eposta: (typeof firmaData === 'object' && firmaData.eposta) ? firmaData.eposta.trim() : '',
+    vkn: rawVkn || '',
+    vergiDairesi: (typeof firmaData === 'object' && firmaData.vergiDairesi) ? firmaData.vergiDairesi.trim() : '',
+    basitUsul: typeof firmaData === 'object' ? !!firmaData.basitUsul : false
+  };
+
+  referans.firmaList.push(yeni);
+  referans.firmaList.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
+  saveReferans(referans);
+
+  return { firma: yeni, isNew: true };
+}
+
+function dtmTopluBelgeleriDerleVeHazirla(parsedResults) {
+  if (!parsedResults || !Array.isArray(parsedResults) || parsedResults.length === 0) return null;
+
+  let isAdi = '';
+  let isTuru = 'Yapım İşi';
+  let ymOnayNo = '';
+  let ymOnayTarihi = '';
+  let dtOnayNo = '';
+  let dtOnayTarihi = '';
+  let ymGorevli = null;
+  let dtGorevli = null;
+  let onaylayanAmir = null;
+  const teklifListesi = [];
+  const yeniEklenenFirmalar = [];
+  let okunanOlurSayisi = 0;
+  let okunanTeklifSayisi = 0;
+
+  for (const item of parsedResults) {
+    if (!item) continue;
+
+    // 1. Olur belgesi kontrolü
+    const o = item.olur || (item.belgeTuru === 'olur' ? item : null);
+    if (o && (o.isAdi || o.onayNo || o.gorevliAd || o.onaylayanAd)) {
+      okunanOlurSayisi++;
+      if (o.isAdi && !isAdi) isAdi = o.isAdi.trim();
+      if (o.isTuru) isTuru = o.isTuru;
+      if (o.isYM) {
+        if (o.onayNo) ymOnayNo = o.onayNo;
+        if (o.onayTarihi) ymOnayTarihi = o.onayTarihi;
+        if (o.gorevliAd) ymGorevli = { ad: o.gorevliAd, unvan: o.gorevliUnvan || '' };
+      }
+      if (o.isDT) {
+        if (o.onayNo) dtOnayNo = o.onayNo;
+        if (o.onayTarihi) dtOnayTarihi = o.onayTarihi;
+        if (o.gorevliAd) dtGorevli = { ad: o.gorevliAd, unvan: o.gorevliUnvan || '' };
+      }
+      if (!o.isYM && !o.isDT) {
+        if (o.onayNo) { ymOnayNo = ymOnayNo || o.onayNo; dtOnayNo = dtOnayNo || o.onayNo; }
+        if (o.onayTarihi) { ymOnayTarihi = ymOnayTarihi || o.onayTarihi; dtOnayTarihi = dtOnayTarihi || o.onayTarihi; }
+        if (o.gorevliAd) { ymGorevli = ymGorevli || { ad: o.gorevliAd, unvan: o.gorevliUnvan || '' }; }
+      }
+      if (o.onaylayanAd && !onaylayanAmir) {
+        onaylayanAmir = { ad: o.onaylayanAd, unvan: o.onaylayanUnvan || '' };
+      }
+    }
+
+    // 2. Teklif mektubu kontrolü
+    const t = item.teklif || (item.belgeTuru === 'teklif' ? item : null);
+    if (t && (t.firmaAdi || t.toplamTeklifTutari > 0 || (Array.isArray(t.kalemler) && t.kalemler.length > 0))) {
+      okunanTeklifSayisi++;
+      const firmaSonuc = matchOrAddFirma(t);
+      const firmaAd = (firmaSonuc && firmaSonuc.firma && firmaSonuc.firma.ad) ? firmaSonuc.firma.ad : (t.firmaAdi || 'Firma');
+      if (firmaSonuc && firmaSonuc.isNew && !yeniEklenenFirmalar.includes(firmaAd)) {
+        yeniEklenenFirmalar.push(firmaAd);
+      }
+      teklifListesi.push({
+        firmaAd,
+        vkn: t.vkn || '',
+        toplamTeklifTutari: Number(t.toplamTeklifTutari) || 0,
+        kalemler: Array.isArray(t.kalemler) ? t.kalemler : [],
+        isNew: firmaSonuc ? firmaSonuc.isNew : false
+      });
+    }
+  }
+
+  // Eğer hiçbir şey bulunamadıysa null dön
+  if (!isAdi && teklifListesi.length === 0 && !ymOnayNo && !dtOnayNo) {
+    return null;
+  }
+
+  // Ana kalem listesini tespit et
+  const masterKalemler = [];
+  let enZenginTeklif = teklifListesi.reduce((max, cur) => ((cur.kalemler && cur.kalemler.length > (max.kalemler?.length || 0)) ? cur : max), { kalemler: [] });
+
+  if (enZenginTeklif.kalemler && enZenginTeklif.kalemler.length > 0) {
+    enZenginTeklif.kalemler.forEach(k => {
+      masterKalemler.push({
+        ad: (k.ad || '').trim() || (isAdi || 'Kalem'),
+        miktar: Number(k.miktar) > 0 ? Number(k.miktar) : 1,
+        birim: k.birim || 'Adet'
+      });
+    });
+    if (masterKalemler.length > 1 && !isTuru.includes('Mal')) {
+      isTuru = 'Mal Alımı';
+    }
+  } else {
+    masterKalemler.push({
+      ad: isAdi || 'Yapım / Onarım İşi',
+      miktar: 1,
+      birim: isMalVeyaHizmetTuru(isTuru) ? 'Adet' : '***'
+    });
+  }
+
+  // Firmaların tekliflerini eşleştir
+  const firmalarTeklifData = teklifListesi.map(t => {
+    const fiyatlar = [];
+    masterKalemler.forEach((mk, ki) => {
+      let foundKalem = t.kalemler && t.kalemler[ki];
+      if (!foundKalem && t.kalemler) {
+        foundKalem = t.kalemler.find(k => k && k.ad && dtmNormalizeTurkish(k.ad) === dtmNormalizeTurkish(mk.ad));
+      }
+      if (foundKalem && Number(foundKalem.birimFiyat) > 0) {
+        fiyatlar.push(Number(foundKalem.birimFiyat));
+      } else if (masterKalemler.length === 1 && t.toplamTeklifTutari > 0) {
+        const m = Number(mk.miktar) || 1;
+        fiyatlar.push(Math.round((t.toplamTeklifTutari / m) * 100) / 100);
+      } else {
+        fiyatlar.push(0);
+      }
+    });
+
+    const hesaplananToplam = masterKalemler.reduce((acc, mk, ki) => acc + (fiyatlar[ki] || 0) * (Number(mk.miktar) || 1), 0);
+    return {
+      ad: t.firmaAd,
+      fiyatlar,
+      toplam: t.toplamTeklifTutari > 0 ? t.toplamTeklifTutari : Math.round(hesaplananToplam * 100) / 100,
+      isNew: t.isNew
+    };
+  });
+
+  // Taslak projeyi oluştur
+  const projeTaslak = getDefaultProje();
+  projeTaslak.isAdi = isAdi || (masterKalemler[0]?.ad ? masterKalemler[0].ad : 'Yeni Proje');
+  projeTaslak.isTuru = isTuru;
+
+  if (ymOnayNo)     projeTaslak.ymOnayNo = ymOnayNo;
+  if (ymOnayTarihi) projeTaslak.ymOnayTarihi = ymOnayTarihi;
+  if (dtOnayNo)     projeTaslak.dtOnayNo = dtOnayNo;
+  if (dtOnayTarihi) projeTaslak.dtOnayTarihi = dtOnayTarihi;
+
+  if (ymGorevli) {
+    const g = matchOrAddGorevli(ymGorevli.ad, ymGorevli.unvan);
+    projeTaslak.ymGorevliler[0].ad = g.ad;
+    projeTaslak.ymGorevliler[0].unvan = g.unvan;
+    projeTaslak.ymGorevliSayisi = 1;
+  }
+  if (dtGorevli) {
+    const g = matchOrAddGorevli(dtGorevli.ad, dtGorevli.unvan);
+    projeTaslak.dtGorevliler[0].ad = g.ad;
+    projeTaslak.dtGorevliler[0].unvan = g.unvan;
+    projeTaslak.dtGorevliSayisi = 1;
+  }
+  if (onaylayanAmir) {
+    const a = matchOrAddOnaylayanAmir(onaylayanAmir.ad, onaylayanAmir.unvan);
+    projeTaslak.onaylayanAmir = { ad: a.ad, unvan: a.unvan };
+  }
+
+  // Kalemleri yerleştir (en az 5 kalem slotu)
+  const projeKalemler = masterKalemler.map(k => ({ ...k }));
+  while (projeKalemler.length < 5) {
+    projeKalemler.push({ ad: '', miktar: '', birim: '' });
+  }
+  projeTaslak.isKalemleri = projeKalemler;
+
+  // Firmaları yerleştir (en az 3 firma slotu)
+  const hazirFirmalar = firmalarTeklifData.map(f => {
+    const fyt = [...f.fiyatlar];
+    while (fyt.length < projeTaslak.isKalemleri.length) fyt.push(0);
+    return { ad: f.ad, fiyatlar: fyt };
+  });
+  while (hazirFirmalar.length < 3) {
+    hazirFirmalar.push({ ad: '', fiyatlar: new Array(projeTaslak.isKalemleri.length).fill(0) });
+  }
+  projeTaslak.teklifFirmalar = hazirFirmalar;
+  projeTaslak.ymFirmalar = hazirFirmalar.map(f => ({ ad: f.ad, fiyatlar: [...f.fiyatlar] }));
+
+  // Kazanan firma ve yaklaşık maliyet hesapla
+  const kazananIdx = hesaplaKazananFirma(projeTaslak);
+  projeTaslak.kazananFirmaIndex = kazananIdx;
+  const yaklasikMaliyet = hesaplaYaklasikMaliyet(projeTaslak);
+
+  return {
+    proje: projeTaslak,
+    masterKalemler,
+    firmalarTeklifData,
+    yeniEklenenFirmalar,
+    okunanOlurSayisi,
+    okunanTeklifSayisi,
+    kazananIdx,
+    yaklasikMaliyet
+  };
+}
+
+
 function belgeyiAnaliz(fullText) {
   const cleanText = (fullText || '').replace(/\r?\n/g, ' ');
   const isDT = /doğrudan\s+temin/i.test(cleanText);
@@ -2199,6 +2536,124 @@ async function dtmTestGeminiApiKey(apiKey) {
     }
   }
   throw lastError || new Error('API anahtarı doğrulanamadı.');
+}
+
+async function dtmAnalyzeSingleDocumentMultiAI(file, apiKey) {
+  const { base64, mimeType } = await dtmFileToBase64(file);
+
+  const prompt = `Sen Türkiye Cumhuriyeti kamu ihale ve doğrudan temin mevzuatı (4734 sayılı KİK 22/d) uzmanısın.
+Sana verilen resmi evrakı (Doğrudan Temin Görevlendirme / Olur Belgesi, Yaklaşık Maliyet Oluru veya Firma Teklif Mektubu / Fiyat Teklifi) dikkatle incele.
+Belgenin türünü ("olur", "teklif" veya "diger") belirle ve ilgili alanları çıkarıp SADECE geçerli bir JSON formatında döndür:
+
+{
+  "belgeTuru": "olur",
+  "olur": {
+    "isAdi": "İşin tam ve doğru adı (Sadece işin konusunu al; tırnak işaretlerini temizle; 'için', 'kapsamında', 'hususunu', 'arz ederim' gibi resmi yazışma cümlelerini DAHİL ETME)",
+    "isDT": true,
+    "isYM": false,
+    "onayNo": "Belgenin resmi sayısı/evrak numarası (Örn: '61019'). Yoksa null",
+    "onayTarihi": "Belgenin resmi onay tarihi (YYYY-MM-DD formatında, örn: '2026-09-24'). Yoksa null",
+    "gorevliAd": "Görevlendirilen personelin Adı Soyadı. Birden fazla varsa ilk görevli.",
+    "gorevliUnvan": "Görevlendirilen personelin unvanı. Yoksa null",
+    "onaylayanAd": "Belgenin en altındaki 'OLUR' veren/onaylayan en yetkili amirin Adı Soyadı. Yoksa null",
+    "onaylayanUnvan": "Onaylayan amirin unvanı. Yoksa null",
+    "isTuru": "Yapım İşi"
+  },
+  "teklif": {
+    "firmaAdi": "Teklifi veren firmanın veya kişinin tam adı / unvanı (Örn: 'Gültes Enerji Ltd. Şti.' veya 'Alper YAMAÇ')",
+    "vkn": "Vergi Kimlik Numarası veya TC Kimlik Numarası (Varsa). Yoksa null",
+    "vergiDairesi": "Vergi dairesi. Yoksa null",
+    "adres": "Firma açık adresi. Yoksa null",
+    "tel": "Firma telefon numarası. Yoksa null",
+    "eposta": "Firma e-posta adresi. Yoksa null",
+    "toplamTeklifTutari": 0.0,
+    "kalemler": [
+      {
+        "ad": "İş kalemi veya malzeme adı",
+        "miktar": 1.0,
+        "birim": "Adet",
+        "birimFiyat": 0.0,
+        "toplamTutar": 0.0
+      }
+    ]
+  }
+}
+
+Önemli kurallar:
+- Yanıtın SADECE saf JSON olsun, markdown kod bloğu veya ek açıklama ekleme.
+- Eğer belge bir Olur Belgesi ise belgeTuru "olur" yap ve "olur" objesini doldur, "teklif" alanını null bırak.
+- Eğer belge bir Teklif Mektubu ise belgeTuru "teklif" yap ve "teklif" objesini doldur, "olur" alanını null bırak.
+- Rakamları kesinlikle sayı (float/number) olarak döndür.
+- Okunamayan veya bulunmayan alanları null bırak.`;
+
+  const selectedModel = (referans && referans.geminiModel) || 'gemini-3.8-flash';
+  const models = [selectedModel, 'gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+    .filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const payload = {
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: mimeType,
+                  data: base64
+                }
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: "application/json"
+        }
+      };
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn(`[Gemini API - Toplu] ${model} hata verdi (${res.status}):`, errText);
+        lastError = new Error(`Gemini API Hatası (${res.status}): ${errText}`);
+        if (res.status === 404) continue;
+        throw lastError;
+      }
+
+      const data = await res.json();
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) throw new Error('Gemini API boş yanıt döndürdü.');
+
+      let cleaned = rawText.trim();
+      if (cleaned.startsWith('```json')) cleaned = cleaned.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+      else if (cleaned.startsWith('```')) cleaned = cleaned.replace(/^```\s*/, '').replace(/```\s*$/, '');
+
+      const parsed = JSON.parse(cleaned);
+
+      if (parsed.olur && parsed.olur.onayTarihi && typeof parsed.olur.onayTarihi === 'string') {
+        const dMatch = parsed.olur.onayTarihi.match(/^(\d{2})[\.\/](\d{2})[\.\/](\d{4})$/);
+        if (dMatch) {
+          parsed.olur.onayTarihi = `${dMatch[3]}-${dMatch[2]}-${dMatch[1]}`;
+        }
+      }
+
+      return parsed;
+    } catch (err) {
+      lastError = err;
+      if (err.message && err.message.includes('404')) continue;
+      throw err;
+    }
+  }
+
+  throw lastError || new Error('Tüm Gemini modelleri denendi ancak yanıt alınamadı.');
 }
 
 async function dtmParseOlurBelgesi(file) {
@@ -2577,6 +3032,343 @@ async function parseOnayBelgesiIsAdi(file) {
     showToast('PDF okunamadı: ' + e.message, 'error');
   }
 }
+
+// ===== TÜM BELGELERİ YÜKLE — ÇOKLU BELGE VE TEKLİF ENTEGRASYONU =====
+
+function acYeniProjeTopluAdim() {
+  const modal = document.getElementById('yeniProjeModal');
+  if (!modal) return;
+  const adim1 = modal.querySelector('#yeniProjeAdim1');
+  const adim2t = modal.querySelector('#yeniProjeAdim2Toplu');
+  if (adim1) adim1.style.display = 'none';
+  if (adim2t) adim2t.style.display = 'block';
+  topluDosyalariGuncelleUI();
+  setupTopluDropzone();
+}
+
+function setupTopluDropzone() {
+  const dz = document.getElementById('topluDropzone');
+  if (!dz || dz._dzInit) return;
+  dz._dzInit = true;
+
+  dz.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dz.style.borderColor = '#1d4ed8';
+    dz.style.background = '#eff6ff';
+  });
+
+  dz.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dz.style.borderColor = '#3b82f6';
+    dz.style.background = '#f8fafc';
+  });
+
+  dz.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dz.style.borderColor = '#3b82f6';
+    dz.style.background = '#f8fafc';
+    if (e.dataTransfer && e.dataTransfer.files) {
+      topluDosyalarEkle(e.dataTransfer.files);
+    }
+  });
+}
+
+function topluDosyalarEkle(fileList) {
+  if (!fileList || fileList.length === 0) return;
+  for (let i = 0; i < fileList.length; i++) {
+    const f = fileList[i];
+    const zatenVar = topluSecilenDosyalar.some(ex => ex.name === f.name && ex.size === f.size);
+    if (!zatenVar) {
+      topluSecilenDosyalar.push(f);
+    }
+  }
+  topluDosyalariGuncelleUI();
+}
+
+function topluDosyaSil(index) {
+  if (index >= 0 && index < topluSecilenDosyalar.length) {
+    topluSecilenDosyalar.splice(index, 1);
+    topluDosyalariGuncelleUI();
+  }
+}
+
+function topluDosyalariTemizle() {
+  topluSecilenDosyalar = [];
+  const inp = document.getElementById('topluBelgelerInput');
+  if (inp) inp.value = '';
+  topluDosyalariGuncelleUI();
+}
+
+function formatDosyaBoyutu(bytes) {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function topluDosyalariGuncelleUI() {
+  const wrap = document.getElementById('topluDosyalarWrap');
+  const listEl = document.getElementById('topluDosyalarListesi');
+  const sayiEl = document.getElementById('topluDosyaSayisi');
+  if (!wrap || !listEl) return;
+
+  if (sayiEl) sayiEl.textContent = String(topluSecilenDosyalar.length);
+
+  if (topluSecilenDosyalar.length === 0) {
+    wrap.style.display = 'none';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  wrap.style.display = 'block';
+  listEl.innerHTML = topluSecilenDosyalar.map((f, idx) => {
+    const isPdf = f.name.toLowerCase().endsWith('.pdf');
+    const icon = isPdf ? '📄' : '🖼️';
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#fff;border:1px solid var(--gray-200);border-radius:6px;font-size:12px">
+        <div style="display:flex;align-items:center;gap:8px;overflow:hidden;flex:1">
+          <span>${icon}</span>
+          <span style="font-weight:500;color:var(--gray-800);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escAttr(f.name)}">${escHtml(f.name)}</span>
+          <span style="color:var(--gray-400);font-size:11px;flex-shrink:0">(${formatDosyaBoyutu(f.size)})</span>
+        </div>
+        <button type="button" ${dtmEventAttr('click', function(event) { topluDosyaSil((idx)); })} style="background:none;border:none;color:#ef4444;font-size:14px;cursor:pointer;padding:2px 6px;line-height:1" title="Kaldır">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+async function topluAnaliziBaslat() {
+  if (topluSecilenDosyalar.length === 0) {
+    showToast('Lütfen en az bir belge (Olur veya Teklif Mektubu) seçin.', 'warning');
+    return;
+  }
+
+  const apiKey = (referans && referans.geminiApiKey) || (typeof localStorage !== 'undefined' && localStorage.getItem('dtm_gemini_api_key'));
+  if (!apiKey || !apiKey.trim()) {
+    showToast('Tüm belgeleri tek seferde çözümlemek için Google Gemini API anahtarı gereklidir. Veri Merkezi veya Profil sayfasından anahtarınızı kaydedebilirsiniz.', 'warning', 6000);
+    return;
+  }
+
+  const ilerlemeEl = document.getElementById('topluIlerlemeDurumu');
+  const baslikEl = document.getElementById('topluDurumBaslik');
+  const detayEl = document.getElementById('topluDurumDetay');
+  const barEl = document.getElementById('topluIlerlemeBar');
+  const btnBaslat = document.getElementById('btnTopluAnalizBaslat');
+  const btnGeri = document.getElementById('btnTopluGeri');
+
+  if (ilerlemeEl) ilerlemeEl.style.display = 'block';
+  if (btnBaslat) { btnBaslat.disabled = true; btnBaslat.style.opacity = '0.6'; }
+  if (btnGeri) { btnGeri.disabled = true; btnGeri.style.opacity = '0.6'; }
+
+  const total = topluSecilenDosyalar.length;
+  const parsedResults = [];
+  const hataliDosyalar = [];
+
+  for (let i = 0; i < total; i++) {
+    const file = topluSecilenDosyalar[i];
+    if (baslikEl) baslikEl.textContent = `Belge ${i + 1} / ${total} analiz ediliyor...`;
+    if (detayEl) detayEl.textContent = `${file.name} (Yapay zeka metin ve tabloları çözümlüyor)`;
+    if (barEl) barEl.style.width = `${Math.round(((i + 0.2) / total) * 100)}%`;
+
+    try {
+      const res = await dtmAnalyzeSingleDocumentMultiAI(file, apiKey.trim());
+      parsedResults.push(res);
+      if (barEl) barEl.style.width = `${Math.round(((i + 1) / total) * 100)}%`;
+    } catch (err) {
+      console.warn(`[Toplu Analiz] ${file.name} çözümlenemedi:`, err);
+      hataliDosyalar.push({ dosya: file.name, hata: err.message });
+    }
+  }
+
+  if (btnBaslat) { btnBaslat.disabled = false; btnBaslat.style.opacity = '1'; }
+  if (btnGeri) { btnGeri.disabled = false; btnGeri.style.opacity = '1'; }
+  if (ilerlemeEl) ilerlemeEl.style.display = 'none';
+
+  if (parsedResults.length === 0) {
+    showToast('Belgelerden hiçbiri çözümlenemedi. ' + (hataliDosyalar[0]?.hata || ''), 'error', 5000);
+    return;
+  }
+
+  if (hataliDosyalar.length > 0) {
+    showToast(`${total} belgeden ${parsedResults.length} adedi okundu, ${hataliDosyalar.length} dosya atlandı.`, 'warning', 4000);
+  }
+
+  const ozet = dtmTopluBelgeleriDerleVeHazirla(parsedResults);
+  if (!ozet) {
+    showToast('Belgelerden anlamlı bir proje veya teklif bilgisi çıkarılamadı.', 'warning', 4000);
+    return;
+  }
+
+  renderTopluAnalizOnayModal(ozet);
+}
+
+function renderTopluAnalizOnayModal(ozet) {
+  if (!ozet || !ozet.proje) return;
+  const eski = document.getElementById('topluAnalizOnayModal');
+  if (eski) eski.remove();
+
+  const modalEl = document.createElement('div');
+  modalEl.id = 'topluAnalizOnayModal';
+  modalEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10050;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+  const p = ozet.proje;
+  const kazananIdx = ozet.kazananIdx;
+  const kazananFirma = kazananIdx >= 0 && p.teklifFirmalar ? p.teklifFirmalar[kazananIdx] : null;
+
+  const aktifKalemler = (p.isKalemleri || []).filter(k => k && k.ad && k.ad.trim());
+  const kalemlerHtml = aktifKalemler.length > 0 ? `
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">📦 Tespit Edilen İş Kalemleri (${aktifKalemler.length})</div>
+      <table class="data-table" style="font-size:12px;width:100%">
+        <thead><tr><th>#</th><th>Kalem Adı</th><th style="text-align:right">Miktar</th><th>Birim</th></tr></thead>
+        <tbody>
+          ${aktifKalemler.map((k, i) => `<tr><td class="merkez">${i + 1}</td><td>${escHtml(k.ad)}</td><td class="rakam">${k.miktar}</td><td>${escHtml(k.birim || 'Adet')}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  ` : '';
+
+  const firmalarHtml = (ozet.firmalarTeklifData || []).map((f, i) => {
+    const isKazanan = i === kazananIdx;
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:6px;border-radius:8px;background:${isKazanan ? '#f0fdf4' : '#f9fafb'};border:1px solid ${isKazanan ? '#86efac' : '#e5e7eb'}">
+        <div>
+          <div style="font-weight:600;font-size:13px;color:${isKazanan ? '#166534' : 'var(--gray-800)'};display:flex;align-items:center;gap:6px">
+            <span>${escHtml(f.ad || 'İsimsiz Firma')}</span>
+            ${isKazanan ? '<span style="background:#16a34a;color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600">🏆 EN AVANTAJLI (KAZANAN)</span>' : ''}
+            ${f.isNew ? '<span style="background:#2563eb;color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600">🆕 Sisteme Eklendi</span>' : ''}
+          </div>
+          <div style="font-size:11px;color:var(--gray-500);margin-top:2px">Teklif Fiyatı</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:700;color:${isKazanan ? '#166534' : 'var(--gray-900)'}">${f.toplam > 0 ? formatCurrency(f.toplam) + ' TL' : '-'}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  modalEl.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:28px;width:640px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;border-bottom:1px solid var(--gray-200);padding-bottom:12px">
+        <div>
+          <h3 style="margin:0;font-size:18px;color:var(--gray-800);display:flex;align-items:center;gap:8px">
+            <span>✨</span> Tüm Belgeler Çözümlendi
+          </h3>
+          <p style="margin:4px 0 0;font-size:12px;color:var(--gray-500)">Aşağıdaki proje verileri belgelerinizden otomatik olarak hazırlandı.</p>
+        </div>
+        <button id="btnTopluOnayModalKapatX" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-400);line-height:1;padding:4px 8px;border-radius:6px">&times;</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;margin-bottom:14px;background:#f8fafc;padding:12px;border-radius:10px;border:1px solid #e2e8f0">
+        <div>
+          <span style="font-size:11px;color:var(--gray-500);display:block">İşin Adı</span>
+          <strong style="font-size:13px;color:var(--gray-800);word-break:break-word">${escHtml(p.isAdi || '(Belirtilmedi)')}</strong>
+        </div>
+        <div>
+          <span style="font-size:11px;color:var(--gray-500);display:block">İş Türü</span>
+          <span style="font-size:12px;font-weight:600;color:#1e40af">${escHtml(p.isTuru)}</span>
+        </div>
+        <div>
+          <span style="font-size:11px;color:var(--gray-500);display:block">Y.M. Onay No / Tarih</span>
+          <span style="font-size:12px;color:var(--gray-700)">${escHtml(p.ymOnayNo || '-')} / ${escHtml(p.ymOnayTarihi ? p.ymOnayTarihi.split('-').reverse().join('.') : '-')}</span>
+        </div>
+        <div>
+          <span style="font-size:11px;color:var(--gray-500);display:block">D.T. Onay No / Tarih</span>
+          <span style="font-size:12px;color:var(--gray-700)">${escHtml(p.dtOnayNo || '-')} / ${escHtml(p.dtOnayTarihi ? p.dtOnayTarihi.split('-').reverse().join('.') : '-')}</span>
+        </div>
+        <div>
+          <span style="font-size:11px;color:var(--gray-500);display:block">Görevli Personel</span>
+          <span style="font-size:12px;color:var(--gray-700)">${escHtml(p.ymGorevliler[0]?.ad || p.dtGorevliler[0]?.ad || '-')}</span>
+        </div>
+        <div>
+          <span style="font-size:11px;color:var(--gray-500);display:block">Onaylayan Amir</span>
+          <span style="font-size:12px;color:var(--gray-700)">${escHtml(p.onaylayanAmir?.ad || '-')}</span>
+        </div>
+      </div>
+
+      ${kalemlerHtml}
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">🏢 Firma Teklifleri (${ozet.firmalarTeklifData.length})</div>
+        ${firmalarHtml}
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;margin-bottom:16px">
+        <div>
+          <span style="font-size:11px;color:#1e40af;font-weight:600;display:block">YAKLAŞIK MALİYET</span>
+          <strong style="font-size:15px;color:#1e3a8a">${ozet.yaklasikMaliyet > 0 ? formatCurrency(ozet.yaklasikMaliyet) + ' TL' : '-'}</strong>
+        </div>
+        ${kazananFirma ? `
+          <div style="text-align:right">
+            <span style="font-size:11px;color:#166534;font-weight:600;display:block">SÖZLEŞME / KAZANAN BEDEL</span>
+            <strong style="font-size:15px;color:#14532d">${formatCurrency(hesaplaTeklifFirmaToplam(kazananFirma, getKalemler(p)))} TL</strong>
+          </div>
+        ` : ''}
+      </div>
+
+      ${ozet.yeniEklenenFirmalar && ozet.yeniEklenenFirmalar.length > 0 ? `
+        <div style="padding:8px 12px;background:#fefce8;border-radius:6px;border:1px solid #fef08a;font-size:12px;color:#854d0e;margin-bottom:16px">
+          💡 <strong>${ozet.yeniEklenenFirmalar.length} firma</strong> (${escHtml(ozet.yeniEklenenFirmalar.join(', '))}) sisteminize otomatik olarak kaydedildi ve zenginleştirildi.
+        </div>
+      ` : ''}
+
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button id="btnTopluOnayModalVazgec" style="padding:10px 18px;border:1px solid var(--gray-300);background:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500">← Düzenle / Vazgeç</button>
+        <button id="btnTopluOnayModalKabul" class="btn btn-primary" style="padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
+          <span>✅ Projeyi Başlat ve Veri Girişine Git</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modalEl);
+
+  modalEl.querySelector('#btnTopluOnayModalKapatX')?.addEventListener('click', () => modalEl.remove());
+  modalEl.querySelector('#btnTopluOnayModalVazgec')?.addEventListener('click', () => modalEl.remove());
+  modalEl.querySelector('#btnTopluOnayModalKabul')?.addEventListener('click', () => {
+    dtmTopluProjeyiKabulEt(p);
+  });
+}
+
+function dtmTopluProjeyiKabulEt(yeniProje) {
+  proje = yeniProje;
+  currentCloudProjeId = null;
+  currentProjeKilitli = false;
+  currentProjeBaskaKullanici = false;
+  projeAktif = true;
+  lastSavedProjeSnapshot = JSON.stringify(proje);
+  saveProje(proje);
+
+  document.getElementById('topluAnalizOnayModal')?.remove();
+  const m = document.getElementById('yeniProjeModal');
+  if (m) m.style.display = 'none';
+
+  currentPage = 'veri-giris';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('[data-page="veri-giris"]')?.classList.add('active');
+  updateNavLock();
+  renderPage();
+  autoSave();
+
+  showToast('Proje başarıyla oluşturuldu! Belgeler aktarıldı.', 'success', 5000);
+}
+
+if (typeof window !== 'undefined') {
+  window.acYeniProjeTopluAdim = acYeniProjeTopluAdim;
+  window.setupTopluDropzone = setupTopluDropzone;
+  window.topluDosyalarEkle = topluDosyalarEkle;
+  window.topluDosyaSil = topluDosyaSil;
+  window.topluDosyalariTemizle = topluDosyalariTemizle;
+  window.topluDosyalariGuncelleUI = topluDosyalariGuncelleUI;
+  window.topluAnaliziBaslat = topluAnaliziBaslat;
+  window.renderTopluAnalizOnayModal = renderTopluAnalizOnayModal;
+  window.dtmTopluProjeyiKabulEt = dtmTopluProjeyiKabulEt;
+  window.matchOrAddFirma = matchOrAddFirma;
+  window.dtmTopluBelgeleriDerleVeHazirla = dtmTopluBelgeleriDerleVeHazirla;
+  window.dtmAnalyzeSingleDocumentMultiAI = dtmAnalyzeSingleDocumentMultiAI;
+}
+
 
 // PDF veya Görsel (JPG, JPEG, PNG, WEBP) içindeki metin katmanını tarayıcıda oku; harici OCR servisi kullanılmaz.
 async function readPdfText(file) {
