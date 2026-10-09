@@ -1917,10 +1917,31 @@ function belgeyiAnaliz(fullText) {
   const isYM = /yaklaşık\s+maliyet/i.test(cleanText);
 
   let isAdi = null;
-  const tirnakMatch = cleanText.match(/[\u201C\u201E\u0022\u00AB]([^\u201D\u201C\u0022\u00BB]{5,150})[\u201D\u201F\u0022\u00BB]/);
-  if (tirnakMatch) isAdi = tirnakMatch[1].replace(/\s+/g, ' ').trim();
+  // 1. Tırnak işaretleri arasındaki iş adını ara (çift tırnaklar)
+  const tirnakMatch = cleanText.match(/[\u201C\u201E\u0022\u00AB]([^\u201D\u201C\u0022\u00BB]{5,180})[\u201D\u201F\u0022\u00BB]/);
+  if (tirnakMatch) {
+    let ham = tirnakMatch[1].replace(/\s+/g, ' ').trim();
+    // Kapanış tırnağı kaçtıysa ve cümlenin devamı içeri sızdıysa temizle
+    ham = ham.replace(/\s+(?:için|kapsamında|ile\s+ilgili|hususunu|hususunda|doğrudan\s+temin|görevlendirilmesi|yaklaşık\s+maliyet).*$/i, '').trim();
+    ham = ham.replace(/['"”’«»\.\,]+$/, '').trim();
+    if (ham.length >= 5) isAdi = ham;
+  }
+
+  // 2. Kapanış tırnağı tek tırnak veya bozuk karakter olduysa ("... İşi' için)
   if (!isAdi) {
-    const konusuMatch = cleanText.match(/(?:konusu|İşin\s+Adı|Hizmetin\s+Adı)\s*[:\-]?\s*([A-Za-zÇŞĞÜÖİçşğüöı0-9 \/\-]{5,100}?)(?:\s{2,}|$)/i);
+    const tekTirnakMatch = cleanText.match(/[\u201C\u201E\u0022\u00AB'‘]([^'"”’«»\n]{5,120}?(?:İşi|Alımı|Yapımı|Hizmeti|Onarımı|Bakımı|Tadilatı|Temini|Malı|isi|alimi|yapimi|hizmeti|onarimi|bakimi|temini))\s*['"”’»]?\s*(?:için|kapsamında|ile\s+ilgili)/i);
+    if (tekTirnakMatch) isAdi = tekTirnakMatch[1].replace(/\s+/g, ' ').trim();
+  }
+
+  // 3. Tırnaksız bağlam araması ("... İşi için" veya "... İşi kapsamında")
+  if (!isAdi) {
+    const baglamMatch = cleanText.match(/(?:olan|yapılacak|konulu|adlı)?\s*["“']?([A-Za-zÇŞĞÜÖİçşğüöı0-9 \/\-\.]{5,100}?(?:İşi|Alımı|Yapımı|Hizmeti|Onarımı|Bakımı|Tadilatı|Temini|Malı))\s*["”']?\s*(?:için|kapsamında|ile\s+ilgili)/i);
+    if (baglamMatch) isAdi = baglamMatch[1].replace(/\s+/g, ' ').trim();
+  }
+
+  // 4. Doğrudan 'İşin Adı:' veya 'Hizmetin Adı:' başlığı
+  if (!isAdi) {
+    const konusuMatch = cleanText.match(/(?:İşin\s+Adı|Hizmetin\s+Adı)\s*[:\-]?\s*([A-Za-zÇŞĞÜÖİçşğüöı0-9 \/\-]{5,100}?)(?:\s{2,}|$)/i);
     if (konusuMatch) isAdi = konusuMatch[1].replace(/\s+/g, ' ').trim();
   }
 
@@ -2320,14 +2341,27 @@ async function dtmLocalOcrImage(file) {
     ctx.drawImage(img, 0, 0, width, height);
     URL.revokeObjectURL(imgUrl);
 
-    // Hafif kontrast ve parlaklık optimizasyonu (fotoğraf gölgelerini azaltmak için)
+    // Fotoğraf gölgelerini azaltmak ve yazıları netleştirmek için dinamik kontrast
     try {
       const imgData = ctx.getImageData(0, 0, width, height);
       const d = imgData.data;
+      let minVal = 255, maxVal = 0;
       for (let i = 0; i < d.length; i += 4) {
         const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        const contrast = (gray - 128) * 1.25 + 128;
-        const val = Math.min(255, Math.max(0, contrast));
+        if (gray < minVal) minVal = gray;
+        if (gray > maxVal) maxVal = gray;
+      }
+      const range = (maxVal - minVal) || 1;
+      for (let i = 0; i < d.length; i += 4) {
+        const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        const norm = ((gray - minVal) / range) * 255;
+        // Metinleri koyulaştırıp kağıdı parlat
+        let val;
+        if (norm < 135) {
+          val = Math.max(0, norm * 0.7);
+        } else {
+          val = Math.min(255, 135 + (norm - 135) * 1.45);
+        }
         d[i] = val;
         d[i + 1] = val;
         d[i + 2] = val;

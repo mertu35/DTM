@@ -118,4 +118,14 @@ assert.equal(yeniAmir.ad, 'Gökhan FİDAN');
 assert.ok(context.referans.onaylayanList.some(o => o.ad === 'Gökhan FİDAN'));
 console.log('PASS: matchOrAddOnaylayanAmir auto-add and match');
 
+// 6. Sızan tırnak veya bağlam kelimesi içeren fotoğraf OCR metni testi
+const photoLeakyText = `YATIRIM VE İNŞAAT MÜDÜRLÜĞÜNE
+"Karaman İl Özel İdaresi Jeneratör Bakım İşi' için yaklaşık maliyet görevlisi olarak Elektrik ve
+Elektronik Mühendisi Aziz AÇIKGÖZ'ün görevlendirilmesi hususunu;
+"OLUR" emirlerinize arz ederim.
+OLUR Gökhan FİDAN Yatırım ve İnşaat Müdür V.`;
+const leakyRes = context.belgeyiAnaliz(photoLeakyText);
+assert.equal(leakyRes.isAdi, 'Karaman İl Özel İdaresi Jeneratör Bakım İşi');
+console.log('PASS: Leaky quote / context trailing phrases properly cut off');
+
 console.log('ALL OLUR PARSING & PERSONNEL MATCHING TESTS PASSED!');
