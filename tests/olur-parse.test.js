@@ -321,3 +321,23 @@ assert.equal(malSonuc.kazananIdx, 1);
 console.log('PASS: Multi-item Mal Alımı batch parsing, item synchronization & winner selection');
 
 console.log('ALL OLUR PARSING, COMPANY MATCHING & BATCH SYNTHESIS TESTS PASSED!');
+
+const beforePreview = JSON.stringify(context.referans);
+const reversed = JSON.parse(JSON.stringify(malAlimiSample));
+reversed[2].teklif.kalemler.reverse();
+const reordered = context.dtmTopluBelgeleriDerleVeHazirla(reversed);
+assert.deepEqual(Array.from(reordered.proje.teklifFirmalar[1].fiyatlar).slice(0,2), [900,20]);
+assert.equal(JSON.stringify(context.referans), beforePreview, 'Preview must not mutate reference records');
+const missing = JSON.parse(JSON.stringify(malAlimiSample));
+missing[2].teklif.kalemler.pop();
+const incomplete = context.dtmTopluBelgeleriDerleVeHazirla(missing);
+assert.equal(incomplete.kazananIdx, 0, 'Incomplete cheaper offer must not win');
+assert.equal(incomplete.proje.teklifFirmalar[1].analizEksik, true);
+const duplicate = JSON.parse(JSON.stringify(malAlimiSample));
+duplicate[2].teklif.kalemler[1] = {...duplicate[2].teklif.kalemler[0]};
+assert.equal(context.dtmTopluBelgeleriDerleVeHazirla(duplicate).kazananIdx,0);
+for (const invalid of [[], {kalemler:{}}, {miktar:-1}, {birimFiyat:'100'}, {onayTarihi:'2026-02-30'}, {ad:55}, {basitUsul:'false'}]) {
+  assert.throws(() => context.dtmAiYanitiDogrula(invalid));
+}
+assert.equal(JSON.stringify(context.referans), beforePreview);
+console.log('PASS: reordered, incomplete, duplicate items; isolated preview and malformed AI output');

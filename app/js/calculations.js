@@ -178,12 +178,16 @@ function hesaplaTeklifFirmaToplam(firma, kalemler) {
   return Math.round((toplam + Number.EPSILON) * 100) / 100;
 }
 
+function teklifTamMi(firma, kalemler) {
+  return firma && firma.analizEksik !== true && kalemler.every((k,i) => hesaplamaSayisi(firma.fiyatlar?.[i]) > 0);
+}
+
 function hesaplaKazananFirma(proje) {
   const kalemler = getKalemler(proje);
   let minToplam = Infinity;
   let minIndex = -1;
   (proje.teklifFirmalar || []).forEach((f, i) => {
-    if (f && f.ad) {
+    if (f && f.ad && teklifTamMi(f, kalemler)) {
       const toplam = hesaplaTeklifFirmaToplam(f, kalemler);
       if (toplam > 0 && toplam < minToplam) {
         minToplam = toplam;
@@ -201,7 +205,7 @@ function getKazananFirma(proje, referans) {
     : hesaplaKazananFirma(proje);
   if (idx < 0 || !proje.teklifFirmalar || !proje.teklifFirmalar[idx]) return null;
   const firma = proje.teklifFirmalar[idx];
-  if (!firma || !firma.ad) return null;
+  if (!firma || !firma.ad || !teklifTamMi(firma, getKalemler(proje))) return null;
   const firmaDetay = typeof getFirmaByAd === 'function' ? getFirmaByAd(firma.ad, referans) : null;
   const kalemler = getKalemler(proje);
   return {
@@ -222,7 +226,7 @@ function hesaplaHakedis(proje, referans, dogrula = true) {
     : hesaplaKazananFirma(proje);
   if (idx < 0 || !proje.teklifFirmalar || !proje.teklifFirmalar[idx]) return null;
   const kazanan = proje.teklifFirmalar[idx];
-  if (!kazanan || !kazanan.ad) return null;
+  if (!kazanan || !kazanan.ad || !teklifTamMi(kazanan, getKalemler(proje))) return null;
 
   const kalemler = getKalemler(proje);
   const sozlesmeBedeli = hesaplaTeklifFirmaToplam(kazanan, kalemler);

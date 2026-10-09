@@ -131,3 +131,12 @@ check('form rejects negative price', () => {
   assert.equal(run('proje.teklifFirmalar[0].fiyatlar[0] || 0'), 0);
 });
 console.log(`${count} finance checks passed.`);
+
+check('AI offer review requires all prices and restores eligibility after correction', () => {
+  run(`proje = getDefaultProje(); proje.teklifFirmalar[0] = {ad:'Reviewed',fiyatlar:[0,0,0,0,0],analizEksik:true};
+    analizTeklifiniDogrula(0);`);
+  assert.equal(run('proje.teklifFirmalar[0].analizEksik'),true);
+  run(`proje.teklifFirmalar[0].fiyatlar[0]=100; analizTeklifiniDogrula(0);`);
+  assert.equal(run('proje.teklifFirmalar[0].analizEksik'),false);
+  assert.equal(run('hesaplaKazananFirma(proje)'),0);
+});

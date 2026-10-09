@@ -1166,6 +1166,8 @@ function renderVeriGirisPage() {
             ${[...referans.firmaList].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')).map(fr => `<option value="${escAttr(fr.ad)}" ${f.ad === fr.ad ? 'selected' : ''}>${escHtml(fr.ad)}</option>`).join('')}
           </select>
         </div>
+        ${f.analizEksik ? `<div class="alert alert-warning">Analizde eksik veya tutarsız teklif bulundu. Kalemleri ve fiyatları belgenizle karşılaştırıp düzeltin.
+          <button class="btn btn-sm" ${dtmEventAttr('click', function(event) { analizTeklifiniDogrula(fi) })}>Teklifi kontrol ettim</button></div>` : ''}
         <table class="data-table">
           <thead><tr><th>Kalem</th><th>Birim Fiyat (TL)</th><th>Toplam (TL)</th></tr></thead>
           <tbody>
@@ -1944,6 +1946,33 @@ function dtmNormalizeTurkish(str) {
     .trim();
 }
 
+let dtmReferansProva = false;
+function dtmAiYanitiDogrula(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Analiz yanıtı geçerli bir nesne değil.');
+  const text = new Set(['ad','firmaAdi','isAdi','isTuru','onayNo','onayTarihi','gorevliAd','gorevliUnvan','onaylayanAd','onaylayanUnvan','adres','tel','faks','eposta','vkn','vergiDairesi','tur','birim','belgeTuru']);
+  const numeric = new Set(['miktar','birimFiyat','toplamTutar','toplamTeklifTutari']);
+  function inspect(obj) {
+    for (const [key,v] of Object.entries(obj)) {
+      if (v == null) continue;
+      if (text.has(key) && (typeof v !== 'string' || v.length > 2000)) throw new Error(key + ': geçerli metin bekleniyor.');
+      if (numeric.has(key) && (typeof v !== 'number' || !Number.isFinite(v) || v < 0)) throw new Error(key + ': sıfır veya pozitif sayı bekleniyor.');
+      if (['isDT','isYM','basitUsul'].includes(key) && typeof v !== 'boolean') throw new Error(key + ': geçersiz değer.');
+      if (key === 'onayTarihi' && v) {
+        const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m || new Date(v+'T00:00:00Z').toISOString().slice(0,10) !== v) throw new Error('Onay tarihi geçersiz.');
+      }
+      if (key === 'kalemler') {
+        if (!Array.isArray(v) || v.length > 100) throw new Error('Kalem listesi geçersiz.');
+        v.forEach(k => { if (!k || typeof k !== 'object' || Array.isArray(k)) throw new Error('Kalem geçersiz.'); inspect(k); });
+      }
+      if (key === 'olur' || key === 'teklif') {
+        if (typeof v !== 'object' || Array.isArray(v)) throw new Error('Belge alanı geçersiz.'); inspect(v);
+      }
+    }
+  }
+  inspect(value); return value;
+}
+
 function matchOrAddGorevli(ad, unvan) {
   if (!ad || !ad.trim()) return { ad: '', unvan: '' };
   const temizAd = ad.trim();
@@ -1953,14 +1982,14 @@ function matchOrAddGorevli(ad, unvan) {
   if (match) {
     if (unvan && !match.unvan) {
       match.unvan = unvan.trim();
-      saveReferans(referans);
+      if (!dtmReferansProva) saveReferans(referans);
     }
     return { ad: match.ad, unvan: match.unvan || unvan || '' };
   }
   const yeni = { ad: temizAd, unvan: unvan ? unvan.trim() : '' };
   referans.muhendisList.push(yeni);
   referans.muhendisList.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
-  saveReferans(referans);
+  if (!dtmReferansProva) saveReferans(referans);
   return yeni;
 }
 
@@ -1973,7 +2002,7 @@ function matchOrAddOnaylayanAmir(ad, unvan) {
   if (match) {
     if (unvan && !match.unvan) {
       match.unvan = unvan.trim();
-      saveReferans(referans);
+      if (!dtmReferansProva) saveReferans(referans);
     }
     return { ad: match.ad, unvan: match.unvan || unvan || '' };
   }
@@ -1984,7 +2013,7 @@ function matchOrAddOnaylayanAmir(ad, unvan) {
   } else {
     referans.onaylayanList.push(yeni);
   }
-  saveReferans(referans);
+  if (!dtmReferansProva) saveReferans(referans);
   return yeni;
 }
 
@@ -2011,15 +2040,6 @@ function matchOrAddFirma(firmaData) {
     match = referans.firmaList.find(f => f && f.ad && dtmNormalizeTurkish(f.ad) === norm);
   }
 
-  // 3. İçerik / alt dize eşleşmesi (örn: "Özkan İnşaat" ile "Özkan İnşaat Ltd. Şti.")
-  if (!match) {
-    match = referans.firmaList.find(f => {
-      if (!f || !f.ad) return false;
-      const fNorm = dtmNormalizeTurkish(f.ad);
-      return (fNorm.length >= 6 && norm.length >= 6) && (norm.includes(fNorm) || fNorm.includes(norm));
-    });
-  }
-
   if (match) {
     let degisti = false;
     if (typeof firmaData === 'object') {
@@ -2036,7 +2056,7 @@ function matchOrAddFirma(firmaData) {
       if (!match.vergiDairesi && firmaData.vergiDairesi) { match.vergiDairesi = firmaData.vergiDairesi.trim(); degisti = true; }
       if (match.basitUsul === undefined && firmaData.basitUsul !== undefined) { match.basitUsul = !!firmaData.basitUsul; degisti = true; }
     }
-    if (degisti) saveReferans(referans);
+    if (degisti && !dtmReferansProva) saveReferans(referans);
     return { firma: match, isNew: false };
   }
 
@@ -2059,12 +2079,23 @@ function matchOrAddFirma(firmaData) {
 
   referans.firmaList.push(yeni);
   referans.firmaList.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
-  saveReferans(referans);
+  if (!dtmReferansProva) saveReferans(referans);
 
   return { firma: yeni, isNew: true };
 }
 
 function dtmTopluBelgeleriDerleVeHazirla(parsedResults) {
+  const original = referans, previous = dtmReferansProva;
+  const baseline = JSON.stringify(original);
+  referans = JSON.parse(baseline); dtmReferansProva = true;
+  try {
+    (parsedResults || []).forEach(dtmAiYanitiDogrula);
+    const result = dtmTopluBelgeleriDerle(parsedResults);
+    if (result) { result.onayReferansi = referans; result.referansSurumu = baseline; }
+    return result;
+  } finally { referans = original; dtmReferansProva = previous; }
+}
+function dtmTopluBelgeleriDerle(parsedResults) {
   if (!parsedResults || !Array.isArray(parsedResults) || parsedResults.length === 0) return null;
 
   let isAdi = '';
@@ -2161,13 +2192,11 @@ function dtmTopluBelgeleriDerleVeHazirla(parsedResults) {
   const firmalarTeklifData = teklifListesi.map(t => {
     const fiyatlar = [];
     masterKalemler.forEach((mk, ki) => {
-      let foundKalem = t.kalemler && t.kalemler[ki];
-      if (!foundKalem && t.kalemler) {
-        foundKalem = t.kalemler.find(k => k && k.ad && dtmNormalizeTurkish(k.ad) === dtmNormalizeTurkish(mk.ad));
-      }
+      const matches = (t.kalemler || []).filter(k => k && k.ad && dtmNormalizeTurkish(k.ad) === dtmNormalizeTurkish(mk.ad) && dtmNormalizeTurkish(k.birim || 'Adet') === dtmNormalizeTurkish(mk.birim || 'Adet'));
+      const foundKalem = matches.length === 1 && Number(matches[0].miktar) === Number(mk.miktar) ? matches[0] : null;
       if (foundKalem && Number(foundKalem.birimFiyat) > 0) {
         fiyatlar.push(Number(foundKalem.birimFiyat));
-      } else if (masterKalemler.length === 1 && t.toplamTeklifTutari > 0) {
+      } else if (masterKalemler.length === 1 && t.kalemler.length === 0 && t.toplamTeklifTutari > 0) {
         const m = Number(mk.miktar) || 1;
         fiyatlar.push(Math.round((t.toplamTeklifTutari / m) * 100) / 100);
       } else {
@@ -2179,7 +2208,8 @@ function dtmTopluBelgeleriDerleVeHazirla(parsedResults) {
     return {
       ad: t.firmaAd,
       fiyatlar,
-      toplam: t.toplamTeklifTutari > 0 ? t.toplamTeklifTutari : Math.round(hesaplananToplam * 100) / 100,
+      toplam: Math.round(hesaplananToplam * 100) / 100,
+      eksik: fiyatlar.some(f => !(f > 0)) || (t.toplamTeklifTutari > 0 && Math.abs(t.toplamTeklifTutari - hesaplananToplam) > 0.02) || t.kalemler.length > masterKalemler.length,
       isNew: t.isNew
     };
   });
@@ -2222,7 +2252,7 @@ function dtmTopluBelgeleriDerleVeHazirla(parsedResults) {
   const hazirFirmalar = firmalarTeklifData.map(f => {
     const fyt = [...f.fiyatlar];
     while (fyt.length < projeTaslak.isKalemleri.length) fyt.push(0);
-    return { ad: f.ad, fiyatlar: fyt };
+    return { ad: f.ad, fiyatlar: fyt, analizEksik: f.eksik };
   });
   while (hazirFirmalar.length < 3) {
     hazirFirmalar.push({ ad: '', fiyatlar: new Array(projeTaslak.isKalemleri.length).fill(0) });
@@ -2488,7 +2518,7 @@ Belgedeki şu alanları çıkar ve SADECE geçerli bir JSON formatında döndür
         }
       }
 
-      return parsed;
+      return dtmAiYanitiDogrula(parsed);
     } catch (err) {
       lastError = err;
       if (err.message && err.message.includes('404')) continue;
@@ -2645,7 +2675,7 @@ Belgenin türünü ("olur", "teklif" veya "diger") belirle ve ilgili alanları �
         }
       }
 
-      return parsed;
+      return dtmAiYanitiDogrula(parsed);
     } catch (err) {
       lastError = err;
       if (err.message && err.message.includes('404')) continue;
@@ -3194,7 +3224,8 @@ async function topluAnaliziBaslat() {
     showToast(`${total} belgeden ${parsedResults.length} adedi okundu, ${hataliDosyalar.length} dosya atlandı.`, 'warning', 4000);
   }
 
-  const ozet = dtmTopluBelgeleriDerleVeHazirla(parsedResults);
+  let ozet;
+  try { ozet = dtmTopluBelgeleriDerleVeHazirla(parsedResults); } catch(e) { showToast('Analiz doğrulanamadı: ' + e.message, 'error'); return; }
   if (!ozet) {
     showToast('Belgelerden anlamlı bir proje veya teklif bilgisi çıkarılamadı.', 'warning', 4000);
     return;
@@ -3236,8 +3267,9 @@ function renderTopluAnalizOnayModal(ozet) {
         <div>
           <div style="font-weight:600;font-size:13px;color:${isKazanan ? '#166534' : 'var(--gray-800)'};display:flex;align-items:center;gap:6px">
             <span>${escHtml(f.ad || 'İsimsiz Firma')}</span>
+            ${f.eksik ? '<span style="color:#b45309">Eksik veya tutarsız: kazanan hesabına katılmadı</span>' : ''}
             ${isKazanan ? '<span style="background:#16a34a;color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600">🏆 EN AVANTAJLI (KAZANAN)</span>' : ''}
-            ${f.isNew ? '<span style="background:#2563eb;color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600">🆕 Sisteme Eklendi</span>' : ''}
+            ${f.isNew ? '<span style="background:#2563eb;color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600">🆕 Onayla Eklenecek</span>' : ''}
           </div>
           <div style="font-size:11px;color:var(--gray-500);margin-top:2px">Teklif Fiyatı</div>
         </div>
@@ -3327,11 +3359,15 @@ function renderTopluAnalizOnayModal(ozet) {
   modalEl.querySelector('#btnTopluOnayModalKapatX')?.addEventListener('click', () => modalEl.remove());
   modalEl.querySelector('#btnTopluOnayModalVazgec')?.addEventListener('click', () => modalEl.remove());
   modalEl.querySelector('#btnTopluOnayModalKabul')?.addEventListener('click', () => {
-    dtmTopluProjeyiKabulEt(p);
+    dtmTopluProjeyiKabulEt(p, ozet);
   });
 }
 
-function dtmTopluProjeyiKabulEt(yeniProje) {
+function dtmTopluProjeyiKabulEt(yeniProje, ozet) {
+  if (ozet) {
+    if (JSON.stringify(referans) !== ozet.referansSurumu) { showToast('Referans listesi değişti. Analizi yeniden hazırlayınız.', 'warning'); return; }
+    referans = ozet.onayReferansi; saveReferans(referans);
+  }
   proje = yeniProje;
   currentCloudProjeId = null;
   currentProjeKilitli = false;
@@ -3668,6 +3704,17 @@ function checkDtSiniri() {
   if (ym > sinirObj.sinir) {
     showToast(`Yaklaşık maliyet (${formatCurrencyInt(ym)} TL), ${yil} D.T. sınırını (${formatCurrencyInt(sinirObj.sinir)} TL) aşıyor!`, 'warning');
   }
+}
+
+function analizTeklifiniDogrula(fi) {
+  const firma = proje.teklifFirmalar[fi];
+  const kalemler = getKalemler(proje);
+  if (!firma || !kalemler.length || kalemler.some((k,i) => !(hesaplamaSayisi(firma.fiyatlar[i]) > 0))) {
+    showToast('Her kalem için pozitif birim fiyat giriniz.', 'warning'); return;
+  }
+  firma.analizEksik = false;
+  proje.kazananFirmaIndex = hesaplaKazananFirma(proje);
+  autoSave(); renderPage();
 }
 
 function onFiyatChange(el) {
@@ -4308,7 +4355,7 @@ function renderVeriMerkeziPage() {
       </div>
       <div class="card-body" style="padding:20px;">
         <p style="font-size:13.5px;color:var(--gray-600);margin:0 0 10px;line-height:1.5;">
-          Buraya tanımlayacağınız Google Gemini API anahtarı, <strong>tüm kurum personelleri</strong> için bulut üzerinden ortak aktif olur. Personeller Olur belgesi veya telefon fotoğrafı yüklediğinde, belgeler en güncel <strong>gemini-3.8-flash</strong> yapay zeka modeliyle saniyeler içinde %100 doğrulukla çözümlenir.
+          Buraya tanımlayacağınız Google Gemini API anahtarı, <strong>tüm kurum personelleri</strong> için bulut üzerinden ortak aktif olur. Personeller Olur belgesi veya telefon fotoğrafı yüklediğinde, belgeler en güncel <strong>gemini-3.8-flash</strong> yapay zeka modeliyle saniyeler içinde analiz edilir; sonuçlar aktarılmadan önce kontrol edilmelidir.
         </p>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12.5px;color:var(--gray-600);">
           <span>Kullanılan Model:</span>

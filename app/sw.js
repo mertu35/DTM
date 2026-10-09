@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dtm-v100';
+const CACHE_NAME = 'dtm-v101';
 const STATIC_ASSETS = [
   './index.html',
   './css/style.css',
@@ -22,6 +22,13 @@ const STATIC_ASSETS = [
   './js/vendor/standard_fonts/LiberationSans-BoldItalic.ttf',
   './js/vendor/standard_fonts/LiberationSans-Italic.ttf',
   './js/vendor/standard_fonts/LiberationSans-Regular.ttf',
+  './js/icons.js',
+  './js/config.js',
+  './js/vendor/tesseract/tesseract.min.js',
+  './js/vendor/tesseract/worker.min.js',
+  './js/vendor/tesseract/tesseract-core-lstm.wasm.js',
+  './js/vendor/tesseract/tesseract-core-lstm.wasm',
+  './js/vendor/tesseract/lang-data/tur.traineddata.gz',
   './js/firebase.js',
   './js/utils.js',
   './js/data.js',
@@ -54,7 +61,9 @@ self.addEventListener('activate', event => {
 // Fetch: önce cache, sonra network
 // Firebase istekleri (firestore/googleapis) her zaman network'ten gider
 self.addEventListener('fetch', event => {
-  const url = event.request.url;
+  const parsed = new URL(event.request.url);
+  if (event.request.method !== 'GET' || parsed.origin !== self.location.origin) return;
+  const url = parsed.href;
 
   // blob: ve data: URL'lerini (SheetJS Excel indirme, PDF vb.) ASLA yakalama
   if (url.startsWith('blob:') || url.startsWith('data:')) {
@@ -74,7 +83,7 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    caches.match(event.request).then(cached => {
+    caches.open(CACHE_NAME).then(cache => cache.match(event.request, { ignoreSearch: true })).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
         if (response && response.status === 200 && response.type === 'basic' && url.includes('/js/vendor/tesseract/')) {
@@ -82,7 +91,10 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return response;
-      }).catch(() => caches.match('./index.html'));
+      }).catch(async () => {
+        if (event.request.mode === 'navigate') return (await caches.match('./index.html')) || Response.error();
+        return Response.error();
+      });
     })
   );
 });
