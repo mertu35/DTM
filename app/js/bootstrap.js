@@ -14,9 +14,9 @@ dtmRegisterEvent('static-10', function(event) { closeDuyuruPopup() });
 // Same-origin PDF reader and worker. No third-party script is fetched at runtime.
 const dtmBootstrapUrl = document.currentScript ? document.currentScript.src : window.location.href;
 window.pdfStandardFontDataUrl = new URL('./vendor/standard_fonts/', dtmBootstrapUrl).href;
-const dtmPdfModuleUrl = new URL('./vendor/pdf.min.mjs', dtmBootstrapUrl).href;
+const dtmPdfModuleUrl = new URL('./vendor/pdf.min.mjs?v=20261009a', dtmBootstrapUrl).href;
 window.pdfjsReady = import(dtmPdfModuleUrl).then(lib => {
-  lib.GlobalWorkerOptions.workerSrc = new URL('./vendor/pdf.worker.min.mjs', dtmBootstrapUrl).href;
+  lib.GlobalWorkerOptions.workerSrc = new URL('./vendor/pdf.worker.min.mjs?v=20261009a', dtmBootstrapUrl).href;
   window.pdfjsLib = lib;
   return lib;
 });
