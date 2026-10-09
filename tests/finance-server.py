@@ -33,6 +33,13 @@ def auth_request(action, data):
     return emulator_request(f'{AUTH_API}/accounts:{action}?key=local-test-key', data)
 
 class Handler(http.server.SimpleHTTPRequestHandler):
+    extensions_map = {
+        **http.server.SimpleHTTPRequestHandler.extensions_map,
+        ".mjs": "application/javascript",
+        ".js": "application/javascript",
+        ".wasm": "application/wasm",
+    }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 

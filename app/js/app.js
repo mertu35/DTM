@@ -2243,13 +2243,14 @@ async function readPdfText(file) {
 
 async function dtmLoadPdf(file) {
   if (typeof window !== 'undefined' && window.pdfjsReady) await window.pdfjsReady;
-  if (typeof pdfjsLib === 'undefined') throw new Error('PDF okuyucu yüklenemedi.');
+  const lib = typeof window !== 'undefined' && window.pdfjsLib ? window.pdfjsLib : (typeof pdfjsLib !== 'undefined' ? pdfjsLib : null);
+  if (!lib) throw new Error('PDF okuyucu yüklenemedi.');
   const data = await file.arrayBuffer();
   const options = { data, isEvalSupported: false, useWasm: false, disableFontFace: true };
   if (typeof document !== 'undefined' && document.baseURI) {
     options.standardFontDataUrl = window.pdfStandardFontDataUrl || new URL('js/vendor/standard_fonts/', document.baseURI).href;
   }
-  return pdfjsLib.getDocument(options).promise;
+  return lib.getDocument(options).promise;
 }
 
 function parseTLTutar(str) {
