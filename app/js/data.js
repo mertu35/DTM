@@ -83,6 +83,7 @@ function getDefaultReferans() {
     ],
     onaylayanList: [
       { ad: 'Sinan ÖZYER', unvan: 'Yatırım ve İnşaat Müdür V.' },
+      { ad: 'Gökhan FİDAN', unvan: 'Yatırım ve İnşaat Müdür V.' },
       { ad: '', unvan: 'Genel Sekreter' },
       { ad: '', unvan: 'Genel Sekreter Yrd.' },
       { ad: '', unvan: 'Vali Yardımcısı' }

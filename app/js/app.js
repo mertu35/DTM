@@ -939,6 +939,7 @@ function renderVeriGirisPage() {
             const baskaSecili = g.ad !== m.ad && ymSeciliAdlar.includes(m.ad);
             return `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''} ${baskaSecili ? 'disabled style="color:#9ca3af"' : ''}>${escHtml(m.ad)}${baskaSecili ? ' (Seçildi)' : ''}</option>`;
           }).join('')}
+          ${g.ad && !referans.muhendisList.some(m => m.ad === g.ad) ? `<option value="${escAttr(g.ad)}" selected>${escHtml(g.ad)}</option>` : ''}
         </select>
       </div>
       <div class="form-group">
@@ -963,6 +964,7 @@ function renderVeriGirisPage() {
             const baskaSecili = g.ad !== m.ad && dtSeciliAdlar.includes(m.ad);
             return `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''} ${baskaSecili ? 'disabled style="color:#9ca3af"' : ''}>${escHtml(m.ad)}${baskaSecili ? ' (Seçildi)' : ''}</option>`;
           }).join('')}
+          ${g.ad && !referans.muhendisList.some(m => m.ad === g.ad) ? `<option value="${escAttr(g.ad)}" selected>${escHtml(g.ad)}</option>` : ''}
         </select>
       </div>
       <div class="form-group">
@@ -988,6 +990,7 @@ function renderVeriGirisPage() {
             const baskaSecili = g.ad !== m.ad && mkSeciliAdlar.includes(m.ad);
             return `<option value="${escAttr(m.ad)}" ${g.ad === m.ad ? 'selected' : ''} ${baskaSecili ? 'disabled style="color:#9ca3af"' : ''}>${escHtml(m.ad)}${baskaSecili ? ' (Seçildi)' : ''}</option>`;
           }).join('')}
+          ${g.ad && !referans.muhendisList.some(m => m.ad === g.ad) ? `<option value="${escAttr(g.ad)}" selected>${escHtml(g.ad)}</option>` : ''}
         </select>
       </div>
       <div class="form-group">
@@ -1364,6 +1367,7 @@ function renderVeriGirisPage() {
             <select id="onaylayanAmir" ${dtmEventAttr('change', function(event) { onAmirChange(this) })}>
               <option value="">-- Seçin --</option>
               ${referans.onaylayanList.filter(o=>o.ad).map(o => `<option value="${escAttr(o.ad)}" ${proje.onaylayanAmir.ad === o.ad ? 'selected' : ''}>${escHtml(o.ad)}</option>`).join('')}
+              ${proje.onaylayanAmir?.ad && !referans.onaylayanList.some(o => o.ad === proje.onaylayanAmir.ad) ? `<option value="${escAttr(proje.onaylayanAmir.ad)}" selected>${escHtml(proje.onaylayanAmir.ad)}</option>` : ''}
             </select>
           </div>
           <div class="form-group">
@@ -1848,49 +1852,157 @@ function onBittiEkSil(idx) {
   renderPage();
 }
 
+function dtmNormalizeTurkish(str) {
+  if (!str) return '';
+  return str
+    .replace(/[\u2018\u2019\u02BC'"]/g, '')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/[\u0131i]/g, 'i')
+    .replace(/[\u011f\u011e]/g, 'g')
+    .replace(/[\u00fc\u00dc]/g, 'u')
+    .replace(/[\u015f\u015e]/g, 's')
+    .replace(/[\u00f6\u00d6]/g, 'o')
+    .replace(/[\u00e7\u00c7]/g, 'c')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function matchOrAddGorevli(ad, unvan) {
+  if (!ad || !ad.trim()) return { ad: '', unvan: '' };
+  const temizAd = ad.trim();
+  if (!referans.muhendisList || !Array.isArray(referans.muhendisList)) referans.muhendisList = [];
+  const norm = dtmNormalizeTurkish(temizAd);
+  let match = referans.muhendisList.find(m => m && m.ad && dtmNormalizeTurkish(m.ad) === norm);
+  if (match) {
+    if (unvan && !match.unvan) {
+      match.unvan = unvan.trim();
+      saveReferans(referans);
+    }
+    return { ad: match.ad, unvan: match.unvan || unvan || '' };
+  }
+  const yeni = { ad: temizAd, unvan: unvan ? unvan.trim() : '' };
+  referans.muhendisList.push(yeni);
+  referans.muhendisList.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
+  saveReferans(referans);
+  return yeni;
+}
+
+function matchOrAddOnaylayanAmir(ad, unvan) {
+  if (!ad || !ad.trim()) return { ad: '', unvan: '' };
+  const temizAd = ad.trim();
+  if (!referans.onaylayanList || !Array.isArray(referans.onaylayanList)) referans.onaylayanList = [];
+  const norm = dtmNormalizeTurkish(temizAd);
+  let match = referans.onaylayanList.find(o => o && o.ad && dtmNormalizeTurkish(o.ad) === norm);
+  if (match) {
+    if (unvan && !match.unvan) {
+      match.unvan = unvan.trim();
+      saveReferans(referans);
+    }
+    return { ad: match.ad, unvan: match.unvan || unvan || '' };
+  }
+  const yeni = { ad: temizAd, unvan: unvan ? unvan.trim() : '' };
+  const bosIdx = referans.onaylayanList.findIndex(o => !o.ad || !o.ad.trim());
+  if (bosIdx >= 0 && unvan && referans.onaylayanList[bosIdx].unvan === unvan) {
+    referans.onaylayanList[bosIdx] = yeni;
+  } else {
+    referans.onaylayanList.push(yeni);
+  }
+  saveReferans(referans);
+  return yeni;
+}
+
+function belgeyiAnaliz(fullText) {
+  const cleanText = (fullText || '').replace(/\r?\n/g, ' ');
+  const isDT = /doğrudan\s+temin/i.test(cleanText);
+  const isYM = /yaklaşık\s+maliyet/i.test(cleanText);
+
+  let isAdi = null;
+  const tirnakMatch = cleanText.match(/[\u201C\u201E\u0022\u00AB]([^\u201D\u201C\u0022\u00BB]{5,150})[\u201D\u201F\u0022\u00BB]/);
+  if (tirnakMatch) isAdi = tirnakMatch[1].replace(/\s+/g, ' ').trim();
+  if (!isAdi) {
+    const konusuMatch = cleanText.match(/(?:konusu|İşin\s+Adı|Hizmetin\s+Adı)\s*[:\-]?\s*([A-Za-zÇŞĞÜÖİçşğüöı0-9 \/\-]{5,100}?)(?:\s{2,}|$)/i);
+    if (konusuMatch) isAdi = konusuMatch[1].replace(/\s+/g, ' ').trim();
+  }
+
+  let onayNo = null, onayTarihi = null;
+  const sayiIdx = cleanText.search(/Sayı\s*:/);
+  if (sayiIdx >= 0) {
+    const satirMetni = cleanText.substring(sayiIdx, sayiIdx + 120);
+    const sayiMatch = satirMetni.match(/Sayı\s*:\s*(.+?)\s+(\d{2}[\.\/]\d{2}[\.\/]\d{4})/);
+    if (sayiMatch) {
+      const parts = sayiMatch[1].replace(/\s+/g, '').split('-');
+      onayNo = parts[parts.length - 1];
+    }
+    const tarihMatch = satirMetni.match(/(\d{2})[\.\/](\d{2})[\.\/](\d{4})/);
+    if (tarihMatch) onayTarihi = `${tarihMatch[3]}-${tarihMatch[2]}-${tarihMatch[1]}`;
+  }
+
+  let gorevliAd = null, gorevliUnvan = null;
+  const gorevliMatchDT = cleanText.match(/(?:ilgili|olarak)\s+([A-Za-zÇŞĞÜÖİçşğüöı\s]+?)\s*['\u2018\u2019\u02BC]\S*\s+doğrudan\s+temin/i);
+  const gorevliMatchYM = cleanText.match(/olarak\s+([A-Za-zÇŞĞÜÖİçşğüöı\s]+?)\s*['\u2018\u2019\u02BC]\S*\s+görevlendirilmesi/i);
+  const gorevliMatchGenel = cleanText.match(/([A-Za-zÇŞĞÜÖİçşğüöı\s]+?)\s*['\u2018\u2019\u02BC]\S*\s+görevlendirilmesi/i);
+  const gorevliMatch = isDT ? (gorevliMatchDT || gorevliMatchGenel || gorevliMatchYM) :
+                              (isYM ? (gorevliMatchYM || gorevliMatchGenel || gorevliMatchDT) :
+                                      (gorevliMatchDT || gorevliMatchYM || gorevliMatchGenel));
+  if (gorevliMatch) {
+    const tamMetin = gorevliMatch[1].trim();
+    const kelimeler = tamMetin.split(/\s+/).filter(Boolean);
+    let idx = kelimeler.length - 1;
+    const soyadlar = [];
+    while (idx >= 0 && /^[A-ZÇŞĞÜÖİ]+$/.test(kelimeler[idx])) soyadlar.unshift(kelimeler[idx--]);
+    const adlar = (idx >= 0 && /^[A-ZÇŞĞÜÖİ][a-zçşğüöı]/.test(kelimeler[idx])) ? [kelimeler[idx--]] : [];
+    if (adlar.length === 0 && soyadlar.length >= 2) {
+      adlar.push(soyadlar.shift());
+    }
+    gorevliAd = [...adlar, ...soyadlar].join(' ');
+    gorevliUnvan = kelimeler.slice(0, idx + 1).join(' ');
+  }
+
+  let onaylayanAd = null, onaylayanUnvan = null;
+  const olurPattern = /\bOLUR(?![''\u2018\u2019\u02BCa-zçşğüöıA-ZÇŞĞÜÖİ])/g;
+  let match, lastOlurIdx = -1;
+  while ((match = olurPattern.exec(cleanText)) !== null) lastOlurIdx = match.index;
+  if (lastOlurIdx >= 0) {
+    const olurSonrasi = cleanText.substring(lastOlurIdx, lastOlurIdx + 300).replace(/\s+/g, ' ');
+    const temizSonrasi = olurSonrasi.replace(/^OLUR\s*(?:\d{2}[\.\/]\d{2}[\.\/]\d{4}\s*)?/, '').trim();
+    let isimMatch = temizSonrasi.match(/^([A-ZÇŞĞÜÖİ][a-zçşğüöı]+(?:\s+[A-ZÇŞĞÜÖİ][a-zçşğüöı]+)?\s+[A-ZÇŞĞÜÖİ]{2,}(?:\s+[A-ZÇŞĞÜÖİ]{2,})?)/);
+    if (!isimMatch) {
+      isimMatch = temizSonrasi.match(/^([A-ZÇŞĞÜÖİ]{2,}(?:\s+[A-ZÇŞĞÜÖİ]{2,}){1,2})(?=\s+(?:Müdür|MÜDÜR|Genel|GENEL|Vali|VALİ|Başkan|BAŞKAN|Kaymakam|KAYMAKAM|Yatırım|YATIRIM|İl|İL))/i);
+    }
+    if (isimMatch) {
+      onaylayanAd = isimMatch[1].trim();
+      const isimSonrasi = temizSonrasi.substring(temizSonrasi.indexOf(onaylayanAd) + onaylayanAd.length).trim();
+      const unvanMatch = isimSonrasi.match(/^((?:[A-Za-zÇŞĞÜÖİçşğüöı]+\s+){0,6}(?:Müdür|Genel\s+Sekreter|Vali|Başkan|Kaymakam)[A-Za-zÇŞĞÜÖİçşğüöı\.\s]*?)(?:\s{2,}|\d|$)/i);
+      if (unvanMatch) onaylayanUnvan = unvanMatch[1].replace(/\s+/g, ' ').trim();
+    }
+  }
+
+  return { isDT, isYM, isAdi, onayNo, onayTarihi, gorevliAd, gorevliUnvan, onaylayanAd, onaylayanUnvan };
+}
+
 async function parseDTOluru(file) {
   if (!file) return;
   try {
     showToast('PDF okunuyor...', 'info');
     const fullText = await readPdfText(file);
+    const res = belgeyiAnaliz(fullText);
 
-    // Sayı + Tarih: "Sayı : E-xxx-xxx-79656 08.04.2026"
-    // PDF.js bazen araya boşluk ekler, bu yüzden ayrı ayrı arıyoruz
-    const sayiIdx = fullText.search(/Sayı\s*:/);
-    if (sayiIdx >= 0) {
-      const satirMetni = fullText.substring(sayiIdx, sayiIdx + 100);
-      const sayiMatch = satirMetni.match(/Sayı\s*:\s*(.+?)\s+(\d{2}\.\d{2}\.\d{4})/);
-      if (sayiMatch) {
-        const sayiKisim = sayiMatch[1].replace(/\s+/g, ''); // boşlukları temizle
-        const parts = sayiKisim.split('-');
-        proje.dtOnayNo = parts[parts.length - 1];
-      }
-      const tarihMatch = satirMetni.match(/(\d{2})\.(\d{2})\.(\d{4})/);
-      if (tarihMatch) {
-        proje.dtOnayTarihi = `${tarihMatch[3]}-${tarihMatch[2]}-${tarihMatch[1]}`;
-      }
-    }
-
-    // Görevli: "ilgili [Ünvan] [Ad SOYAD]'xx doğrudan temin"
-    // \S* yerine kullanıyoruz çünkü Türkçe ü,ş gibi harfler \w ile eşleşmez
-    const gorevliMatch = fullText.match(/ilgili\s+([A-Za-zÇŞĞÜÖİçşğüöı ]+?)\s*['\u2018\u2019\u02BC]\S*\s+doğrudan\s+temin/i);
-    if (gorevliMatch) {
-      const tamMetin = gorevliMatch[1].trim();
-      const kelimeler = tamMetin.split(/\s+/);
-      let idx = kelimeler.length - 1;
-      const soyadlar = [];
-      while (idx >= 0 && /^[A-ZÇŞĞÜÖİ]+$/.test(kelimeler[idx])) {
-        soyadlar.unshift(kelimeler[idx--]);
-      }
-      const adlar = (idx >= 0 && /^[A-ZÇŞĞÜÖİ][a-zçşğüöı]/.test(kelimeler[idx])) ? [kelimeler[idx--]] : [];
-      proje.dtGorevliler[0].ad = [...adlar, ...soyadlar].join(' ');
-      proje.dtGorevliler[0].unvan = kelimeler.slice(0, idx + 1).join(' ');
+    if (res.onayNo)     proje.dtOnayNo = res.onayNo;
+    if (res.onayTarihi) proje.dtOnayTarihi = res.onayTarihi;
+    if (res.gorevliAd) {
+      const g = matchOrAddGorevli(res.gorevliAd, res.gorevliUnvan);
+      proje.dtGorevliler[0].ad = g.ad;
+      proje.dtGorevliler[0].unvan = g.unvan;
       proje.dtGorevliSayisi = 1;
+    }
+    if (res.onaylayanAd) {
+      const a = matchOrAddOnaylayanAmir(res.onaylayanAd, res.onaylayanUnvan);
+      proje.onaylayanAmir = { ad: a.ad, unvan: a.unvan };
     }
 
     autoSave();
     renderPage();
-    showToast('Olur belgesi okundu, alanlar dolduruldu!', 'success');
+    showToast('D.T. Olur belgesi okundu, alanlar dolduruldu!', 'success');
   } catch(e) {
     showToast('PDF okunamadı: ' + e.message, 'error');
   }
@@ -1901,42 +2013,24 @@ async function parseYMOluru(file) {
   try {
     showToast('PDF okunuyor...', 'info');
     const fullText = await readPdfText(file);
+    const res = belgeyiAnaliz(fullText);
 
-    // Sayı + Tarih
-    const sayiIdx = fullText.search(/Sayı\s*:/);
-    if (sayiIdx >= 0) {
-      const satirMetni = fullText.substring(sayiIdx, sayiIdx + 100);
-      const sayiMatch = satirMetni.match(/Sayı\s*:\s*(.+?)\s+(\d{2}\.\d{2}\.\d{4})/);
-      if (sayiMatch) {
-        const sayiKisim = sayiMatch[1].replace(/\s+/g, '');
-        const parts = sayiKisim.split('-');
-        proje.ymOnayNo = parts[parts.length - 1];
-      }
-      const tarihMatch = satirMetni.match(/(\d{2})\.(\d{2})\.(\d{4})/);
-      if (tarihMatch) {
-        proje.ymOnayTarihi = `${tarihMatch[3]}-${tarihMatch[2]}-${tarihMatch[1]}`;
-      }
-    }
-
-    // Görevli: "olarak [Ünvan] [Ad SOYAD]'xx görevlendirilmesi"
-    const gorevliMatch = fullText.match(/olarak\s+([A-Za-zÇŞĞÜÖİçşğüöı ]+?)\s*['\u2018\u2019\u02BC]\S*\s+görevlendirilmesi/i);
-    if (gorevliMatch) {
-      const tamMetin = gorevliMatch[1].trim();
-      const kelimeler = tamMetin.split(/\s+/);
-      let idx = kelimeler.length - 1;
-      const soyadlar = [];
-      while (idx >= 0 && /^[A-ZÇŞĞÜÖİ]+$/.test(kelimeler[idx])) {
-        soyadlar.unshift(kelimeler[idx--]);
-      }
-      const adlar = (idx >= 0 && /^[A-ZÇŞĞÜÖİ][a-zçşğüöı]/.test(kelimeler[idx])) ? [kelimeler[idx--]] : [];
-      proje.ymGorevliler[0].ad = [...adlar, ...soyadlar].join(' ');
-      proje.ymGorevliler[0].unvan = kelimeler.slice(0, idx + 1).join(' ');
+    if (res.onayNo)     proje.ymOnayNo = res.onayNo;
+    if (res.onayTarihi) proje.ymOnayTarihi = res.onayTarihi;
+    if (res.gorevliAd) {
+      const g = matchOrAddGorevli(res.gorevliAd, res.gorevliUnvan);
+      proje.ymGorevliler[0].ad = g.ad;
+      proje.ymGorevliler[0].unvan = g.unvan;
       proje.ymGorevliSayisi = 1;
+    }
+    if (res.onaylayanAd && (!proje.onaylayanAmir || !proje.onaylayanAmir.ad)) {
+      const a = matchOrAddOnaylayanAmir(res.onaylayanAd, res.onaylayanUnvan);
+      proje.onaylayanAmir = { ad: a.ad, unvan: a.unvan };
     }
 
     autoSave();
     renderPage();
-    showToast('Olur belgesi okundu, alanlar dolduruldu!', 'success');
+    showToast('Y.M. Olur belgesi okundu, alanlar dolduruldu!', 'success');
   } catch(e) {
     showToast('PDF okunamadı: ' + e.message, 'error');
   }
@@ -1953,78 +2047,12 @@ async function parseIkiOlurBelgesi() {
     return;
   }
 
-
   showToast('PDF(ler) okunuyor...', 'info');
 
-  // Tek belgeden bilgileri çıkar
-  function belgeyiAnaliz(fullText) {
-    const isDT = /doğrudan\s+temin/i.test(fullText);
-    const isYM = /yaklaşık\s+maliyet/i.test(fullText);
-
-    let isAdi = null;
-    const tirnakMatch = fullText.match(/[\u201C\u201E\u0022\u00AB]([^\u201D\u201C\u0022\u00BB\n]{5,120})[\u201D\u201F\u0022\u00BB]/);
-    if (tirnakMatch) isAdi = tirnakMatch[1].replace(/\s+/g, ' ').trim();
-    if (!isAdi) {
-      const konusuMatch = fullText.match(/(?:konusu|İşin\s+Adı|Hizmetin\s+Adı)\s*[:\-]?\s*([A-Za-zÇŞĞÜÖİçşğüöı0-9 \/\-]{5,100}?)(?:\s{2,}|\n|$)/i);
-      if (konusuMatch) isAdi = konusuMatch[1].replace(/\s+/g, ' ').trim();
-    }
-
-    let onayNo = null, onayTarihi = null, gorevliAd = null, gorevliUnvan = null;
-    const sayiIdx = fullText.search(/Sayı\s*:/);
-    if (sayiIdx >= 0) {
-      const satirMetni = fullText.substring(sayiIdx, sayiIdx + 100);
-      const sayiMatch = satirMetni.match(/Sayı\s*:\s*(.+?)\s+(\d{2}\.\d{2}\.\d{4})/);
-      if (sayiMatch) {
-        const parts = sayiMatch[1].replace(/\s+/g, '').split('-');
-        onayNo = parts[parts.length - 1];
-      }
-      const tarihMatch = satirMetni.match(/(\d{2})\.(\d{2})\.(\d{4})/);
-      if (tarihMatch) onayTarihi = `${tarihMatch[3]}-${tarihMatch[2]}-${tarihMatch[1]}`;
-    }
-
-    const gorevliMatchDT = fullText.match(/ilgili\s+([A-Za-zÇŞĞÜÖİçşğüöı ]+?)\s*['\u2018\u2019\u02BC]\S*\s+doğrudan\s+temin/i);
-    const gorevliMatchYM = fullText.match(/olarak\s+([A-Za-zÇŞĞÜÖİçşğüöı ]+?)\s*['\u2018\u2019\u02BC]\S*\s+görevlendirilmesi/i);
-    const gorevliMatch = isDT ? gorevliMatchDT : (isYM ? gorevliMatchYM : (gorevliMatchDT || gorevliMatchYM));
-    if (gorevliMatch) {
-      const tamMetin = gorevliMatch[1].trim();
-      const kelimeler = tamMetin.split(/\s+/);
-      let idx = kelimeler.length - 1;
-      const soyadlar = [];
-      while (idx >= 0 && /^[A-ZÇŞĞÜÖİ]+$/.test(kelimeler[idx])) soyadlar.unshift(kelimeler[idx--]);
-      const adlar = (idx >= 0 && /^[A-ZÇŞĞÜÖİ][a-zçşğüöı]/.test(kelimeler[idx])) ? [kelimeler[idx--]] : [];
-      gorevliAd = [...adlar, ...soyadlar].join(' ');
-      gorevliUnvan = kelimeler.slice(0, idx + 1).join(' ');
-    }
-
-    // Onaylayan amir: DT belgesinde OLUR bölümünden çek
-    // Format: "OLUR [tarih?] Sinan ÖZYER Yatırım ve İnşaat Müdür V."
-    // Dikkat: "OLUR'larınıza", "OLUR'unuza" gibi ekli halleri atla — kesme işareti veya harf geliyorsa geç
-    let onaylayanAd = null, onaylayanUnvan = null;
-    const olurPattern = /\bOLUR(?![''\u2018\u2019\u02BCa-zçşğüöıA-ZÇŞĞÜÖİ])/g;
-    let olurMatch2, lastOlurIdx = -1;
-    while ((olurMatch2 = olurPattern.exec(fullText)) !== null) lastOlurIdx = olurMatch2.index;
-    if (lastOlurIdx >= 0) {
-      const olurSonrasi = fullText.substring(lastOlurIdx, lastOlurIdx + 300).replace(/\s+/g, ' ');
-      // İsim: büyük harfle başlayan kelime(ler) + TAM BÜYÜK soyadı (Sinan ÖZYER, Ahmet Mehmet YILMAZ)
-      const isimMatch = olurSonrasi.match(/\b([A-ZÇŞĞÜÖİ][a-zçşğüöı]+(?:\s+[A-ZÇŞĞÜÖİ][a-zçşğüöı]+)?\s+[A-ZÇŞĞÜÖİ]{2,}(?:\s+[A-ZÇŞĞÜÖİ]{2,})?)/);
-      if (isimMatch) onaylayanAd = isimMatch[1].trim();
-      // Ünvan: isimden sonraki kısımda Müdür/Genel Sekreter/Vali/Başkan/Kaymakam içeren cümle
-      if (onaylayanAd) {
-        const isimSonrasi = olurSonrasi.substring(olurSonrasi.indexOf(onaylayanAd) + onaylayanAd.length);
-        const unvanMatch = isimSonrasi.match(/^\s*((?:[A-Za-zÇŞĞÜÖİçşğüöı]+\s+){0,6}(?:Müdür|Genel\s+Sekreter|Vali|Başkan|Kaymakam)[A-Za-zÇŞĞÜÖİçşğüöı\.\s]*?)(?:\s{2,}|\d|$)/);
-        if (unvanMatch) onaylayanUnvan = unvanMatch[1].replace(/\s+/g, ' ').trim();
-      }
-    }
-
-    return { isDT, isYM, isAdi, onayNo, onayTarihi, gorevliAd, gorevliUnvan, onaylayanAd, onaylayanUnvan };
-  }
-
   try {
-    // Her iki dosyayı da oku
     const ymSonuc = ymFile ? belgeyiAnaliz(await readPdfText(ymFile)) : null;
     const dtSonuc = dtFile ? belgeyiAnaliz(await readPdfText(dtFile)) : null;
 
-    // İş adını belirle (YM öncelikli, yoksa DT'den al)
     const isAdi = (ymSonuc && ymSonuc.isAdi) || (dtSonuc && dtSonuc.isAdi);
     if (!isAdi) {
       showToast('İş adı PDF içinde bulunamadı. Manuel girin.', 'warning');
@@ -2037,32 +2065,30 @@ async function parseIkiOlurBelgesi() {
       return;
     }
 
-    // YM belgesi ayrı onay
     let ymKabul = false;
     if (ymSonuc) {
       const ymSatirlar = [
         `📋 İş Adı: ${ymSonuc.isAdi || isAdi}`,
         ymSonuc.onayNo     ? `🔢 Sayı: ${ymSonuc.onayNo}` : null,
         ymSonuc.onayTarihi ? `📅 Tarih: ${ymSonuc.onayTarihi.split('-').reverse().join('.')}` : null,
-        ymSonuc.gorevliAd  ? `👤 Görevli: ${ymSonuc.gorevliAd}` : null,
+        ymSonuc.gorevliAd  ? `👤 Görevli: ${ymSonuc.gorevliAd}${ymSonuc.gorevliUnvan ? ' / ' + ymSonuc.gorevliUnvan : ''}` : null,
+        ymSonuc.onaylayanAd ? `✅ Onaylayan: ${ymSonuc.onaylayanAd}${ymSonuc.onaylayanUnvan ? ' / ' + ymSonuc.onaylayanUnvan : ''}` : null,
       ].filter(Boolean).join('\n');
       ymKabul = await showConfirm(`📘 Y.M. Onay Belgesi bilgileri:\n\n${escHtml(ymSatirlar)}\n\nBu belgeyi aktaralım mı?`, 'Evet, Aktar', 'Bu Belgeyi Atla');
     }
 
-    // DT belgesi ayrı onay
     let dtKabul = false;
     if (dtSonuc) {
       const dtSatirlar = [
         `📋 İş Adı: ${dtSonuc.isAdi || isAdi}`,
         dtSonuc.onayNo      ? `🔢 Sayı: ${dtSonuc.onayNo}` : null,
         dtSonuc.onayTarihi  ? `📅 Tarih: ${dtSonuc.onayTarihi.split('-').reverse().join('.')}` : null,
-        dtSonuc.gorevliAd   ? `👤 Görevli: ${dtSonuc.gorevliAd}` : null,
+        dtSonuc.gorevliAd   ? `👤 Görevli: ${dtSonuc.gorevliAd}${dtSonuc.gorevliUnvan ? ' / ' + dtSonuc.gorevliUnvan : ''}` : null,
         dtSonuc.onaylayanAd ? `✅ Onaylayan: ${dtSonuc.onaylayanAd}${dtSonuc.onaylayanUnvan ? ' / ' + dtSonuc.onaylayanUnvan : ''}` : null,
       ].filter(Boolean).join('\n');
       dtKabul = await showConfirm(`📗 D.T. Onay Belgesi bilgileri:\n\n${escHtml(dtSatirlar)}\n\nBu belgeyi aktaralım mı?`, 'Evet, Aktar', 'Bu Belgeyi Atla');
     }
 
-    // İkisi de reddedildiyse iptal
     if (!ymKabul && !dtKabul) {
       const modal = document.getElementById('yeniProjeModal');
       if (modal) {
@@ -2074,7 +2100,6 @@ async function parseIkiOlurBelgesi() {
       return;
     }
 
-    // Proje oluştur ve kabul edilen belgeleri aktar
     document.getElementById('yeniProjeModal').style.display = 'none';
     proje = getDefaultProje();
     proje.isAdi = isAdi;
@@ -2082,16 +2107,29 @@ async function parseIkiOlurBelgesi() {
     if (ymKabul && ymSonuc) {
       if (ymSonuc.onayNo)     proje.ymOnayNo = ymSonuc.onayNo;
       if (ymSonuc.onayTarihi) proje.ymOnayTarihi = ymSonuc.onayTarihi;
-      if (ymSonuc.gorevliAd)  { proje.ymGorevliler[0].ad = ymSonuc.gorevliAd; proje.ymGorevliler[0].unvan = ymSonuc.gorevliUnvan || ''; proje.ymGorevliSayisi = 1; }
+      if (ymSonuc.gorevliAd) {
+        const g = matchOrAddGorevli(ymSonuc.gorevliAd, ymSonuc.gorevliUnvan);
+        proje.ymGorevliler[0].ad = g.ad;
+        proje.ymGorevliler[0].unvan = g.unvan;
+        proje.ymGorevliSayisi = 1;
+      }
     }
     if (dtKabul && dtSonuc) {
       if (dtSonuc.onayNo)      proje.dtOnayNo = dtSonuc.onayNo;
       if (dtSonuc.onayTarihi)  proje.dtOnayTarihi = dtSonuc.onayTarihi;
-      if (dtSonuc.gorevliAd)   { proje.dtGorevliler[0].ad = dtSonuc.gorevliAd; proje.dtGorevliler[0].unvan = dtSonuc.gorevliUnvan || ''; proje.dtGorevliSayisi = 1; }
-      if (dtSonuc.onaylayanAd) {
-        const refMatch = referans.onaylayanList.find(o => o.ad === dtSonuc.onaylayanAd);
-        proje.onaylayanAmir = { ad: dtSonuc.onaylayanAd, unvan: refMatch ? refMatch.unvan : (dtSonuc.onaylayanUnvan || '') };
+      if (dtSonuc.gorevliAd) {
+        const g = matchOrAddGorevli(dtSonuc.gorevliAd, dtSonuc.gorevliUnvan);
+        proje.dtGorevliler[0].ad = g.ad;
+        proje.dtGorevliler[0].unvan = g.unvan;
+        proje.dtGorevliSayisi = 1;
       }
+    }
+
+    const seciliOnaylayan = (dtKabul && dtSonuc && dtSonuc.onaylayanAd) ? dtSonuc :
+                            (ymKabul && ymSonuc && ymSonuc.onaylayanAd) ? ymSonuc : null;
+    if (seciliOnaylayan) {
+      const a = matchOrAddOnaylayanAmir(seciliOnaylayan.onaylayanAd, seciliOnaylayan.onaylayanUnvan);
+      proje.onaylayanAmir = { ad: a.ad, unvan: a.unvan };
     }
 
     currentCloudProjeId = null;
@@ -2113,25 +2151,9 @@ async function parseOnayBelgesiIsAdi(file) {
   try {
     showToast('PDF okunuyor...', 'info');
     const fullText = await readPdfText(file);
+    const res = belgeyiAnaliz(fullText);
 
-    // Belge tipini tespit et
-    const isDT = /doğrudan\s+temin/i.test(fullText);
-    const isYM = /yaklaşık\s+maliyet/i.test(fullText);
-
-    // İş adını tırnak içinden bul
-    let isAdi = null;
-    const tirnakMatch = fullText.match(/[\u201C\u201E\u0022\u00AB]([^\u201D\u201C\u0022\u00BB\n]{5,120})[\u201D\u201F\u0022\u00BB]/);
-    if (tirnakMatch) {
-      isAdi = tirnakMatch[1].replace(/\s+/g, ' ').trim();
-    }
-    if (!isAdi) {
-      const konusuMatch = fullText.match(/(?:konusu|İşin\s+Adı|Hizmetin\s+Adı)\s*[:\-]?\s*([A-Za-zÇŞĞÜÖİçşğüöı0-9 \/\-]{5,100}?)(?:\s{2,}|\n|$)/i);
-      if (konusuMatch) {
-        isAdi = konusuMatch[1].replace(/\s+/g, ' ').trim();
-      }
-    }
-
-    if (!isAdi) {
+    if (!res.isAdi) {
       showToast('İş adı PDF içinde bulunamadı. Manuel girin.', 'warning');
       const modal = document.getElementById('yeniProjeModal');
       if (modal) {
@@ -2142,45 +2164,14 @@ async function parseOnayBelgesiIsAdi(file) {
       return;
     }
 
-    // Sayı ve tarih çek
-    let onayNo = null, onayTarihi = null, gorevliAd = null, gorevliUnvan = null;
-    const sayiIdx = fullText.search(/Sayı\s*:/);
-    if (sayiIdx >= 0) {
-      const satirMetni = fullText.substring(sayiIdx, sayiIdx + 100);
-      const sayiMatch = satirMetni.match(/Sayı\s*:\s*(.+?)\s+(\d{2}\.\d{2}\.\d{4})/);
-      if (sayiMatch) {
-        const parts = sayiMatch[1].replace(/\s+/g, '').split('-');
-        onayNo = parts[parts.length - 1];
-      }
-      const tarihMatch = satirMetni.match(/(\d{2})\.(\d{2})\.(\d{4})/);
-      if (tarihMatch) {
-        onayTarihi = `${tarihMatch[3]}-${tarihMatch[2]}-${tarihMatch[1]}`;
-      }
-    }
-
-    // Görevliyi çek (DT veya YM pattern)
-    const gorevliMatchDT = fullText.match(/ilgili\s+([A-Za-zÇŞĞÜÖİçşğüöı ]+?)\s*['\u2018\u2019\u02BC]\S*\s+doğrudan\s+temin/i);
-    const gorevliMatchYM = fullText.match(/olarak\s+([A-Za-zÇŞĞÜÖİçşğüöı ]+?)\s*['\u2018\u2019\u02BC]\S*\s+görevlendirilmesi/i);
-    const gorevliMatch = isDT ? gorevliMatchDT : (isYM ? gorevliMatchYM : (gorevliMatchDT || gorevliMatchYM));
-    if (gorevliMatch) {
-      const tamMetin = gorevliMatch[1].trim();
-      const kelimeler = tamMetin.split(/\s+/);
-      let idx = kelimeler.length - 1;
-      const soyadlar = [];
-      while (idx >= 0 && /^[A-ZÇŞĞÜÖİ]+$/.test(kelimeler[idx])) soyadlar.unshift(kelimeler[idx--]);
-      const adlar = (idx >= 0 && /^[A-ZÇŞĞÜÖİ][a-zçşğüöı]/.test(kelimeler[idx])) ? [kelimeler[idx--]] : [];
-      gorevliAd = [...adlar, ...soyadlar].join(' ');
-      gorevliUnvan = kelimeler.slice(0, idx + 1).join(' ');
-    }
-
-    // Özet onay mesajı oluştur
-    const tip = isDT ? 'D.T. Onay Belgesi' : (isYM ? 'Y.M. Onay Belgesi' : 'Onay Belgesi');
+    const tip = res.isDT ? 'D.T. Onay Belgesi' : (res.isYM ? 'Y.M. Onay Belgesi' : 'Onay Belgesi');
     const satirlar = [
       `📄 Belge Türü: ${tip}`,
-      `📋 İş Adı: ${isAdi}`,
-      onayNo    ? `🔢 Sayı: ${onayNo}` : null,
-      onayTarihi ? `📅 Tarih: ${onayTarihi.split('-').reverse().join('.')}` : null,
-      gorevliAd  ? `👤 Görevli: ${gorevliAd}` : null,
+      `📋 İş Adı: ${res.isAdi}`,
+      res.onayNo    ? `🔢 Sayı: ${res.onayNo}` : null,
+      res.onayTarihi ? `📅 Tarih: ${res.onayTarihi.split('-').reverse().join('.')}` : null,
+      res.gorevliAd  ? `👤 Görevli: ${res.gorevliAd}${res.gorevliUnvan ? ' / ' + res.gorevliUnvan : ''}` : null,
+      res.onaylayanAd ? `✅ Onaylayan: ${res.onaylayanAd}${res.onaylayanUnvan ? ' / ' + res.onaylayanUnvan : ''}` : null,
     ].filter(Boolean).join('\n');
 
     const onaylandi = await showConfirm(`Aşağıdaki bilgiler okundu:\n\n${escHtml(satirlar)}\n\nForma aktaralım mı?`, 'Evet, Aktar', 'Hayır');
@@ -2190,23 +2181,36 @@ async function parseOnayBelgesiIsAdi(file) {
         modal.querySelector('#yeniProjeAdim2Olur').style.display = 'none';
         modal.querySelector('#yeniProjeAdim2Manuel').style.display = 'block';
         const inp = modal.querySelector('#yeniProjeAdi');
-        if (inp) { inp.value = isAdi; setTimeout(() => inp.focus(), 50); }
+        if (inp) { inp.value = res.isAdi; setTimeout(() => inp.focus(), 50); }
       }
       return;
     }
 
-    // Proje oluştur ve alanları doldur
     document.getElementById('yeniProjeModal').style.display = 'none';
     proje = getDefaultProje();
-    proje.isAdi = isAdi;
-    if (isDT || (!isYM && gorevliMatchDT)) {
-      if (onayNo)     proje.dtOnayNo = onayNo;
-      if (onayTarihi) proje.dtOnayTarihi = onayTarihi;
-      if (gorevliAd)  { proje.dtGorevliler[0].ad = gorevliAd; proje.dtGorevliler[0].unvan = gorevliUnvan || ''; proje.dtGorevliSayisi = 1; }
+    proje.isAdi = res.isAdi;
+    if (res.isDT) {
+      if (res.onayNo)     proje.dtOnayNo = res.onayNo;
+      if (res.onayTarihi) proje.dtOnayTarihi = res.onayTarihi;
+      if (res.gorevliAd) {
+        const g = matchOrAddGorevli(res.gorevliAd, res.gorevliUnvan);
+        proje.dtGorevliler[0].ad = g.ad;
+        proje.dtGorevliler[0].unvan = g.unvan;
+        proje.dtGorevliSayisi = 1;
+      }
     } else {
-      if (onayNo)     proje.ymOnayNo = onayNo;
-      if (onayTarihi) proje.ymOnayTarihi = onayTarihi;
-      if (gorevliAd)  { proje.ymGorevliler[0].ad = gorevliAd; proje.ymGorevliler[0].unvan = gorevliUnvan || ''; proje.ymGorevliSayisi = 1; }
+      if (res.onayNo)     proje.ymOnayNo = res.onayNo;
+      if (res.onayTarihi) proje.ymOnayTarihi = res.onayTarihi;
+      if (res.gorevliAd) {
+        const g = matchOrAddGorevli(res.gorevliAd, res.gorevliUnvan);
+        proje.ymGorevliler[0].ad = g.ad;
+        proje.ymGorevliler[0].unvan = g.unvan;
+        proje.ymGorevliSayisi = 1;
+      }
+    }
+    if (res.onaylayanAd) {
+      const a = matchOrAddOnaylayanAmir(res.onaylayanAd, res.onaylayanUnvan);
+      proje.onaylayanAmir = { ad: a.ad, unvan: a.unvan };
     }
     currentCloudProjeId = null;
     currentProjeKilitli = false;
