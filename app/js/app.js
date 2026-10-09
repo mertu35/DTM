@@ -802,24 +802,24 @@ async function renderAnaSayfaPage() {
 
         <!-- Adım 2b: Olur belgesi -->
         <div id="yeniProjeAdim2Olur" style="display:none">
-          <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px">Onay belgelerini yükleyin, alanlar otomatik doldurulacak. İkisini birden veya yalnızca birini yükleyebilirsiniz.</p>
+          <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px">Onay belgelerini (PDF veya JPG/PNG Fotoğraf) yükleyin, alanlar otomatik doldurulacak. İkisini birden veya yalnızca birini yükleyebilirsiniz.</p>
           <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
             <!-- YM Belgesi -->
             <div style="padding:14px 18px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;display:flex;align-items:center;gap:12px">
-              <span style="font-size:13px;color:#1e40af;flex:1;font-weight:500">📄 Y.M. Onay Belgesi</span>
+              <span style="font-size:13px;color:#1e40af;flex:1;font-weight:500">📄 Y.M. Olur Belgesi</span>
               <span id="ymDosyaAdi" style="font-size:12px;color:#374151;flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
               <label style="cursor:pointer;padding:6px 16px;background:#2563eb;color:#fff;border-radius:6px;font-size:12px;display:inline-block;white-space:nowrap;flex-shrink:0">
-                PDF Seç
-                <input type="file" accept=".pdf" id="ymPdfInput" style="display:none" ${dtmEventAttr('change', function(event) { document.getElementById('ymDosyaAdi').textContent=this.files[0]?this.files[0].name:'' })}>
+                Olur Belgesi Seç
+                <input type="file" accept=".pdf,.png,.jpg,.jpeg,image/png,image/jpeg" id="ymPdfInput" style="display:none" ${dtmEventAttr('change', function(event) { document.getElementById('ymDosyaAdi').textContent=this.files[0]?this.files[0].name:'' })}>
               </label>
             </div>
             <!-- DT Belgesi -->
             <div style="padding:14px 18px;background:#f0fdf4;border:1.5px dashed #86efac;border-radius:8px;display:flex;align-items:center;gap:12px">
-              <span style="font-size:13px;color:#166534;flex:1;font-weight:500">📄 D.T. Onay Belgesi</span>
+              <span style="font-size:13px;color:#166534;flex:1;font-weight:500">📄 D.T. Olur Belgesi</span>
               <span id="dtDosyaAdi" style="font-size:12px;color:#374151;flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
               <label style="cursor:pointer;padding:6px 16px;background:#16a34a;color:#fff;border-radius:6px;font-size:12px;display:inline-block;white-space:nowrap;flex-shrink:0">
-                PDF Seç
-                <input type="file" accept=".pdf" id="dtPdfInput" style="display:none" ${dtmEventAttr('change', function(event) { document.getElementById('dtDosyaAdi').textContent=this.files[0]?this.files[0].name:'' })}>
+                Olur Belgesi Seç
+                <input type="file" accept=".pdf,.png,.jpg,.jpeg,image/png,image/jpeg" id="dtPdfInput" style="display:none" ${dtmEventAttr('change', function(event) { document.getElementById('dtDosyaAdi').textContent=this.files[0]?this.files[0].name:'' })}>
               </label>
             </div>
           </div>
@@ -1201,10 +1201,10 @@ function renderVeriGirisPage() {
       </div>
       <div class="card-body">
         <div style="margin-bottom:14px;padding:10px 14px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <span style="font-size:13px;color:#1e40af;">📄 Olur belgesinden otomatik doldur</span>
+          <span style="font-size:13px;color:#1e40af;">📄 Olur belgesinden (PDF / Fotoğraf) otomatik doldur</span>
           <label style="cursor:pointer;padding:6px 16px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;white-space:nowrap;user-select:none">
-            PDF Seç
-            <input type="file" accept=".pdf" style="display:none" ${dtmEventAttr('change', function(event) { parseYMOluru(this.files[0]);this.value='' })}>
+            Olur Belgesi Seç
+            <input type="file" accept=".pdf,.png,.jpg,.jpeg,image/png,image/jpeg" style="display:none" ${dtmEventAttr('change', function(event) { parseYMOluru(this.files[0]);this.value='' })}>
           </label>
         </div>
         ${ymGorevliRows}
@@ -1242,10 +1242,10 @@ function renderVeriGirisPage() {
       </div>
       <div class="card-body">
         <div style="margin-bottom:14px;padding:10px 14px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <span style="font-size:13px;color:#1e40af;">📄 Olur belgesinden otomatik doldur</span>
+          <span style="font-size:13px;color:#1e40af;">📄 Olur belgesinden (PDF / Fotoğraf) otomatik doldur</span>
           <label style="cursor:pointer;padding:6px 16px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;white-space:nowrap;user-select:none">
-            PDF Seç
-            <input type="file" accept=".pdf" style="display:none" ${dtmEventAttr('change', function(event) { parseDTOluru(this.files[0]);this.value='' })}>
+            Olur Belgesi Seç
+            <input type="file" accept=".pdf,.png,.jpg,.jpeg,image/png,image/jpeg" style="display:none" ${dtmEventAttr('change', function(event) { parseDTOluru(this.files[0]);this.value='' })}>
           </label>
         </div>
 
@@ -2226,8 +2226,29 @@ async function parseOnayBelgesiIsAdi(file) {
   }
 }
 
-// PDF içindeki metin katmanını tarayıcıda oku; harici OCR servisi kullanılmaz.
+// PDF veya Görsel (JPG, JPEG, PNG, WEBP) içindeki metin katmanını tarayıcıda oku; harici OCR servisi kullanılmaz.
 async function readPdfText(file) {
+  if (!file) throw new Error('Dosya seçilmedi.');
+
+  // Görsel dosyası kontrolü (JPG, JPEG, PNG, WEBP, BMP)
+  const isImage = (file.type && file.type.startsWith('image/')) ||
+                  /\.(png|jpe?g|webp|bmp)$/i.test(file.name || '');
+
+  if (isImage) {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      try {
+        showToast('Belge fotoğrafı/görseli algılandı, yerel OCR ile okunuyor...', 'info', 5000);
+        const ocrResult = await dtmLocalOcrImage(file);
+        if (ocrResult && ocrResult.trim()) {
+          return ocrResult;
+        }
+      } catch(imgErr) {
+        console.warn('Görsel OCR denemesi başarısız:', imgErr);
+      }
+    }
+    throw new Error('Görselde okunabilir metin bulunamadı. Lütfen daha net ve aydınlık bir fotoğraf seçin veya bilgileri elle girin.');
+  }
+
   const pdf = await dtmLoadPdf(file);
   let fullText = '';
   try {
@@ -2254,6 +2275,72 @@ async function readPdfText(file) {
     return fullText;
   } finally {
     await pdf.destroy?.();
+  }
+}
+
+async function dtmLocalOcrImage(file) {
+  const Tesseract = await dtmEnsureTesseract();
+  if (!Tesseract || !Tesseract.createWorker) throw new Error('OCR motoru başlatılamadı.');
+
+  const base = (typeof document !== 'undefined' && document.baseURI) ? document.baseURI : window.location.href;
+  const workerPath = new URL('js/vendor/tesseract/worker.min.js', base).href;
+  const corePath = new URL('js/vendor/tesseract/tesseract-core-lstm.wasm.js', base).href;
+  const langPath = new URL('js/vendor/tesseract/lang-data', base).href;
+
+  const worker = await Tesseract.createWorker('tur', 1, {
+    workerPath,
+    corePath,
+    langPath,
+    workerBlobURL: false
+  });
+
+  try {
+    const imgUrl = URL.createObjectURL(file);
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('Görsel yüklenemedi.'));
+      i.src = imgUrl;
+    });
+
+    const canvas = document.createElement('canvas');
+    let width = img.naturalWidth || img.width;
+    let height = img.naturalHeight || img.height;
+
+    // Fotoğraflar için çözünürlük ölçeklendirmesi (en az 1600px genişlik)
+    if (width > 0 && width < 1600) {
+      const scale = 1600 / width;
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+    URL.revokeObjectURL(imgUrl);
+
+    // Hafif kontrast ve parlaklık optimizasyonu (fotoğraf gölgelerini azaltmak için)
+    try {
+      const imgData = ctx.getImageData(0, 0, width, height);
+      const d = imgData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        const contrast = (gray - 128) * 1.25 + 128;
+        const val = Math.min(255, Math.max(0, contrast));
+        d[i] = val;
+        d[i + 1] = val;
+        d[i + 2] = val;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    } catch(_) {}
+
+    const { data } = await worker.recognize(canvas);
+    canvas.width = 0;
+    canvas.height = 0;
+    return data.text || '';
+  } finally {
+    await worker.terminate();
   }
 }
 
