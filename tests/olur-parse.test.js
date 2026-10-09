@@ -131,6 +131,7 @@ console.log('PASS: Leaky quote / context trailing phrases properly cut off');
 // 7. Gemini AI Yanıtı Normalizasyonu ve GLOBAL_REF_FIELDS Kontrolü
 const dataJsSource = fs.readFileSync(path.join(__dirname, '../app/js/data.js'), 'utf8');
 assert.ok(dataJsSource.includes("'geminiApiKey'"), 'geminiApiKey must be in GLOBAL_REF_FIELDS');
+assert.ok(dataJsSource.includes("'geminiModel'"), 'geminiModel must be in GLOBAL_REF_FIELDS');
 
 // Markdown kod bloğuyla sarılmış Gemini yanıtını temizleme simülasyonu
 const rawGeminiResponse = '```json\n{\n  "isAdi": "Karaman İl Özel İdaresi Jeneratör Bakım İşi",\n  "isYM": true,\n  "isDT": false,\n  "onayNo": "61019",\n  "onayTarihi": "24.09.2026",\n  "gorevliAd": "Aziz AÇIKGÖZ",\n  "gorevliUnvan": "Elektrik Elektronik Mühendisi",\n  "onaylayanAd": "Gökhan FİDAN",\n  "onaylayanUnvan": "Yatırım ve İnşaat Müdür V."\n}\n```';

@@ -112,7 +112,8 @@ function getDefaultReferans() {
       { yil: 2027, sinir: 0 },
       { yil: 2028, sinir: 0 }
     ],
-    geminiApiKey: ''
+    geminiApiKey: '',
+    geminiModel: 'gemini-3.8-flash'
   };
 }
 
@@ -240,7 +241,7 @@ function loadProje() {
   return getDefaultProje();
 }
 
-const GLOBAL_REF_FIELDS = ['onaylayanList', 'idareList', 'mudurlukler', 'ilceler', 'dtSinirlari', 'yukleniciList', 'geminiApiKey'];
+const GLOBAL_REF_FIELDS = ['onaylayanList', 'idareList', 'mudurlukler', 'ilceler', 'dtSinirlari', 'yukleniciList', 'geminiApiKey', 'geminiModel'];
 const GLOBAL_REF_KEY = 'dtm_global_referans';
 
 function saveReferans(ref) {

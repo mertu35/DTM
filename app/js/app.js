@@ -2092,7 +2092,9 @@ Belgedeki şu alanları çıkar ve SADECE geçerli bir JSON formatında döndür
 - Yanıtın SADECE saf JSON olsun, markdown kod bloğu veya ek açıklama ekleme.
 - Belgede net okunamayan veya bulunmayan alanları null bırak.`;
 
-  const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+  const selectedModel = (referans && referans.geminiModel) || 'gemini-3.8-flash';
+  const models = [selectedModel, 'gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+    .filter((m, idx, arr) => m && arr.indexOf(m) === idx);
   let lastError = null;
 
   for (const model of models) {
@@ -2163,7 +2165,9 @@ Belgedeki şu alanları çıkar ve SADECE geçerli bir JSON formatında döndür
 async function dtmTestGeminiApiKey(apiKey) {
   if (!apiKey || !apiKey.trim()) throw new Error('Lütfen geçerli bir API anahtarı giriniz.');
   const key = apiKey.trim();
-  const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+  const selectedModel = (referans && referans.geminiModel) || 'gemini-3.8-flash';
+  const models = [selectedModel, 'gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+    .filter((m, idx, arr) => m && arr.indexOf(m) === idx);
   let lastError = null;
 
   for (const model of models) {
@@ -2172,12 +2176,9 @@ async function dtmTestGeminiApiKey(apiKey) {
       const payload = {
         contents: [
           {
-            parts: [{ text: 'Merhaba, bu bir test mesajıdır. Sadece JSON döndür: {"status":"ok"}' }]
+            parts: [{ text: 'Merhaba, bu bir test mesajıdır.' }]
           }
-        ],
-        generationConfig: {
-          responseMimeType: "application/json"
-        }
+        ]
       };
       const res = await fetch(url, {
         method: 'POST',
@@ -2228,6 +2229,7 @@ if (typeof window !== 'undefined') {
     const inp = document.getElementById('globalGeminiApiKey');
     const val = (inp?.value || '').trim();
     referans.geminiApiKey = val;
+    referans.geminiModel = 'gemini-3.8-flash';
     saveGlobalReferans(referans);
     showToast(val ? 'Gemini API anahtarı buluta kaydedildi! Tüm kurum personelleri için aktif.' : 'Gemini API anahtarı temizlendi.', 'success');
     renderPage();
@@ -2282,6 +2284,7 @@ if (typeof window !== 'undefined') {
     const inp = document.getElementById('profilGeminiApiKey');
     const val = (inp?.value || '').trim();
     referans.geminiApiKey = val;
+    referans.geminiModel = 'gemini-3.8-flash';
     saveGlobalReferans(referans);
     showToast(val ? 'Gemini API anahtarı buluta kaydedildi! Tüm kurum personelleri için aktif.' : 'Gemini API anahtarı temizlendi.', 'success');
     renderPage();
@@ -3512,9 +3515,13 @@ function renderVeriMerkeziPage() {
         <span class="toggle-icon" style="color:#fff;">&#9660;</span>
       </div>
       <div class="card-body" style="padding:20px;">
-        <p style="font-size:13.5px;color:var(--gray-600);margin:0 0 14px;line-height:1.5;">
-          Buraya tanımlayacağınız Google Gemini API anahtarı, <strong>tüm kurum personelleri</strong> için bulut üzerinden ortak aktif olur. Personeller Olur belgesi veya telefon fotoğrafı yüklediğinde, belgeler en güncel Gemini Flash modeliyle saniyeler içinde %100 doğrulukla çözümlenir.
+        <p style="font-size:13.5px;color:var(--gray-600);margin:0 0 10px;line-height:1.5;">
+          Buraya tanımlayacağınız Google Gemini API anahtarı, <strong>tüm kurum personelleri</strong> için bulut üzerinden ortak aktif olur. Personeller Olur belgesi veya telefon fotoğrafı yüklediğinde, belgeler en güncel <strong>gemini-3.8-flash</strong> yapay zeka modeliyle saniyeler içinde %100 doğrulukla çözümlenir.
         </p>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12.5px;color:var(--gray-600);">
+          <span>Kullanılan Model:</span>
+          <span style="font-family:monospace;font-weight:700;background:var(--gray-100);color:var(--primary);padding:3px 10px;border-radius:6px;border:1px solid var(--gray-200);">gemini-3.8-flash (Aktif)</span>
+        </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;max-width:720px;">
           <div style="position:relative;flex:1;min-width:280px;">
             <input type="password" id="globalGeminiApiKey" value="${escAttr(referans.geminiApiKey || '')}" placeholder="Google AI Studio API Anahtarınızı giriniz (AIzaSy...)" style="width:100%;padding:10px 40px 10px 14px;border:1.5px solid var(--gray-300);border-radius:8px;font-size:13.5px;font-family:monospace;box-sizing:border-box;">
@@ -6247,9 +6254,13 @@ function renderProfilPage() {
           </span>
         </div>
         <div class="card-body" style="padding:20px;">
-          <p style="font-size:13px;color:var(--gray-600);margin:0 0 14px;line-height:1.5;">
+          <p style="font-size:13px;color:var(--gray-600);margin:0 0 10px;line-height:1.5;">
             Sistem Yöneticisi yetkinizle kurum geneli Google Gemini API anahtarını yönetebilirsiniz. Bu anahtar tüm kurum memurlarının Olur ve teklif belgelerini çözümlerken ortak kullanılır.
           </p>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12.5px;color:var(--gray-600);">
+            <span>Kullanılan Model:</span>
+            <span style="font-family:monospace;font-weight:700;background:var(--gray-100);color:var(--primary);padding:3px 10px;border-radius:6px;border:1px solid var(--gray-200);">gemini-3.8-flash (Aktif)</span>
+          </div>
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;max-width:720px;">
             <div style="position:relative;flex:1;min-width:280px;">
               <input type="password" id="profilGeminiApiKey" value="${escAttr(referans.geminiApiKey || '')}" placeholder="Google AI Studio API Anahtarı (AIzaSy...)" style="width:100%;padding:10px 40px 10px 14px;border:1.5px solid var(--gray-300);border-radius:8px;font-size:13.5px;font-family:monospace;box-sizing:border-box;">
