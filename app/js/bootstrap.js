@@ -12,15 +12,18 @@ dtmRegisterEvent('static-9', function(event) { duyurularSayfasinaGit() });
 dtmRegisterEvent('static-10', function(event) { closeDuyuruPopup() });
 
 // Same-origin PDF reader and worker. No third-party script is fetched at runtime.
-const dtmBootstrapUrl = document.currentScript.src;
+const dtmBootstrapUrl = document.currentScript ? document.currentScript.src : window.location.href;
 window.pdfStandardFontDataUrl = new URL('./vendor/standard_fonts/', dtmBootstrapUrl).href;
-window.pdfjsReady = import('./vendor/pdf.min.mjs').then(lib => {
+const dtmPdfModuleUrl = new URL('./vendor/pdf.min.mjs', dtmBootstrapUrl).href;
+window.pdfjsReady = import(dtmPdfModuleUrl).then(lib => {
   lib.GlobalWorkerOptions.workerSrc = new URL('./vendor/pdf.worker.min.mjs', dtmBootstrapUrl).href;
   window.pdfjsLib = lib;
   return lib;
 });
 // Keep a rejected import handled until a PDF operation reports the failure.
-window.pdfjsReady.catch(() => {});
+window.pdfjsReady.catch(err => {
+  console.error('PDF.js modül yükleme hatası:', err);
+});
 if (!window.dtmDisableServiceWorker && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(error => console.error('Service Worker:', error));

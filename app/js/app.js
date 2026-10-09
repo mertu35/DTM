@@ -2242,9 +2242,16 @@ async function readPdfText(file) {
 }
 
 async function dtmLoadPdf(file) {
-  if (typeof window !== 'undefined' && window.pdfjsReady) await window.pdfjsReady;
+  if (typeof window !== 'undefined' && window.pdfjsReady) {
+    try { await window.pdfjsReady; } catch(err) { /* handled in bootstrap */ }
+  }
   const lib = typeof window !== 'undefined' && window.pdfjsLib ? window.pdfjsLib : (typeof pdfjsLib !== 'undefined' ? pdfjsLib : null);
-  if (!lib) throw new Error('PDF okuyucu yüklenemedi.');
+  if (!lib) {
+    if (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:') {
+      throw new Error('Tarayıcı güvenlik kısıtlaması nedeniyle yerel dosya (file://) modunda PDF modülü başlatılamıyor. Lütfen uygulamayı GitHub Pages üzerinden açın veya bilgileri manuel girin.');
+    }
+    throw new Error('PDF okuyucu yüklenemedi.');
+  }
   const data = await file.arrayBuffer();
   const options = { data, isEvalSupported: false, useWasm: false, disableFontFace: true };
   if (typeof document !== 'undefined' && document.baseURI) {
