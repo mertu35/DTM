@@ -108,7 +108,7 @@ function showPrompt(baslik, placeholder = '') {
     overlay.innerHTML = `
       <div class="dtm-modal" style="max-width:420px">
         <div class="dtm-modal-body">
-          <p style="margin:0 0 14px">${escHtml(baslik)}</p>
+          <p style="margin:0 0 14px;white-space:pre-line">${escHtml(baslik)}</p>
           <textarea id="dtmPromptInput" placeholder="${escAttr(placeholder)}" rows="4"
             style="width:100%;box-sizing:border-box;border:1px solid var(--gray-200);border-radius:8px;padding:10px;font-size:14px;resize:vertical;font-family:inherit"></textarea>
         </div>
@@ -1712,7 +1712,7 @@ async function projeDosyaSecildi(fileList) {
       await projeDosyaYukle(currentCloudProjeId, dosya);
     } catch(e) {
       hataVar = true;
-      showToast(escHtml(dosya.name) + ': ' + escHtml(hataMesaji(e)), 'error');
+      showToast(dosya.name + ': ' + hataMesaji(e), 'error');
     }
   }
   const input = document.getElementById('projeDosyaInput');
@@ -1728,7 +1728,7 @@ async function projeDosyaSilOnayla(yol) {
     showToast('Dosya silindi.', 'success');
     projeDosyaListesiYukle();
   } catch(e) {
-    showToast('Hata: ' + escHtml(hataMesaji(e)), 'error');
+    showToast('Hata: ' + hataMesaji(e), 'error');
   }
 }
 
@@ -2436,6 +2436,13 @@ async function dtmFileToBase64(file) {
   });
 }
 
+const GEMINI_ALLOWED_MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+function getSafeGeminiModels() {
+  const raw = (referans && typeof referans.geminiModel === 'string') ? referans.geminiModel.trim() : '';
+  const selectedModel = GEMINI_ALLOWED_MODELS.includes(raw) ? raw : 'gemini-3.8-flash';
+  return [selectedModel, ...GEMINI_ALLOWED_MODELS].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+}
+
 async function dtmAnalyzeDocumentWithGemini(file, apiKey) {
   const { base64, mimeType } = await dtmFileToBase64(file);
 
@@ -2459,14 +2466,12 @@ Belgedeki şu alanları çıkar ve SADECE geçerli bir JSON formatında döndür
 - Yanıtın SADECE saf JSON olsun, markdown kod bloğu veya ek açıklama ekleme.
 - Belgede net okunamayan veya bulunmayan alanları null bırak.`;
 
-  const selectedModel = (referans && referans.geminiModel) || 'gemini-3.8-flash';
-  const models = [selectedModel, 'gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
-    .filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+  const models = getSafeGeminiModels();
   let lastError = null;
 
   for (const model of models) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const payload = {
         contents: [
           {
@@ -2532,14 +2537,12 @@ Belgedeki şu alanları çıkar ve SADECE geçerli bir JSON formatında döndür
 async function dtmTestGeminiApiKey(apiKey) {
   if (!apiKey || !apiKey.trim()) throw new Error('Lütfen geçerli bir API anahtarı giriniz.');
   const key = apiKey.trim();
-  const selectedModel = (referans && referans.geminiModel) || 'gemini-3.8-flash';
-  const models = [selectedModel, 'gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
-    .filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+  const models = getSafeGeminiModels();
   let lastError = null;
 
   for (const model of models) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
       const payload = {
         contents: [
           {
@@ -2616,14 +2619,12 @@ Belgenin türünü ("olur", "teklif" veya "diger") belirle ve ilgili alanları �
 - Rakamları kesinlikle sayı (float/number) olarak döndür.
 - Okunamayan veya bulunmayan alanları null bırak.`;
 
-  const selectedModel = (referans && referans.geminiModel) || 'gemini-3.8-flash';
-  const models = [selectedModel, 'gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
-    .filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+  const models = getSafeGeminiModels();
   let lastError = null;
 
   for (const model of models) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const payload = {
         contents: [
           {
@@ -5212,7 +5213,7 @@ async function onaylaClick(projeId, isAdi) {
 }
 
 async function geriGonderClick(projeId, isAdi) {
-  const not = await showPrompt(`"${escHtml(isAdi)}" projesini geri gönderiyorsunuz.<br>Geri gönderme nedeninizi yazın:`, 'Nedeninizi buraya yazın...');
+  const not = await showPrompt(`"${isAdi}" projesini geri gönderiyorsunuz.\nGeri gönderme nedeninizi yazın:`, 'Nedeninizi buraya yazın...');
   if (not === null) return;
   if (!not.trim()) { showToast('Not boş olamaz.', 'warning'); return; }
   try {
@@ -5481,7 +5482,7 @@ async function kullaniciEkle(btn) {
   await butonKilitli(btn, 'Oluşturuluyor...', async () => {
     try {
       await createDTMUser(username, sifre, ad, rol, email);
-      msg.style.color = 'green'; msg.textContent = `✓ "${escHtml(ad)}" kullanıcısı başarıyla oluşturuldu.`;
+      msg.style.color = 'green'; msg.textContent = `✓ "${ad}" kullanıcısı başarıyla oluşturuldu.`;
       document.getElementById('yeniAd').value = '';
       document.getElementById('yeniUsername').value = '';
       if (document.getElementById('yeniEmail')) document.getElementById('yeniEmail').value = '';
@@ -7591,7 +7592,7 @@ async function renderHakkindaPage() {
               </tr>
               <tr style="border-bottom:1px solid var(--gray-100);">
                 <td style="padding:10px 16px;color:var(--gray-500)">Tarayıcı</td>
-                <td style="padding:10px 16px;font-weight:600;font-size:12px;">${navigator.userAgent.split(') ').pop().split(' ')[0] || navigator.userAgent}</td>
+                <td style="padding:10px 16px;font-weight:600;font-size:12px;">${escHtml(navigator.userAgent.split(') ').pop().split(' ')[0] || navigator.userAgent)}</td>
               </tr>
               <tr>
                 <td style="padding:10px 16px;color:var(--gray-500)">Son Giriş</td>
@@ -7650,7 +7651,7 @@ window.guncellemeyiKontrolEt = async function() {
       durumEl.style.background = '#fef3c7';
       durumEl.style.borderColor = '#f59e0b';
       durumEl.style.color = '#92400e';
-      durumEl.innerHTML = `&#9888;&#65039; <strong>Yeni sürüm mevcut: v${latestVersion}</strong><br><span style="font-size:12px">Mevcut sürümünüz: v${APP_CURRENT_VERSION}. Güncellemeyi uygulamak için butona tıklayın.</span>`;
+      durumEl.innerHTML = `&#9888;&#65039; <strong>Yeni sürüm mevcut: v${escHtml(latestVersion)}</strong><br><span style="font-size:12px">Mevcut sürümünüz: v${escHtml(APP_CURRENT_VERSION)}. Güncellemeyi uygulamak için butona tıklayın.</span>`;
       if (btnUygula) btnUygula.style.display = 'inline-flex';
     } else {
       durumEl.style.background = '#f0fdf4';

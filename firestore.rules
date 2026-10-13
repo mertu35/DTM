@@ -263,12 +263,27 @@ service cloud.firestore {
       allow read: if kayitliKullanici() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
     }
 
-    // Global referans verileri (admin, superadmin ve gerceklestirmeci yönetir)
+    // Global referans verileri (admin, superadmin ve gerceklestirmeci yönetir;
+    // ancak kurumsal Gemini AI anahtarı ve modeli yalnızca admin/superadmin tarafından değiştirilebilir)
     match /globalReferans/{docId} {
       allow read: if kayitliKullanici();
-      allow write: if kayitliKullanici() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'gerceklestirmeci'];
+      allow create: if kayitliKullanici() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
+          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci' &&
+           request.resource.data.get('geminiApiKey', '') == '')
+        );
+      allow update: if kayitliKullanici() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
+          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci' &&
+           request.resource.data.get('geminiApiKey', '') == resource.data.get('geminiApiKey', '') &&
+           (request.resource.data.get('geminiModel', '') == resource.data.get('geminiModel', '') ||
+            !('geminiModel' in resource.data)))
+        );
+      allow delete: if kayitliKullanici() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
 
     // Kullanıcı adı → e-posta eşlemesi.

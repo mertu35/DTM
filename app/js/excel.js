@@ -44,6 +44,7 @@ function excelHtmlSaric(icerik, sayfaAdi) {
     vertical-align: middle;
     white-space: normal;
     word-wrap: break-word;
+    mso-number-format:"\@";
   }
   .no-border, .no-border td, .no-border th { border: none !important; }
   .center { text-align: center; }
@@ -76,6 +77,12 @@ function excelHtmlSaric(icerik, sayfaAdi) {
 ${icerik}
 </body>
 </html>`;
+}
+
+function escExcel(val) {
+  const s = String(val ?? '');
+  const safe = (s !== '-' && /^[=+\-@]/.test(s.trimStart())) ? "'" + s : s;
+  return escHtml(safe);
 }
 
 // ── Para formatı yardımcısı ──
@@ -123,7 +130,7 @@ function exportYaklasikMaliyetExcel(proje, referans) {
     const ortBF = mik > 0 ? ortT / mik : 0;
     kalemRows += `<tr>
       <td class="center">${i + 1}</td>
-      <td>${escHtml(k.ad || '')}</td>
+      <td>${escExcel(k.ad || '')}</td>
       <td class="center">${mik ? mik.toLocaleString('tr-TR') : ''}</td>
       ${tdRakam(bf1 || null)}${tdRakam(hesaplaKalemTutar(bf1, mik) || null)}
       ${tdRakam(bf2 || null)}${tdRakam(hesaplaKalemTutar(bf2, mik) || null)}
@@ -133,7 +140,7 @@ function exportYaklasikMaliyetExcel(proje, referans) {
   });
 
   const gorevliHtml = ymGorevliler.length
-    ? ymGorevliler.map(g => `<strong>${escHtml(g.ad || '')}</strong><br>${escHtml(g.unvan || '')}`).join('<br><br>')
+    ? ymGorevliler.map(g => `<strong>${escExcel(g.ad || '')}</strong><br>${escExcel(g.unvan || '')}`).join('<br><br>')
     : '';
 
   const html = `
@@ -147,15 +154,15 @@ function exportYaklasikMaliyetExcel(proje, referans) {
   <table style="width:100%">
     <tr>
       <td class="bold" style="border:none;width:46%">İdarenin Adı</td>
-      <td style="border:none">${escHtml(proje.idareAdi || '')}</td>
+      <td style="border:none">${escExcel(proje.idareAdi || '')}</td>
     </tr>
     <tr>
       <td class="bold" style="border:none">Yapılan İş / Mal / Hizmetin Adı, Niteliği</td>
-      <td style="border:none">${escHtml(proje.isAdi || '')}</td>
+      <td style="border:none">${escExcel(proje.isAdi || '')}</td>
     </tr>
     <tr>
       <td class="bold" style="border:none">Alım ve Yetkilendirilen Görevlilere İlişkin Onay Belgesi /<br>Görevlendirme Onayı Tarih ve No.su</td>
-      <td style="border:none">${formatDate(proje.ymOnayTarihi)} Tarih ve ${escHtml(proje.ymOnayNo || '')} Sayılı Olur</td>
+      <td style="border:none">${formatDate(proje.ymOnayTarihi)} Tarih ve ${escExcel(proje.ymOnayNo || '')} Sayılı Olur</td>
     </tr>
     <tr><td style="border:none;height:10px" colspan="2"></td></tr>
   </table>
@@ -173,9 +180,9 @@ function exportYaklasikMaliyetExcel(proje, referans) {
         <th colspan="2" class="grup-h" rowspan="2">YAKLAŞIK MALİYET</th>
       </tr>
       <tr>
-        <th colspan="2" class="firma-h">${escHtml(f1.ad || '-')}</th>
-        <th colspan="2" class="firma-h">${escHtml(f2.ad || '-')}</th>
-        <th colspan="2" class="firma-h">${escHtml(f3.ad || '-')}</th>
+        <th colspan="2" class="firma-h">${escExcel(f1.ad || '-')}</th>
+        <th colspan="2" class="firma-h">${escExcel(f2.ad || '-')}</th>
+        <th colspan="2" class="firma-h">${escExcel(f3.ad || '-')}</th>
       </tr>
       <tr>
         <th class="sutun-h">BİRİM<br>FİYAT<br>(TL)</th><th class="sutun-h">TOPLAM<br>FİYAT<br>(TL)</th>
@@ -217,8 +224,8 @@ function exportYaklasikMaliyetExcel(proje, referans) {
       <td style="border:2px solid #000;border-top:none;border-left:none;text-align:center;padding:8px;width:40%;vertical-align:top">
         <strong>OLUR</strong><br>
         ${formatDate(ymTutanakT)}<br><br>
-        <strong>${escHtml(proje.onaylayanAmir?.ad || '')}</strong><br>
-        ${escHtml(proje.onaylayanAmir?.unvan || '')}
+        <strong>${escExcel(proje.onaylayanAmir?.ad || '')}</strong><br>
+        ${escExcel(proje.onaylayanAmir?.unvan || '')}
       </td>
     </tr>
   </table>`;
@@ -284,9 +291,9 @@ function exportTeklifTutanagiExcel(proje, referans) {
     teklifRows += `<tr>
       <td></td>
       <td class="center">${i + 1}</td>
-      <td colspan="4">${escHtml(k.ad || '')}</td>
+      <td colspan="4">${escExcel(k.ad || '')}</td>
       <td class="center">${mik ? mik.toLocaleString('tr-TR') : ''}</td>
-      <td class="center">${escHtml(k.birim || '')}</td>
+      <td class="center">${escExcel(k.birim || '')}</td>
       ${tdRakam(p1)}<td class="center" style="font-size:8pt">${f1Basit ? '' : '+KDV'}</td>
       ${tdRakam(p2)}<td class="center" style="font-size:8pt">${f2Basit ? '' : '+KDV'}</td>
       ${tdRakam(p3)}<td class="center" style="font-size:8pt">${f3Basit ? '' : '+KDV'}</td>
@@ -305,13 +312,13 @@ function exportTeklifTutanagiExcel(proje, referans) {
       kazananRows += `<tr>
         <td></td>
         <td class="center">${i + 1}</td>
-        <td colspan="4">${escHtml(k.ad || '')}</td>
+        <td colspan="4">${escExcel(k.ad || '')}</td>
         <td class="center">${mik ? mik.toLocaleString('tr-TR') : ''}</td>
-        <td class="center">${escHtml(k.birim || '')}</td>
-        <td class="center">${i === 0 ? escHtml(kazanan.ad || '') : ''}</td>
+        <td class="center">${escExcel(k.birim || '')}</td>
+        <td class="center">${i === 0 ? escExcel(kazanan.ad || '') : ''}</td>
         <td></td>
         ${tdRakam(fiyat)}<td class="center" style="font-size:8pt">${kazananBasit ? '' : '+KDV'}</td>
-        <td colspan="2">${i === 0 ? escHtml(kazanan.adres || '') : ''}</td>
+        <td colspan="2">${i === 0 ? escExcel(kazanan.adres || '') : ''}</td>
         <td></td>
       </tr>`;
     });
@@ -324,14 +331,14 @@ function exportTeklifTutanagiExcel(proje, referans) {
           <td colspan="2" style="border:none"></td>
           <td colspan="2" class="etiket" style="border:1px solid #000">Adı Soyadı</td>
           <td style="border:1px solid #000" class="center">:</td>
-          <td colspan="3" style="border:1px solid #000">${escHtml(g.ad || '')}</td>
+          <td colspan="3" style="border:1px solid #000">${escExcel(g.ad || '')}</td>
           <td colspan="9" style="border:none"></td>
         </tr>
         <tr>
           <td colspan="2" style="border:none"></td>
           <td colspan="2" class="etiket" style="border:1px solid #000">Ünvanı</td>
           <td style="border:1px solid #000" class="center">:</td>
-          <td colspan="3" style="border:1px solid #000">${escHtml(g.unvan || '')}</td>
+          <td colspan="3" style="border:1px solid #000">${escExcel(g.unvan || '')}</td>
           <td colspan="9" style="border:none"></td>
         </tr>
         <tr class="bos-satir"><td colspan="${C}"></td></tr>`
@@ -359,7 +366,7 @@ function exportTeklifTutanagiExcel(proje, referans) {
   <!-- ── T.C. Üst Başlık ── -->
   <tr>
     <td colspan="${C}" class="tc-baslik">
-      T.C.<br>KARAMAN İL ÖZEL İDARESİ<br>${escHtml(proje.mudurluk || 'YATIRIM VE İNŞAAT MÜDÜRLÜĞÜ')}
+      T.C.<br>KARAMAN İL ÖZEL İDARESİ<br>${escExcel(proje.mudurluk || 'YATIRIM VE İNŞAAT MÜDÜRLÜĞÜ')}
     </td>
   </tr>
   <tr class="bos-satir"><td colspan="${C}"></td></tr>
@@ -378,19 +385,19 @@ function exportTeklifTutanagiExcel(proje, referans) {
     <td></td>
     <td colspan="5" class="etiket">İdarenin Adı</td>
     <td class="center bold">:</td>
-    <td colspan="10">${escHtml(proje.idareAdi || '')}</td>
+    <td colspan="10">${escExcel(proje.idareAdi || '')}</td>
   </tr>
   <tr>
     <td></td>
     <td colspan="5" class="etiket">Yapılan İş / Mal / Hizmetin Adı, Niteliği</td>
     <td class="center bold">:</td>
-    <td colspan="10">${escHtml(proje.isAdi || '')}</td>
+    <td colspan="10">${escExcel(proje.isAdi || '')}</td>
   </tr>
   <tr>
     <td></td>
     <td colspan="5" class="etiket">Alım ve Yetkilendirilen Görevlilere İlişkin Onay Belgesi /<br>Görevlendirme Onayı Tarih ve No.su</td>
     <td class="center bold">:</td>
-    <td colspan="10">${formatDate(proje.dtOnayTarihi)} Tarih ve ${escHtml(proje.dtOnayNo || '')} Sayılı Olur</td>
+    <td colspan="10">${formatDate(proje.dtOnayTarihi)} Tarih ve ${escExcel(proje.dtOnayNo || '')} Sayılı Olur</td>
   </tr>
   <tr class="bos-satir"><td colspan="${C}"></td></tr>
 
@@ -413,9 +420,9 @@ function exportTeklifTutanagiExcel(proje, referans) {
   </tr>
   <tr>
     <td style="border:none"></td>
-    <th colspan="2" class="firma-h">${escHtml(f1.ad || '-')}</th>
-    <th colspan="2" class="firma-h">${escHtml(f2.ad || '-')}</th>
-    <th colspan="2" class="firma-h">${escHtml(f3.ad || '-')}</th>
+    <th colspan="2" class="firma-h">${escExcel(f1.ad || '-')}</th>
+    <th colspan="2" class="firma-h">${escExcel(f2.ad || '-')}</th>
+    <th colspan="2" class="firma-h">${escExcel(f3.ad || '-')}</th>
     <th colspan="3"></th>
   </tr>
 

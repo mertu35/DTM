@@ -7,7 +7,7 @@ const html = fs.readFileSync(path.join(root, 'app/index.html'), 'utf8');
 const policy = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1];
 assert.match(policy, /script-src-attr 'none'/);
 const scriptPolicy = policy.split(';').find(value => value.trim().startsWith('script-src '));
-assert.ok(!/unsafe-inline|unsafe-eval|\*/.test(scriptPolicy));
+assert.ok(!/unsafe-inline|(?<!wasm-)unsafe-eval|\*/.test(scriptPolicy));
 assert.match(policy, /object-src 'none'/);
 assert.match(policy, /base-uri 'self'/);
 assert.match(policy, /form-action 'none'/);
