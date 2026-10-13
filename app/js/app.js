@@ -2716,14 +2716,16 @@ if (typeof window !== 'undefined') {
     const val = (inp?.value || '').trim();
     referans.geminiApiKey = val;
     referans.geminiModel = 'gemini-3.8-flash';
+    if (typeof saveAiConfig === 'function') saveAiConfig(referans);
     saveGlobalReferans(referans);
-    showToast(val ? 'Gemini API anahtarı buluta kaydedildi! Tüm kurum personelleri için aktif.' : 'Gemini API anahtarı temizlendi.', 'success');
+    showToast(val ? 'Gemini API anahtarı buluta kaydedildi! Yetkili kurum personelleri için aktif.' : 'Gemini API anahtarı temizlendi.', 'success');
     renderPage();
   };
 
   window.geminiApiKeySil = function() {
     if (!confirm('Gemini API anahtarını sistemden kaldırmak istediğinize emin misiniz?')) return;
     referans.geminiApiKey = '';
+    if (typeof saveAiConfig === 'function') saveAiConfig(referans);
     saveGlobalReferans(referans);
     showToast('Gemini API anahtarı kaldırıldı. Sistem yerel OCR motoruna döndü.', 'info');
     renderPage();
@@ -2771,14 +2773,16 @@ if (typeof window !== 'undefined') {
     const val = (inp?.value || '').trim();
     referans.geminiApiKey = val;
     referans.geminiModel = 'gemini-3.8-flash';
+    if (typeof saveAiConfig === 'function') saveAiConfig(referans);
     saveGlobalReferans(referans);
-    showToast(val ? 'Gemini API anahtarı buluta kaydedildi! Tüm kurum personelleri için aktif.' : 'Gemini API anahtarı temizlendi.', 'success');
+    showToast(val ? 'Gemini API anahtarı buluta kaydedildi! Yetkili kurum personelleri için aktif.' : 'Gemini API anahtarı temizlendi.', 'success');
     renderPage();
   };
 
   window.profilGeminiApiKeySil = function() {
     if (!confirm('Gemini API anahtarını sistemden kaldırmak istediğinize emin misiniz?')) return;
     referans.geminiApiKey = '';
+    if (typeof saveAiConfig === 'function') saveAiConfig(referans);
     saveGlobalReferans(referans);
     showToast('Gemini API anahtarı kaldırıldı. Sistem yerel OCR motoruna döndü.', 'info');
     renderPage();
@@ -5382,6 +5386,7 @@ async function renderKullaniciYonetimiPage() {
                 <th>Kullanıcı Adı</th>
                 <th>E-Posta & Doğrulama</th>
                 <th>Şifre İşlemi</th>
+                <th>AI Yetkisi</th>
                 <th>Rol</th>
                 <th>İşlem</th>
               </tr>
@@ -5421,6 +5426,17 @@ async function renderKullaniciYonetimiPage() {
                       </button>
                     ` : `
                       <span style="font-size:11.5px;color:var(--gray-400);" title="E-posta tanımlanmadığı için sıfırlama linki gönderilemez">E-Posta Yok</span>
+                    `}
+                  </td>
+                  <td>
+                    ${['admin', 'superadmin', 'gerceklestirmeci'].includes(u.role) ? `
+                      <span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;display:inline-flex;align-items:center;gap:4px;" title="Bu rol kurumsal AI erişimine doğrudan sahiptir">
+                        🤖 Rol İçi Aktif
+                      </span>
+                    ` : `
+                      <button type="button" class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { kullaniciAiYetkiDegistir(String(u.uid ?? ''), !Boolean(u.aiYetkisi)) })} style="font-size:11.5px;padding:3px 8px;border-color:${u.aiYetkisi ? '#86efac' : 'var(--gray-300)'};background:${u.aiYetkisi ? '#f0fdf4' : 'transparent'};color:${u.aiYetkisi ? '#166534' : 'var(--gray-500)'};" title="Kurumsal Gemini AI kullanım yetkisini aç/kapat">
+                        ${u.aiYetkisi ? '🤖 Açık' : '🔒 Kapalı'}
+                      </button>
                     `}
                   </td>
                   <td>${u.uid !== currentDTMUser.uid ? (
@@ -5505,6 +5521,16 @@ async function kullaniciRolDegistir(uid, yeniRol) {
   try {
     await changeUserRole(uid, yeniRol);
     showToast('Kullanıcı rolü başarıyla güncellendi.', 'success');
+    renderKullaniciYonetimiPage();
+  } catch(e) {
+    showToast('Hata: ' + hataMesaji(e), 'error');
+  }
+}
+
+async function kullaniciAiYetkiDegistir(uid, yeniDurum) {
+  try {
+    await setUserAiPermission(uid, yeniDurum);
+    showToast(yeniDurum ? 'Kullanıcıya kurumsal AI kullanım yetkisi verildi.' : 'Kullanıcının kurumsal AI kullanım yetkisi kaldırıldı.', 'success');
     renderKullaniciYonetimiPage();
   } catch(e) {
     showToast('Hata: ' + hataMesaji(e), 'error');

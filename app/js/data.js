@@ -259,12 +259,28 @@ function saveReferans(ref) {
 
 function saveGlobalReferans(ref) {
   const globalData = {};
-  GLOBAL_REF_FIELDS.forEach(f => { if (ref[f] !== undefined) globalData[f] = ref[f]; });
+  GLOBAL_REF_FIELDS.forEach(f => {
+    if (f !== 'geminiApiKey' && f !== 'geminiModel' && ref[f] !== undefined) {
+      globalData[f] = ref[f];
+    }
+  });
   localStorage.setItem(GLOBAL_REF_KEY, JSON.stringify(globalData));
   if (typeof saveGlobalReferansToCloud === 'function') {
     saveGlobalReferansToCloud(globalData).catch(e => {
       console.warn('[Global Referans] Buluta kaydedilemedi:', e?.code, e?.message);
       if (typeof showToast === 'function') showToast('GLOBAL veriler buluta kaydedilemedi: ' + e?.message, 'error');
+    });
+  }
+}
+
+function saveAiConfig(ref) {
+  if (typeof saveAiConfigToCloud === 'function') {
+    saveAiConfigToCloud({
+      geminiApiKey: ref?.geminiApiKey || '',
+      geminiModel: ref?.geminiModel || 'gemini-3.8-flash'
+    }).catch(e => {
+      console.warn('[AI Config] Buluta kaydedilemedi:', e?.code, e?.message);
+      if (typeof showToast === 'function') showToast('AI ayarları buluta kaydedilemedi: ' + e?.message, 'error');
     });
   }
 }

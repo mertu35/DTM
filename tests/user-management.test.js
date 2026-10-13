@@ -44,6 +44,10 @@ async function main() {
   await context.createDTMUser('new', 'password', 'Test', 'user');
   assert.equal(commits, 3);
   assert.deepEqual(writes.map(w => w[1]), ['users/new', 'publicUsers/new']);
+  await context.setUserAiPermission('target', true);
+  assert.equal(commits, 4);
+  assert.deepEqual(writes.map(w => w[1]), ['users/target']);
+  assert.equal(writes[0][2].aiYetkisi, true);
   fail = true;
   await assert.rejects(context.createDTMUser('new2', 'password', 'Test', 'user'), /denied/);
   assert.equal(rolledBack, 1, 'failed profile creation must delete the new Auth account');

@@ -330,13 +330,38 @@ async function saveReferansToCloud(referansData) {
 // Global referans verisini Firestore'dan yükle (idare, müdürlük, amir, ilçe)
 async function loadGlobalReferansFromCloud() {
   const snap = await db.collection('globalReferans').doc('default').get();
-  return snap.exists ? snap.data() : null;
+  const base = snap.exists ? { ...snap.data() } : {};
+  delete base.geminiApiKey;
+  delete base.geminiModel;
+  try {
+    const aiSnap = await db.collection('globalReferans').doc('aiConfig').get();
+    if (aiSnap && aiSnap.exists) {
+      const ai = aiSnap.data() || {};
+      if (ai.geminiApiKey !== undefined) base.geminiApiKey = ai.geminiApiKey;
+      if (ai.geminiModel !== undefined) base.geminiModel = ai.geminiModel;
+    }
+  } catch (_) {
+    // AI okuma yetkisi olmayan standart kullanıcılar aiConfig dokümanına erişemez; yerel OCR ile devam eder.
+  }
+  return (snap.exists || base.geminiApiKey !== undefined) ? base : null;
 }
 
-// Global referans verisini Firestore'a kaydet (sadece superadmin)
+// Global referans verisini Firestore'a kaydet (API anahtarı hariç)
 async function saveGlobalReferansToCloud(data) {
+  const safeData = { ...data };
+  delete safeData.geminiApiKey;
+  delete safeData.geminiModel;
   await db.collection('globalReferans').doc('default').set({
-    ...data,
+    ...safeData,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+// Kurumsal Gemini AI yapılandırmasını izole aiConfig dokümanına kaydet (sadece admin/superadmin)
+async function saveAiConfigToCloud(aiData) {
+  await db.collection('globalReferans').doc('aiConfig').set({
+    geminiApiKey: aiData?.geminiApiKey || '',
+    geminiModel: aiData?.geminiModel || 'gemini-3.8-flash',
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 }
@@ -845,6 +870,13 @@ async function changeUserRole(uid, newRole) {
   batch.set(db.collection('publicUsers').doc(uid), {
     uid, displayName: data.displayName || '', role: newRole
   });
+  await batch.commit();
+}
+
+async function setUserAiPermission(uid, allowed) {
+  const { ref } = await yonetilebilirKullanici(uid);
+  const batch = db.batch();
+  batch.update(ref, { aiYetkisi: Boolean(allowed) });
   await batch.commit();
 }
 

@@ -263,26 +263,29 @@ service cloud.firestore {
       allow read: if kayitliKullanici() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
     }
 
-    // Global referans verileri (admin, superadmin ve gerceklestirmeci yönetir;
-    // ancak kurumsal Gemini AI anahtarı ve modeli yalnızca admin/superadmin tarafından değiştirilebilir)
+    // Kurumsal Gemini AI yapılandırması (globalReferans/default'tan izole edilmiştir).
+    // Yalnızca admin, superadmin, gerceklestirmeci veya kendisine açıkça aiYetkisi tanımlanmış personel okuyabilir;
+    // yalnızca admin ve superadmin değiştirebilir.
+    match /globalReferans/aiConfig {
+      allow read: if kayitliKullanici() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'gerceklestirmeci'] ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('aiYetkisi', false) == true
+      );
+      allow write: if kayitliKullanici() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+    }
+
+    // Global referans verileri (idare, müdürlük, amir, ilçe, yüklenici havuzu).
+    // API anahtarı bu dokümanlarda kesinlikle tutulamaz.
     match /globalReferans/{docId} {
-      allow read: if kayitliKullanici();
-      allow create: if kayitliKullanici() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
-          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci' &&
-           request.resource.data.get('geminiApiKey', '') == '')
-        );
-      allow update: if kayitliKullanici() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
-          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci' &&
-           request.resource.data.get('geminiApiKey', '') == resource.data.get('geminiApiKey', '') &&
-           (request.resource.data.get('geminiModel', '') == resource.data.get('geminiModel', '') ||
-            !('geminiModel' in resource.data)))
-        );
-      allow delete: if kayitliKullanici() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+      allow read: if docId != 'aiConfig' && kayitliKullanici();
+      allow create, update: if docId != 'aiConfig' &&
+        kayitliKullanici() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'gerceklestirmeci'] &&
+        !('geminiApiKey' in request.resource.data) &&
+        !('geminiModel' in request.resource.data);
+      allow delete: if docId != 'aiConfig' &&
+        kayitliKullanici() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
 

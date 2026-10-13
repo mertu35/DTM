@@ -245,6 +245,17 @@ async function main() {
   const bulkSeed = await request('POST', `${base}:commit`, { writes: manyFiles.map(path => ({ update: { name: name(path), fields: fields({ legacy: 'test' }) } })) }, '', true);
   assert.equal(bulkSeed.status, 200, await bulkSeed.text());
   await check('450 attachments and parent can be atomically deleted', await request('POST', `${base}:commit`, { writes: [...manyFiles.map(path => ({ delete: name(path) })), { delete: name(p) }] }, 'owner'), true);
+  await seed('globalReferans/default', { idareList: ['Test'] });
+  await seed('globalReferans/aiConfig', { geminiApiKey: 'AIzaSecret', geminiModel: 'gemini-3.8-flash' });
+  await check('standard user can read public globalReferans/default', await request('GET', `${base}/globalReferans/default`, undefined, 'owner'), true);
+  await check('standard user without aiYetkisi cannot read globalReferans/aiConfig', await request('GET', `${base}/globalReferans/aiConfig`, undefined, 'owner'), false);
+  await check('standard user cannot self-grant aiYetkisi', await update('users/owner', { aiYetkisi: true }, 'owner'), false);
+  await check('admin can grant aiYetkisi to user', await update('users/owner', { aiYetkisi: true }, 'admin'), true);
+  await check('user with aiYetkisi can read globalReferans/aiConfig', await request('GET', `${base}/globalReferans/aiConfig`, undefined, 'owner'), true);
+  await check('reviewer can read globalReferans/aiConfig', await request('GET', `${base}/globalReferans/aiConfig`, undefined, 'reviewer'), true);
+  await check('reviewer cannot write globalReferans/aiConfig', await seedAs('globalReferans/aiConfig', { geminiApiKey: 'Forged' }, 'reviewer'), false);
+  await check('admin can write globalReferans/aiConfig', await seedAs('globalReferans/aiConfig', { geminiApiKey: 'AIzaNew', geminiModel: 'gemini-3.8-flash' }, 'admin'), true);
+  await check('admin cannot store geminiApiKey in public globalReferans/default', await seedAs('globalReferans/default', { idareList: ['Test'], geminiApiKey: 'Leak' }, 'admin'), false);
   console.log(`${count} security checks passed.`);
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
