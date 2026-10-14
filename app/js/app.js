@@ -666,6 +666,12 @@ function init() {
       item.classList.add('active');
       currentPage = targetPage;
       currentOnayliBelgelerProjeId = null;
+      if (targetPage === 'dokumanlar') {
+        currentBelge = 'dokumanlar';
+        if (currentCloudProjeId && !currentBelgelerProjeId) {
+          currentBelgelerProjeId = currentCloudProjeId;
+        }
+      }
       renderPage();
       updateNavLock();
     });
@@ -688,6 +694,11 @@ function renderPage() {
     case 'anasayfa': renderAnaSayfaPage(); break;
     case 'veri-giris': main.innerHTML = renderVeriGirisPage(); bindVeriGiris(); break;
     case 'belgeler': renderBelgelerPage(); break;
+    case 'dokumanlar':
+      currentBelge = 'dokumanlar';
+      if (currentCloudProjeId && !currentBelgelerProjeId) currentBelgelerProjeId = currentCloudProjeId;
+      renderBelgelerPage();
+      break;
     case 'veri-merkezi': main.innerHTML = renderVeriMerkeziPage(); break;
     case 'dashboard': renderDashboardPage(); break;
     case 'kaydet-yukle': renderKaydetYuklePage(); break;
@@ -1046,6 +1057,7 @@ function yeniProjeOlustur() {
   if (!isAdi) { markError(isAdiEl); showToast('Lütfen bir proje adı girin.', 'warning'); return; }
   proje = getDefaultProje();
   proje.isAdi = isAdi;
+  if (typeof window !== 'undefined') window._bekleyenProjeDosyalari = [];
   currentCloudProjeId = null;
   currentProjeKilitli = false;
   currentProjeBaskaKullanici = false;
@@ -1679,29 +1691,26 @@ function renderVeriGirisPage() {
 
     <div class="card">
       <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3>📁 İşe Ait Dosyalar</h3>
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-right:10px;flex-wrap:wrap;gap:8px">
+          <h3>📎 İşe Ait Dokümanlar (Fatura, Vergi Borcu, Fotoğraf, Olur & Teklif)</h3>
+          <button type="button" ${dtmEventAttr('click', function(event) { event.stopPropagation(); projeDokumanlarSekmesineGit(); })}
+            style="padding:5px 12px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">
+            📎 Dokümanlar Sekmesinde Gör →
+          </button>
+        </div>
         <span class="toggle-icon">&#9660;</span>
       </div>
       <div class="card-body">
-        ${!currentCloudProjeId ? `
-          <p style="color:var(--gray-500);font-size:13px">Dosya ekleyebilmek için önce projeyi bir kez kaydedin.</p>
-        ` : `
-          <div id="projeDosyaListesi" style="margin-bottom:12px">
-            <p style="color:var(--gray-400);font-size:13px">Yükleniyor...</p>
-          </div>
-          ${!currentProjeKilitli ? `
-            <input type="file" id="projeDosyaInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none" ${dtmEventAttr('change', function(event) { projeDosyaSecildi(this.files) })}>
-            <button type="button" class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { document.getElementById('projeDosyaInput').click() })}>+ Dosya Ekle</button>
-            <p style="font-size:11.5px;color:var(--gray-400);margin-top:6px">Fotoğraf, fatura, vergi borcu yoktur belgesi vb. — Resim, PDF, Word veya Excel, dosya başına en fazla 5 MB.</p>
-          ` : ''}
-        `}
+        <div id="projeDosyaListesi" style="margin-bottom:8px">
+          <p style="color:var(--gray-400);font-size:13px">Yükleniyor...</p>
+        </div>
       </div>
     </div>
 
     ${!currentProjeKilitli ? `
     <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid #e5e7eb;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:100;box-shadow:0 -2px 8px rgba(0,0,0,0.06)">
       <span style="font-size:13px;color:#6b7280">
-        ${currentCloudProjeId ? '💡 Değişikliklerinizi kaydetmeyi unutmayın.' : '💡 Proje henüz kaydedilmedi.'}
+        ${currentCloudProjeId ? '💡 Değişikliklerinizi kaydetmeyi unutmayın.' : '💡 Proje henüz kaydedilmedi. Kaydettiğinizde bekleyen dokümanlar da buluta aktarılır.'}
       </span>
       <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { cloudKaydet() })} style="min-width:140px">
         💾 Kaydet
@@ -1716,7 +1725,7 @@ function bindVeriGiris() {
       el.disabled = true;
     });
   }
-  if (currentCloudProjeId) projeDosyaListesiYukle();
+  projeDosyaListesiYukle();
 }
 
 function formatDosyaBoyutu(bayt) {
@@ -1726,7 +1735,124 @@ function formatDosyaBoyutu(bayt) {
   return (bayt / 1024 / 1024).toFixed(1) + ' MB';
 }
 
+const PROJE_DOKUMAN_KATEGORILERI = [
+  {
+    kod: 'fatura',
+    baslik: '🧾 1. Fatura Belgeleri',
+    kisaAd: 'Fatura',
+    aciklama: 'İşe ait e-Arşiv / e-Fatura PDF veya fotoğrafı',
+    etiket: '[Fatura]',
+    bg: '#eff6ff',
+    border: '#93c5fd',
+    badgeBg: '#dbeafe',
+    text: '#1e40af',
+    btnBg: '#2563eb'
+  },
+  {
+    kod: 'vergi',
+    baslik: '🏛️ 2. Vergi / SGK Borcu Yoktur',
+    kisaAd: 'Vergi Borcu',
+    aciklama: 'Vergi dairesi veya SGK borcu yoktur yazıları',
+    etiket: '[Vergi Borcu]',
+    bg: '#f0fdf4',
+    border: '#86efac',
+    badgeBg: '#dcfce7',
+    text: '#166534',
+    btnBg: '#16a34a'
+  },
+  {
+    kod: 'fotograf',
+    baslik: '📸 3. İş / Yapım Fotoğrafları',
+    kisaAd: 'Fotoğraf',
+    aciklama: 'Yapılan işin, onarımın veya alınan malzemelerin fotoğrafları',
+    etiket: '[Fotoğraf]',
+    bg: '#fefce8',
+    border: '#fde047',
+    badgeBg: '#fef08a',
+    text: '#854d0e',
+    btnBg: '#ca8a04'
+  },
+  {
+    kod: 'olur_teklif',
+    baslik: '📋 4. Olur & Teklif Belgeleri',
+    kisaAd: 'Olur / Teklif',
+    aciklama: 'Y.M. / D.T. Olurları, Piyasa Fiyat Araştırması ve Resmi Teklif Mektupları',
+    etiket: '[Olur-Teklif]',
+    bg: '#faf5ff',
+    border: '#d8b4fe',
+    badgeBg: '#f3e8ff',
+    text: '#6b21a8',
+    btnBg: '#9333ea'
+  },
+  {
+    kod: 'diger',
+    baslik: '📁 5. Diğer Evraklar',
+    kisaAd: 'Diğer Evrak',
+    aciklama: 'Şartname ekleri, tutanaklar ve diğer resmi belgeler',
+    etiket: '[Diğer]',
+    bg: '#f8fafc',
+    border: '#cbd5e1',
+    badgeBg: '#e2e8f0',
+    text: '#334155',
+    btnBg: '#475569'
+  }
+];
+
+function tespitProjeDosyaKategorisi(dosyaMeta) {
+  if (dosyaMeta && dosyaMeta.kategori && PROJE_DOKUMAN_KATEGORILERI.some(k => k.kod === dosyaMeta.kategori)) {
+    return dosyaMeta.kategori;
+  }
+  const ad = String(dosyaMeta?.ad || dosyaMeta?.name || '').trim();
+  if (/^\[Fatura\]/i.test(ad)) return 'fatura';
+  if (/^\[Vergi Borcu\]/i.test(ad)) return 'vergi';
+  if (/^\[Fotoğraf\]/i.test(ad)) return 'fotograf';
+  if (/^\[Olur-Teklif\]/i.test(ad)) return 'olur_teklif';
+  if (/^\[Diğer\]/i.test(ad)) return 'diger';
+
+  if (/fatura|earsiv|e-arşiv|efatura/i.test(ad)) return 'fatura';
+  if (/vergi|borcu|sgk|vkn|maliye/i.test(ad)) return 'vergi';
+  if (/olur|teklif|piyasa|yaklasik|yaklaşık|onay/i.test(ad)) return 'olur_teklif';
+  const tip = String(dosyaMeta?.tip || dosyaMeta?.type || '').toLowerCase();
+  if (tip.startsWith('image/') || /\.(jpe?g|png|webp|bmp|gif)$/i.test(ad)) return 'fotograf';
+  return 'diger';
+}
+
+function temizProjeDosyaAdi(ad) {
+  return String(ad || '').replace(/^\[(Fatura|Vergi Borcu|Fotoğraf|Olur-Teklif|Diğer)\]\s*/i, '').trim() || 'Belge';
+}
+
+function etiketliProjeDosyasiOlustur(dosya, kategoriKod = 'diger', altEtiket = '') {
+  if (!dosya) return dosya;
+  const kat = PROJE_DOKUMAN_KATEGORILERI.find(k => k.kod === kategoriKod) || PROJE_DOKUMAN_KATEGORILERI[4];
+  const hamAd = temizProjeDosyaAdi(dosya.name || 'belge');
+  const noktaIdx = hamAd.lastIndexOf('.');
+  const uzanti = noktaIdx >= 0 ? hamAd.slice(noktaIdx) : '';
+  const govde = noktaIdx >= 0 ? hamAd.slice(0, noktaIdx) : hamAd;
+  const onEk = `${kat.etiket} ${altEtiket ? altEtiket + ' - ' : ''}`;
+  const maxGovde = Math.max(10, 240 - onEk.length - uzanti.length);
+  const yeniAd = `${onEk}${govde.slice(0, maxGovde)}${uzanti}`;
+
+  try {
+    if (typeof File === 'function' && typeof Blob === 'function' && dosya instanceof Blob) {
+      return new File([dosya], yeniAd, { type: dosya.type || '', lastModified: dosya.lastModified || Date.now() });
+    }
+  } catch(_) {}
+  return Object.assign({}, dosya, { name: yeniAd });
+}
+
 window._projeDosyalariCache = {};
+window._bekleyenProjeDosyalari = [];
+
+function projeDokumanlarSekmesineGit() {
+  if (currentCloudProjeId) {
+    currentBelgelerProjeId = currentCloudProjeId;
+  }
+  currentBelge = 'dokumanlar';
+  currentPage = 'dokumanlar';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('[data-page="dokumanlar"]')?.classList.add('active');
+  renderPage();
+}
 
 window.projeDosyaAc = async function(docId) {
   const d = window._projeDosyalariCache?.[docId];
@@ -1739,45 +1865,205 @@ window.projeDosyaAc = async function(docId) {
       d.url = dataUrl;
     }
     if (typeof projeDosyaGoruntule === 'function' && dataUrl) {
-      projeDosyaGoruntule(dataUrl, d.ad, d.tip);
+      projeDosyaGoruntule(dataUrl, temizProjeDosyaAdi(d.ad), d.tip);
     }
   } catch(e) {
     if (typeof showToast === 'function') showToast('Dosya açılamadı: ' + (e.message || e), 'error');
   }
 };
 
+window.bekleyenProjeDosyaAc = async function(idx) {
+  const item = (window._bekleyenProjeDosyalari || [])[idx];
+  if (!item || !item.file) return;
+  try {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(item.file);
+    });
+    if (typeof projeDosyaGoruntule === 'function' && dataUrl) {
+      projeDosyaGoruntule(dataUrl, temizProjeDosyaAdi(item.file.name), item.file.type);
+    }
+  } catch(e) {
+    if (typeof showToast === 'function') showToast('Dosya önizlenemedi: ' + (e.message || e), 'error');
+  }
+};
+
+window.bekleyenProjeDosyaSil = function(idx) {
+  if (!Array.isArray(window._bekleyenProjeDosyalari)) return;
+  if (idx >= 0 && idx < window._bekleyenProjeDosyalari.length) {
+    window._bekleyenProjeDosyalari.splice(idx, 1);
+    projeDosyaListesiYukle();
+  }
+};
+
+async function bekleyenProjeDosyalariniBulutaYukle(projeId) {
+  if (!projeId || !Array.isArray(window._bekleyenProjeDosyalari) || window._bekleyenProjeDosyalari.length === 0) return 0;
+  const kuyruk = [...window._bekleyenProjeDosyalari];
+  window._bekleyenProjeDosyalari = [];
+  let basarili = 0;
+  for (const item of kuyruk) {
+    try {
+      const etiketli = etiketliProjeDosyasiOlustur(item.file, item.kategori || 'olur_teklif', item.altEtiket || '');
+      await projeDosyaYukle(projeId, etiketli);
+      basarili++;
+    } catch (err) {
+      console.warn('Bekleyen dosya buluta yüklenemedi:', item.file?.name, err);
+    }
+  }
+  return basarili;
+}
+
+function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
+  const bekleyenler = (!currentCloudProjeId && Array.isArray(window._bekleyenProjeDosyalari))
+    ? window._bekleyenProjeDosyalari
+    : [];
+  const toplamBulut = dosyalar.length;
+  const toplamBekleyen = bekleyenler.length;
+
+  const ustBilgiHtml = !currentCloudProjeId ? `
+    <div style="padding:12px 16px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div style="font-size:12.5px;color:#92400e">
+        💡 <strong>Proje henüz buluta kaydedilmedi.</strong> ${toplamBekleyen > 0 ? `Seçtiğiniz <strong>${toplamBekleyen} adet evrak</strong> hazır bekliyor; projeyi kaydettiğiniz anda otomatik olarak buluta yüklenecektir.` : 'Evrakları şimdiden ilgili kutulara ekleyebilirsiniz; projeyi kaydettiğinizde otomatik olarak buluta aktarılır.'}
+      </div>
+      ${!saltOkunur ? `
+        <button type="button" class="btn btn-primary btn-sm" ${dtmEventAttr('click', function(event) { cloudKaydet(); })} style="white-space:nowrap">
+          💾 Projeyi ve Evrakları Şimdi Kaydet
+        </button>
+      ` : ''}
+    </div>
+  ` : (toplamBulut > 0 ? `
+    <div style="padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span style="font-size:12.5px;color:#334155">📎 Bu projeye kayıtlı toplam <strong>${toplamBulut} adet</strong> resmi doküman / fotoğraf bulunuyor.</span>
+      <span style="font-size:11.5px;color:#64748b">Dosya başına maks. 5 MB (PDF, JPG, PNG, Word, Excel)</span>
+    </div>
+  ` : '');
+
+  const kutularHtml = PROJE_DOKUMAN_KATEGORILERI.map(kat => {
+    const katDosyalar = dosyalar.filter(d => tespitProjeDosyaKategorisi(d) === kat.kod);
+    const katBekleyenler = bekleyenler
+      .map((b, idx) => ({ ...b, _bekleyenIdx: idx }))
+      .filter(b => (b.kategori || tespitProjeDosyaKategorisi(b.file)) === kat.kod);
+    const toplamSayi = katDosyalar.length + katBekleyenler.length;
+
+    const satirlarHtml = [
+      ...katDosyalar.map(d => {
+        const temizAd = temizProjeDosyaAdi(d.ad);
+        const isImg = (d.tip || '').startsWith('image/') || /\.(jpe?g|png|webp|bmp|gif)$/i.test(temizAd);
+        const thumbHtml = (isImg && d.url && d.url.startsWith('data:image/'))
+          ? `<img src="${escAttr(d.url)}" alt="${escAttr(temizAd)}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;flex-shrink:0">`
+          : `<span style="width:40px;height:40px;border-radius:6px;background:${kat.badgeBg};color:${kat.text};display:inline-flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${isImg ? '🖼️' : '📄'}</span>`;
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:8px">
+            <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')); })} title="Görüntüle / İndir">
+              ${thumbHtml}
+              <div style="overflow:hidden;flex:1">
+                <div style="font-size:13px;font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(temizAd)}</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <span>${formatDosyaBoyutu(d.boyut)}</span>
+                  ${d.yukleyenAd ? `<span>• 👤 ${escHtml(d.yukleyenAd)}</span>` : ''}
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+              <button type="button" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')); })} style="padding:5px 10px;background:${kat.bg};color:${kat.text};border:1px solid ${kat.border};border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">👁️ Aç</button>
+              ${!saltOkunur ? `<button type="button" ${dtmEventAttr('click', function(event) { projeDosyaSilOnayla(String(d.yol ?? '')); })} title="Sil" style="padding:5px 8px;background:#fff;border:1px solid #fecaca;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px">🗑️</button>` : ''}
+            </div>
+          </div>`;
+      }),
+      ...katBekleyenler.map(b => {
+        const f = b.file || {};
+        const temizAd = (b.altEtiket ? `${b.altEtiket} - ` : '') + temizProjeDosyaAdi(f.name || 'Belge');
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:#fffbeb;border:1px dashed #f59e0b;border-radius:8px">
+            <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaAc(Number(b._bekleyenIdx)); })}>
+              <span style="width:36px;height:36px;border-radius:6px;background:#fef3c7;color:#b45309;display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">⏳</span>
+              <div style="overflow:hidden;flex:1">
+                <div style="font-size:12.5px;font-weight:600;color:#78350f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(temizAd)}</div>
+                <div style="font-size:11px;color:#b45309">${formatDosyaBoyutu(f.size)} • Kaydedildiğinde buluta yüklenecek</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+              <button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaAc(Number(b._bekleyenIdx)); })} style="padding:4px 8px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">👁️ Önizle</button>
+              ${!saltOkunur ? `<button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaSil(Number(b._bekleyenIdx)); })} style="padding:4px 8px;background:#fff;border:1px solid #fecaca;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px">✕</button>` : ''}
+            </div>
+          </div>`;
+      })
+    ].join('');
+
+    const inputId = `projeDosyaInput_${kat.kod}`;
+    return `
+      <div style="padding:14px;background:${kat.bg};border:1.5px solid ${kat.border};border-radius:12px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:${kat.text};display:flex;align-items:center;gap:8px">
+              <span>${kat.baslik}</span>
+              <span style="background:${kat.badgeBg};color:${kat.text};font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">${toplamSayi} belge</span>
+            </div>
+            <div style="font-size:11.5px;color:${kat.text};opacity:0.85;margin-top:2px">${kat.aciklama}</div>
+          </div>
+          ${!saltOkunur ? `
+            <label style="cursor:pointer;padding:7px 14px;background:${kat.btnBg};color:#fff;border-radius:8px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0">
+              <span>+ ${kat.kisaAd} Yükle</span>
+              <input type="file" id="${inputId}" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none"
+                ${dtmEventAttr('change', function(event) { projeDosyaSecildi(this.files, String(kat.kod)); this.value=''; })}>
+            </label>
+          ` : ''}
+        </div>
+        ${toplamSayi > 0 ? `
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+            ${satirlarHtml}
+          </div>
+        ` : `
+          <div style="font-size:12px;color:${kat.text};opacity:0.65;margin-top:8px;font-style:italic">Henüz bu kategoride belge yüklenmemiş.</div>
+        `}
+      </div>`;
+  }).join('');
+
+  return ustBilgiHtml + kutularHtml;
+}
+
 async function projeDosyaListesiYukle() {
   const container = document.getElementById('projeDosyaListesi');
-  if (!container || !currentCloudProjeId) return;
+  if (!container) return;
+  const saltOkunur = Boolean(currentProjeKilitli || currentGerceklestirmeciReadOnly || currentPage === 'proje-ozet');
+
+  if (!currentCloudProjeId) {
+    container.innerHTML = renderKategoriDokumanKutulari([], saltOkunur);
+    return;
+  }
+
   try {
     const dosyalar = await projeDosyalariGetir(currentCloudProjeId);
     window._projeDosyalariCache = {};
     dosyalar.forEach(d => { window._projeDosyalariCache[d.docId] = d; });
-
-    if (!dosyalar.length) {
-      container.innerHTML = `<p style="color:var(--gray-400);font-size:13px">Henüz dosya eklenmemiş.</p>`;
-      return;
-    }
-    container.innerHTML = dosyalar.map(d => `
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
-        <a href="javascript:void(0)" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')) })} style="flex:1;font-size:13px;color:var(--primary, #1e40af);font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Görüntüle / İndir">📎 ${escHtml(d.ad)}</a>
-        <span style="font-size:11.5px;color:var(--gray-400);white-space:nowrap">${formatDosyaBoyutu(d.boyut)}</span>
-        <span style="font-size:11.5px;color:var(--gray-400);white-space:nowrap">${escHtml(d.yukleyenAd)}</span>
-        ${!currentProjeKilitli ? `<button type="button" ${dtmEventAttr('click', function(event) { projeDosyaSilOnayla(String(d.yol ?? '')) })} title="Sil" style="padding:3px 7px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;color:#6b7280;font-size:13px;flex-shrink:0">✕</button>` : ''}
-      </div>`).join('');
+    container.innerHTML = renderKategoriDokumanKutulari(dosyalar, saltOkunur);
   } catch(e) {
-    container.innerHTML = `<p style="color:#dc2626;font-size:13px">Dosyalar yüklenemedi: ${escHtml(hataMesaji(e))}</p>`;
+    container.innerHTML = `<p style="color:#dc2626;font-size:13px">Dokümanlar yüklenemedi: ${escHtml(hataMesaji(e))}</p>`;
   }
 }
 
-async function projeDosyaSecildi(fileList) {
-  if (!currentCloudProjeId) return;
+async function projeDosyaSecildi(fileList, kategoriKod = 'diger') {
   const dosyalar = Array.from(fileList || []);
   if (!dosyalar.length) return;
+
+  if (!currentCloudProjeId) {
+    if (!Array.isArray(window._bekleyenProjeDosyalari)) window._bekleyenProjeDosyalari = [];
+    dosyalar.forEach(f => {
+      window._bekleyenProjeDosyalari.push({ file: f, kategori: kategoriKod, altEtiket: '' });
+    });
+    showToast(`${dosyalar.length} belge eklendi. Projeyi kaydettiğinizde buluta yüklenecek.`, 'info', 3500);
+    projeDosyaListesiYukle();
+    return;
+  }
+
   let hataVar = false;
+  showToast('⏳ Doküman(lar) buluta yükleniyor...', 'info', 2500);
   for (const dosya of dosyalar) {
     try {
-      await projeDosyaYukle(currentCloudProjeId, dosya);
+      const etiketli = etiketliProjeDosyasiOlustur(dosya, kategoriKod);
+      await projeDosyaYukle(currentCloudProjeId, etiketli);
     } catch(e) {
       hataVar = true;
       showToast(dosya.name + ': ' + hataMesaji(e), 'error');
@@ -1785,15 +2071,15 @@ async function projeDosyaSecildi(fileList) {
   }
   const input = document.getElementById('projeDosyaInput');
   if (input) input.value = '';
-  if (!hataVar) showToast('Dosya(lar) yüklendi.', 'success');
+  if (!hataVar) showToast('✅ Doküman(lar) başarıyla yüklendi.', 'success');
   projeDosyaListesiYukle();
 }
 
 async function projeDosyaSilOnayla(yol) {
-  if (!await showConfirm('Bu dosyayı silmek istediğinize emin misiniz?', 'Dosyayı Sil')) return;
+  if (!await showConfirm('Bu dokümanı silmek istediğinize emin misiniz?', 'Dokümanı Sil')) return;
   try {
     await projeDosyaSil(yol);
-    showToast('Dosya silindi.', 'success');
+    showToast('Doküman silindi.', 'success');
     projeDosyaListesiYukle();
   } catch(e) {
     showToast('Hata: ' + hataMesaji(e), 'error');
@@ -3219,6 +3505,11 @@ async function parseIkiOlurBelgesi() {
       proje.onaylayanAmir = { ad: a.ad, unvan: a.unvan };
     }
 
+    if (typeof window !== 'undefined') {
+      window._bekleyenProjeDosyalari = [];
+      if (ymKabul && ymFile) window._bekleyenProjeDosyalari.push({ file: ymFile, kategori: 'olur_teklif', altEtiket: 'YM Olur' });
+      if (dtKabul && dtFile) window._bekleyenProjeDosyalari.push({ file: dtFile, kategori: 'olur_teklif', altEtiket: 'DT Olur' });
+    }
     currentCloudProjeId = null;
     currentProjeKilitli = false;
     currentProjeBaskaKullanici = false;
@@ -3296,6 +3587,9 @@ async function parseOnayBelgesiIsAdi(file) {
     if (res.onaylayanAd) {
       const a = matchOrAddOnaylayanAmir(res.onaylayanAd, res.onaylayanUnvan);
       proje.onaylayanAmir = { ad: a.ad, unvan: a.unvan };
+    }
+    if (typeof window !== 'undefined') {
+      window._bekleyenProjeDosyalari = [{ file, kategori: 'olur_teklif', altEtiket: res.isDT ? 'DT Olur' : 'YM Olur' }];
     }
     currentCloudProjeId = null;
     currentProjeKilitli = false;
@@ -3740,6 +4034,12 @@ function dtmTopluProjeyiKabulEt(yeniProje, ozet) {
     if (JSON.stringify(referans) !== ozet.referansSurumu) { showToast('Referans listesi değişti. Analizi yeniden hazırlayınız.', 'warning'); return; }
     referans = ozet.onayReferansi; saveReferans(referans);
   }
+  if (typeof window !== 'undefined') {
+    window._bekleyenProjeDosyalari = [];
+    (topluGrupluDosyalar?.olur || []).forEach(f => window._bekleyenProjeDosyalari.push({ file: f, kategori: 'olur_teklif', altEtiket: 'Olur' }));
+    (topluGrupluDosyalar?.ym || []).forEach(f => window._bekleyenProjeDosyalari.push({ file: f, kategori: 'olur_teklif', altEtiket: 'Piyasa Fiyat (YM)' }));
+    (topluGrupluDosyalar?.dt || []).forEach(f => window._bekleyenProjeDosyalari.push({ file: f, kategori: 'olur_teklif', altEtiket: 'Resmi Teklif (DT)' }));
+  }
   proje = yeniProje;
   currentCloudProjeId = null;
   currentProjeKilitli = false;
@@ -3759,7 +4059,7 @@ function dtmTopluProjeyiKabulEt(yeniProje, ozet) {
   renderPage();
   autoSave();
 
-  showToast('Proje başarıyla oluşturuldu! Belgeler aktarıldı.', 'success', 5000);
+  showToast('Proje başarıyla oluşturuldu! Belgeler ve evraklar aktarıldı.', 'success', 5000);
 }
 
 if (typeof window !== 'undefined') {
@@ -4122,13 +4422,14 @@ let currentBelge = 'yaklasik-maliyet';
 
 async function renderBelgelerPage() {
   const main = document.getElementById('mainContent');
+  const isDokumanlarModu = currentPage === 'dokumanlar';
 
   // DURUM 1: Proje seçilmedi → proje listesini göster
   if (!currentBelgelerProjeId) {
     main.innerHTML = `
       <div class="page-header">
-        <h2>&#128196; Belgeler</h2>
-        <p>Belge oluşturmak istediğiniz projeyi seçin.</p>
+        <h2>${isDokumanlarModu ? '&#128206; Dokümanlar' : '&#128196; Belgeler'}</h2>
+        <p>${isDokumanlarModu ? 'Dokümanlarını (fatura, vergi borcu yoktur, fotoğraf, teklifler vb.) görüntülemek veya yüklemek istediğiniz projeyi seçin.' : 'Belge oluşturmak istediğiniz projeyi seçin.'}</p>
       </div>
       <div id="belgelerProjeList">
         <div style="text-align:center;padding:40px;color:var(--gray-400)">Yükleniyor...</div>
@@ -4140,9 +4441,9 @@ async function renderBelgelerPage() {
       if (projeler.length === 0) {
         listEl.innerHTML = `
           <div class="dtm-empty">
-            <div class="dtm-empty-icon">&#128196;</div>
+            <div class="dtm-empty-icon">${isDokumanlarModu ? '&#128206;' : '&#128196;'}</div>
             <div class="dtm-empty-title">Henüz proje yok</div>
-            <div class="dtm-empty-desc">Belge oluşturmak için önce bir proje oluşturun.</div>
+            <div class="dtm-empty-desc">${isDokumanlarModu ? 'Doküman yüklemek için önce bir proje oluşturun.' : 'Belge oluşturmak için önce bir proje oluşturun.'}</div>
             <div class="dtm-empty-action">
               <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { yeniProjeBaslat() })}>Yeni Proje</button>
             </div>
@@ -4162,7 +4463,7 @@ async function renderBelgelerPage() {
             </div>
           </div>
           <div class="ky-proje-actions">
-            <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { belgelerProjeAc(String(p.id ?? '')) })}>Belge Oluştur</button>
+            <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { belgelerProjeAc(String(p.id ?? '')) })}>${isDokumanlarModu ? '📎 Dokümanları Aç' : 'Belge Oluştur'}</button>
           </div>
         </div>`;
       };
@@ -4226,7 +4527,8 @@ async function renderBelgelerPage() {
     { id: 'teknik-sartname', ad: 'Teknik Şartname' },
     ...(isMalVeyaHizmet ? [] : [{ id: 'sozlesme', ad: 'Sözleşme' }]),
     { id: sonTutanakId, ad: sonTutanakAd },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' },
+    { id: 'dokumanlar', ad: '📎 Dokümanlar' }
   ];
 
   if (currentBelge === 'bitti-tutanagi' && isMalVeyaHizmet) currentBelge = 'muayene-kabul';
@@ -4238,14 +4540,16 @@ async function renderBelgelerPage() {
   ).join('');
 
   let belgeHTML = '';
-  switch (currentBelge) {
-    case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
-    case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
-    case 'teknik-sartname': belgeHTML = renderTeknikSartname(proje, referans); break;
-    case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
-    case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
-    case 'muayene-kabul': belgeHTML = renderMuayeneKabulTutanagi(proje, referans); break;
-    case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
+  if (currentBelge !== 'dokumanlar') {
+    switch (currentBelge) {
+      case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
+      case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
+      case 'teknik-sartname': belgeHTML = renderTeknikSartname(proje, referans); break;
+      case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
+      case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
+      case 'muayene-kabul': belgeHTML = renderMuayeneKabulTutanagi(proje, referans); break;
+      case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
+    }
   }
 
   main.innerHTML = `
@@ -4256,45 +4560,63 @@ async function renderBelgelerPage() {
         &#8592; Proje Listesi
       </button>
       <div>
-        <h2>&#128196; Belgeler</h2>
+        <h2>${currentBelge === 'dokumanlar' ? '&#128206; Dokümanlar' : '&#128196; Belgeler'}</h2>
         <p style="display:flex;align-items:center;gap:8px">${escHtml(proje.isAdi || '')} ${getStatusBadge(currentProjeStatus)}</p>
       </div>
     </div>
     <div class="belge-tabs">${tabs}</div>
-    <div class="action-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      ${currentBelge === 'teknik-sartname' ? `
-        <button ${dtmEventAttr('click', function(event) { acTeknikSartnameDuzenleModal() })}
-          style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
-          ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
-          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Şartname Metnini Düzenle
+    ${currentBelge === 'dokumanlar' ? `
+      <div class="card" style="margin-top:8px">
+        <div class="card-header">
+          <div>
+            <h3>📎 Projeye Ait Dokümanlar ve Evraklar</h3>
+            <span style="font-size:11px;color:var(--gray-400)">Fatura, vergi borcu yoktur, iş/yapım fotoğrafları, olur & teklif mektupları ve diğer ek evrakları kategorilere göre yükleyip görüntüleyebilirsiniz.</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="projeDosyaListesi">Yükleniyor...</div>
+        </div>
+      </div>
+    ` : `
+      <div class="action-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        ${currentBelge === 'teknik-sartname' ? `
+          <button ${dtmEventAttr('click', function(event) { acTeknikSartnameDuzenleModal() })}
+            style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
+            ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
+            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Şartname Metnini Düzenle
+          </button>
+        ` : ''}
+        ${currentBelge === 'sozlesme' ? `
+          <button ${dtmEventAttr('click', function(event) { acSozlesmeMaddeleriDuzenleModal() })}
+            style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
+            ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
+            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Sözleşme Maddelerini Düzenle
+          </button>
+        ` : ''}
+        <button ${dtmEventAttr('click', function(event) { yazdirBelge() })}
+          style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
+          ${dtmEventAttr('mouseover', function(event) { this.style.background='#2563eb' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#3b82f6' })}>
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+          Yazdır
         </button>
-      ` : ''}
-      ${currentBelge === 'sozlesme' ? `
-        <button ${dtmEventAttr('click', function(event) { acSozlesmeMaddeleriDuzenleModal() })}
-          style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
-          ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
-          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Sözleşme Maddelerini Düzenle
+        <button ${dtmEventAttr('click', function(event) { acBelgeIndirModal() })}
+          style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,0.35)"
+          ${dtmEventAttr('mouseover', function(event) { this.style.background='#059669' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#10b981' })}>
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          İndir
         </button>
-      ` : ''}
-      <button ${dtmEventAttr('click', function(event) { yazdirBelge() })}
-        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
-        ${dtmEventAttr('mouseover', function(event) { this.style.background='#2563eb' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#3b82f6' })}>
-        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
-        Yazdır
-      </button>
-      <button ${dtmEventAttr('click', function(event) { acBelgeIndirModal() })}
-        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,0.35)"
-        ${dtmEventAttr('mouseover', function(event) { this.style.background='#059669' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#10b981' })}>
-        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        İndir
-      </button>
-      <button ${dtmEventAttr('click', function(event) { pdfIndirBelge() })} style="display:none">PDF İndir</button>
-    </div>
-    <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
+        <button ${dtmEventAttr('click', function(event) { pdfIndirBelge() })} style="display:none">PDF İndir</button>
+      </div>
+      <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
+    `}
   `;
-  if (currentBelge === 'teklif-tutanagi') requestAnimationFrame(() => hizalaGorevliIsmi(document));
+  if (currentBelge === 'dokumanlar') {
+    projeDosyaListesiYukle();
+  } else if (currentBelge === 'teklif-tutanagi') {
+    requestAnimationFrame(() => hizalaGorevliIsmi(document));
+  }
 }
 
 async function belgelerProjeAc(projeId) {
@@ -4304,8 +4626,10 @@ async function belgelerProjeAc(projeId) {
     currentCloudProjeId = projeId;
     currentProjeStatus = doc.status || 'taslak';
     currentProjeKazananBasitUsul = doc.kazananBasitUsul === true;
+    const gonderildi = doc.status === 'gonderildi' || doc.status === 'onaylandi';
+    currentProjeKilitli = doc.locked === true || gonderildi;
     currentBelgelerProjeId = projeId;
-    currentBelge = 'yaklasik-maliyet';
+    currentBelge = currentPage === 'dokumanlar' ? 'dokumanlar' : 'yaklasik-maliyet';
     renderPage();
   } catch(e) {
     showToast('Proje yüklenemedi: ' + e.message, 'error');
@@ -5283,10 +5607,18 @@ async function cloudKaydet() {
       await updateProjeInCloud(currentCloudProjeId, savedData);
       // Geri gönderme notu ve durum, yeniden gönderilene kadar korunur.
       lastSavedProjeSnapshot = savedSnapshot;
-      showToast('Proje başarıyla kaydedildi!');
     } else {
       currentCloudProjeId = await saveProjeToCloud(savedData);
       lastSavedProjeSnapshot = savedSnapshot;
+    }
+    let yuklenenEvrak = 0;
+    if (typeof window !== 'undefined' && Array.isArray(window._bekleyenProjeDosyalari) && window._bekleyenProjeDosyalari.length > 0) {
+      showToast('⏳ Proje kaydedildi, bekleyen dokümanlar buluta yükleniyor...', 'info', 3000);
+      yuklenenEvrak = await bekleyenProjeDosyalariniBulutaYukle(currentCloudProjeId);
+    }
+    if (yuklenenEvrak > 0) {
+      showToast(`Proje ve ${yuklenenEvrak} adet doküman başarıyla kaydedildi!`, 'success', 4000);
+    } else {
       showToast('Proje başarıyla kaydedildi!');
     }
     renderPage();
@@ -5299,6 +5631,7 @@ async function dashboardProjeAc(projeId) {
   try {
     const doc = await getProjeFromCloud(projeId);
     proje = Object.assign(getDefaultProje(), doc.data);
+    if (typeof window !== 'undefined') window._bekleyenProjeDosyalari = [];
     currentCloudProjeId = projeId;
     currentProjeStatus = doc.status || 'taslak';
     currentProjeKazananBasitUsul = doc.kazananBasitUsul === true;
@@ -5320,6 +5653,7 @@ async function cloudProjeAc(projeId) {
   try {
     const doc = await getProjeFromCloud(projeId);
     proje = Object.assign(getDefaultProje(), doc.data);
+    if (typeof window !== 'undefined') window._bekleyenProjeDosyalari = [];
     currentCloudProjeId = projeId;
     currentProjeBaskaKullanici = ['admin','superadmin'].includes(currentDTMUser?.role) && doc.userId !== currentDTMUser.uid;
     currentProjeStatus = doc.status || 'taslak';
@@ -6652,7 +6986,8 @@ function renderGerceklestirmeciBelgelerView(main) {
     { id: 'teknik-sartname', ad: 'Teknik Şartname' },
     ...(isMalVeyaHizmet ? [] : [{ id: 'sozlesme', ad: 'Sözleşme' }]),
     { id: sonTutanakId, ad: sonTutanakAd },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' },
+    { id: 'dokumanlar', ad: '📎 Dokümanlar' }
   ];
 
   if (currentGerceklestirmeciBelge === 'bitti-tutanagi' && isMalVeyaHizmet) currentGerceklestirmeciBelge = 'muayene-kabul';
@@ -6665,15 +7000,17 @@ function renderGerceklestirmeciBelgelerView(main) {
   ).join('');
 
   let belgeHTML = '';
-  switch (currentGerceklestirmeciBelge) {
-    case 'dt-onay-belgesi': belgeHTML = renderDogrudanTeminOnayBelgesi(proje); break;
-    case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
-    case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
-    case 'teknik-sartname': belgeHTML = renderTeknikSartname(proje, referans); break;
-    case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
-    case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
-    case 'muayene-kabul': belgeHTML = renderMuayeneKabulTutanagi(proje, referans); break;
-    case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
+  if (currentGerceklestirmeciBelge !== 'dokumanlar') {
+    switch (currentGerceklestirmeciBelge) {
+      case 'dt-onay-belgesi': belgeHTML = renderDogrudanTeminOnayBelgesi(proje); break;
+      case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
+      case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
+      case 'teknik-sartname': belgeHTML = renderTeknikSartname(proje, referans); break;
+      case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
+      case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
+      case 'muayene-kabul': belgeHTML = renderMuayeneKabulTutanagi(proje, referans); break;
+      case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
+    }
   }
 
   main.innerHTML = `
@@ -6684,37 +7021,55 @@ function renderGerceklestirmeciBelgelerView(main) {
         ← Proje Listesi
       </button>
       <div>
-        <h2>📄 Belgeler${currentGerceklestirmeciReadOnly ? ' <span style="font-size:12px;font-weight:600;color:#6b7280;background:#f3f4f6;padding:3px 8px;border-radius:6px;vertical-align:middle">Salt Okunur</span>' : ''}</h2>
+        <h2>${currentGerceklestirmeciBelge === 'dokumanlar' ? '📎 Dokümanlar' : '📄 Belgeler'}${currentGerceklestirmeciReadOnly ? ' <span style="font-size:12px;font-weight:600;color:#6b7280;background:#f3f4f6;padding:3px 8px;border-radius:6px;vertical-align:middle">Salt Okunur</span>' : ''}</h2>
         <p style="display:flex;align-items:center;gap:8px">${escHtml(proje.isAdi || '')} ${getStatusBadge(currentProjeStatus || 'onaylandi')}</p>
       </div>
     </div>
     <div class="belge-tabs">${tabs}</div>
-    <div class="action-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      ${currentGerceklestirmeciBelge === 'teknik-sartname' && !currentGerceklestirmeciReadOnly ? `
-        <button ${dtmEventAttr('click', function(event) { acTeknikSartnameDuzenleModal() })}
-          style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
-          ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
-          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Şartname Metnini Düzenle
+    ${currentGerceklestirmeciBelge === 'dokumanlar' ? `
+      <div class="card" style="margin-top:8px">
+        <div class="card-header">
+          <div>
+            <h3>📎 Projeye Ait Dokümanlar ve Evraklar</h3>
+            <span style="font-size:11px;color:var(--gray-400)">Fatura, vergi borcu yoktur, iş/yapım fotoğrafları, olur & teklif mektupları ve diğer ek evrakları görüntüleyebilir veya yükleyebilirsiniz.</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="projeDosyaListesi">Yükleniyor...</div>
+        </div>
+      </div>
+    ` : `
+      <div class="action-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        ${currentGerceklestirmeciBelge === 'teknik-sartname' && !currentGerceklestirmeciReadOnly ? `
+          <button ${dtmEventAttr('click', function(event) { acTeknikSartnameDuzenleModal() })}
+            style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
+            ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
+            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Şartname Metnini Düzenle
+          </button>
+        ` : ''}
+        <button ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgeYazdir() })}
+          style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
+          ${dtmEventAttr('mouseover', function(event) { this.style.background='#2563eb' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#3b82f6' })}>
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+          Yazdır
         </button>
-      ` : ''}
-      <button ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgeYazdir() })}
-        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
-        ${dtmEventAttr('mouseover', function(event) { this.style.background='#2563eb' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#3b82f6' })}>
-        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
-        Yazdır
-      </button>
-      <button ${dtmEventAttr('click', function(event) { acGerceklestirmeciIndirModal() })}
-        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,0.35)"
-        ${dtmEventAttr('mouseover', function(event) { this.style.background='#059669' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#10b981' })}>
-        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        İndir
-      </button>
-      <button ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgePdfIndir() })} style="display:none">PDF İndir</button>
-    </div>
-    <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
+        <button ${dtmEventAttr('click', function(event) { acGerceklestirmeciIndirModal() })}
+          style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,0.35)"
+          ${dtmEventAttr('mouseover', function(event) { this.style.background='#059669' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#10b981' })}>
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          İndir
+        </button>
+        <button ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgePdfIndir() })} style="display:none">PDF İndir</button>
+      </div>
+      <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
+    `}
   `;
-  if (currentGerceklestirmeciBelge === 'teklif-tutanagi') requestAnimationFrame(() => hizalaGorevliIsmi(document));
+  if (currentGerceklestirmeciBelge === 'dokumanlar') {
+    projeDosyaListesiYukle();
+  } else if (currentGerceklestirmeciBelge === 'teklif-tutanagi') {
+    requestAnimationFrame(() => hizalaGorevliIsmi(document));
+  }
 }
 
 async function gcOnayBilgiKaydet() {
@@ -7006,6 +7361,8 @@ function renderProjeOzetPage() {
         </table>`);
       })() : ''}
 
+      ${kart('📎 Projeye Ait Dokümanlar ve Evraklar', `<div style="padding:16px" id="projeDosyaListesi">Yükleniyor...</div>`)}
+
       ${currentDTMUser?.role !== 'gerceklestirmeci' && !currentOnayliBelgelerProjeId && !['onaylandi','arsivlendi'].includes(currentProjeStatus) ? `
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;padding-bottom:32px">
         <button ${dtmEventAttr('click', function(event) { geriGonderClick(String(currentCloudProjeId ?? ''), String(p.isAdi ?? '')) })}
@@ -7018,6 +7375,7 @@ function renderProjeOzetPage() {
         </button>
       </div>` : '<div style="padding-bottom:32px"></div>'}
     </div>`;
+  projeDosyaListesiYukle();
 }
 
 // ===================== ONAY BELGESİ SAYFASI (GERÇEKLEŞTİRMECİ) =====================
