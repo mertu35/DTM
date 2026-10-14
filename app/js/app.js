@@ -866,18 +866,18 @@ async function renderAnaSayfaPage() {
               <div id="topluListeOlur" style="display:none;flex-direction:column;gap:5px;margin-top:8px"></div>
             </div>
 
-            <!-- 2. Bölüm: Yaklaşık Maliyet (Y.M.) Teklifleri -->
+            <!-- 2. Bölüm: Yaklaşık Maliyet — "PİYASA FİYAT ARAŞTIRMASI" -->
             <div id="topluDropzoneYm" style="padding:12px 14px;background:#fefce8;border:1.5px dashed #facc15;border-radius:10px;transition:all 0.2s">
               <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
                 <div>
                   <div style="font-size:13px;font-weight:700;color:#854d0e;display:flex;align-items:center;gap:6px">
-                    <span>📊 2. Yaklaşık Maliyet (Y.M.) Teklifleri</span>
+                    <span>📊 2. Yaklaşık Maliyet — "PİYASA FİYAT ARAŞTIRMASI"</span>
                     <span id="topluSayiYm" style="background:#fef08a;color:#854d0e;font-size:11px;padding:1px 7px;border-radius:10px;font-weight:600">0 belge</span>
                   </div>
-                  <div style="font-size:11px;color:#a16207;margin-top:2px">Yaklaşık maliyet hesabı için alınan firma teklifleri (Firma 1, 2, 3...)</div>
+                  <div style="font-size:11px;color:#a16207;margin-top:2px">Başlığında <strong>"PİYASA FİYAT ARAŞTIRMASI"</strong> (Konu: Piyasa Fiyat Araştırması) yazan belgeler</div>
                 </div>
                 <label style="cursor:pointer;padding:6px 12px;background:#ca8a04;color:#fff;border-radius:6px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0">
-                  <span>+ Y.M. Teklifi Seç</span>
+                  <span>+ Piyasa Fiyat (Y.M.) Seç</span>
                   <input type="file" id="topluInputYm" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,image/*" style="display:none"
                     ${dtmEventAttr('change', function(event) { topluDosyalarEkle(this.files, 'ym'); this.value=''; })}>
                 </label>
@@ -885,25 +885,25 @@ async function renderAnaSayfaPage() {
               <div id="topluListeYm" style="display:none;flex-direction:column;gap:5px;margin-top:8px"></div>
             </div>
 
-            <!-- 3. Bölüm: Piyasa Fiyat (D.T.) Teklifleri -->
+            <!-- 3. Bölüm: Resmi Teklif — "TEKLİF MEKTUBUDUR" -->
             <div id="topluDropzoneDt" style="padding:12px 14px;background:#f0fdf4;border:1.5px dashed #86efac;border-radius:10px;transition:all 0.2s">
               <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
                 <div>
                   <div style="font-size:13px;font-weight:700;color:#166534;display:flex;align-items:center;gap:6px">
-                    <span>🏷️ 3. Piyasa Fiyat (D.T.) Teklifleri</span>
+                    <span>🏷️ 3. Resmi Teklif — "TEKLİF MEKTUBUDUR"</span>
                     <span id="topluSayiDt" style="background:#dcfce7;color:#166534;font-size:11px;padding:1px 7px;border-radius:10px;font-weight:600">0 belge</span>
                   </div>
-                  <div style="font-size:11px;color:#15803d;margin-top:2px">Piyasa fiyat araştırması için alınan firma teklifleri (Firma 1, 2, 3...)</div>
+                  <div style="font-size:11px;color:#15803d;margin-top:2px">Başlığında <strong>"TEKLİF MEKTUBUDUR"</strong> (Konu: Teklif) yazan nihai resmi teklifler</div>
                 </div>
                 <label style="cursor:pointer;padding:6px 12px;background:#16a34a;color:#fff;border-radius:6px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0">
-                  <span>+ D.T. Teklifi Seç</span>
+                  <span>+ Resmi Teklif Seç</span>
                   <input type="file" id="topluInputDt" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,image/*" style="display:none"
                     ${dtmEventAttr('change', function(event) { topluDosyalarEkle(this.files, 'dt'); this.value=''; })}>
                 </label>
               </div>
               <div id="topluListeDt" style="display:none;flex-direction:column;gap:5px;margin-top:8px"></div>
-              <div style="font-size:11px;color:#166534;opacity:0.85;margin-top:6px">
-                💡 <em>Yalnızca tek bir teklif bölümüne (2 veya 3) dosya yüklerseniz diğer tabloya da otomatik aktarılır.</em>
+              <div style="font-size:11px;color:#166534;opacity:0.9;margin-top:6px">
+                💡 <em>WhatsApp fotoğrafları karışsa bile yapay zeka kağıttaki <strong>"PİYASA FİYAT ARAŞTIRMASI"</strong> ve <strong>"TEKLİF MEKTUBUDUR"</strong> başlığını okuyup otomatik doğru tabloya ayırır.</em>
               </div>
             </div>
           </div>
@@ -2614,8 +2614,20 @@ function dtmTemizleGeminiHamYanit(parsed, kategori = '') {
     }
   }
 
-  if (kategori === 'ym' || kategori === 'dt') {
+  const rawGrup = String(parsed.teklifGrubu || parsed.teklif?.teklifGrubu || '').toLowerCase().trim();
+  const aiGrup = (rawGrup === 'ym' || rawGrup.includes('piyasa') || rawGrup.includes('yaklasik') || rawGrup.includes('yaklaşık'))
+    ? 'ym'
+    : (rawGrup === 'dt' || rawGrup.includes('teklif mektubu') || rawGrup.includes('resmi'))
+      ? 'dt'
+      : '';
+
+  if (aiGrup === 'ym' || aiGrup === 'dt') {
+    parsed.teklifGrubu = aiGrup;
+    if (parsed.teklif && typeof parsed.teklif === 'object') delete parsed.teklif.teklifGrubu;
+    if (parsed.teklif) parsed.belgeTuru = 'teklif';
+  } else if (kategori === 'ym' || kategori === 'dt') {
     parsed.teklifGrubu = kategori;
+    if (parsed.teklif && typeof parsed.teklif === 'object') delete parsed.teklif.teklifGrubu;
     if (parsed.teklif) parsed.belgeTuru = 'teklif';
   } else if (kategori === 'olur' && parsed.olur) {
     parsed.belgeTuru = 'olur';
@@ -2753,7 +2765,7 @@ async function dtmAnalyzeSingleDocumentMultiAI(file, apiKey, kategori = '') {
   const kategoriIpucu = kategori === 'olur'
     ? 'BU BELGE BİR OLUR / ONAY BELGESİDİR (Yaklaşık Maliyet Görevlendirme Oluru veya Doğrudan Temin Onay Belgesi). "belgeTuru": "olur" olarak doldur.'
     : (kategori === 'ym' || kategori === 'dt')
-      ? 'BU BELGE BİR FİRMA FİYAT TEKLİF MEKTUBUDUR. "belgeTuru": "teklif" olarak doldur ve tablodaki kalemleri/fiyatları KDV HARİÇ olarak çıkar.'
+      ? 'BU BELGE BİR FİRMA FİYAT TEKLİF BELGESİDİR ("PİYASA FİYAT ARAŞTIRMASI" veya "TEKLİF MEKTUBUDUR"). "belgeTuru": "teklif" olarak doldur ve tablodaki kalemleri/fiyatları KDV HARİÇ olarak çıkar.'
       : 'Belgenin türünü ("olur", "teklif" veya "diger") belirle ve ilgili alanları çıkar.';
 
   const prompt = `Sen Türkiye Cumhuriyeti kamu ihale ve doğrudan temin mevzuatı (4734 sayılı KİK 22/d) uzmanısın.
@@ -2762,6 +2774,7 @@ Yanıtını SADECE geçerli bir JSON formatında döndür:
 
 {
   "belgeTuru": "olur",
+  "teklifGrubu": "ym",
   "olur": {
     "isAdi": "İşin tam ve doğru adı (Sadece işin konusunu al; tırnak işaretlerini temizle; 'için', 'kapsamında', 'hususunu', 'arz ederim' gibi resmi yazışma cümlelerini DAHİL ETME)",
     "isDT": true,
@@ -2796,8 +2809,11 @@ Yanıtını SADECE geçerli bir JSON formatında döndür:
 
 Önemli kurallar:
 - Yanıtın SADECE saf JSON olsun, markdown kod bloğu veya ek açıklama ekleme.
-- Eğer belge bir Olur Belgesi ise belgeTuru "olur" yap ve "olur" objesini doldur, "teklif" alanını null bırak.
-- Eğer belge bir Teklif Mektubu ise belgeTuru "teklif" yap ve "teklif" objesini doldur, "olur" alanını null bırak.
+- Eğer belge bir Olur Belgesi ise "belgeTuru": "olur" yap, "olur" objesini doldur, "teklif" ve "teklifGrubu" alanlarını null bırak.
+- Eğer belge bir Firma Teklifi ise "belgeTuru": "teklif" yap, "teklif" objesini doldur, "olur" alanını null bırak.
+- ÇOK ÖNEMLİ ("teklifGrubu" ayrımı):
+  * Eğer belgenin ortasındaki başlıkta "PİYASA FİYAT ARAŞTIRMASI" veya "Konu: Piyasa Fiyat Araştırması" veya metinde "Piyasa araştırmasına esas olmak üzere" yazıyorsa: "teklifGrubu": "ym" yap (Yaklaşık Maliyet teklifidir).
+  * Eğer belgenin ortasındaki başlıkta "TEKLİF MEKTUBUDUR" veya "Konu: Teklif" veya metinde "Teklif fiyatına esas olmak üzere" yazıyorsa: "teklifGrubu": "dt" yap (Resmi Teklif mektubudur).
 - TÜM FİYATLAR (birimFiyat, toplamTutar, toplamTeklifTutari) KDV HARİÇ net tutar olmalıdır.
 - Rakamları kesinlikle sayı (float/number) olarak döndür.
 - Okunamayan veya bulunmayan alanları null bırak.`;
@@ -3433,8 +3449,8 @@ async function topluAnaliziBaslat() {
   const islenecekKuyruk = [];
   const grupEtiket = {
     olur: 'Olur Belgesi',
-    ym: 'Y.M. Teklifi',
-    dt: 'Piyasa Fiyat (D.T.) Teklifi'
+    ym: 'Piyasa Fiyat Araştırması (Y.M.)',
+    dt: 'Resmi Teklif Mektubu (D.T.)'
   };
   ['olur', 'ym', 'dt'].forEach(g => {
     (topluGrupluDosyalar[g] || []).forEach((file, idx) => {
@@ -3521,7 +3537,7 @@ function renderTopluAnalizOnayModal(ozet) {
 
   const ymHtml = ozet.ayriYmDt && Array.isArray(ozet.ymFirmalarData) ? `
     <div style="margin-bottom:14px">
-      <div style="font-size:12px;font-weight:600;color:#854d0e;margin-bottom:6px">📊 Yaklaşık Maliyet (Y.M.) Teklifleri (${ozet.ymFirmalarData.length})</div>
+      <div style="font-size:12px;font-weight:600;color:#854d0e;margin-bottom:6px">📊 Yaklaşık Maliyet — Piyasa Fiyat Araştırması (${ozet.ymFirmalarData.length})</div>
       ${ozet.ymFirmalarData.map(f => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:5px;border-radius:8px;background:#fefce8;border:1px solid #fef08a">
           <div style="font-weight:600;font-size:12.5px;color:#854d0e;display:flex;align-items:center;gap:6px">
@@ -3599,7 +3615,7 @@ function renderTopluAnalizOnayModal(ozet) {
       ${ymHtml}
 
       <div style="margin-bottom:14px">
-        <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">🏷️ ${ozet.ayriYmDt ? 'Piyasa Fiyat (D.T.) Teklifleri' : 'Firma Teklifleri'} (${ozet.firmalarTeklifData.length})</div>
+        <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">🏷️ ${ozet.ayriYmDt ? 'Resmi Teklif — Teklif Mektubu' : 'Firma Teklifleri'} (${ozet.firmalarTeklifData.length})</div>
         ${firmalarHtml}
       </div>
 
