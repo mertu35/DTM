@@ -17,6 +17,7 @@ let currentGerceklestirmeciReadOnly = false;
 let currentOnayliBelgelerProjeId = null;
 let lastSavedProjeSnapshot = null;
 let topluSecilenDosyalar = [];
+let topluGrupluDosyalar = { olur: [], ym: [], dt: [] };
 
 function hasUnsavedChanges() {
   if (currentPage !== 'veri-giris' || !proje || currentProjeKilitli) return false;
@@ -839,33 +840,85 @@ async function renderAnaSayfaPage() {
           </div>
         </div>
 
-        <!-- Adım 2c: Tüm Belgeleri Yükle -->
+        <!-- Adım 2c: Tüm Belgeleri Yükle (3 Ana Bölümlü) -->
         <div id="yeniProjeAdim2Toplu" style="display:none">
-          <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px">
-            İşe ait <strong>Olur Belgesi</strong> ve <strong>Firma Teklif Mektuplarını</strong> (PDF veya telefonla çekilmiş Fotoğraf) sürükleyin veya seçin.
+          <p style="font-size:12.5px;color:var(--gray-600);margin-bottom:12px;line-height:1.4">
+            Belgeleri ilgili bölümlere sürükleyin veya seçin. Her bölüme <strong>birden fazla fotoğraf (JPG/PNG) veya PDF</strong> ekleyebilirsiniz.
           </p>
 
-          <!-- Dropzone -->
-          <div id="topluDropzone" style="border:2px dashed #3b82f6;border-radius:10px;padding:24px 16px;text-align:center;background:#f8fafc;cursor:pointer;transition:all 0.2s"
-            ${dtmEventAttr('click', function(event) { document.getElementById('topluBelgelerInput').click(); })}>
-            <input type="file" id="topluBelgelerInput" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,image/*" style="display:none"
-              ${dtmEventAttr('change', function(event) { topluDosyalarEkle(this.files); })}>
-            <div style="font-size:32px;margin-bottom:6px">📁</div>
-            <div style="font-size:14px;font-weight:600;color:#1e40af">Belgeleri buraya sürükleyin veya tıklayarak seçin</div>
-            <div style="font-size:12px;color:var(--gray-500);margin-top:4px">PDF, JPG, PNG veya WEBP (Birden fazla dosya seçebilirsiniz)</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <!-- 1. Bölüm: Olur Belgeleri -->
+            <div id="topluDropzoneOlur" style="padding:12px 14px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:10px;transition:all 0.2s">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:#1e40af;display:flex;align-items:center;gap:6px">
+                    <span>📄 1. Olur Belgeleri</span>
+                    <span id="topluSayiOlur" style="background:#dbeafe;color:#1e40af;font-size:11px;padding:1px 7px;border-radius:10px;font-weight:600">0 belge</span>
+                  </div>
+                  <div style="font-size:11px;color:#3b82f6;margin-top:2px">Y.M. Görevlendirme Oluru ve D.T. Onay Belgesi</div>
+                </div>
+                <label style="cursor:pointer;padding:6px 12px;background:#2563eb;color:#fff;border-radius:6px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0">
+                  <span>+ Belge Seç</span>
+                  <input type="file" id="topluInputOlur" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,image/*" style="display:none"
+                    ${dtmEventAttr('change', function(event) { topluDosyalarEkle(this.files, 'olur'); this.value=''; })}>
+                </label>
+              </div>
+              <div id="topluListeOlur" style="display:none;flex-direction:column;gap:5px;margin-top:8px"></div>
+            </div>
+
+            <!-- 2. Bölüm: Yaklaşık Maliyet (Y.M.) Teklifleri -->
+            <div id="topluDropzoneYm" style="padding:12px 14px;background:#fefce8;border:1.5px dashed #facc15;border-radius:10px;transition:all 0.2s">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:#854d0e;display:flex;align-items:center;gap:6px">
+                    <span>📊 2. Yaklaşık Maliyet (Y.M.) Teklifleri</span>
+                    <span id="topluSayiYm" style="background:#fef08a;color:#854d0e;font-size:11px;padding:1px 7px;border-radius:10px;font-weight:600">0 belge</span>
+                  </div>
+                  <div style="font-size:11px;color:#a16207;margin-top:2px">Yaklaşık maliyet hesabı için alınan firma teklifleri (Firma 1, 2, 3...)</div>
+                </div>
+                <label style="cursor:pointer;padding:6px 12px;background:#ca8a04;color:#fff;border-radius:6px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0">
+                  <span>+ Y.M. Teklifi Seç</span>
+                  <input type="file" id="topluInputYm" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,image/*" style="display:none"
+                    ${dtmEventAttr('change', function(event) { topluDosyalarEkle(this.files, 'ym'); this.value=''; })}>
+                </label>
+              </div>
+              <div id="topluListeYm" style="display:none;flex-direction:column;gap:5px;margin-top:8px"></div>
+            </div>
+
+            <!-- 3. Bölüm: Piyasa Fiyat (D.T.) Teklifleri -->
+            <div id="topluDropzoneDt" style="padding:12px 14px;background:#f0fdf4;border:1.5px dashed #86efac;border-radius:10px;transition:all 0.2s">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:#166534;display:flex;align-items:center;gap:6px">
+                    <span>🏷️ 3. Piyasa Fiyat (D.T.) Teklifleri</span>
+                    <span id="topluSayiDt" style="background:#dcfce7;color:#166534;font-size:11px;padding:1px 7px;border-radius:10px;font-weight:600">0 belge</span>
+                  </div>
+                  <div style="font-size:11px;color:#15803d;margin-top:2px">Piyasa fiyat araştırması için alınan firma teklifleri (Firma 1, 2, 3...)</div>
+                </div>
+                <label style="cursor:pointer;padding:6px 12px;background:#16a34a;color:#fff;border-radius:6px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0">
+                  <span>+ D.T. Teklifi Seç</span>
+                  <input type="file" id="topluInputDt" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,image/*" style="display:none"
+                    ${dtmEventAttr('change', function(event) { topluDosyalarEkle(this.files, 'dt'); this.value=''; })}>
+                </label>
+              </div>
+              <div id="topluListeDt" style="display:none;flex-direction:column;gap:5px;margin-top:8px"></div>
+              <div style="font-size:11px;color:#166534;opacity:0.85;margin-top:6px">
+                💡 <em>Yalnızca tek bir teklif bölümüne (2 veya 3) dosya yüklerseniz diğer tabloya da otomatik aktarılır.</em>
+              </div>
+            </div>
           </div>
 
-          <!-- Seçilen dosyalar listesi -->
-          <div id="topluDosyalarWrap" style="margin-top:14px;max-height:160px;overflow-y:auto;display:none">
-            <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
-              <span>Seçilen Belgeler (<span id="topluDosyaSayisi">0</span>)</span>
-              <button type="button" style="background:none;border:none;color:#ef4444;font-size:11px;cursor:pointer" ${dtmEventAttr('click', function(event) { topluDosyalariTemizle(); })}>Tümünü Kaldır</button>
+          <!-- Seçilen dosyalar toplam özeti -->
+          <div id="topluDosyalarWrap" style="margin-top:10px;display:none">
+            <div style="font-size:12px;font-weight:600;color:var(--gray-600);display:flex;justify-content:space-between;align-items:center;padding:4px 2px">
+              <span>Toplam Seçilen Belge: <strong id="topluDosyaSayisi" style="color:var(--primary)">0</strong></span>
+              <button type="button" style="background:none;border:none;color:#ef4444;font-size:11.5px;font-weight:600;cursor:pointer" ${dtmEventAttr('click', function(event) { topluDosyalariTemizle(); })}>Tümünü Temizle</button>
             </div>
-            <div id="topluDosyalarListesi" style="display:flex;flex-direction:column;gap:6px"></div>
+            <div id="topluDosyalarListesi" style="display:none"></div>
           </div>
 
           <!-- İlerleme / Durum -->
-          <div id="topluIlerlemeDurumu" style="display:none;margin-top:14px;padding:12px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">
+          <div id="topluIlerlemeDurumu" style="display:none;margin-top:12px;padding:12px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">
             <div style="display:flex;align-items:center;gap:10px">
               <span id="topluSpinner" style="font-size:18px">⏳</span>
               <div style="flex:1">
@@ -878,7 +931,7 @@ async function renderAnaSayfaPage() {
             </div>
           </div>
 
-          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
             <button id="btnTopluGeri" ${dtmEventAttr('click', function(event) { document.getElementById('yeniProjeAdim2Toplu').style.display='none';document.getElementById('yeniProjeAdim1').style.display='flex'; })} style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">← Geri</button>
             <button id="btnTopluAnalizBaslat" class="btn btn-primary" style="padding:8px 22px;display:flex;align-items:center;gap:6px"
               ${dtmEventAttr('click', function(event) { topluAnaliziBaslat(); })}>
@@ -956,14 +1009,12 @@ function yeniProjeModalSifirla(modal) {
 
   // Toplu dosya seçimlerini temizle
   topluSecilenDosyalar = [];
-  const topluInput = modal.querySelector('#topluBelgelerInput');
-  if (topluInput) topluInput.value = '';
-  const topluWrap = modal.querySelector('#topluDosyalarWrap');
-  if (topluWrap) topluWrap.style.display = 'none';
-  const topluList = modal.querySelector('#topluDosyalarListesi');
-  if (topluList) topluList.innerHTML = '';
-  const topluSayi = modal.querySelector('#topluDosyaSayisi');
-  if (topluSayi) topluSayi.textContent = '0';
+  topluGrupluDosyalar = { olur: [], ym: [], dt: [] };
+  ['#topluInputOlur', '#topluInputYm', '#topluInputDt', '#topluBelgelerInput'].forEach(sel => {
+    const el = modal.querySelector(sel);
+    if (el) el.value = '';
+  });
+  topluDosyalariGuncelleUI();
   const ilerleme = modal.querySelector('#topluIlerlemeDurumu');
   if (ilerleme) ilerleme.style.display = 'none';
   const btnBaslat = modal.querySelector('#btnTopluAnalizBaslat');
@@ -1949,7 +2000,7 @@ function dtmNormalizeTurkish(str) {
 let dtmReferansProva = false;
 function dtmAiYanitiDogrula(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Analiz yanıtı geçerli bir nesne değil.');
-  const text = new Set(['ad','firmaAdi','isAdi','isTuru','onayNo','onayTarihi','gorevliAd','gorevliUnvan','onaylayanAd','onaylayanUnvan','adres','tel','faks','eposta','vkn','vergiDairesi','tur','birim','belgeTuru']);
+  const text = new Set(['ad','firmaAdi','isAdi','isTuru','onayNo','onayTarihi','gorevliAd','gorevliUnvan','onaylayanAd','onaylayanUnvan','adres','tel','faks','eposta','vkn','vergiDairesi','tur','birim','belgeTuru','teklifGrubu']);
   const numeric = new Set(['miktar','birimFiyat','toplamTutar','toplamTeklifTutari']);
   function inspect(obj) {
     for (const [key,v] of Object.entries(obj)) {
@@ -2108,6 +2159,9 @@ function dtmTopluBelgeleriDerle(parsedResults) {
   let dtGorevli = null;
   let onaylayanAmir = null;
   const teklifListesi = [];
+  const ymTeklifListesi = [];
+  const dtTeklifListesi = [];
+  const genelTeklifListesi = [];
   const yeniEklenenFirmalar = [];
   let okunanOlurSayisi = 0;
   let okunanTeklifSayisi = 0;
@@ -2150,13 +2204,19 @@ function dtmTopluBelgeleriDerle(parsedResults) {
       if (firmaSonuc && firmaSonuc.isNew && !yeniEklenenFirmalar.includes(firmaAd)) {
         yeniEklenenFirmalar.push(firmaAd);
       }
-      teklifListesi.push({
+      const grup = item.teklifGrubu || t.teklifGrubu || '';
+      const teklifKaydi = {
         firmaAd,
         vkn: t.vkn || '',
         toplamTeklifTutari: Number(t.toplamTeklifTutari) || 0,
         kalemler: Array.isArray(t.kalemler) ? t.kalemler : [],
-        isNew: firmaSonuc ? firmaSonuc.isNew : false
-      });
+        isNew: firmaSonuc ? firmaSonuc.isNew : false,
+        teklifGrubu: grup
+      };
+      teklifListesi.push(teklifKaydi);
+      if (grup === 'ym') ymTeklifListesi.push(teklifKaydi);
+      else if (grup === 'dt') dtTeklifListesi.push(teklifKaydi);
+      else genelTeklifListesi.push(teklifKaydi);
     }
   }
 
@@ -2188,31 +2248,44 @@ function dtmTopluBelgeleriDerle(parsedResults) {
     });
   }
 
-  // Firmaların tekliflerini eşleştir
-  const firmalarTeklifData = teklifListesi.map(t => {
-    const fiyatlar = [];
-    masterKalemler.forEach((mk, ki) => {
-      const matches = (t.kalemler || []).filter(k => k && k.ad && dtmNormalizeTurkish(k.ad) === dtmNormalizeTurkish(mk.ad) && dtmNormalizeTurkish(k.birim || 'Adet') === dtmNormalizeTurkish(mk.birim || 'Adet'));
-      const foundKalem = matches.length === 1 && Number(matches[0].miktar) === Number(mk.miktar) ? matches[0] : null;
-      if (foundKalem && Number(foundKalem.birimFiyat) > 0) {
-        fiyatlar.push(Number(foundKalem.birimFiyat));
-      } else if (masterKalemler.length === 1 && t.kalemler.length === 0 && t.toplamTeklifTutari > 0) {
-        const m = Number(mk.miktar) || 1;
-        fiyatlar.push(Math.round((t.toplamTeklifTutari / m) * 100) / 100);
-      } else {
-        fiyatlar.push(0);
-      }
-    });
+  // Firmaların tekliflerini masterKalemler ile eşleştirme yardımcısı
+  function eslestirTeklifGrubu(liste) {
+    return liste.map(t => {
+      const fiyatlar = [];
+      masterKalemler.forEach((mk) => {
+        const matches = (t.kalemler || []).filter(k => k && k.ad && dtmNormalizeTurkish(k.ad) === dtmNormalizeTurkish(mk.ad) && dtmNormalizeTurkish(k.birim || 'Adet') === dtmNormalizeTurkish(mk.birim || 'Adet'));
+        let foundKalem = matches.length === 1 && Number(matches[0].miktar) === Number(mk.miktar) ? matches[0] : null;
+        if (!foundKalem && masterKalemler.length === 1 && Array.isArray(t.kalemler) && t.kalemler.length === 1 && t.kalemler[0] && Number(t.kalemler[0].miktar || 1) === Number(mk.miktar || 1)) {
+          foundKalem = t.kalemler[0];
+        }
+        if (foundKalem && Number(foundKalem.birimFiyat) > 0) {
+          fiyatlar.push(Number(foundKalem.birimFiyat));
+        } else if (masterKalemler.length === 1 && t.kalemler.length === 0 && t.toplamTeklifTutari > 0) {
+          const m = Number(mk.miktar) || 1;
+          fiyatlar.push(Math.round((t.toplamTeklifTutari / m) * 100) / 100);
+        } else {
+          fiyatlar.push(0);
+        }
+      });
 
-    const hesaplananToplam = masterKalemler.reduce((acc, mk, ki) => acc + (fiyatlar[ki] || 0) * (Number(mk.miktar) || 1), 0);
-    return {
-      ad: t.firmaAd,
-      fiyatlar,
-      toplam: Math.round(hesaplananToplam * 100) / 100,
-      eksik: fiyatlar.some(f => !(f > 0)) || (t.toplamTeklifTutari > 0 && Math.abs(t.toplamTeklifTutari - hesaplananToplam) > 0.02) || t.kalemler.length > masterKalemler.length,
-      isNew: t.isNew
-    };
-  });
+      const hesaplananToplam = masterKalemler.reduce((acc, mk, ki) => acc + (fiyatlar[ki] || 0) * (Number(mk.miktar) || 1), 0);
+      return {
+        ad: t.firmaAd,
+        fiyatlar,
+        toplam: Math.round(hesaplananToplam * 100) / 100,
+        eksik: fiyatlar.some(f => !(f > 0)) || (t.toplamTeklifTutari > 0 && Math.abs(t.toplamTeklifTutari - hesaplananToplam) > 0.02) || t.kalemler.length > masterKalemler.length,
+        isNew: t.isNew
+      };
+    });
+  }
+
+  const ayriYmDt = ymTeklifListesi.length > 0 && dtTeklifListesi.length > 0;
+  const firmalarTeklifData = ayriYmDt
+    ? eslestirTeklifGrubu([...dtTeklifListesi, ...genelTeklifListesi])
+    : eslestirTeklifGrubu(teklifListesi);
+  const ymFirmalarData = ayriYmDt
+    ? eslestirTeklifGrubu([...ymTeklifListesi, ...genelTeklifListesi])
+    : firmalarTeklifData;
 
   // Taslak projeyi oluştur
   const projeTaslak = getDefaultProje();
@@ -2248,17 +2321,23 @@ function dtmTopluBelgeleriDerle(parsedResults) {
   }
   projeTaslak.isKalemleri = projeKalemler;
 
-  // Firmaları yerleştir (en az 3 firma slotu)
-  const hazirFirmalar = firmalarTeklifData.map(f => {
-    const fyt = [...f.fiyatlar];
-    while (fyt.length < projeTaslak.isKalemleri.length) fyt.push(0);
-    return { ad: f.ad, fiyatlar: fyt, analizEksik: f.eksik };
-  });
-  while (hazirFirmalar.length < 3) {
-    hazirFirmalar.push({ ad: '', fiyatlar: new Array(projeTaslak.isKalemleri.length).fill(0) });
+  function firmaSlotlariniHazirla(dataList) {
+    const hazir = dataList.map(f => {
+      const fyt = [...f.fiyatlar];
+      while (fyt.length < projeTaslak.isKalemleri.length) fyt.push(0);
+      return { ad: f.ad, fiyatlar: fyt, analizEksik: f.eksik };
+    });
+    while (hazir.length < 3) {
+      hazir.push({ ad: '', fiyatlar: new Array(projeTaslak.isKalemleri.length).fill(0) });
+    }
+    return hazir;
   }
-  projeTaslak.teklifFirmalar = hazirFirmalar;
-  projeTaslak.ymFirmalar = hazirFirmalar.map(f => ({ ad: f.ad, fiyatlar: [...f.fiyatlar] }));
+
+  // Firmaları yerleştir (en az 3 firma slotu)
+  projeTaslak.teklifFirmalar = firmaSlotlariniHazirla(firmalarTeklifData);
+  projeTaslak.ymFirmalar = ayriYmDt
+    ? firmaSlotlariniHazirla(ymFirmalarData)
+    : projeTaslak.teklifFirmalar.map(f => ({ ad: f.ad, fiyatlar: [...f.fiyatlar] }));
 
   // Kazanan firma ve yaklaşık maliyet hesapla
   const kazananIdx = hesaplaKazananFirma(projeTaslak);
@@ -2269,6 +2348,8 @@ function dtmTopluBelgeleriDerle(parsedResults) {
     proje: projeTaslak,
     masterKalemler,
     firmalarTeklifData,
+    ymFirmalarData,
+    ayriYmDt,
     yeniEklenenFirmalar,
     okunanOlurSayisi,
     okunanTeklifSayisi,
@@ -2389,7 +2470,7 @@ async function dtmFileToBase64(file) {
         i.src = dataUrl;
       });
 
-      const maxDim = 2400;
+      const maxDim = 1800;
       let w = img.width;
       let h = img.height;
       if (w > maxDim || h > maxDim) {
@@ -2407,7 +2488,7 @@ async function dtmFileToBase64(file) {
       canvas.height = h;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, w, h);
-      const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
       const base64 = optimizedDataUrl.split(',')[1];
       return { base64, mimeType: 'image/jpeg' };
     } catch (e) {
@@ -2441,6 +2522,106 @@ function getSafeGeminiModels() {
   const raw = (referans && typeof referans.geminiModel === 'string') ? referans.geminiModel.trim() : '';
   const selectedModel = GEMINI_ALLOWED_MODELS.includes(raw) ? raw : 'gemini-3.8-flash';
   return [selectedModel, ...GEMINI_ALLOWED_MODELS].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+}
+
+function dtmTemizleGeminiHamYanit(parsed, kategori = '') {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return parsed;
+  const textKeys = new Set(['ad','firmaAdi','isAdi','isTuru','onayNo','gorevliAd','gorevliUnvan','onaylayanAd','onaylayanUnvan','adres','tel','faks','eposta','vkn','vergiDairesi','tur','birim','belgeTuru','teklifGrubu']);
+  const boolKeys = new Set(['isDT','isYM','basitUsul']);
+
+  function temizSayi(val) {
+    if (typeof val === 'number') return (Number.isFinite(val) && val >= 0) ? val : 0;
+    if (typeof val === 'string') {
+      let s = val.replace(/[^\d.,-]/g, '').trim();
+      if (!s) return 0;
+      if (s.includes('.') && s.includes(',')) {
+        if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+        else s = s.replace(/,/g, '');
+      } else if (s.includes(',')) {
+        s = s.replace(',', '.');
+      }
+      const n = Number(s);
+      return (Number.isFinite(n) && n >= 0) ? n : 0;
+    }
+    return 0;
+  }
+
+  function temizTarih(val) {
+    if (val == null || val === '') return null;
+    const s = String(val).trim();
+    let iso = s;
+    const dmy = s.match(/^(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{4})$/);
+    const ymd = s.match(/^(\d{4})[\.\/\-](\d{1,2})[\.\/\-](\d{1,2})$/);
+    if (dmy) iso = `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+    else if (ymd) iso = `${ymd[1]}-${ymd[2].padStart(2, '0')}-${ymd[3].padStart(2, '0')}`;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+    const dt = new Date(iso + 'T00:00:00Z');
+    if (isNaN(dt.getTime()) || dt.toISOString().slice(0, 10) !== iso) return null;
+    return iso;
+  }
+
+  function temizNesne(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return;
+    for (const [k, v] of Object.entries(obj)) {
+      if (v == null) continue;
+      if (textKeys.has(k)) {
+        obj[k] = String(v).trim().slice(0, 2000);
+      } else if (boolKeys.has(k)) {
+        if (typeof v === 'string') obj[k] = v.toLowerCase().trim() === 'true';
+        else obj[k] = Boolean(v);
+      } else if (k === 'onayTarihi') {
+        obj[k] = temizTarih(v);
+      }
+    }
+  }
+
+  temizNesne(parsed);
+  if (parsed.olur && typeof parsed.olur === 'object' && !Array.isArray(parsed.olur)) {
+    temizNesne(parsed.olur);
+  }
+  if (parsed.teklif && typeof parsed.teklif === 'object' && !Array.isArray(parsed.teklif)) {
+    const t = parsed.teklif;
+    temizNesne(t);
+    t.toplamTeklifTutari = temizSayi(t.toplamTeklifTutari);
+    if (Array.isArray(t.kalemler)) {
+      t.kalemler = t.kalemler
+        .filter(k => k && typeof k === 'object' && !Array.isArray(k))
+        .slice(0, 100)
+        .map(k => {
+          temizNesne(k);
+          k.ad = (k.ad && String(k.ad).trim()) ? String(k.ad).trim().slice(0, 2000) : (parsed.olur?.isAdi || 'İş Kalemi');
+          k.birim = (k.birim && String(k.birim).trim()) ? String(k.birim).trim().slice(0, 100) : 'Adet';
+          k.miktar = temizSayi(k.miktar);
+          if (!(k.miktar > 0)) k.miktar = 1;
+          k.birimFiyat = temizSayi(k.birimFiyat);
+          k.toplamTutar = temizSayi(k.toplamTutar);
+          if (k.birimFiyat === 0 && k.toplamTutar > 0 && k.miktar > 0) {
+            k.birimFiyat = Math.round((k.toplamTutar / k.miktar) * 100) / 100;
+          }
+          if (k.toplamTutar === 0 && k.birimFiyat > 0) {
+            k.toplamTutar = Math.round((k.birimFiyat * k.miktar) * 100) / 100;
+          }
+          return k;
+        });
+      const kalemToplam = Math.round(t.kalemler.reduce((acc, k) => acc + (k.birimFiyat * k.miktar), 0) * 100) / 100;
+      if (t.kalemler.length > 0 && t.kalemler.every(k => k.birimFiyat > 0) && kalemToplam > 0) {
+        if (t.toplamTeklifTutari === 0 || Math.abs(t.toplamTeklifTutari - kalemToplam) > 0.02) {
+          t.toplamTeklifTutari = kalemToplam;
+        }
+      }
+    } else if (t.kalemler != null) {
+      t.kalemler = [];
+    }
+  }
+
+  if (kategori === 'ym' || kategori === 'dt') {
+    parsed.teklifGrubu = kategori;
+    if (parsed.teklif) parsed.belgeTuru = 'teklif';
+  } else if (kategori === 'olur' && parsed.olur) {
+    parsed.belgeTuru = 'olur';
+  }
+
+  return parsed;
 }
 
 async function dtmAnalyzeDocumentWithGemini(file, apiKey) {
@@ -2502,7 +2683,10 @@ Belgedeki şu alanları çıkar ve SADECE geçerli bir JSON formatında döndür
         const errText = await res.text();
         console.warn(`[Gemini API] ${model} hata verdi (${res.status}):`, errText);
         lastError = new Error(`Gemini API Hatası (${res.status}): ${errText}`);
-        if (res.status === 404) continue;
+        if ([404, 429, 500, 503].includes(res.status)) {
+          if (res.status === 429 || res.status === 503) await new Promise(r => setTimeout(r, 1200));
+          continue;
+        }
         throw lastError;
       }
 
@@ -2514,19 +2698,11 @@ Belgedeki şu alanları çıkar ve SADECE geçerli bir JSON formatında döndür
       if (cleaned.startsWith('```json')) cleaned = cleaned.replace(/^```json\s*/, '').replace(/```\s*$/, '');
       else if (cleaned.startsWith('```')) cleaned = cleaned.replace(/^```\s*/, '').replace(/```\s*$/, '');
 
-      const parsed = JSON.parse(cleaned);
-
-      if (parsed.onayTarihi && typeof parsed.onayTarihi === 'string') {
-        const dMatch = parsed.onayTarihi.match(/^(\d{2})[\.\/](\d{2})[\.\/](\d{4})$/);
-        if (dMatch) {
-          parsed.onayTarihi = `${dMatch[3]}-${dMatch[2]}-${dMatch[1]}`;
-        }
-      }
-
+      const parsed = dtmTemizleGeminiHamYanit(JSON.parse(cleaned));
       return dtmAiYanitiDogrula(parsed);
     } catch (err) {
       lastError = err;
-      if (err.message && err.message.includes('404')) continue;
+      if (err.message && (err.message.includes('404') || err.message.includes('429') || err.message.includes('503'))) continue;
       throw err;
     }
   }
@@ -2571,12 +2747,18 @@ async function dtmTestGeminiApiKey(apiKey) {
   throw lastError || new Error('API anahtarı doğrulanamadı.');
 }
 
-async function dtmAnalyzeSingleDocumentMultiAI(file, apiKey) {
+async function dtmAnalyzeSingleDocumentMultiAI(file, apiKey, kategori = '') {
   const { base64, mimeType } = await dtmFileToBase64(file);
 
+  const kategoriIpucu = kategori === 'olur'
+    ? 'BU BELGE BİR OLUR / ONAY BELGESİDİR (Yaklaşık Maliyet Görevlendirme Oluru veya Doğrudan Temin Onay Belgesi). "belgeTuru": "olur" olarak doldur.'
+    : (kategori === 'ym' || kategori === 'dt')
+      ? 'BU BELGE BİR FİRMA FİYAT TEKLİF MEKTUBUDUR. "belgeTuru": "teklif" olarak doldur ve tablodaki kalemleri/fiyatları KDV HARİÇ olarak çıkar.'
+      : 'Belgenin türünü ("olur", "teklif" veya "diger") belirle ve ilgili alanları çıkar.';
+
   const prompt = `Sen Türkiye Cumhuriyeti kamu ihale ve doğrudan temin mevzuatı (4734 sayılı KİK 22/d) uzmanısın.
-Sana verilen resmi evrakı (Doğrudan Temin Görevlendirme / Olur Belgesi, Yaklaşık Maliyet Oluru veya Firma Teklif Mektubu / Fiyat Teklifi) dikkatle incele.
-Belgenin türünü ("olur", "teklif" veya "diger") belirle ve ilgili alanları çıkarıp SADECE geçerli bir JSON formatında döndür:
+Sana verilen resmi evrakı dikkatle incele. ${kategoriIpucu}
+Yanıtını SADECE geçerli bir JSON formatında döndür:
 
 {
   "belgeTuru": "olur",
@@ -2616,6 +2798,7 @@ Belgenin türünü ("olur", "teklif" veya "diger") belirle ve ilgili alanları �
 - Yanıtın SADECE saf JSON olsun, markdown kod bloğu veya ek açıklama ekleme.
 - Eğer belge bir Olur Belgesi ise belgeTuru "olur" yap ve "olur" objesini doldur, "teklif" alanını null bırak.
 - Eğer belge bir Teklif Mektubu ise belgeTuru "teklif" yap ve "teklif" objesini doldur, "olur" alanını null bırak.
+- TÜM FİYATLAR (birimFiyat, toplamTutar, toplamTeklifTutari) KDV HARİÇ net tutar olmalıdır.
 - Rakamları kesinlikle sayı (float/number) olarak döndür.
 - Okunamayan veya bulunmayan alanları null bırak.`;
 
@@ -2655,7 +2838,10 @@ Belgenin türünü ("olur", "teklif" veya "diger") belirle ve ilgili alanları �
         const errText = await res.text();
         console.warn(`[Gemini API - Toplu] ${model} hata verdi (${res.status}):`, errText);
         lastError = new Error(`Gemini API Hatası (${res.status}): ${errText}`);
-        if (res.status === 404) continue;
+        if ([404, 429, 500, 503].includes(res.status)) {
+          if (res.status === 429 || res.status === 503) await new Promise(r => setTimeout(r, 1500));
+          continue;
+        }
         throw lastError;
       }
 
@@ -2667,19 +2853,11 @@ Belgenin türünü ("olur", "teklif" veya "diger") belirle ve ilgili alanları �
       if (cleaned.startsWith('```json')) cleaned = cleaned.replace(/^```json\s*/, '').replace(/```\s*$/, '');
       else if (cleaned.startsWith('```')) cleaned = cleaned.replace(/^```\s*/, '').replace(/```\s*$/, '');
 
-      const parsed = JSON.parse(cleaned);
-
-      if (parsed.olur && parsed.olur.onayTarihi && typeof parsed.olur.onayTarihi === 'string') {
-        const dMatch = parsed.olur.onayTarihi.match(/^(\d{2})[\.\/](\d{2})[\.\/](\d{4})$/);
-        if (dMatch) {
-          parsed.olur.onayTarihi = `${dMatch[3]}-${dMatch[2]}-${dMatch[1]}`;
-        }
-      }
-
+      const parsed = dtmTemizleGeminiHamYanit(JSON.parse(cleaned), kategori);
       return dtmAiYanitiDogrula(parsed);
     } catch (err) {
       lastError = err;
-      if (err.message && err.message.includes('404')) continue;
+      if (err.message && (err.message.includes('404') || err.message.includes('429') || err.message.includes('503'))) continue;
       throw err;
     }
   }
@@ -3082,55 +3260,93 @@ function acYeniProjeTopluAdim() {
 }
 
 function setupTopluDropzone() {
-  const dz = document.getElementById('topluDropzone');
-  if (!dz || dz._dzInit) return;
-  dz._dzInit = true;
+  const bolumler = [
+    { id: 'topluDropzoneOlur', grup: 'olur', border: '#93c5fd', hoverBorder: '#2563eb', bg: '#eff6ff', hoverBg: '#dbeafe' },
+    { id: 'topluDropzoneYm',   grup: 'ym',   border: '#facc15', hoverBorder: '#ca8a04', bg: '#fefce8', hoverBg: '#fef08a' },
+    { id: 'topluDropzoneDt',   grup: 'dt',   border: '#86efac', hoverBorder: '#16a34a', bg: '#f0fdf4', hoverBg: '#dcfce7' }
+  ];
 
-  dz.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dz.style.borderColor = '#1d4ed8';
-    dz.style.background = '#eff6ff';
-  });
+  bolumler.forEach(b => {
+    const dz = document.getElementById(b.id);
+    if (!dz || dz._dzInit) return;
+    dz._dzInit = true;
 
-  dz.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    dz.style.borderColor = '#3b82f6';
-    dz.style.background = '#f8fafc';
-  });
+    dz.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dz.style.borderColor = b.hoverBorder;
+      dz.style.background = b.hoverBg;
+    });
 
-  dz.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dz.style.borderColor = '#3b82f6';
-    dz.style.background = '#f8fafc';
-    if (e.dataTransfer && e.dataTransfer.files) {
-      topluDosyalarEkle(e.dataTransfer.files);
-    }
+    dz.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dz.style.borderColor = b.border;
+      dz.style.background = b.bg;
+    });
+
+    dz.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dz.style.borderColor = b.border;
+      dz.style.background = b.bg;
+      if (e.dataTransfer && e.dataTransfer.files) {
+        topluDosyalarEkle(e.dataTransfer.files, b.grup);
+      }
+    });
   });
 }
 
-function topluDosyalarEkle(fileList) {
+function syncTopluDuzListe() {
+  topluSecilenDosyalar = [
+    ...(topluGrupluDosyalar.olur || []),
+    ...(topluGrupluDosyalar.ym || []),
+    ...(topluGrupluDosyalar.dt || [])
+  ];
+}
+
+function topluDosyalarEkle(fileList, grup = 'olur') {
   if (!fileList || fileList.length === 0) return;
+  const hedefGrup = ['olur', 'ym', 'dt'].includes(grup) ? grup : 'olur';
+  if (!Array.isArray(topluGrupluDosyalar[hedefGrup])) topluGrupluDosyalar[hedefGrup] = [];
+  const liste = topluGrupluDosyalar[hedefGrup];
+
   for (let i = 0; i < fileList.length; i++) {
     const f = fileList[i];
-    const zatenVar = topluSecilenDosyalar.some(ex => ex.name === f.name && ex.size === f.size);
+    const zatenVar = liste.some(ex => ex.name === f.name && ex.size === f.size);
     if (!zatenVar) {
-      topluSecilenDosyalar.push(f);
+      liste.push(f);
     }
   }
+  syncTopluDuzListe();
   topluDosyalariGuncelleUI();
 }
 
-function topluDosyaSil(index) {
-  if (index >= 0 && index < topluSecilenDosyalar.length) {
-    topluSecilenDosyalar.splice(index, 1);
-    topluDosyalariGuncelleUI();
+function topluDosyaSil(grupVeyaIndex, index) {
+  if (typeof grupVeyaIndex === 'string' && ['olur', 'ym', 'dt'].includes(grupVeyaIndex)) {
+    const liste = topluGrupluDosyalar[grupVeyaIndex] || [];
+    if (index >= 0 && index < liste.length) {
+      liste.splice(index, 1);
+    }
+  } else if (typeof grupVeyaIndex === 'number') {
+    let kalan = grupVeyaIndex;
+    for (const g of ['olur', 'ym', 'dt']) {
+      const liste = topluGrupluDosyalar[g] || [];
+      if (kalan < liste.length) {
+        liste.splice(kalan, 1);
+        break;
+      }
+      kalan -= liste.length;
+    }
   }
+  syncTopluDuzListe();
+  topluDosyalariGuncelleUI();
 }
 
 function topluDosyalariTemizle() {
   topluSecilenDosyalar = [];
-  const inp = document.getElementById('topluBelgelerInput');
-  if (inp) inp.value = '';
+  topluGrupluDosyalar = { olur: [], ym: [], dt: [] };
+  ['topluInputOlur', 'topluInputYm', 'topluInputDt', 'topluBelgelerInput'].forEach(id => {
+    const inp = document.getElementById(id);
+    if (inp) inp.value = '';
+  });
   topluDosyalariGuncelleUI();
 }
 
@@ -3143,45 +3359,63 @@ function formatDosyaBoyutu(bytes) {
 }
 
 function topluDosyalariGuncelleUI() {
+  syncTopluDuzListe();
   const wrap = document.getElementById('topluDosyalarWrap');
-  const listEl = document.getElementById('topluDosyalarListesi');
   const sayiEl = document.getElementById('topluDosyaSayisi');
-  if (!wrap || !listEl) return;
-
   if (sayiEl) sayiEl.textContent = String(topluSecilenDosyalar.length);
+  if (wrap) wrap.style.display = topluSecilenDosyalar.length > 0 ? 'block' : 'none';
 
-  if (topluSecilenDosyalar.length === 0) {
-    wrap.style.display = 'none';
-    listEl.innerHTML = '';
-    return;
-  }
+  const grupAyarlari = [
+    { grup: 'olur', sayiId: 'topluSayiOlur', listeId: 'topluListeOlur' },
+    { grup: 'ym',   sayiId: 'topluSayiYm',   listeId: 'topluListeYm' },
+    { grup: 'dt',   sayiId: 'topluSayiDt',   listeId: 'topluListeDt' }
+  ];
 
-  wrap.style.display = 'block';
-  listEl.innerHTML = topluSecilenDosyalar.map((f, idx) => {
-    const isPdf = f.name.toLowerCase().endsWith('.pdf');
-    const icon = isPdf ? '📄' : '🖼️';
-    return `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#fff;border:1px solid var(--gray-200);border-radius:6px;font-size:12px">
-        <div style="display:flex;align-items:center;gap:8px;overflow:hidden;flex:1">
-          <span>${icon}</span>
-          <span style="font-weight:500;color:var(--gray-800);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escAttr(f.name)}">${escHtml(f.name)}</span>
-          <span style="color:var(--gray-400);font-size:11px;flex-shrink:0">(${formatDosyaBoyutu(f.size)})</span>
+  grupAyarlari.forEach(ga => {
+    const dosyalar = topluGrupluDosyalar[ga.grup] || [];
+    const sEl = document.getElementById(ga.sayiId);
+    const lEl = document.getElementById(ga.listeId);
+    if (sEl) sEl.textContent = `${dosyalar.length} belge`;
+    if (!lEl) return;
+
+    if (dosyalar.length === 0) {
+      lEl.style.display = 'none';
+      lEl.innerHTML = '';
+      return;
+    }
+
+    lEl.style.display = 'flex';
+    const g = ga.grup;
+    lEl.innerHTML = dosyalar.map((f, idx) => {
+      const isPdf = (f.name || '').toLowerCase().endsWith('.pdf');
+      const icon = isPdf ? '📄' : '🖼️';
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:6px;font-size:12px">
+          <div style="display:flex;align-items:center;gap:7px;overflow:hidden;flex:1">
+            <span>${icon}</span>
+            <span style="font-weight:500;color:var(--gray-800);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escAttr(f.name)}">${escHtml(f.name)}</span>
+            <span style="color:var(--gray-400);font-size:11px;flex-shrink:0">(${formatDosyaBoyutu(f.size)})</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <span id="topluDosyaDurum_${g}_${idx}" style="font-size:11px;font-weight:600"></span>
+            <button type="button" ${dtmEventAttr('click', function(event) { topluDosyaSil(String(g), Number(idx)); })} style="background:none;border:none;color:#ef4444;font-size:13px;cursor:pointer;padding:2px 5px;line-height:1" title="Kaldır">✕</button>
+          </div>
         </div>
-        <button type="button" ${dtmEventAttr('click', function(event) { topluDosyaSil((idx)); })} style="background:none;border:none;color:#ef4444;font-size:14px;cursor:pointer;padding:2px 6px;line-height:1" title="Kaldır">✕</button>
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('');
+  });
 }
 
 async function topluAnaliziBaslat() {
+  syncTopluDuzListe();
   if (topluSecilenDosyalar.length === 0) {
-    showToast('Lütfen en az bir belge (Olur veya Teklif Mektubu) seçin.', 'warning');
+    showToast('Lütfen ilgili bölümlere en az bir belge (Olur veya Teklif Mektubu) ekleyin.', 'warning');
     return;
   }
 
   const apiKey = (referans && referans.geminiApiKey) || (typeof localStorage !== 'undefined' && localStorage.getItem('dtm_gemini_api_key'));
   if (!apiKey || !apiKey.trim()) {
-    showToast('Tüm belgeleri tek seferde çözümlemek için Google Gemini API anahtarı gereklidir. Veri Merkezi veya Profil sayfasından anahtarınızı kaydedebilirsiniz.', 'warning', 6000);
+    showToast('Tüm belgeleri çözümlemek için Google Gemini API anahtarı gereklidir. Veri Merkezi sayfasından anahtarınızı kaydedebilirsiniz.', 'warning', 6000);
     return;
   }
 
@@ -3196,23 +3430,43 @@ async function topluAnaliziBaslat() {
   if (btnBaslat) { btnBaslat.disabled = true; btnBaslat.style.opacity = '0.6'; }
   if (btnGeri) { btnGeri.disabled = true; btnGeri.style.opacity = '0.6'; }
 
-  const total = topluSecilenDosyalar.length;
+  const islenecekKuyruk = [];
+  const grupEtiket = {
+    olur: 'Olur Belgesi',
+    ym: 'Y.M. Teklifi',
+    dt: 'Piyasa Fiyat (D.T.) Teklifi'
+  };
+  ['olur', 'ym', 'dt'].forEach(g => {
+    (topluGrupluDosyalar[g] || []).forEach((file, idx) => {
+      islenecekKuyruk.push({ file, grup: g, idx, etiket: grupEtiket[g] });
+    });
+  });
+
+  const total = islenecekKuyruk.length;
   const parsedResults = [];
   const hataliDosyalar = [];
 
   for (let i = 0; i < total; i++) {
-    const file = topluSecilenDosyalar[i];
-    if (baslikEl) baslikEl.textContent = `Belge ${i + 1} / ${total} analiz ediliyor...`;
-    if (detayEl) detayEl.textContent = `${file.name} (Yapay zeka metin ve tabloları çözümlüyor)`;
+    const item = islenecekKuyruk[i];
+    const durumEl = document.getElementById(`topluDosyaDurum_${item.grup}_${item.idx}`);
+    if (durumEl) { durumEl.style.color = '#0284c7'; durumEl.textContent = '⏳ Okunuyor...'; }
+    if (baslikEl) baslikEl.textContent = `[${item.etiket}] Belge ${i + 1} / ${total} analiz ediliyor...`;
+    if (detayEl) detayEl.textContent = `${item.file.name} (Yapay zeka metin ve tabloları çözümlüyor)`;
     if (barEl) barEl.style.width = `${Math.round(((i + 0.2) / total) * 100)}%`;
 
+    if (i > 0) {
+      await new Promise(r => setTimeout(r, 350));
+    }
+
     try {
-      const res = await dtmAnalyzeSingleDocumentMultiAI(file, apiKey.trim());
+      const res = await dtmAnalyzeSingleDocumentMultiAI(item.file, apiKey.trim(), item.grup);
       parsedResults.push(res);
+      if (durumEl) { durumEl.style.color = '#16a34a'; durumEl.textContent = '✅ Okundu'; }
       if (barEl) barEl.style.width = `${Math.round(((i + 1) / total) * 100)}%`;
     } catch (err) {
-      console.warn(`[Toplu Analiz] ${file.name} çözümlenemedi:`, err);
-      hataliDosyalar.push({ dosya: file.name, hata: err.message });
+      console.warn(`[Toplu Analiz] ${item.file.name} çözümlenemedi:`, err);
+      if (durumEl) { durumEl.style.color = '#dc2626'; durumEl.textContent = '⚠️ Hata'; durumEl.title = err.message || ''; }
+      hataliDosyalar.push({ dosya: item.file.name, hata: err.message });
     }
   }
 
@@ -3226,7 +3480,7 @@ async function topluAnaliziBaslat() {
   }
 
   if (hataliDosyalar.length > 0) {
-    showToast(`${total} belgeden ${parsedResults.length} adedi okundu, ${hataliDosyalar.length} dosya atlandı.`, 'warning', 4000);
+    showToast(`${total} belgeden ${parsedResults.length} adedi okundu, ${hataliDosyalar.length} dosya atlandı.`, 'warning', 4500);
   }
 
   let ozet;
@@ -3262,6 +3516,22 @@ function renderTopluAnalizOnayModal(ozet) {
           ${aktifKalemler.map((k, i) => `<tr><td class="merkez">${i + 1}</td><td>${escHtml(k.ad)}</td><td class="rakam">${k.miktar}</td><td>${escHtml(k.birim || 'Adet')}</td></tr>`).join('')}
         </tbody>
       </table>
+    </div>
+  ` : '';
+
+  const ymHtml = ozet.ayriYmDt && Array.isArray(ozet.ymFirmalarData) ? `
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;color:#854d0e;margin-bottom:6px">📊 Yaklaşık Maliyet (Y.M.) Teklifleri (${ozet.ymFirmalarData.length})</div>
+      ${ozet.ymFirmalarData.map(f => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:5px;border-radius:8px;background:#fefce8;border:1px solid #fef08a">
+          <div style="font-weight:600;font-size:12.5px;color:#854d0e;display:flex;align-items:center;gap:6px">
+            <span>${escHtml(f.ad || 'İsimsiz Firma')}</span>
+            ${f.eksik ? '<span style="color:#b45309;font-size:11px">Eksik/tutarsız</span>' : ''}
+            ${f.isNew ? '<span style="background:#2563eb;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600">🆕 Yeni Firma</span>' : ''}
+          </div>
+          <div style="font-size:13px;font-weight:700;color:#713f12">${f.toplam > 0 ? formatCurrency(f.toplam) + ' TL' : '-'}</div>
+        </div>
+      `).join('')}
     </div>
   ` : '';
 
@@ -3326,8 +3596,10 @@ function renderTopluAnalizOnayModal(ozet) {
 
       ${kalemlerHtml}
 
+      ${ymHtml}
+
       <div style="margin-bottom:14px">
-        <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">🏢 Firma Teklifleri (${ozet.firmalarTeklifData.length})</div>
+        <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">🏷️ ${ozet.ayriYmDt ? 'Piyasa Fiyat (D.T.) Teklifleri' : 'Firma Teklifleri'} (${ozet.firmalarTeklifData.length})</div>
         ${firmalarHtml}
       </div>
 
@@ -3408,6 +3680,7 @@ if (typeof window !== 'undefined') {
   window.matchOrAddFirma = matchOrAddFirma;
   window.dtmTopluBelgeleriDerleVeHazirla = dtmTopluBelgeleriDerleVeHazirla;
   window.dtmAnalyzeSingleDocumentMultiAI = dtmAnalyzeSingleDocumentMultiAI;
+  window.dtmTemizleGeminiHamYanit = dtmTemizleGeminiHamYanit;
 }
 
 

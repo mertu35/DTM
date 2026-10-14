@@ -341,3 +341,46 @@ for (const invalid of [[], {kalemler:{}}, {miktar:-1}, {birimFiyat:'100'}, {onay
 }
 assert.equal(JSON.stringify(context.referans), beforePreview);
 console.log('PASS: reordered, incomplete, duplicate items; isolated preview and malformed AI output');
+
+// 11. 3 Bölümlü (8 Belge: 2 Olur + 3 YM Teklif + 3 DT Teklif) sentezleme ve ham yanıt temizleme testi
+const hamGeminiOrnek = context.dtmTemizleGeminiHamYanit({
+  belgeTuru: 'teklif',
+  teklif: {
+    firmaAdi: 'Alper YAMAÇ',
+    vkn: 1111111111,
+    toplamTeklifTutari: '120.000,00 TL', // KDV dahil dip toplam gelse bile kalem toplamına (100.000) normalize edilmeli
+    kalemler: [
+      { ad: 'Jeneratör Bakım ve Onarım İşi', miktar: '1', birim: 'İş', birimFiyat: '100.000,00 TL', toplamTutar: '100.000,00' }
+    ]
+  }
+}, 'dt');
+assert.equal(hamGeminiOrnek.teklifGrubu, 'dt');
+assert.equal(hamGeminiOrnek.teklif.vkn, '1111111111');
+assert.equal(hamGeminiOrnek.teklif.kalemler[0].birimFiyat, 100000);
+assert.equal(hamGeminiOrnek.teklif.toplamTeklifTutari, 100000);
+assert.doesNotThrow(() => context.dtmAiYanitiDogrula(hamGeminiOrnek));
+
+const sekizBelgeSample = [
+  { belgeTuru: 'olur', olur: { isAdi: 'Jeneratör Bakım İşi', isYM: true, isDT: false, onayNo: '101', onayTarihi: '2026-10-01', gorevliAd: 'Aziz AÇIKGÖZ', onaylayanAd: 'Sinan ÖZYER', isTuru: 'Hizmet Alımı' } },
+  { belgeTuru: 'olur', olur: { isAdi: 'Jeneratör Bakım İşi', isYM: false, isDT: true, onayNo: '102', onayTarihi: '2026-10-02', gorevliAd: 'Erdem ÜNVER', onaylayanAd: 'Sinan ÖZYER', isTuru: 'Hizmet Alımı' } },
+  // 3 YM Teklifi (Ortalama: (120.000 + 130.000 + 140.000) / 3 = 130.000 TL)
+  { belgeTuru: 'teklif', teklifGrubu: 'ym', teklif: { firmaAdi: 'Alper YAMAÇ', toplamTeklifTutari: 120000, kalemler: [{ ad: 'Jeneratör Bakım İşi', miktar: 1, birim: 'Adet', birimFiyat: 120000 }] } },
+  { belgeTuru: 'teklif', teklifGrubu: 'ym', teklif: { firmaAdi: 'Gültes Enerji', toplamTeklifTutari: 130000, kalemler: [{ ad: 'Jeneratör Periyodik Bakım İşi', miktar: 1, birim: 'İş', birimFiyat: 130000 }] } },
+  { belgeTuru: 'teklif', teklifGrubu: 'ym', teklif: { firmaAdi: 'Özkan Mühendislik', toplamTeklifTutari: 140000, kalemler: [{ ad: 'Jeneratör Bakım Onarım', miktar: 1, birim: 'Adet', birimFiyat: 140000 }] } },
+  // 3 DT Teklifi (En düşük: Gültes Enerji = 108.000 TL)
+  { belgeTuru: 'teklif', teklifGrubu: 'dt', teklif: { firmaAdi: 'Alper YAMAÇ', toplamTeklifTutari: 115000, kalemler: [{ ad: 'Jeneratör Bakım İşi', miktar: 1, birim: 'Adet', birimFiyat: 115000 }] } },
+  { belgeTuru: 'teklif', teklifGrubu: 'dt', teklif: { firmaAdi: 'Gültes Enerji', toplamTeklifTutari: 108000, kalemler: [{ ad: 'Jeneratör Bakım ve Onarım İşi', miktar: 1, birim: 'İş', birimFiyat: 108000 }] } },
+  { belgeTuru: 'teklif', teklifGrubu: 'dt', teklif: { firmaAdi: 'Özkan Mühendislik', toplamTeklifTutari: 118000, kalemler: [{ ad: 'Jeneratör Bakım', miktar: 1, birim: 'Adet', birimFiyat: 118000 }] } }
+];
+const sekizSonuc = context.dtmTopluBelgeleriDerleVeHazirla(sekizBelgeSample);
+assert.equal(sekizSonuc.ayriYmDt, true);
+assert.equal(sekizSonuc.okunanOlurSayisi, 2);
+assert.equal(sekizSonuc.okunanTeklifSayisi, 6);
+assert.equal(sekizSonuc.proje.ymOnayNo, '101');
+assert.equal(sekizSonuc.proje.dtOnayNo, '102');
+assert.equal(sekizSonuc.yaklasikMaliyet, 130000);
+assert.equal(sekizSonuc.kazananIdx, 1);
+assert.equal(sekizSonuc.proje.teklifFirmalar[1].fiyatlar[0], 108000);
+assert.equal(sekizSonuc.proje.ymFirmalar[1].fiyatlar[0], 130000);
+console.log('PASS: 3-section 8-document (2 Olur + 3 YM + 3 DT) synthesis & resilient single-item matching');
+
