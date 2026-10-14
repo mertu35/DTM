@@ -1737,8 +1737,22 @@ function formatDosyaBoyutu(bayt) {
 
 const PROJE_DOKUMAN_KATEGORILERI = [
   {
+    kod: 'fotograf',
+    sekmeAd: '📸 Fotoğraflar',
+    baslik: '📸 İş / Yapım Fotoğrafları',
+    kisaAd: 'Fotoğraf',
+    aciklama: 'Yapılan işin, onarımın veya alınan malzemelerin fotoğrafları',
+    etiket: '[Fotoğraf]',
+    bg: '#fefce8',
+    border: '#fde047',
+    badgeBg: '#fef08a',
+    text: '#854d0e',
+    btnBg: '#ca8a04'
+  },
+  {
     kod: 'fatura',
-    baslik: '🧾 1. Fatura Belgeleri',
+    sekmeAd: '🧾 Fatura',
+    baslik: '🧾 Fatura Belgeleri',
     kisaAd: 'Fatura',
     aciklama: 'İşe ait e-Arşiv / e-Fatura PDF veya fotoğrafı',
     etiket: '[Fatura]',
@@ -1750,7 +1764,8 @@ const PROJE_DOKUMAN_KATEGORILERI = [
   },
   {
     kod: 'vergi',
-    baslik: '🏛️ 2. Vergi / SGK Borcu Yoktur',
+    sekmeAd: '🏛️ Vergi Borcu Yoktur',
+    baslik: '🏛️ Vergi / SGK Borcu Yoktur',
     kisaAd: 'Vergi Borcu',
     aciklama: 'Vergi dairesi veya SGK borcu yoktur yazıları',
     etiket: '[Vergi Borcu]',
@@ -1761,34 +1776,11 @@ const PROJE_DOKUMAN_KATEGORILERI = [
     btnBg: '#16a34a'
   },
   {
-    kod: 'fotograf',
-    baslik: '📸 3. İş / Yapım Fotoğrafları',
-    kisaAd: 'Fotoğraf',
-    aciklama: 'Yapılan işin, onarımın veya alınan malzemelerin fotoğrafları',
-    etiket: '[Fotoğraf]',
-    bg: '#fefce8',
-    border: '#fde047',
-    badgeBg: '#fef08a',
-    text: '#854d0e',
-    btnBg: '#ca8a04'
-  },
-  {
-    kod: 'olur_teklif',
-    baslik: '📋 4. Olur & Teklif Belgeleri',
-    kisaAd: 'Olur / Teklif',
-    aciklama: 'Y.M. / D.T. Olurları, Piyasa Fiyat Araştırması ve Resmi Teklif Mektupları',
-    etiket: '[Olur-Teklif]',
-    bg: '#faf5ff',
-    border: '#d8b4fe',
-    badgeBg: '#f3e8ff',
-    text: '#6b21a8',
-    btnBg: '#9333ea'
-  },
-  {
     kod: 'diger',
-    baslik: '📁 5. Diğer Evraklar',
-    kisaAd: 'Diğer Evrak',
-    aciklama: 'Şartname ekleri, tutanaklar ve diğer resmi belgeler',
+    sekmeAd: '📁 Diğer Belgeler',
+    baslik: '📁 Diğer Belgeler',
+    kisaAd: 'Belge',
+    aciklama: 'Olur yazıları, teklif mektupları, şartname ekleri, tutanaklar ve diğer resmi evraklar',
     etiket: '[Diğer]',
     bg: '#f8fafc',
     border: '#cbd5e1',
@@ -1798,20 +1790,24 @@ const PROJE_DOKUMAN_KATEGORILERI = [
   }
 ];
 
+let currentDokumanKategori = 'fotograf';
+
 function tespitProjeDosyaKategorisi(dosyaMeta) {
-  if (dosyaMeta && dosyaMeta.kategori && PROJE_DOKUMAN_KATEGORILERI.some(k => k.kod === dosyaMeta.kategori)) {
-    return dosyaMeta.kategori;
+  if (dosyaMeta && dosyaMeta.kategori) {
+    if (dosyaMeta.kategori === 'olur_teklif') return 'diger';
+    if (PROJE_DOKUMAN_KATEGORILERI.some(k => k.kod === dosyaMeta.kategori)) {
+      return dosyaMeta.kategori;
+    }
   }
   const ad = String(dosyaMeta?.ad || dosyaMeta?.name || '').trim();
   if (/^\[Fatura\]/i.test(ad)) return 'fatura';
   if (/^\[Vergi Borcu\]/i.test(ad)) return 'vergi';
   if (/^\[Fotoğraf\]/i.test(ad)) return 'fotograf';
-  if (/^\[Olur-Teklif\]/i.test(ad)) return 'olur_teklif';
-  if (/^\[Diğer\]/i.test(ad)) return 'diger';
+  if (/^\[(Olur-Teklif|Diğer)\]/i.test(ad)) return 'diger';
 
   if (/fatura|earsiv|e-arşiv|efatura/i.test(ad)) return 'fatura';
   if (/vergi|borcu|sgk|vkn|maliye/i.test(ad)) return 'vergi';
-  if (/olur|teklif|piyasa|yaklasik|yaklaşık|onay/i.test(ad)) return 'olur_teklif';
+  if (/olur|teklif|piyasa|yaklasik|yaklaşık|onay/i.test(ad)) return 'diger';
   const tip = String(dosyaMeta?.tip || dosyaMeta?.type || '').toLowerCase();
   if (tip.startsWith('image/') || /\.(jpe?g|png|webp|bmp|gif)$/i.test(ad)) return 'fotograf';
   return 'diger';
@@ -1823,7 +1819,8 @@ function temizProjeDosyaAdi(ad) {
 
 function etiketliProjeDosyasiOlustur(dosya, kategoriKod = 'diger', altEtiket = '') {
   if (!dosya) return dosya;
-  const kat = PROJE_DOKUMAN_KATEGORILERI.find(k => k.kod === kategoriKod) || PROJE_DOKUMAN_KATEGORILERI[4];
+  const normKod = kategoriKod === 'olur_teklif' ? 'diger' : kategoriKod;
+  const kat = PROJE_DOKUMAN_KATEGORILERI.find(k => k.kod === normKod) || PROJE_DOKUMAN_KATEGORILERI[3];
   const hamAd = temizProjeDosyaAdi(dosya.name || 'belge');
   const noktaIdx = hamAd.lastIndexOf('.');
   const uzanti = noktaIdx >= 0 ? hamAd.slice(noktaIdx) : '';
@@ -1841,7 +1838,17 @@ function etiketliProjeDosyasiOlustur(dosya, kategoriKod = 'diger', altEtiket = '
 }
 
 window._projeDosyalariCache = {};
+window._sonProjeDosyalariListesi = [];
 window._bekleyenProjeDosyalari = [];
+
+window.dokumanKategoriSec = function(kod) {
+  if (!PROJE_DOKUMAN_KATEGORILERI.some(k => k.kod === kod)) return;
+  currentDokumanKategori = kod;
+  const container = document.getElementById('projeDosyaListesi');
+  if (!container) return;
+  const saltOkunur = Boolean(currentProjeKilitli || currentGerceklestirmeciReadOnly || currentPage === 'proje-ozet');
+  container.innerHTML = renderKategoriDokumanKutulari(window._sonProjeDosyalariListesi || [], saltOkunur);
+};
 
 function projeDokumanlarSekmesineGit() {
   if (currentCloudProjeId) {
@@ -1905,7 +1912,7 @@ async function bekleyenProjeDosyalariniBulutaYukle(projeId) {
   let basarili = 0;
   for (const item of kuyruk) {
     try {
-      const etiketli = etiketliProjeDosyasiOlustur(item.file, item.kategori || 'olur_teklif', item.altEtiket || '');
+      const etiketli = etiketliProjeDosyasiOlustur(item.file, item.kategori || 'diger', item.altEtiket || '');
       await projeDosyaYukle(projeId, etiketli);
       basarili++;
     } catch (err) {
@@ -1922,10 +1929,45 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
   const toplamBulut = dosyalar.length;
   const toplamBekleyen = bekleyenler.length;
 
+  if (!PROJE_DOKUMAN_KATEGORILERI.some(k => k.kod === currentDokumanKategori)) {
+    currentDokumanKategori = 'fotograf';
+  }
+
+  // Kategori bazlı sayıları hesapla
+  const kategoriVerileri = PROJE_DOKUMAN_KATEGORILERI.map(kat => {
+    const katDosyalar = dosyalar.filter(d => tespitProjeDosyaKategorisi(d) === kat.kod);
+    const katBekleyenler = bekleyenler
+      .map((b, idx) => ({ ...b, _bekleyenIdx: idx }))
+      .filter(b => {
+        const bKat = b.kategori === 'olur_teklif' ? 'diger' : (b.kategori || tespitProjeDosyaKategorisi(b.file));
+        return bKat === kat.kod;
+      });
+    return {
+      kat,
+      katDosyalar,
+      katBekleyenler,
+      toplamSayi: katDosyalar.length + katBekleyenler.length
+    };
+  });
+
+  // Üst sekme menüsü (Fotoğraflar | Fatura | Vergi Borcu Yoktur | Diğer Belgeler)
+  const sekmelerHtml = `
+    <div class="belge-tabs" style="margin-bottom:14px">
+      ${kategoriVerileri.map(({ kat, toplamSayi }) => {
+        const isAktif = currentDokumanKategori === kat.kod;
+        return `
+          <div class="belge-tab ${isAktif ? 'active' : ''}" ${dtmEventAttr('click', function(event) { dokumanKategoriSec(String(kat.kod)); })} style="display:inline-flex;align-items:center;gap:8px">
+            <span>${kat.sekmeAd}</span>
+            <span style="font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;background:${isAktif ? 'rgba(255,255,255,0.22)' : 'var(--gray-200)'};color:${isAktif ? '#fff' : 'var(--gray-700)'}">${toplamSayi}</span>
+          </div>`;
+      }).join('')}
+    </div>
+  `;
+
   const ustBilgiHtml = !currentCloudProjeId ? `
     <div style="padding:12px 16px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div style="font-size:12.5px;color:#92400e">
-        💡 <strong>Proje henüz buluta kaydedilmedi.</strong> ${toplamBekleyen > 0 ? `Seçtiğiniz <strong>${toplamBekleyen} adet evrak</strong> hazır bekliyor; projeyi kaydettiğiniz anda otomatik olarak buluta yüklenecektir.` : 'Evrakları şimdiden ilgili kutulara ekleyebilirsiniz; projeyi kaydettiğinizde otomatik olarak buluta aktarılır.'}
+        💡 <strong>Proje henüz buluta kaydedilmedi.</strong> ${toplamBekleyen > 0 ? `Seçtiğiniz <strong>${toplamBekleyen} adet evrak</strong> hazır bekliyor; projeyi kaydettiğiniz anda otomatik olarak buluta yüklenecektir.` : 'Evrakları şimdiden ilgili sekmelere ekleyebilirsiniz; projeyi kaydettiğinizde otomatik olarak buluta aktarılır.'}
       </div>
       ${!saltOkunur ? `
         <button type="button" class="btn btn-primary btn-sm" ${dtmEventAttr('click', function(event) { cloudKaydet(); })} style="white-space:nowrap">
@@ -1933,95 +1975,92 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
         </button>
       ` : ''}
     </div>
-  ` : (toplamBulut > 0 ? `
+  ` : `
     <div style="padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <span style="font-size:12.5px;color:#334155">📎 Bu projeye kayıtlı toplam <strong>${toplamBulut} adet</strong> resmi doküman / fotoğraf bulunuyor.</span>
       <span style="font-size:11.5px;color:#64748b">Dosya başına maks. 5 MB (PDF, JPG, PNG, Word, Excel)</span>
     </div>
-  ` : '');
+  `;
 
-  const kutularHtml = PROJE_DOKUMAN_KATEGORILERI.map(kat => {
-    const katDosyalar = dosyalar.filter(d => tespitProjeDosyaKategorisi(d) === kat.kod);
-    const katBekleyenler = bekleyenler
-      .map((b, idx) => ({ ...b, _bekleyenIdx: idx }))
-      .filter(b => (b.kategori || tespitProjeDosyaKategorisi(b.file)) === kat.kod);
-    const toplamSayi = katDosyalar.length + katBekleyenler.length;
+  const aktifVeri = kategoriVerileri.find(v => v.kat.kod === currentDokumanKategori) || kategoriVerileri[0];
+  const { kat, katDosyalar, katBekleyenler, toplamSayi } = aktifVeri;
 
-    const satirlarHtml = [
-      ...katDosyalar.map(d => {
-        const temizAd = temizProjeDosyaAdi(d.ad);
-        const isImg = (d.tip || '').startsWith('image/') || /\.(jpe?g|png|webp|bmp|gif)$/i.test(temizAd);
-        const thumbHtml = (isImg && d.url && d.url.startsWith('data:image/'))
-          ? `<img src="${escAttr(d.url)}" alt="${escAttr(temizAd)}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;flex-shrink:0">`
-          : `<span style="width:40px;height:40px;border-radius:6px;background:${kat.badgeBg};color:${kat.text};display:inline-flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${isImg ? '🖼️' : '📄'}</span>`;
-        return `
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:8px">
-            <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')); })} title="Görüntüle / İndir">
-              ${thumbHtml}
-              <div style="overflow:hidden;flex:1">
-                <div style="font-size:13px;font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(temizAd)}</div>
-                <div style="font-size:11px;color:#64748b;margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                  <span>${formatDosyaBoyutu(d.boyut)}</span>
-                  ${d.yukleyenAd ? `<span>• 👤 ${escHtml(d.yukleyenAd)}</span>` : ''}
-                </div>
+  const satirlarHtml = [
+    ...katDosyalar.map(d => {
+      const temizAd = temizProjeDosyaAdi(d.ad);
+      const isImg = (d.tip || '').startsWith('image/') || /\.(jpe?g|png|webp|bmp|gif)$/i.test(temizAd);
+      const thumbHtml = (isImg && d.url && d.url.startsWith('data:image/'))
+        ? `<img src="${escAttr(d.url)}" alt="${escAttr(temizAd)}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;flex-shrink:0">`
+        : `<span style="width:44px;height:44px;border-radius:6px;background:${kat.badgeBg};color:${kat.text};display:inline-flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${isImg ? '🖼️' : '📄'}</span>`;
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:8px">
+          <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')); })} title="Görüntüle / İndir">
+            ${thumbHtml}
+            <div style="overflow:hidden;flex:1">
+              <div style="font-size:13px;font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(temizAd)}</div>
+              <div style="font-size:11px;color:#64748b;margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span>${formatDosyaBoyutu(d.boyut)}</span>
+                ${d.yukleyenAd ? `<span>• 👤 ${escHtml(d.yukleyenAd)}</span>` : ''}
               </div>
             </div>
-            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-              <button type="button" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')); })} style="padding:5px 10px;background:${kat.bg};color:${kat.text};border:1px solid ${kat.border};border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">👁️ Aç</button>
-              ${!saltOkunur ? `<button type="button" ${dtmEventAttr('click', function(event) { projeDosyaSilOnayla(String(d.yol ?? '')); })} title="Sil" style="padding:5px 8px;background:#fff;border:1px solid #fecaca;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px">🗑️</button>` : ''}
-            </div>
-          </div>`;
-      }),
-      ...katBekleyenler.map(b => {
-        const f = b.file || {};
-        const temizAd = (b.altEtiket ? `${b.altEtiket} - ` : '') + temizProjeDosyaAdi(f.name || 'Belge');
-        return `
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:#fffbeb;border:1px dashed #f59e0b;border-radius:8px">
-            <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaAc(Number(b._bekleyenIdx)); })}>
-              <span style="width:36px;height:36px;border-radius:6px;background:#fef3c7;color:#b45309;display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">⏳</span>
-              <div style="overflow:hidden;flex:1">
-                <div style="font-size:12.5px;font-weight:600;color:#78350f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(temizAd)}</div>
-                <div style="font-size:11px;color:#b45309">${formatDosyaBoyutu(f.size)} • Kaydedildiğinde buluta yüklenecek</div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-              <button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaAc(Number(b._bekleyenIdx)); })} style="padding:4px 8px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">👁️ Önizle</button>
-              ${!saltOkunur ? `<button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaSil(Number(b._bekleyenIdx)); })} style="padding:4px 8px;background:#fff;border:1px solid #fecaca;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px">✕</button>` : ''}
-            </div>
-          </div>`;
-      })
-    ].join('');
-
-    const inputId = `projeDosyaInput_${kat.kod}`;
-    return `
-      <div style="padding:14px;background:${kat.bg};border:1.5px solid ${kat.border};border-radius:12px;margin-bottom:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-          <div>
-            <div style="font-size:14px;font-weight:700;color:${kat.text};display:flex;align-items:center;gap:8px">
-              <span>${kat.baslik}</span>
-              <span style="background:${kat.badgeBg};color:${kat.text};font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">${toplamSayi} belge</span>
-            </div>
-            <div style="font-size:11.5px;color:${kat.text};opacity:0.85;margin-top:2px">${kat.aciklama}</div>
           </div>
-          ${!saltOkunur ? `
-            <label style="cursor:pointer;padding:7px 14px;background:${kat.btnBg};color:#fff;border-radius:8px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0">
-              <span>+ ${kat.kisaAd} Yükle</span>
-              <input type="file" id="${inputId}" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none"
-                ${dtmEventAttr('change', function(event) { projeDosyaSecildi(this.files, String(kat.kod)); this.value=''; })}>
-            </label>
-          ` : ''}
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <button type="button" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')); })} style="padding:6px 12px;background:${kat.bg};color:${kat.text};border:1px solid ${kat.border};border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">👁️ Aç</button>
+            ${!saltOkunur ? `<button type="button" ${dtmEventAttr('click', function(event) { projeDosyaSilOnayla(String(d.yol ?? '')); })} title="Sil" style="padding:6px 9px;background:#fff;border:1px solid #fecaca;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px">🗑️</button>` : ''}
+          </div>
+        </div>`;
+    }),
+    ...katBekleyenler.map(b => {
+      const f = b.file || {};
+      const temizAd = (b.altEtiket ? `${b.altEtiket} - ` : '') + temizProjeDosyaAdi(f.name || 'Belge');
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fffbeb;border:1px dashed #f59e0b;border-radius:8px">
+          <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaAc(Number(b._bekleyenIdx)); })}>
+            <span style="width:40px;height:40px;border-radius:6px;background:#fef3c7;color:#b45309;display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">⏳</span>
+            <div style="overflow:hidden;flex:1">
+              <div style="font-size:12.5px;font-weight:600;color:#78350f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(temizAd)}</div>
+              <div style="font-size:11px;color:#b45309">${formatDosyaBoyutu(f.size)} • Kaydedildiğinde buluta yüklenecek</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaAc(Number(b._bekleyenIdx)); })} style="padding:5px 10px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">👁️ Önizle</button>
+            ${!saltOkunur ? `<button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaSil(Number(b._bekleyenIdx)); })} style="padding:5px 9px;background:#fff;border:1px solid #fecaca;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px">✕</button>` : ''}
+          </div>
+        </div>`;
+    })
+  ].join('');
+
+  const inputId = `projeDosyaInput_${kat.kod}`;
+  const aktifKutuHtml = `
+    <div style="padding:18px;background:${kat.bg};border:1.5px solid ${kat.border};border-radius:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:${kat.text};display:flex;align-items:center;gap:8px">
+            <span>${kat.baslik}</span>
+            <span style="background:${kat.badgeBg};color:${kat.text};font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">${toplamSayi} belge</span>
+          </div>
+          <div style="font-size:12px;color:${kat.text};opacity:0.85;margin-top:3px">${kat.aciklama}</div>
         </div>
-        ${toplamSayi > 0 ? `
-          <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
-            ${satirlarHtml}
-          </div>
-        ` : `
-          <div style="font-size:12px;color:${kat.text};opacity:0.65;margin-top:8px;font-style:italic">Henüz bu kategoride belge yüklenmemiş.</div>
-        `}
-      </div>`;
-  }).join('');
+        ${!saltOkunur ? `
+          <label style="cursor:pointer;padding:8px 16px;background:${kat.btnBg};color:#fff;border-radius:8px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.12)">
+            <span>+ ${kat.kisaAd} Yükle</span>
+            <input type="file" id="${inputId}" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none"
+              ${dtmEventAttr('change', function(event) { projeDosyaSecildi(this.files, String(kat.kod)); this.value=''; })}>
+          </label>
+        ` : ''}
+      </div>
+      ${toplamSayi > 0 ? `
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+          ${satirlarHtml}
+        </div>
+      ` : `
+        <div style="padding:28px 16px;text-align:center;background:rgba(255,255,255,0.6);border:1px dashed ${kat.border};border-radius:10px;font-size:13px;color:${kat.text};opacity:0.8;margin-top:14px">
+          Henüz <strong>${escHtml(kat.sekmeAd.replace(/^[^\s]+\s/, ''))}</strong> sekmesinde yüklü belge bulunmuyor.
+        </div>
+      `}
+    </div>`;
 
-  return ustBilgiHtml + kutularHtml;
+  return sekmelerHtml + ustBilgiHtml + aktifKutuHtml;
 }
 
 async function projeDosyaListesiYukle() {
@@ -2030,6 +2069,7 @@ async function projeDosyaListesiYukle() {
   const saltOkunur = Boolean(currentProjeKilitli || currentGerceklestirmeciReadOnly || currentPage === 'proje-ozet');
 
   if (!currentCloudProjeId) {
+    window._sonProjeDosyalariListesi = [];
     container.innerHTML = renderKategoriDokumanKutulari([], saltOkunur);
     return;
   }
@@ -2038,6 +2078,7 @@ async function projeDosyaListesiYukle() {
     const dosyalar = await projeDosyalariGetir(currentCloudProjeId);
     window._projeDosyalariCache = {};
     dosyalar.forEach(d => { window._projeDosyalariCache[d.docId] = d; });
+    window._sonProjeDosyalariListesi = dosyalar;
     container.innerHTML = renderKategoriDokumanKutulari(dosyalar, saltOkunur);
   } catch(e) {
     container.innerHTML = `<p style="color:#dc2626;font-size:13px">Dokümanlar yüklenemedi: ${escHtml(hataMesaji(e))}</p>`;
@@ -4516,7 +4557,27 @@ async function renderBelgelerPage() {
     return;
   }
 
-  // DURUM 2: Proje seçili → belge tab'larını göster
+  // DURUM 2: Proje seçili
+  if (isDokumanlarModu) {
+    main.innerHTML = `
+      <div class="page-header" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <button ${dtmEventAttr('click', function(event) { currentBelgelerProjeId=null; renderPage(); })}
+          style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:6px 12px;
+                 cursor:pointer;font-size:13px;color:var(--gray-600);white-space:nowrap;margin-top:4px">
+          &#8592; Proje Listesi
+        </button>
+        <div>
+          <h2>&#128206; Dokümanlar</h2>
+          <p style="display:flex;align-items:center;gap:8px">${escHtml(proje.isAdi || '')} ${getStatusBadge(currentProjeStatus)}</p>
+        </div>
+      </div>
+      <div id="projeDosyaListesi">Yükleniyor...</div>
+    `;
+    projeDosyaListesiYukle();
+    return;
+  }
+
+  if (currentBelge === 'dokumanlar') currentBelge = 'yaklasik-maliyet';
   const isMalVeyaHizmet = isMalVeyaHizmetTuru(proje.isTuru);
   const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
   const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
@@ -4527,8 +4588,7 @@ async function renderBelgelerPage() {
     { id: 'teknik-sartname', ad: 'Teknik Şartname' },
     ...(isMalVeyaHizmet ? [] : [{ id: 'sozlesme', ad: 'Sözleşme' }]),
     { id: sonTutanakId, ad: sonTutanakAd },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' },
-    { id: 'dokumanlar', ad: '📎 Dokümanlar' }
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
   ];
 
   if (currentBelge === 'bitti-tutanagi' && isMalVeyaHizmet) currentBelge = 'muayene-kabul';
@@ -4540,16 +4600,14 @@ async function renderBelgelerPage() {
   ).join('');
 
   let belgeHTML = '';
-  if (currentBelge !== 'dokumanlar') {
-    switch (currentBelge) {
-      case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
-      case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
-      case 'teknik-sartname': belgeHTML = renderTeknikSartname(proje, referans); break;
-      case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
-      case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
-      case 'muayene-kabul': belgeHTML = renderMuayeneKabulTutanagi(proje, referans); break;
-      case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
-    }
+  switch (currentBelge) {
+    case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
+    case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
+    case 'teknik-sartname': belgeHTML = renderTeknikSartname(proje, referans); break;
+    case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
+    case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
+    case 'muayene-kabul': belgeHTML = renderMuayeneKabulTutanagi(proje, referans); break;
+    case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
   }
 
   main.innerHTML = `
@@ -4560,61 +4618,45 @@ async function renderBelgelerPage() {
         &#8592; Proje Listesi
       </button>
       <div>
-        <h2>${currentBelge === 'dokumanlar' ? '&#128206; Dokümanlar' : '&#128196; Belgeler'}</h2>
+        <h2>&#128196; Belgeler</h2>
         <p style="display:flex;align-items:center;gap:8px">${escHtml(proje.isAdi || '')} ${getStatusBadge(currentProjeStatus)}</p>
       </div>
     </div>
     <div class="belge-tabs">${tabs}</div>
-    ${currentBelge === 'dokumanlar' ? `
-      <div class="card" style="margin-top:8px">
-        <div class="card-header">
-          <div>
-            <h3>📎 Projeye Ait Dokümanlar ve Evraklar</h3>
-            <span style="font-size:11px;color:var(--gray-400)">Fatura, vergi borcu yoktur, iş/yapım fotoğrafları, olur & teklif mektupları ve diğer ek evrakları kategorilere göre yükleyip görüntüleyebilirsiniz.</span>
-          </div>
-        </div>
-        <div class="card-body">
-          <div id="projeDosyaListesi">Yükleniyor...</div>
-        </div>
-      </div>
-    ` : `
-      <div class="action-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        ${currentBelge === 'teknik-sartname' ? `
-          <button ${dtmEventAttr('click', function(event) { acTeknikSartnameDuzenleModal() })}
-            style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
-            ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
-            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Şartname Metnini Düzenle
-          </button>
-        ` : ''}
-        ${currentBelge === 'sozlesme' ? `
-          <button ${dtmEventAttr('click', function(event) { acSozlesmeMaddeleriDuzenleModal() })}
-            style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
-            ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
-            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Sözleşme Maddelerini Düzenle
-          </button>
-        ` : ''}
-        <button ${dtmEventAttr('click', function(event) { yazdirBelge() })}
-          style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
-          ${dtmEventAttr('mouseover', function(event) { this.style.background='#2563eb' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#3b82f6' })}>
-          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
-          Yazdır
+    <div class="action-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      ${currentBelge === 'teknik-sartname' ? `
+        <button ${dtmEventAttr('click', function(event) { acTeknikSartnameDuzenleModal() })}
+          style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
+          ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Şartname Metnini Düzenle
         </button>
-        <button ${dtmEventAttr('click', function(event) { acBelgeIndirModal() })}
-          style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,0.35)"
-          ${dtmEventAttr('mouseover', function(event) { this.style.background='#059669' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#10b981' })}>
-          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          İndir
+      ` : ''}
+      ${currentBelge === 'sozlesme' ? `
+        <button ${dtmEventAttr('click', function(event) { acSozlesmeMaddeleriDuzenleModal() })}
+          style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
+          ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Sözleşme Maddelerini Düzenle
         </button>
-        <button ${dtmEventAttr('click', function(event) { pdfIndirBelge() })} style="display:none">PDF İndir</button>
-      </div>
-      <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
-    `}
+      ` : ''}
+      <button ${dtmEventAttr('click', function(event) { yazdirBelge() })}
+        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
+        ${dtmEventAttr('mouseover', function(event) { this.style.background='#2563eb' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#3b82f6' })}>
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+        Yazdır
+      </button>
+      <button ${dtmEventAttr('click', function(event) { acBelgeIndirModal() })}
+        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,0.35)"
+        ${dtmEventAttr('mouseover', function(event) { this.style.background='#059669' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#10b981' })}>
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        İndir
+      </button>
+      <button ${dtmEventAttr('click', function(event) { pdfIndirBelge() })} style="display:none">PDF İndir</button>
+    </div>
+    <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
-  if (currentBelge === 'dokumanlar') {
-    projeDosyaListesiYukle();
-  } else if (currentBelge === 'teklif-tutanagi') {
+  if (currentBelge === 'teklif-tutanagi') {
     requestAnimationFrame(() => hizalaGorevliIsmi(document));
   }
 }
@@ -6979,6 +7021,7 @@ function renderGerceklestirmeciBelgelerView(main) {
   const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
   const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
 
+  if (currentGerceklestirmeciBelge === 'dokumanlar') currentGerceklestirmeciBelge = 'dt-onay-belgesi';
   const belgeler = [
     { id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi' },
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet' },
@@ -6986,8 +7029,7 @@ function renderGerceklestirmeciBelgelerView(main) {
     { id: 'teknik-sartname', ad: 'Teknik Şartname' },
     ...(isMalVeyaHizmet ? [] : [{ id: 'sozlesme', ad: 'Sözleşme' }]),
     { id: sonTutanakId, ad: sonTutanakAd },
-    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' },
-    { id: 'dokumanlar', ad: '📎 Dokümanlar' }
+    { id: 'hakedis-raporu', ad: 'Hakediş Raporu' }
   ];
 
   if (currentGerceklestirmeciBelge === 'bitti-tutanagi' && isMalVeyaHizmet) currentGerceklestirmeciBelge = 'muayene-kabul';
@@ -7000,17 +7042,15 @@ function renderGerceklestirmeciBelgelerView(main) {
   ).join('');
 
   let belgeHTML = '';
-  if (currentGerceklestirmeciBelge !== 'dokumanlar') {
-    switch (currentGerceklestirmeciBelge) {
-      case 'dt-onay-belgesi': belgeHTML = renderDogrudanTeminOnayBelgesi(proje); break;
-      case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
-      case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
-      case 'teknik-sartname': belgeHTML = renderTeknikSartname(proje, referans); break;
-      case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
-      case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
-      case 'muayene-kabul': belgeHTML = renderMuayeneKabulTutanagi(proje, referans); break;
-      case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
-    }
+  switch (currentGerceklestirmeciBelge) {
+    case 'dt-onay-belgesi': belgeHTML = renderDogrudanTeminOnayBelgesi(proje); break;
+    case 'yaklasik-maliyet': belgeHTML = renderYaklasikMaliyet(proje, referans); break;
+    case 'teklif-tutanagi': belgeHTML = renderTeklifTutanagi(proje, referans); break;
+    case 'teknik-sartname': belgeHTML = renderTeknikSartname(proje, referans); break;
+    case 'sozlesme': belgeHTML = renderSozlesme(proje, referans); break;
+    case 'bitti-tutanagi': belgeHTML = renderBittiTutanagi(proje, referans); break;
+    case 'muayene-kabul': belgeHTML = renderMuayeneKabulTutanagi(proje, referans); break;
+    case 'hakedis-raporu': belgeHTML = renderHakedisRaporu(proje, referans); break;
   }
 
   main.innerHTML = `
@@ -7021,53 +7061,37 @@ function renderGerceklestirmeciBelgelerView(main) {
         ← Proje Listesi
       </button>
       <div>
-        <h2>${currentGerceklestirmeciBelge === 'dokumanlar' ? '📎 Dokümanlar' : '📄 Belgeler'}${currentGerceklestirmeciReadOnly ? ' <span style="font-size:12px;font-weight:600;color:#6b7280;background:#f3f4f6;padding:3px 8px;border-radius:6px;vertical-align:middle">Salt Okunur</span>' : ''}</h2>
+        <h2>📄 Belgeler${currentGerceklestirmeciReadOnly ? ' <span style="font-size:12px;font-weight:600;color:#6b7280;background:#f3f4f6;padding:3px 8px;border-radius:6px;vertical-align:middle">Salt Okunur</span>' : ''}</h2>
         <p style="display:flex;align-items:center;gap:8px">${escHtml(proje.isAdi || '')} ${getStatusBadge(currentProjeStatus || 'onaylandi')}</p>
       </div>
     </div>
     <div class="belge-tabs">${tabs}</div>
-    ${currentGerceklestirmeciBelge === 'dokumanlar' ? `
-      <div class="card" style="margin-top:8px">
-        <div class="card-header">
-          <div>
-            <h3>📎 Projeye Ait Dokümanlar ve Evraklar</h3>
-            <span style="font-size:11px;color:var(--gray-400)">Fatura, vergi borcu yoktur, iş/yapım fotoğrafları, olur & teklif mektupları ve diğer ek evrakları görüntüleyebilir veya yükleyebilirsiniz.</span>
-          </div>
-        </div>
-        <div class="card-body">
-          <div id="projeDosyaListesi">Yükleniyor...</div>
-        </div>
-      </div>
-    ` : `
-      <div class="action-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        ${currentGerceklestirmeciBelge === 'teknik-sartname' && !currentGerceklestirmeciReadOnly ? `
-          <button ${dtmEventAttr('click', function(event) { acTeknikSartnameDuzenleModal() })}
-            style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
-            ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
-            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Şartname Metnini Düzenle
-          </button>
-        ` : ''}
-        <button ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgeYazdir() })}
-          style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
-          ${dtmEventAttr('mouseover', function(event) { this.style.background='#2563eb' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#3b82f6' })}>
-          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
-          Yazdır
+    <div class="action-bar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      ${currentGerceklestirmeciBelge === 'teknik-sartname' && !currentGerceklestirmeciReadOnly ? `
+        <button ${dtmEventAttr('click', function(event) { acTeknikSartnameDuzenleModal() })}
+          style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,0.35)"
+          ${dtmEventAttr('mouseover', function(event) { this.style.background='#d97706' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#f59e0b' })}>
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Şartname Metnini Düzenle
         </button>
-        <button ${dtmEventAttr('click', function(event) { acGerceklestirmeciIndirModal() })}
-          style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,0.35)"
-          ${dtmEventAttr('mouseover', function(event) { this.style.background='#059669' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#10b981' })}>
-          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          İndir
-        </button>
-        <button ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgePdfIndir() })} style="display:none">PDF İndir</button>
-      </div>
-      <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
-    `}
+      ` : ''}
+      <button ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgeYazdir() })}
+        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,0.35)"
+        ${dtmEventAttr('mouseover', function(event) { this.style.background='#2563eb' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#3b82f6' })}>
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+        Yazdır
+      </button>
+      <button ${dtmEventAttr('click', function(event) { acGerceklestirmeciIndirModal() })}
+        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,0.35)"
+        ${dtmEventAttr('mouseover', function(event) { this.style.background='#059669' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#10b981' })}>
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        İndir
+      </button>
+      <button ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgePdfIndir() })} style="display:none">PDF İndir</button>
+    </div>
+    <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentGerceklestirmeciBelge) ? ' landscape' : ''}">${belgeHTML}</div>
   `;
-  if (currentGerceklestirmeciBelge === 'dokumanlar') {
-    projeDosyaListesiYukle();
-  } else if (currentGerceklestirmeciBelge === 'teklif-tutanagi') {
+  if (currentGerceklestirmeciBelge === 'teklif-tutanagi') {
     requestAnimationFrame(() => hizalaGorevliIsmi(document));
   }
 }
