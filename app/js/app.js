@@ -696,7 +696,6 @@ function renderPage() {
     case 'belgeler': renderBelgelerPage(); break;
     case 'dokumanlar':
       currentBelge = 'dokumanlar';
-      if (currentCloudProjeId && !currentBelgelerProjeId) currentBelgelerProjeId = currentCloudProjeId;
       renderBelgelerPage();
       break;
     case 'veri-merkezi': main.innerHTML = renderVeriMerkeziPage(); break;
