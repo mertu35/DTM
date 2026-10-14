@@ -769,10 +769,15 @@ async function renderAnaSayfaPage() {
     </div>
 
     <!-- Yeni Proje Modal -->
-    <div id="yeniProjeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
-      <div style="background:#fff;border-radius:12px;padding:32px;width:520px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto">
-        <h3 style="margin-bottom:8px;font-size:18px;color:var(--gray-800)">📋 Yeni Proje Oluştur</h3>
-        <p style="font-size:13px;color:var(--gray-500);margin-bottom:20px">Nasıl oluşturmak istersiniz?</p>
+    <div id="yeniProjeModal" ${dtmEventAttr('click', function(event) { if (event.target === this) kapatYeniProjeModal(); })} style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:12px;padding:28px 32px;width:540px;max-width:94vw;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;position:relative">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
+          <div>
+            <h3 style="margin:0 0 4px 0;font-size:18px;color:var(--gray-800)">📋 Yeni Proje Oluştur</h3>
+            <p style="margin:0;font-size:13px;color:var(--gray-500)">Nasıl oluşturmak istersiniz?</p>
+          </div>
+          <button type="button" ${dtmEventAttr('click', function(event) { kapatYeniProjeModal(); })} title="Kapat" style="background:#f1f5f9;border:1px solid #e2e8f0;color:var(--gray-600);width:32px;height:32px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1">✕</button>
+        </div>
 
         <!-- Adım 1: Seçim -->
         <div id="yeniProjeAdim1" style="display:flex;flex-direction:column;gap:12px">
@@ -797,7 +802,7 @@ async function renderAnaSayfaPage() {
             <div style="font-weight:600;color:var(--gray-800)">📄 Olur Dosyasından Oluştur</div>
             <div style="font-size:12px;color:var(--gray-500);margin-top:4px">Onay belgesi yükleyerek iş adını otomatik doldurun</div>
           </button>
-          <button ${dtmEventAttr('click', function(event) { document.getElementById('yeniProjeModal').style.display='none' })} style="padding:8px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--gray-400)">İptal</button>
+          <button ${dtmEventAttr('click', function(event) { kapatYeniProjeModal(); })} style="padding:8px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--gray-400)">İptal</button>
         </div>
 
         <!-- Adım 2a: Manuel -->
@@ -919,24 +924,30 @@ async function renderAnaSayfaPage() {
 
           <!-- İlerleme / Durum -->
           <div id="topluIlerlemeDurumu" style="display:none;margin-top:12px;padding:12px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">
-            <div style="display:flex;align-items:center;gap:10px">
-              <span id="topluSpinner" style="font-size:18px">⏳</span>
-              <div style="flex:1">
-                <div id="topluDurumBaslik" style="font-size:13px;font-weight:600;color:#0369a1">Analiz Başlatılıyor...</div>
-                <div id="topluDurumDetay" style="font-size:11px;color:#0284c7;margin-top:2px">Lütfen bekleyin</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1">
+                <span id="topluSpinner" style="font-size:18px;flex-shrink:0">⏳</span>
+                <div style="flex:1;overflow:hidden">
+                  <div id="topluDurumBaslik" style="font-size:13px;font-weight:600;color:#0369a1">Analiz Başlatılıyor...</div>
+                  <div id="topluDurumDetay" style="font-size:11px;color:#0284c7;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Lütfen bekleyin</div>
+                </div>
               </div>
+              <button type="button" id="btnTopluAnalizDurdur" ${dtmEventAttr('click', function(event) { topluAnaliziDurdur(); })} style="padding:5px 10px;background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">⏹ Durdur</button>
             </div>
             <div style="width:100%;height:6px;background:#e0f2fe;border-radius:3px;margin-top:8px;overflow:hidden">
               <div id="topluIlerlemeBar" style="width:0%;height:100%;background:#0284c7;transition:width 0.3s"></div>
             </div>
           </div>
 
-          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
-            <button id="btnTopluGeri" ${dtmEventAttr('click', function(event) { document.getElementById('yeniProjeAdim2Toplu').style.display='none';document.getElementById('yeniProjeAdim1').style.display='flex'; })} style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">← Geri</button>
-            <button id="btnTopluAnalizBaslat" class="btn btn-primary" style="padding:8px 22px;display:flex;align-items:center;gap:6px"
-              ${dtmEventAttr('click', function(event) { topluAnaliziBaslat(); })}>
-              <span>🚀 Belgeleri Çözümle ve Projeyi Oluştur</span>
-            </button>
+          <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:16px;flex-wrap:wrap">
+            <button type="button" id="btnTopluKapat" ${dtmEventAttr('click', function(event) { kapatYeniProjeModal(); })} style="padding:8px 14px;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">✕ Vazgeç / Kapat</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button type="button" id="btnTopluGeri" ${dtmEventAttr('click', function(event) { topluAnaliziDurdur(true); document.getElementById('yeniProjeAdim2Toplu').style.display='none';document.getElementById('yeniProjeAdim1').style.display='flex'; })} style="padding:8px 18px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">← Geri</button>
+              <button type="button" id="btnTopluAnalizBaslat" class="btn btn-primary" style="padding:8px 20px;display:flex;align-items:center;gap:6px"
+                ${dtmEventAttr('click', function(event) { topluAnaliziBaslat(); })}>
+                <span>🚀 Belgeleri Çözümle ve Projeyi Oluştur</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1021,6 +1032,12 @@ function yeniProjeModalSifirla(modal) {
   if (btnBaslat) { btnBaslat.disabled = false; btnBaslat.style.opacity = '1'; }
   const btnGeri = modal.querySelector('#btnTopluGeri');
   if (btnGeri) { btnGeri.disabled = false; btnGeri.style.opacity = '1'; }
+}
+
+function kapatYeniProjeModal() {
+  if (typeof topluAnaliziDurdur === 'function') topluAnaliziDurdur(true);
+  const modal = document.getElementById('yeniProjeModal');
+  if (modal) modal.style.display = 'none';
 }
 
 function yeniProjeOlustur() {
@@ -2518,10 +2535,18 @@ async function dtmFileToBase64(file) {
 }
 
 const GEMINI_ALLOWED_MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+let lastWorkingGeminiModel = '';
+const deadGeminiModels = new Set();
+let topluAnalizAbortController = null;
+let topluAnalizDurduruldu = false;
+
 function getSafeGeminiModels() {
   const raw = (referans && typeof referans.geminiModel === 'string') ? referans.geminiModel.trim() : '';
   const selectedModel = GEMINI_ALLOWED_MODELS.includes(raw) ? raw : 'gemini-3.8-flash';
-  return [selectedModel, ...GEMINI_ALLOWED_MODELS].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+  const ordered = [lastWorkingGeminiModel, selectedModel, ...GEMINI_ALLOWED_MODELS]
+    .filter((m, idx, arr) => m && GEMINI_ALLOWED_MODELS.includes(m) && arr.indexOf(m) === idx);
+  const alive = ordered.filter(m => !deadGeminiModels.has(m));
+  return alive.length > 0 ? alive : ordered;
 }
 
 function dtmTemizleGeminiHamYanit(parsed, kategori = '') {
@@ -2821,7 +2846,9 @@ Yanıtını SADECE geçerli bir JSON formatında döndür:
   const models = getSafeGeminiModels();
   let lastError = null;
 
-  for (const model of models) {
+  for (let mi = 0; mi < models.length; mi++) {
+    const model = models[mi];
+    if (topluAnalizDurduruldu) throw new Error('Analiz kullanıcı tarafından durduruldu.');
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const payload = {
@@ -2844,23 +2871,38 @@ Yanıtını SADECE geçerli bir JSON formatında döndür:
         }
       };
 
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      const reqCtrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      topluAnalizAbortController = reqCtrl;
+      const timerId = reqCtrl ? setTimeout(() => { try { reqCtrl.abort(); } catch(_) {} }, 25000) : null;
+
+      let res;
+      try {
+        res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          ...(reqCtrl ? { signal: reqCtrl.signal } : {})
+        });
+      } finally {
+        if (timerId) clearTimeout(timerId);
+      }
 
       if (!res.ok) {
         const errText = await res.text();
         console.warn(`[Gemini API - Toplu] ${model} hata verdi (${res.status}):`, errText);
         lastError = new Error(`Gemini API Hatası (${res.status}): ${errText}`);
-        if ([404, 429, 500, 503].includes(res.status)) {
-          if (res.status === 429 || res.status === 503) await new Promise(r => setTimeout(r, 1500));
+        if (res.status === 404) {
+          deadGeminiModels.add(model);
+          continue;
+        }
+        if ([429, 500, 503].includes(res.status)) {
+          await new Promise(r => setTimeout(r, 2000));
           continue;
         }
         throw lastError;
       }
 
+      lastWorkingGeminiModel = model;
       const data = await res.json();
       const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) throw new Error('Gemini API boş yanıt döndürdü.');
@@ -2872,6 +2914,13 @@ Yanıtını SADECE geçerli bir JSON formatında döndür:
       const parsed = dtmTemizleGeminiHamYanit(JSON.parse(cleaned), kategori);
       return dtmAiYanitiDogrula(parsed);
     } catch (err) {
+      if (topluAnalizDurduruldu || (err && err.name === 'AbortError' && topluAnalizDurduruldu)) {
+        throw new Error('Analiz kullanıcı tarafından durduruldu.');
+      }
+      if (err && err.name === 'AbortError') {
+        lastError = new Error(`${model} yanıt süresi aşıldı (25 sn).`);
+        continue;
+      }
       lastError = err;
       if (err.message && (err.message.includes('404') || err.message.includes('429') || err.message.includes('503'))) continue;
       throw err;
@@ -3422,6 +3471,23 @@ function topluDosyalariGuncelleUI() {
   });
 }
 
+function topluAnaliziDurdur(sessiz = false) {
+  topluAnalizDurduruldu = true;
+  if (topluAnalizAbortController) {
+    try { topluAnalizAbortController.abort(); } catch(_) {}
+    topluAnalizAbortController = null;
+  }
+  const ilerlemeEl = document.getElementById('topluIlerlemeDurumu');
+  const btnBaslat = document.getElementById('btnTopluAnalizBaslat');
+  const btnGeri = document.getElementById('btnTopluGeri');
+  if (ilerlemeEl) ilerlemeEl.style.display = 'none';
+  if (btnBaslat) { btnBaslat.disabled = false; btnBaslat.style.opacity = '1'; }
+  if (btnGeri) { btnGeri.disabled = false; btnGeri.style.opacity = '1'; }
+  if (!sessiz) {
+    showToast('Analiz durduruldu.', 'info', 2500);
+  }
+}
+
 async function topluAnaliziBaslat() {
   syncTopluDuzListe();
   if (topluSecilenDosyalar.length === 0) {
@@ -3435,6 +3501,7 @@ async function topluAnaliziBaslat() {
     return;
   }
 
+  topluAnalizDurduruldu = false;
   const ilerlemeEl = document.getElementById('topluIlerlemeDurumu');
   const baslikEl = document.getElementById('topluDurumBaslik');
   const detayEl = document.getElementById('topluDurumDetay');
@@ -3444,7 +3511,6 @@ async function topluAnaliziBaslat() {
 
   if (ilerlemeEl) ilerlemeEl.style.display = 'block';
   if (btnBaslat) { btnBaslat.disabled = true; btnBaslat.style.opacity = '0.6'; }
-  if (btnGeri) { btnGeri.disabled = true; btnGeri.style.opacity = '0.6'; }
 
   const islenecekKuyruk = [];
   const grupEtiket = {
@@ -3463,6 +3529,7 @@ async function topluAnaliziBaslat() {
   const hataliDosyalar = [];
 
   for (let i = 0; i < total; i++) {
+    if (topluAnalizDurduruldu) break;
     const item = islenecekKuyruk[i];
     const durumEl = document.getElementById(`topluDosyaDurum_${item.grup}_${item.idx}`);
     if (durumEl) { durumEl.style.color = '#0284c7'; durumEl.textContent = '⏳ Okunuyor...'; }
@@ -3472,6 +3539,7 @@ async function topluAnaliziBaslat() {
 
     if (i > 0) {
       await new Promise(r => setTimeout(r, 350));
+      if (topluAnalizDurduruldu) break;
     }
 
     try {
@@ -3480,23 +3548,34 @@ async function topluAnaliziBaslat() {
       if (durumEl) { durumEl.style.color = '#16a34a'; durumEl.textContent = '✅ Okundu'; }
       if (barEl) barEl.style.width = `${Math.round(((i + 1) / total) * 100)}%`;
     } catch (err) {
+      if (topluAnalizDurduruldu) break;
       console.warn(`[Toplu Analiz] ${item.file.name} çözümlenemedi:`, err);
       if (durumEl) { durumEl.style.color = '#dc2626'; durumEl.textContent = '⚠️ Hata'; durumEl.title = err.message || ''; }
       hataliDosyalar.push({ dosya: item.file.name, hata: err.message });
     }
   }
 
+  topluAnalizAbortController = null;
   if (btnBaslat) { btnBaslat.disabled = false; btnBaslat.style.opacity = '1'; }
   if (btnGeri) { btnGeri.disabled = false; btnGeri.style.opacity = '1'; }
   if (ilerlemeEl) ilerlemeEl.style.display = 'none';
 
+  const modalEl = document.getElementById('yeniProjeModal');
+  if (topluAnalizDurduruldu && (!modalEl || modalEl.style.display === 'none')) {
+    return;
+  }
+
   if (parsedResults.length === 0) {
-    showToast('Belgelerden hiçbiri çözümlenemedi. ' + (hataliDosyalar[0]?.hata || ''), 'error', 5000);
+    if (!topluAnalizDurduruldu) {
+      showToast('Belgelerden hiçbiri çözümlenemedi. ' + (hataliDosyalar[0]?.hata || ''), 'error', 5000);
+    }
     return;
   }
 
   if (hataliDosyalar.length > 0) {
     showToast(`${total} belgeden ${parsedResults.length} adedi okundu, ${hataliDosyalar.length} dosya atlandı.`, 'warning', 4500);
+  } else if (topluAnalizDurduruldu) {
+    showToast(`Okunan ${parsedResults.length} belge ile özet hazırlandı.`, 'info', 3500);
   }
 
   let ozet;
@@ -3684,6 +3763,8 @@ function dtmTopluProjeyiKabulEt(yeniProje, ozet) {
 }
 
 if (typeof window !== 'undefined') {
+  window.kapatYeniProjeModal = kapatYeniProjeModal;
+  window.topluAnaliziDurdur = topluAnaliziDurdur;
   window.acYeniProjeTopluAdim = acYeniProjeTopluAdim;
   window.setupTopluDropzone = setupTopluDropzone;
   window.topluDosyalarEkle = topluDosyalarEkle;
