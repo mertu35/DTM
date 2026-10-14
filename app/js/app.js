@@ -8276,7 +8276,7 @@ async function duyuruKendindenGizleCagir(duyuruId) {
 }
 
 // ===================== HAKKINDA SAYFASI =====================
-const APP_CURRENT_VERSION = '2.1.0';
+const APP_CURRENT_VERSION = '2.5.0';
 
 async function checkForUpdates(showLoading = false) {
   try {
@@ -8339,11 +8339,25 @@ async function renderHakkindaPage() {
         </div>
       </div>
 
-      <!-- v2.1.0 Yenilikler -->
+      <!-- v2.5.0 Yenilikler -->
       <div class="card" style="margin-bottom:16px;border-left:4px solid var(--primary);">
-        <div class="card-header"><h3 style="font-size:15px;color:var(--primary);">🚀 v2.1.0 Sürüm Notları (En Son)</h3></div>
+        <div class="card-header"><h3 style="font-size:15px;color:var(--primary);">🚀 v2.5.0 Sürüm Notları (En Son)</h3></div>
         <div class="card-body">
           <ul style="margin:0;padding-left:20px;font-size:13.5px;line-height:2;color:var(--gray-800);">
+            <li>🤖 <strong>Google Gemini AI ile Çoklu Evraktan Proje Oluşturma:</strong> Yaklaşık maliyet, teklif mektupları ve tutanakları tek seferde okuyup iş kalemlerini, firmaları ve fiyatları otomatik çıkaran yapay zeka asistanı.</li>
+            <li>📂 <strong>4 Sekmeli Proje Doküman Arşivi:</strong> Fotoğraflar, Fatura, Vergi Borcu Yoktur ve Diğer Belgeler için sürükle-bırak destekli bulut arşiv modülü.</li>
+            <li>🛡️ <strong>İleri Düzey Güvenlik & Yetki İzolasyonu:</strong> AI API anahtarının izole edilmesi, kullanıcı bazlı AI Yetkisi anahtarı, sıkı CSP ve alan bazlı Firestore güvenlik kuralları.</li>
+            <li>⚡ <strong>Yerel PDF & OCR Motoru:</strong> PDF.js ve Tesseract.js kütüphanelerinin yerel önbellek mimarisine taşınmasıyla daha hızlı ve güvenli belge tarama.</li>
+            <li>🌙 <strong>Koyu Tema (Dark Mode) & Arayüz İyileştirmeleri:</strong> Koyu temada okunabilirlik, kontrast ve gezinme iyileştirmeleri.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- v2.1.0 Yenilikler -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3 style="font-size:15px;">📝 v2.1.0 Sürüm Notları</h3></div>
+        <div class="card-body">
+          <ul style="margin:0;padding-left:20px;font-size:13.5px;line-height:2;color:var(--gray-600);">
             <li>✨ <strong>Modern Kurumsal SVG İkon Mimarisi:</strong> Tüm sistem Lucide/Heroicons vektörel SVG ikon setine geçirildi.</li>
             <li>👥 <strong>Veri Merkezi & Personel Rehberi:</strong> Açılır liste (dropdown) + profil kartı mimarisi, klavye seviyesinde rakam engeli ve açılır listeden disiplin seçimi.</li>
             <li>🔤 <strong>Akıllı Türkçe Alfabetik Sıralama:</strong> Tüm personel ve firma listeleri Türkçe karakter duyarlı otomatik sıralandı.</li>
