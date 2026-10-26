@@ -9548,137 +9548,242 @@ async function checkForUpdates(showLoading = false) {
   }
 }
 
+let currentHakkindaTab = 'hakkinda';
+
+function hakkindaSekmeDegistir(sekme) {
+  currentHakkindaTab = sekme;
+  renderHakkindaPage();
+}
+
+function hakkindaBilgileriKopyala() {
+  const tarayici = (typeof navigator !== 'undefined' && navigator.userAgent)
+    ? (navigator.userAgent.split(') ').pop().split(' ')[0] || navigator.userAgent)
+    : 'Bilinmiyor';
+  const metin = [
+    `Uygulama: Doğrudan Temin Modülü (DTM)`,
+    `Geliştirici: Merih Yazılım`,
+    `Kurum: Karaman İl Özel İdaresi - Yatırım ve İnşaat Müdürlüğü`,
+    `Sürüm: v${APP_CURRENT_VERSION}`,
+    `Sürüm Numarası: 20261026 (dtm-v117)`,
+    `Platform: Web PWA / Firebase Cloud`,
+    `Tarayıcı: ${tarayici}`,
+    `Tarih: ${new Date().toLocaleString('tr-TR')}`
+  ].join('\n');
+
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(metin).then(() => {
+      showToast('📋 Sürüm ve sistem bilgileri panoya kopyalandı!', 'success');
+    }).catch(() => {
+      showToast('Panoya kopyalanamadı.', 'warning');
+    });
+  } else {
+    showToast('📋 Bilgiler hazır: v' + APP_CURRENT_VERSION, 'info');
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.hakkindaSekmeDegistir = hakkindaSekmeDegistir;
+  window.hakkindaBilgileriKopyala = hakkindaBilgileriKopyala;
+}
+
 async function renderHakkindaPage() {
   const main = document.getElementById('mainContent');
-  main.innerHTML = `
-    <div class="vm-page-header">
-      <div class="vm-header-title">
-        <div class="vm-header-icon">
-          ${typeof getIcon === 'function' ? getIcon('clipboardCheck', 22) : 'ℹ️'}
+  const aktifSekme = currentHakkindaTab || 'hakkinda';
+  const tarayiciKisa = (typeof navigator !== 'undefined' && navigator.userAgent)
+    ? (navigator.userAgent.split(') ').pop().split(' ')[0] || navigator.userAgent)
+    : 'Web Tarayıcı';
+  const isletimSistemi = (typeof navigator !== 'undefined' && navigator.userAgent)
+    ? (navigator.userAgent.includes('Windows') ? 'Windows (x86_64)' : navigator.userAgent.includes('Mac') ? 'macOS' : navigator.userAgent.includes('Linux') ? 'Linux' : 'Web İstemci')
+    : 'Windows / Web';
+  const kullaniciRol = currentDTMUser
+    ? `${currentDTMUser.displayName || currentDTMUser.username || 'Kullanıcı'} (${getRoleLabel(currentDTMUser.role)})`
+    : 'Standart Oturum';
+
+  const sekmeler = [
+    { id: 'hakkinda',       baslik: 'Hakkında' },
+    { id: 'surum-notlari',  baslik: 'Sürüm Notları' },
+    { id: 'iletisim',       baslik: 'İletişim Bilgileri' }
+  ];
+
+  const sekmeBarHtml = `
+    <div style="display:flex;justify-content:center;border-bottom:1.5px solid #cbd5e1;margin-bottom:22px;gap:4px;flex-wrap:wrap">
+      ${sekmeler.map(s => {
+        const aktif = s.id === aktifSekme;
+        return `
+          <button type="button" ${dtmEventAttr('click', function(event) { hakkindaSekmeDegistir(String(s.id)); })}
+            style="padding:9px 22px;font-size:13.5px;font-weight:${aktif ? '700' : '600'};color:${aktif ? '#0c4a6e' : '#475569'};background:${aktif ? '#fff' : '#f1f5f9'};border:1.5px solid ${aktif ? '#cbd5e1' : '#e2e8f0'};border-bottom:${aktif ? '2px solid #fff' : '1.5px solid #cbd5e1'};border-radius:8px 8px 0 0;margin-bottom:-1.5px;cursor:pointer;transition:all 0.15s">
+            ${escHtml(s.baslik)}
+          </button>`;
+      }).join('')}
+    </div>`;
+
+  let icerikHtml = '';
+
+  if (aktifSekme === 'hakkinda') {
+    icerikHtml = `
+      <!-- FreeCAD Tarzı Görsel Logo & Versiyon Kartı -->
+      <div style="position:relative;background:linear-gradient(135deg,#f8fafc 0%,#e0f2fe 100%);border:1.5px solid #bae6fd;border-radius:14px;padding:34px 28px;margin-bottom:18px;box-shadow:inset 0 1px 0 #fff, 0 4px 14px rgba(2,132,199,0.08);overflow:hidden">
+        <div style="position:absolute;inset:0;background-image:linear-gradient(to right, rgba(2,132,199,0.07) 1px, transparent 1px), linear-gradient(to bottom, rgba(2,132,199,0.07) 1px, transparent 1px);background-size:28px 28px;pointer-events:none"></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap">
+          <div style="width:74px;height:74px;border-radius:18px;background:linear-gradient(135deg,#0c4a6e,#0284c7);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(2,132,199,0.28);flex-shrink:0">
+            ${typeof getIcon === 'function' ? getIcon('fileText', 40) : '📄'}
+          </div>
+          <div style="text-align:left">
+            <div style="font-size:34px;font-weight:800;color:#0c4a6e;letter-spacing:-0.5px;line-height:1.1">
+              DTM <span style="font-weight:400;color:#0369a1;font-size:24px">Modülü</span>
+            </div>
+            <div style="font-size:13.5px;color:#334155;font-weight:600;margin-top:4px">
+              Doğrudan Temin & Hakediş Yönetim Sistemi
+            </div>
+            <div style="font-size:15px;font-weight:700;color:#0f172a;margin-top:6px;text-align:right">
+              version <span style="font-family:monospace;font-size:17px;color:#0284c7">${escHtml(APP_CURRENT_VERSION)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-bottom:18px">
+        <span style="font-size:13px;color:#0284c7;font-weight:600;text-decoration:underline;cursor:pointer" ${dtmEventAttr('click', function(event) { hakkindaSekmeDegistir('iletisim'); })}>
+          Merih Yazılım © 2024–2026 • Karaman İl Özel İdaresi
+        </span>
+      </div>
+
+      <!-- Sistem & Sürüm Detay Tablosu -->
+      <div style="padding:6px 10px;margin-bottom:18px">
+        <table style="width:100%;font-size:13.5px;border-collapse:collapse">
+          <tbody>
+            <tr>
+              <td style="padding:7px 8px;color:#475569;width:38%">Sürüm</td>
+              <td style="padding:7px 8px;font-weight:700;color:#0f172a">${escHtml(APP_CURRENT_VERSION)}</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 8px;color:#475569">Sürüm numarası</td>
+              <td style="padding:7px 8px;font-weight:600;color:#1e293b;font-family:monospace">20261026 (dtm-v117)</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 8px;color:#475569">Yayım tarihi</td>
+              <td style="padding:7px 8px;font-weight:600;color:#1e293b">2026/10/26</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 8px;color:#475569">İşletim Sistemi / Ortam</td>
+              <td style="padding:7px 8px;font-weight:600;color:#1e293b">${escHtml(isletimSistemi)}</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 8px;color:#475569">Mimari & Altyapı</td>
+              <td style="padding:7px 8px;font-weight:600;color:#1e293b">PWA Cloud + Yerel OCR & Gemini AI</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 8px;color:#475569">Tarayıcı</td>
+              <td style="padding:7px 8px;font-weight:600;color:#1e293b">${escHtml(tarayiciKisa)}</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 8px;color:#475569">Aktif Oturum</td>
+              <td style="padding:7px 8px;font-weight:600;color:#0369a1">${escHtml(kullaniciRol)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Güncelleme Durumu & Aksiyon Çubuğu -->
+      <div id="guncellemeDurum" style="margin-bottom:14px;padding:10px 14px;border-radius:8px;background:var(--gray-50);border:1px solid var(--gray-200);font-size:13px;color:var(--gray-600)">
+        Güncelleme durumu kontrol ediliyor...
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid #e2e8f0">
+        <button type="button" ${dtmEventAttr('click', function(event) { hakkindaBilgileriKopyala(); })}
+          style="padding:7px 16px;background:#f8fafc;color:#1e293b;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">
+          📋 Panoya Kopyala
+        </button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-primary" ${dtmEventAttr('click', function(event) { guncellemeyiKontrolEt(); })} style="padding:7px 14px;font-size:12.5px">
+            🔍 Güncellemeleri Denetle
+          </button>
+          <button type="button" id="guncellemeyiUygulaBttn" class="btn btn-success" ${dtmEventAttr('click', function(event) { uygulamaGuncelle(); })} style="display:none;padding:7px 14px;font-size:12.5px">
+            🔄 Güncellemeyi Uygula
+          </button>
+        </div>
+      </div>
+    `;
+  } else if (aktifSekme === 'surum-notlari') {
+    icerikHtml = `
+      <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;padding:18px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #bae6fd">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px">🚀</span>
+            <h3 style="margin:0;font-size:16px;font-weight:800;color:#0c4a6e">v${escHtml(APP_CURRENT_VERSION)} — Son Sürüm Notları</h3>
+          </div>
+          <span style="padding:3px 10px;border-radius:12px;background:#0284c7;color:#fff;font-size:11.5px;font-weight:700">Güncel Sürüm</span>
+        </div>
+        <ul style="margin:0;padding-left:20px;font-size:13.5px;line-height:2.05;color:#1e293b">
+          <li>🌊 <strong>Yumuşak Okyanus (Çelik Mavisi) Kurumsal Tema:</strong> Veri Giriş Formu kartları, teklif tabloları ve birim fiyat kutuları göz yormayan okyanus mavisi kurumsal tasarımla yenilendi.</li>
+          <li>📊 <strong>Canlı Proje Durumu & Hızlı Geçiş Çubuğu:</strong> Veri giriş formunun en üstünde 5 adımlı canlı kontrol listesi (Checklist), tek tıkla bölüme kaydırma ve tüm kartları daraltıp açma aracı eklendi.</li>
+          <li>⚡ <strong>Y.M. Firmalarını Resmi Teklife Tek Tıkla Aktarma:</strong> Yaklaşık maliyette seçilen firmaları resmi teklif mektuplarına tek tuşla kopyalama özelliği eklendi.</li>
+          <li>🖼️ <strong>Tam Ekran Fotoğraf Galerisi & Klavye Gezinmesi:</strong> Dokümanlar sekmesinde fotoğraflar arasında <code>←</code> <code>→</code> yön tuşlarıyla tam ekran gezinme, yakınlaştırma, döndürme ve çoklu ZIP indirme eklendi.</li>
+          <li>🖨️ <strong>Fotoğraf Tutanağı / Görsel Rapor (A4 PDF):</strong> İşe ait fotoğraflardan tek tıkla kurumsal başlıklı ve imzalı A4 Fotoğraf Tutanağı üretme özelliği eklendi.</li>
+          <li>📎 <strong>Proje Kartlarında Canlı Evrak Rozetleri:</strong> Projelerim ve Dokümanlar listelerinde her projenin yüklü evrak/fotoğraf sayısını gösteren özet rozetler eklendi.</li>
+        </ul>
+      </div>
+    `;
+  } else if (aktifSekme === 'iletisim') {
+    icerikHtml = `
+      <div style="background:linear-gradient(135deg,#0c4a6e 0%,#0284c7 100%);border-radius:12px;padding:24px;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;box-shadow:0 6px 18px rgba(2,132,199,0.2)">
+        <div style="width:60px;height:60px;border-radius:14px;background:rgba(255,255,255,0.16);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;flex-shrink:0">
+          M
         </div>
         <div>
-          <h2>Hakkında & Sürüm Bilgileri</h2>
-          <p>Uygulama bilgileri, sistem durumu ve güncelleme denetimi.</p>
-        </div>
-      </div>
-    </div>
-    <div style="max-width:640px;margin:0 auto;">
-
-      <!-- Uygulama Kartı -->
-      <div style="background:linear-gradient(135deg,#1e3a5f,#1a56db);border-radius:16px;padding:32px;color:#fff;margin-bottom:20px;text-align:center;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(26,86,219,0.2);">
-        <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
-        <div style="display:flex;justify-content:center;margin-bottom:12px;">
-          ${typeof getIcon === 'function' ? getIcon('fileText', 48) : '📄'}
-        </div>
-        <div style="font-size:24px;font-weight:700;margin-bottom:4px;">Doğrudan Temin Modülü</div>
-        <div style="font-size:13px;opacity:0.8;margin-bottom:16px;">Karaman İl Özel İdaresi &middot; Yatırım ve İnşaat Müdürlüğü</div>
-        <div style="display:inline-block;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:6px 22px;font-size:15px;font-weight:700;letter-spacing:1px;">
-          v${APP_CURRENT_VERSION}
+          <div style="font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:#bae6fd;font-weight:700">Geliştirici & Teknoloji Çözüm Ortağı</div>
+          <div style="font-size:22px;font-weight:800;margin-top:2px">Merih Yazılım</div>
+          <div style="font-size:13px;color:#e0f2fe;margin-top:3px">Kurumsal Kamu Yazılımları & Mühendislik Otomasyon Sistemleri</div>
         </div>
       </div>
 
-      <!-- Güncelleme Kontrol Kartı -->
-      <div class="card" style="margin-bottom:16px;">
-        <div class="card-header"><h3 style="font-size:15px;">🔄 Güncelleme Kontrolü</h3></div>
-        <div class="card-body">
-          <div id="guncellemeDurum" style="margin-bottom:16px;padding:12px 16px;border-radius:8px;background:var(--gray-50);border:1px solid var(--gray-200);font-size:14px;color:var(--gray-600);">
-            Güncelleme durumu kontrol ediliyor...
+      <div style="border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#fff">
+        <table style="width:100%;font-size:13.5px;border-collapse:collapse">
+          <tbody>
+            <tr style="border-bottom:1px solid #f1f5f9">
+              <td style="padding:12px 16px;color:#64748b;width:36%;font-weight:600">🏢 Yazılım & Geliştirme</td>
+              <td style="padding:12px 16px;font-weight:700;color:#0c4a6e">Merih Yazılım</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9">
+              <td style="padding:12px 16px;color:#64748b;font-weight:600">🏛️ Kurum & Birim</td>
+              <td style="padding:12px 16px;font-weight:600;color:#1e293b">T.C. Karaman İl Özel İdaresi — Yatırım ve İnşaat Müdürlüğü</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9">
+              <td style="padding:12px 16px;color:#64748b;font-weight:600">🛠️ Teknik Destek</td>
+              <td style="padding:12px 16px;color:#334155">Sistem içi <strong>Duyurular</strong> modülü veya Sistem Yöneticisi üzerinden Merih Yazılım destek ekibine ulaşabilirsiniz.</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 16px;color:#64748b;font-weight:600">📜 Telif & Lisans</td>
+              <td style="padding:12px 16px;color:#475569">© 2024–2026 <strong>Merih Yazılım</strong>. Kurumsal kullanım için özel olarak geliştirilmiştir.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  main.innerHTML = `
+    <div style="max-width:650px;margin:12px auto;">
+      <div class="card" style="border:1.5px solid #cbd5e1;border-radius:14px;box-shadow:0 10px 30px rgba(15,23,42,0.08);overflow:hidden;background:#fff">
+        <div style="padding:14px 20px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:14.5px;color:#0f172a">
+            <span style="color:#0284c7;display:inline-flex">${typeof getIcon === 'function' ? getIcon('clipboardCheck', 18) : 'ℹ️'}</span>
+            <span>Hakkında — Doğrudan Temin Modülü</span>
           </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { guncellemeyiKontrolEt() })}>🔍 Güncellemeleri Denetle</button>
-            <button id="guncellemeyiUygulaBttn" class="btn btn-success" ${dtmEventAttr('click', function(event) { uygulamaGuncelle() })} style="display:none;">🔄 Güncellemeyi Uygula</button>
-          </div>
+          <span style="font-size:12px;font-weight:700;color:#0369a1;background:#e0f2fe;padding:2px 9px;border-radius:10px">v${escHtml(APP_CURRENT_VERSION)}</span>
         </div>
-      </div>
-
-      <!-- v2.6.0 Yenilikler -->
-      <div class="card" style="margin-bottom:16px;border-left:4px solid #0284c7;">
-        <div class="card-header"><h3 style="font-size:15px;color:#0284c7;">🚀 v2.6.0 Sürüm Notları (En Son)</h3></div>
-        <div class="card-body">
-          <ul style="margin:0;padding-left:20px;font-size:13.5px;line-height:2;color:var(--gray-800);">
-            <li>🌊 <strong>Yumuşak Okyanus (Çelik Mavisi) Kurumsal Tema:</strong> Veri Giriş Formu kartları, teklif tabloları ve birim fiyat kutuları göz yormayan okyanus mavisi kurumsal tasarımla yenilendi.</li>
-            <li>📊 <strong>Canlı Proje Durumu & Hızlı Geçiş Çubuğu:</strong> Veri giriş formunun en üstünde 5 adımlı canlı kontrol listesi (Checklist), tek tıkla bölüme kaydırma ve tüm kartları daraltıp açma aracı eklendi.</li>
-            <li>⚡ <strong>Y.M. Firmalarını Resmi Teklife Tek Tıkla Aktarma:</strong> Yaklaşık maliyette seçilen firmaları resmi teklif mektuplarına tek tuşla kopyalama özelliği eklendi.</li>
-            <li>🖼️ <strong>Tam Ekran Fotoğraf Galerisi & Klavye Gezinmesi:</strong> Dokümanlar sekmesinde fotoğraflar arasında <code>←</code> <code>→</code> yön tuşlarıyla tam ekran gezinme, yakınlaştırma, döndürme ve çoklu ZIP indirme eklendi.</li>
-            <li>🖨️ <strong>Fotoğraf Tutanağı / Görsel Rapor (A4 PDF):</strong> İşe ait fotoğraflardan tek tıkla kurumsal başlıklı ve imzalı A4 Fotoğraf Tutanağı üretme özelliği eklendi.</li>
-            <li>📎 <strong>Proje Kartlarında Canlı Evrak Rozetleri:</strong> Projelerim ve Dokümanlar listelerinde her projenin yüklü evrak/fotoğraf sayısını gösteren özet rozetler eklendi.</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- v2.5.0 Yenilikler -->
-      <div class="card" style="margin-bottom:16px;">
-        <div class="card-header"><h3 style="font-size:15px;">📝 v2.5.0 Sürüm Notları</h3></div>
-        <div class="card-body">
-          <ul style="margin:0;padding-left:20px;font-size:13.5px;line-height:2;color:var(--gray-800);">
-            <li>🤖 <strong>Google Gemini AI ile Çoklu Evraktan Proje Oluşturma:</strong> Yaklaşık maliyet, teklif mektupları ve tutanakları tek seferde okuyup iş kalemlerini, firmaları ve fiyatları otomatik çıkaran yapay zeka asistanı.</li>
-            <li>📂 <strong>4 Sekmeli Proje Doküman Arşivi:</strong> Fotoğraflar, Fatura, Vergi Borcu Yoktur ve Diğer Belgeler için sürükle-bırak destekli bulut arşiv modülü.</li>
-            <li>🛡️ <strong>İleri Düzey Güvenlik & Yetki İzolasyonu:</strong> AI API anahtarının izole edilmesi, kullanıcı bazlı AI Yetkisi anahtarı, sıkı CSP ve alan bazlı Firestore güvenlik kuralları.</li>
-            <li>⚡ <strong>Yerel PDF & OCR Motoru:</strong> PDF.js ve Tesseract.js kütüphanelerinin yerel önbellek mimarisine taşınmasıyla daha hızlı ve güvenli belge tarama.</li>
-            <li>🌙 <strong>Koyu Tema (Dark Mode) & Arayüz İyileştirmeleri:</strong> Koyu temada okunabilirlik, kontrast ve gezinme iyileştirmeleri.</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- v2.1.0 Yenilikler -->
-      <div class="card" style="margin-bottom:16px;">
-        <div class="card-header"><h3 style="font-size:15px;">📝 v2.1.0 Sürüm Notları</h3></div>
-        <div class="card-body">
-          <ul style="margin:0;padding-left:20px;font-size:13.5px;line-height:2;color:var(--gray-600);">
-            <li>✨ <strong>Modern Kurumsal SVG İkon Mimarisi:</strong> Tüm sistem Lucide/Heroicons vektörel SVG ikon setine geçirildi.</li>
-            <li>👥 <strong>Veri Merkezi & Personel Rehberi:</strong> Açılır liste (dropdown) + profil kartı mimarisi, klavye seviyesinde rakam engeli ve açılır listeden disiplin seçimi.</li>
-            <li>🔤 <strong>Akıllı Türkçe Alfabetik Sıralama:</strong> Tüm personel ve firma listeleri Türkçe karakter duyarlı otomatik sıralandı.</li>
-            <li>📊 <strong>Finansal Dashboard & Kategori Dağılımı:</strong> Gerçekleşen harcama (onaylı), süreçteki yük (bekleyen) ve Yapım/Mal/Hizmet/Danışmanlık hacim barları.</li>
-            <li>🧹 <strong>Otomatik Boşluk & Hayalet Satır Temizliği:</strong> Boşluk kirliliği ve isimsiz kayıtlar tamamen engellendi.</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Teknik Bilgiler -->
-      <div class="card" style="margin-bottom:16px;">
-        <div class="card-header"><h3 style="font-size:15px;">🛠️ Teknik Bilgiler</h3></div>
-        <div class="card-body" style="padding:0;">
-          <table style="width:100%;font-size:14px;border-collapse:collapse;">
-            <tbody>
-              <tr style="border-bottom:1px solid var(--gray-100);">
-                <td style="padding:10px 16px;color:var(--gray-500);width:50%">Mevcut Sürüm</td>
-                <td style="padding:10px 16px;font-weight:600;color:var(--primary);">v${APP_CURRENT_VERSION}</td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--gray-100);">
-                <td style="padding:10px 16px;color:var(--gray-500)">Platform</td>
-                <td style="padding:10px 16px;font-weight:600;">Web (Firebase)</td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--gray-100);">
-                <td style="padding:10px 16px;color:var(--gray-500)">Tarayıcı</td>
-                <td style="padding:10px 16px;font-weight:600;font-size:12px;">${escHtml(navigator.userAgent.split(') ').pop().split(' ')[0] || navigator.userAgent)}</td>
-              </tr>
-              <tr>
-                <td style="padding:10px 16px;color:var(--gray-500)">Son Giriş</td>
-                <td style="padding:10px 16px;font-weight:600;">${new Date().toLocaleDateString('tr-TR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- v2.0.0 Değişiklikler -->
-      <div class="card">
-        <div class="card-header"><h3 style="font-size:15px;">📝 v2.0.0 Sürüm Notları</h3></div>
-        <div class="card-body">
-          <ul style="margin:0;padding-left:20px;font-size:13.5px;line-height:2;color:var(--gray-600);">
-            <li>✅ <strong>Teknik Şartname Modülü:</strong> Özel şablon, modal ile madde düzenleme ve otomatik Y.M. görevlileri imza bloğu</li>
-            <li>✅ <strong>Muayene ve Kabul Komisyonu Tutanağı:</strong> Mal/Hizmet alımları için dinamik komisyon heyeti, atama oluru ve resmi kabul şablonu</li>
-            <li>✅ <strong>Akıllı İş Türü Ayrımı:</strong> Mal/Hizmet alımı ve Yapım İşi için otomatik değişen form alanları ve belge sekmeleri</li>
-            <li>✅ <strong>Sözleşme Maddelerini Düzenleme:</strong> Madde 11, 12, 13, 14, 15 ve 20 için dinamik özelleştirme modalı</li>
-            <li>✅ <strong>Yazdırma & Ölçekleme Optimizasyonu:</strong> Çıktıların tek sayfaya tam sığması için %95 zoom ve kenar boşluğu ince ayarı</li>
-            <li>✅ <strong>Word (.doc) ve PDF İndirme:</strong> Tüm yeni belgelerde tam uyumlu dışa aktarım desteği</li>
-          </ul>
+        <div class="card-body" style="padding:20px 24px">
+          ${sekmeBarHtml}
+          ${icerikHtml}
         </div>
       </div>
     </div>`;
 
-  // Sayfa açılınca otomatik kontrol et
-  guncellemeyiKontrolEt();
+  if (aktifSekme === 'hakkinda') {
+    guncellemeyiKontrolEt();
+  } else {
+    checkForUpdates(false);
+  }
 }
 
 window.guncellemeyiKontrolEt = async function() {
