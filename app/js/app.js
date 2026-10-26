@@ -9509,11 +9509,30 @@ async function duyuruKendindenGizleCagir(duyuruId) {
 // ===================== HAKKINDA SAYFASI =====================
 const APP_CURRENT_VERSION = '2.6.0';
 
+function compareSemver(v1, v2) {
+  const p1 = String(v1 || '').replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+  const p2 = String(v2 || '').replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+  const len = Math.max(p1.length, p2.length, 3);
+  for (let i = 0; i < len; i++) {
+    const a = p1[i] || 0;
+    const b = p2[i] || 0;
+    if (a > b) return 1;
+    if (a < b) return -1;
+  }
+  return 0;
+}
+
 async function checkForUpdates(showLoading = false) {
   try {
     const doc = await db.collection('appConfig').doc('version').get();
-    const latestVersion = doc.exists ? (doc.data().latest || APP_CURRENT_VERSION) : APP_CURRENT_VERSION;
-    const hasUpdate = latestVersion !== APP_CURRENT_VERSION;
+    const rawLatest = doc.exists ? (doc.data()?.latest || APP_CURRENT_VERSION) : APP_CURRENT_VERSION;
+    const cmp = compareSemver(rawLatest, APP_CURRENT_VERSION);
+    const hasUpdate = cmp > 0;
+    const latestVersion = hasUpdate ? rawLatest : APP_CURRENT_VERSION;
+
+    if (cmp < 0 && ['admin', 'superadmin'].includes(currentDTMUser?.role)) {
+      db.collection('appConfig').doc('version').set({ latest: APP_CURRENT_VERSION }, { merge: true }).catch(() => {});
+    }
 
     // Badge güncelle
     const badge = document.getElementById('guncellemeBadge');
@@ -9523,6 +9542,8 @@ async function checkForUpdates(showLoading = false) {
 
     return { latestVersion, hasUpdate };
   } catch(e) {
+    const badge = document.getElementById('guncellemeBadge');
+    if (badge) badge.style.display = 'none';
     return { latestVersion: APP_CURRENT_VERSION, hasUpdate: false };
   }
 }
