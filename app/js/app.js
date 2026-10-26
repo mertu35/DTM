@@ -1332,10 +1332,13 @@ function renderVeriGirisPage() {
     </div>
 
     <!-- PROJE BİLGİLERİ -->
-    <div class="card">
-      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3>Proje Bilgileri</h3>
-        <span class="toggle-icon">&#9660;</span>
+    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+      <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
+        <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>📋 Proje Bilgileri</span>
+          <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">GENEL BİLGİLER</span>
+        </h3>
+        <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       <div class="card-body">
         <div class="form-grid">
@@ -1390,15 +1393,18 @@ function renderVeriGirisPage() {
     </div>
 
     <!-- GÖREVLİLER -->
-    <div class="card">
-      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3>Y.M. Görevlileri</h3>
-        <span class="toggle-icon">&#9660;</span>
+    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+      <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
+        <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>👥 Y.M. Görevlileri</span>
+          <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">YAKLAŞIK MALİYET OLURU</span>
+        </h3>
+        <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       <div class="card-body">
-        <div style="margin-bottom:14px;padding:10px 14px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <span style="font-size:13px;color:#1e40af;">📄 Olur belgesinden (PDF / Fotoğraf) otomatik doldur</span>
-          <label style="cursor:pointer;padding:6px 16px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;white-space:nowrap;user-select:none">
+        <div style="margin-bottom:14px;padding:10px 14px;background:#e0f2fe;border:1.5px dashed #7dd3fc;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="font-size:13px;color:#0c4a6e;font-weight:600">📄 Olur belgesinden (PDF / Fotoğraf) otomatik doldur</span>
+          <label style="cursor:pointer;padding:6px 16px;background:#0284c7;color:#fff;border-radius:6px;font-size:13px;font-weight:600;white-space:nowrap;user-select:none">
             Olur Belgesi Seç
             <input type="file" accept=".pdf,.png,.jpg,.jpeg,image/png,image/jpeg" style="display:none" ${dtmEventAttr('change', function(event) { parseYMOluru(this.files[0]);this.value='' })}>
           </label>
@@ -1431,26 +1437,29 @@ function renderVeriGirisPage() {
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3>D.T. Görevlileri</h3>
-        <span class="toggle-icon">&#9660;</span>
+    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+      <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
+        <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>👥 D.T. Görevlileri</span>
+          <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">DOĞRUDAN TEMİN OLURU</span>
+        </h3>
+        <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       <div class="card-body">
-        <div style="margin-bottom:14px;padding:10px 14px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <span style="font-size:13px;color:#1e40af;">📄 Olur belgesinden (PDF / Fotoğraf) otomatik doldur</span>
-          <label style="cursor:pointer;padding:6px 16px;background:#2563eb;color:#fff;border-radius:6px;font-size:13px;white-space:nowrap;user-select:none">
+        <div style="margin-bottom:14px;padding:10px 14px;background:#e0f2fe;border:1.5px dashed #7dd3fc;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="font-size:13px;color:#0c4a6e;font-weight:600">📄 Olur belgesinden (PDF / Fotoğraf) otomatik doldur</span>
+          <label style="cursor:pointer;padding:6px 16px;background:#0284c7;color:#fff;border-radius:6px;font-size:13px;font-weight:600;white-space:nowrap;user-select:none">
             Olur Belgesi Seç
             <input type="file" accept=".pdf,.png,.jpg,.jpeg,image/png,image/jpeg" style="display:none" ${dtmEventAttr('change', function(event) { parseDTOluru(this.files[0]);this.value='' })}>
           </label>
         </div>
 
-        <div style="margin-bottom:14px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#1e293b;user-select:none">
-            <input type="checkbox" id="dtGorevliAyniCb" ${proje.dtGorevlilerYmIleAyni ? 'checked' : ''} ${dtmEventAttr('change', function(event) { onDtGorevliAyniToggle(this.checked) })} style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
+        <div style="margin-bottom:14px;padding:10px 14px;background:#f8fafc;border:1px solid #bae6fd;border-radius:8px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#0c4a6e;user-select:none">
+            <input type="checkbox" id="dtGorevliAyniCb" ${proje.dtGorevlilerYmIleAyni ? 'checked' : ''} ${dtmEventAttr('change', function(event) { onDtGorevliAyniToggle(this.checked) })} style="width:16px;height:16px;accent-color:#0284c7;cursor:pointer">
             <span>👥 Yaklaşık Maliyet Görevlileri ile aynı kişiler</span>
           </label>
-          ${proje.dtGorevlilerYmIleAyni ? '<p style="margin:4px 0 0 24px;font-size:12px;color:#64748b">Y.M. görevlilerinde yapılan değişiklikler otomatik olarak buraya yansıtılır.</p>' : ''}
+          ${proje.dtGorevlilerYmIleAyni ? '<p style="margin:4px 0 0 24px;font-size:12px;color:#0369a1">Y.M. görevlilerinde yapılan değişiklikler otomatik olarak buraya yansıtılır.</p>' : ''}
         </div>
 
         ${dtGorevliRows}
@@ -1481,10 +1490,13 @@ function renderVeriGirisPage() {
       </div>
     </div>
 
-    ${currentDTMUser?.role === 'gerceklestirmeci' ? `<div class="card">
-      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3>Onay Belgesi Bilgileri</h3>
-        <span class="toggle-icon">&#9660;</span>
+    ${currentDTMUser?.role === 'gerceklestirmeci' ? `<div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+      <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
+        <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>📑 Onay Belgesi Bilgileri</span>
+          <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">ÖDENEK & BÜTÇE</span>
+        </h3>
+        <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       <div class="card-body">
         <div class="form-grid">
@@ -1551,10 +1563,13 @@ function renderVeriGirisPage() {
       </div>
     </div>` : ''}
 
-    <div class="card">
-      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3>Onaylayan Amir</h3>
-        <span class="toggle-icon">&#9660;</span>
+    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+      <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
+        <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>✒️ Onaylayan Amir</span>
+          <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">İHALE YETKİLİSİ / OLUR</span>
+        </h3>
+        <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       <div class="card-body">
         <div class="form-grid">
@@ -1576,10 +1591,13 @@ function renderVeriGirisPage() {
 
     ${!isMalVeyaHizmetTuru(proje.isTuru) ? `
     <!-- TARİHLER -->
-    <div class="card">
-      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3>Sözleşme ve Tarihler</h3>
-        <span class="toggle-icon">&#9660;</span>
+    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+      <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
+        <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>📅 Sözleşme ve Tarihler</span>
+          <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">SÜRE & İŞ BİTİMİ</span>
+        </h3>
+        <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       <div class="card-body">
         <div class="form-grid">
@@ -1625,10 +1643,13 @@ function renderVeriGirisPage() {
 
     ${isMalVeyaHizmetTuru(proje.isTuru) ? `
     <!-- MUAYENE VE KABUL KOMİSYONU / HEYETİ -->
-    <div class="card">
-      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3>Muayene ve Kabul Komisyonu (Heyeti)</h3>
-        <span class="toggle-icon">&#9660;</span>
+    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+      <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
+        <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>🔍 Muayene ve Kabul Komisyonu (Heyeti)</span>
+          <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">KABUL KOMİSYONU</span>
+        </h3>
+        <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       <div class="card-body">
         ${mkGorevliRows}
@@ -1651,10 +1672,13 @@ function renderVeriGirisPage() {
     </div>` : ''}
 
     <!-- İŞ KALEMLERİ -->
-    <div class="card">
-      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3>İş Kalemleri</h3>
-        <span class="toggle-icon">&#9660;</span>
+    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+      <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
+        <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>📦 İş Kalemleri</span>
+          <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">ALIM / YAPIM KALEMLERİ</span>
+        </h3>
+        <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       ${kalemlerSection}
     </div>
@@ -1693,10 +1717,13 @@ function renderVeriGirisPage() {
     </div>
 
     <!-- HAKEDİŞ KESİNTİLERİ -->
-    <div class="card">
-      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3>Hakediş Kesintileri</h3>
-        <span class="toggle-icon">&#9660;</span>
+    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+      <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
+        <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>🧮 Hakediş Kesintileri</span>
+          <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">VERGİ & KESİNTİLER</span>
+        </h3>
+        <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       <div class="card-body">
         <div class="form-grid">
@@ -1732,16 +1759,19 @@ function renderVeriGirisPage() {
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
+    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+      <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-right:10px;flex-wrap:wrap;gap:8px">
-          <h3>📎 İşe Ait Dokümanlar (Fatura, Vergi Borcu, Fotoğraf, Olur & Teklif)</h3>
+          <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span>📎 İşe Ait Dokümanlar (Fatura, Vergi Borcu, Fotoğraf, Olur & Teklif)</span>
+            <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">EVRAK & FOTOĞRAF ARŞİVİ</span>
+          </h3>
           <button type="button" ${dtmEventAttr('click', function(event) { event.stopPropagation(); projeDokumanlarSekmesineGit(); })}
-            style="padding:5px 12px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">
+            style="padding:5px 12px;background:#0284c7;color:#fff;border:1px solid #7dd3fc;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">
             📎 Dokümanlar Sekmesinde Gör →
           </button>
         </div>
-        <span class="toggle-icon">&#9660;</span>
+        <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       <div class="card-body">
         <div id="projeDosyaListesi" style="margin-bottom:8px">
