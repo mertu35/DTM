@@ -1923,6 +1923,10 @@ window._dokumanGaleriDurumu = {
   aktifBlobUrl: null
 };
 
+function dokumanIndirmeIzniVarMi() {
+  return currentPage !== 'veri-giris';
+}
+
 function dokumanPaneliniYenile() {
   const container = document.getElementById('projeDosyaListesi');
   if (!container) return;
@@ -2457,6 +2461,7 @@ async function dokumanGaleriIcerikYukle() {
   const toplam = st.liste.length;
   const katObj = PROJE_DOKUMAN_KATEGORILERI.find(k => k.kod === kayit.kategoriKod) || PROJE_DOKUMAN_KATEGORILERI[0];
   const isImg = dokumanGoruntuMu(kayit.temizAd, kayit.tip);
+  const indirmeAktif = dokumanIndirmeIzniVarMi();
 
   // Önce yükleniyor görünümü (parçalı bulut dosyaları için)
   modal.innerHTML = `
@@ -2476,8 +2481,10 @@ async function dokumanGaleriIcerikYukle() {
           <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriZoom(0.25); })} title="Yakınlaştır (+)" style="padding:7px 10px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.18);border-radius:7px;cursor:pointer;font-size:12px;font-weight:600">🔍+</button>
           <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriDondur(); })} title="90° Döndür (R)" style="padding:7px 11px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.18);border-radius:7px;cursor:pointer;font-size:12px;font-weight:600">🔄 Döndür</button>
         ` : ''}
-        <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriAktifiIndir(); })} style="padding:7px 13px;background:#0284c7;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px">⬇️ İndir</button>
-        <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriAktifiYeniSekmedeAc(); })} title="Yeni Sekmede Aç" style="padding:7px 11px;background:rgba(255,255,255,0.12);color:#e2e8f0;border:1px solid rgba(255,255,255,0.2);border-radius:7px;cursor:pointer;font-size:12px;font-weight:600">↗ Yeni Sekme</button>
+        ${indirmeAktif ? `
+          <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriAktifiIndir(); })} style="padding:7px 13px;background:#0284c7;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px">⬇️ İndir</button>
+          <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriAktifiYeniSekmedeAc(); })} title="Yeni Sekmede Aç" style="padding:7px 11px;background:rgba(255,255,255,0.12);color:#e2e8f0;border:1px solid rgba(255,255,255,0.2);border-radius:7px;cursor:pointer;font-size:12px;font-weight:600">↗ Yeni Sekme</button>
+        ` : ''}
         <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriKapat(); })} title="Kapat (Esc)" style="padding:7px 13px;background:#dc2626;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:700">✕ Kapat</button>
       </div>
     </div>
@@ -2554,10 +2561,14 @@ async function dokumanGaleriIcerikYukle() {
           <div style="font-size:46px;margin-bottom:12px">📄</div>
           <div style="font-size:16px;font-weight:700;margin-bottom:6px;word-break:break-word">${escHtml(veri.temizAd)}</div>
           <div style="font-size:12.5px;color:#94a3b8;margin-bottom:20px">${formatDosyaBoyutu(veri.boyut)} • Office / İndirilebilir Belge</div>
-          <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriAktifiIndir(); })}
-            style="padding:10px 22px;background:#0284c7;color:#fff;border:none;border-radius:8px;font-size:13.5px;font-weight:700;cursor:pointer">
-            ⬇️ Bilgisayara İndir
-          </button>
+          ${indirmeAktif ? `
+            <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriAktifiIndir(); })}
+              style="padding:10px 22px;background:#0284c7;color:#fff;border:none;border-radius:8px;font-size:13.5px;font-weight:700;cursor:pointer">
+              ⬇️ Bilgisayara İndir
+            </button>
+          ` : `
+            <div style="font-size:12px;color:#cbd5e1">İndirmek için sol menüdeki <strong>📎 Dokümanlar</strong> sekmesini kullanabilirsiniz.</div>
+          `}
         </div>
       `;
     }
@@ -2670,6 +2681,7 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
   const toplamBulut = dosyalar.length;
   const toplamBekleyen = bekleyenler.length;
   const genelToplam = toplamBulut + toplamBekleyen;
+  const indirmeAktif = dokumanIndirmeIzniVarMi();
 
   if (!PROJE_DOKUMAN_KATEGORILERI.some(k => k.kod === currentDokumanKategori)) {
     currentDokumanKategori = 'fotograf';
@@ -2683,7 +2695,7 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
   for (const k of Array.from(window._seciliProjeDokumanlari)) {
     if (!gecerliAnahtarlar.has(k)) window._seciliProjeDokumanlari.delete(k);
   }
-  const toplamSeciliSayi = window._seciliProjeDokumanlari.size;
+  const toplamSeciliSayi = indirmeAktif ? window._seciliProjeDokumanlari.size : 0;
 
   // Kategori bazlı sayıları hesapla
   const kategoriVerileri = PROJE_DOKUMAN_KATEGORILERI.map(kat => {
@@ -2722,7 +2734,7 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
         💡 <strong>Proje henüz buluta kaydedilmedi.</strong> ${toplamBekleyen > 0 ? `Seçtiğiniz <strong>${toplamBekleyen} adet evrak</strong> hazır bekliyor; projeyi kaydettiğiniz anda otomatik olarak buluta yüklenecektir.` : 'Evrakları şimdiden ilgili sekmelere ekleyebilirsiniz; projeyi kaydettiğinizde otomatik olarak buluta aktarılır.'}
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        ${genelToplam > 0 ? `
+        ${indirmeAktif && genelToplam > 0 ? `
           <button type="button" ${dtmEventAttr('click', function(event) { topluProjeDokumanIndir('tumu', 'zip'); })}
             style="padding:6px 12px;background:#0284c7;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">
             📦 Tüm Evrakları ZIP İndir (${genelToplam})
@@ -2739,13 +2751,13 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
     <div style="padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <span style="font-size:12.5px;color:#334155">📎 Bu projeye kayıtlı toplam <strong>${toplamBulut} adet</strong> resmi doküman / fotoğraf bulunuyor.</span>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        ${toplamBulut > 0 ? `
+        ${indirmeAktif && toplamBulut > 0 ? `
           <button type="button" ${dtmEventAttr('click', function(event) { topluProjeDokumanIndir('tumu', 'zip'); })}
             style="padding:6px 12px;background:#0284c7;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px">
             📦 Tüm Proje Evraklarını ZIP İndir (${toplamBulut})
           </button>
         ` : ''}
-        <span style="font-size:11.5px;color:#64748b">Dosya başına maks. 5 MB</span>
+        <span style="font-size:11.5px;color:#64748b">${indirmeAktif ? 'Dosya başına maks. 5 MB' : '💡 İndirme işlemleri "📎 Dokümanlar" sekmesinden yapılır'}</span>
       </div>
     </div>
   `;
@@ -2757,11 +2769,11 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
     ...katDosyalar.map(d => `cloud:${d.docId}`),
     ...katBekleyenler.map(b => `pending:${b._bekleyenIdx}`)
   ];
-  const aktifKategorideSeciliSayi = aktifKategoriAnahtarlari.filter(k => window._seciliProjeDokumanlari.has(k)).length;
-  const aktifKategoriHepsiSecili = aktifKategoriAnahtarlari.length > 0 && aktifKategorideSeciliSayi === aktifKategoriAnahtarlari.length;
+  const aktifKategorideSeciliSayi = indirmeAktif ? aktifKategoriAnahtarlari.filter(k => window._seciliProjeDokumanlari.has(k)).length : 0;
+  const aktifKategoriHepsiSecili = indirmeAktif && aktifKategoriAnahtarlari.length > 0 && aktifKategorideSeciliSayi === aktifKategoriAnahtarlari.length;
 
-  // Toplu seçim ve indirme araç çubuğu
-  const topluIslemBarHtml = toplamSayi > 0 ? `
+  // Toplu seçim ve indirme araç çubuğu (SADECE Dokümanlar / Proje Özeti sayfasında gösterilir; Veri Girişi'nde gösterilmez)
+  const topluIslemBarHtml = (indirmeAktif && toplamSayi > 0) ? `
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding:9px 12px;background:rgba(255,255,255,0.78);border:1px solid ${kat.border};border-radius:8px">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <button type="button" ${dtmEventAttr('click', function(event) { dokumanKategoriTumunuSec(String(kat.kod)); })}
@@ -2801,7 +2813,7 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
   const satirlarHtml = [
     ...katDosyalar.map((d, siraIdx) => {
       const secimKey = `cloud:${d.docId}`;
-      const isSecili = window._seciliProjeDokumanlari.has(secimKey);
+      const isSecili = indirmeAktif && window._seciliProjeDokumanlari.has(secimKey);
       const temizAd = temizProjeDosyaAdi(d.ad);
       const isImg = dokumanGoruntuMu(temizAd, d.tip);
       const thumbHtml = (isImg && d.url && d.url.startsWith('data:image/'))
@@ -2810,8 +2822,10 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
       return `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:${isSecili ? '#f0f9ff' : '#fff'};border:1.5px solid ${isSecili ? '#38bdf8' : 'rgba(0,0,0,0.08)'};border-radius:8px;transition:all 0.15s">
           <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1">
-            <input type="checkbox" ${isSecili ? 'checked' : ''} ${dtmEventAttr('change', function(event) { dokumanSecimDegistir(String(secimKey)); })}
-              style="width:17px;height:17px;cursor:pointer;accent-color:#0284c7;flex-shrink:0" title="İndirmek için seç">
+            ${indirmeAktif ? `
+              <input type="checkbox" ${isSecili ? 'checked' : ''} ${dtmEventAttr('change', function(event) { dokumanSecimDegistir(String(secimKey)); })}
+                style="width:17px;height:17px;cursor:pointer;accent-color:#0284c7;flex-shrink:0" title="İndirmek için seç">
+            ` : ''}
             <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')); })} title="Galeride Aç (Klavye ok tuşlarıyla gezin)">
               ${thumbHtml}
               <div style="overflow:hidden;flex:1">
@@ -2825,21 +2839,23 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
             <button type="button" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')); })} style="padding:6px 11px;background:${kat.bg};color:${kat.text};border:1px solid ${kat.border};border-radius:6px;font-size:12px;font-weight:600;cursor:pointer" title="Önizleme / Galeri">👁️ Aç</button>
-            <button type="button" ${dtmEventAttr('click', function(event) { projeDosyaIndir(String(d.docId ?? '')); })} style="padding:6px 10px;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer" title="Bu Dosyayı İndir">⬇️</button>
+            ${indirmeAktif ? `<button type="button" ${dtmEventAttr('click', function(event) { projeDosyaIndir(String(d.docId ?? '')); })} style="padding:6px 10px;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer" title="Bu Dosyayı İndir">⬇️</button>` : ''}
             ${!saltOkunur ? `<button type="button" ${dtmEventAttr('click', function(event) { projeDosyaSilOnayla(String(d.yol ?? '')); })} title="Sil" style="padding:6px 9px;background:#fff;border:1px solid #fecaca;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px">🗑️</button>` : ''}
           </div>
         </div>`;
     }),
     ...katBekleyenler.map((b, siraIdx) => {
       const secimKey = `pending:${b._bekleyenIdx}`;
-      const isSecili = window._seciliProjeDokumanlari.has(secimKey);
+      const isSecili = indirmeAktif && window._seciliProjeDokumanlari.has(secimKey);
       const f = b.file || {};
       const temizAd = (b.altEtiket ? `${b.altEtiket} - ` : '') + temizProjeDosyaAdi(f.name || 'Belge');
       return `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:${isSecili ? '#f0f9ff' : '#fffbeb'};border:1.5px dashed ${isSecili ? '#0284c7' : '#f59e0b'};border-radius:8px">
           <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1">
-            <input type="checkbox" ${isSecili ? 'checked' : ''} ${dtmEventAttr('change', function(event) { dokumanSecimDegistir(String(secimKey)); })}
-              style="width:17px;height:17px;cursor:pointer;accent-color:#0284c7;flex-shrink:0" title="İndirmek için seç">
+            ${indirmeAktif ? `
+              <input type="checkbox" ${isSecili ? 'checked' : ''} ${dtmEventAttr('change', function(event) { dokumanSecimDegistir(String(secimKey)); })}
+                style="width:17px;height:17px;cursor:pointer;accent-color:#0284c7;flex-shrink:0" title="İndirmek için seç">
+            ` : ''}
             <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaAc(Number(b._bekleyenIdx)); })}>
               <span style="width:42px;height:42px;border-radius:6px;background:#fef3c7;color:#b45309;display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">⏳</span>
               <div style="overflow:hidden;flex:1">
@@ -2850,7 +2866,7 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
             <button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaAc(Number(b._bekleyenIdx)); })} style="padding:5px 10px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">👁️ Önizle</button>
-            <button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaIndir(Number(b._bekleyenIdx)); })} style="padding:5px 9px;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer" title="İndir">⬇️</button>
+            ${indirmeAktif ? `<button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaIndir(Number(b._bekleyenIdx)); })} style="padding:5px 9px;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer" title="İndir">⬇️</button>` : ''}
             ${!saltOkunur ? `<button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaSil(Number(b._bekleyenIdx)); })} style="padding:5px 9px;background:#fff;border:1px solid #fecaca;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px">✕</button>` : ''}
           </div>
         </div>`;
