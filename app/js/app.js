@@ -9567,7 +9567,7 @@ function hakkindaBilgileriKopyala() {
     `Geliştirici: Merih Yazılım`,
     `Kurum: Karaman İl Özel İdaresi - Yatırım ve İnşaat Müdürlüğü`,
     `Sürüm: v${APP_CURRENT_VERSION}`,
-    `Sürüm Numarası: 20261026 (dtm-v117)`,
+    `Sürüm Numarası: 20261026 (dtm-v120)`,
     `Platform: Web PWA / Firebase Cloud`,
     `Tarayıcı: ${tarayici}`,
     `Tarih: ${new Date().toLocaleString('tr-TR')}`
@@ -9587,6 +9587,40 @@ function hakkindaBilgileriKopyala() {
 if (typeof window !== 'undefined') {
   window.hakkindaSekmeDegistir = hakkindaSekmeDegistir;
   window.hakkindaBilgileriKopyala = hakkindaBilgileriKopyala;
+  window.getMerihYazilimLogoSvg = getMerihYazilimLogoSvg;
+}
+
+function getMerihYazilimLogoSvg(size = 64) {
+  const s = Number(size) || 64;
+  const uid = 'merih_' + s;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;display:block;filter:drop-shadow(0 6px 14px rgba(2,132,199,0.28))">
+    <defs>
+      <linearGradient id="${uid}_f1" x1="18" y1="24" x2="42" y2="96" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#e0f2fe"/>
+        <stop offset="100%" stop-color="#38bdf8"/>
+      </linearGradient>
+      <linearGradient id="${uid}_f2" x1="34" y1="24" x2="60" y2="76" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#0284c7"/>
+        <stop offset="100%" stop-color="#075985"/>
+      </linearGradient>
+      <linearGradient id="${uid}_f3" x1="60" y1="76" x2="86" y2="24" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#38bdf8"/>
+        <stop offset="100%" stop-color="#bae6fd"/>
+      </linearGradient>
+      <linearGradient id="${uid}_f4" x1="86" y1="24" x2="102" y2="96" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#f97316"/>
+        <stop offset="100%" stop-color="#c2410c"/>
+      </linearGradient>
+    </defs>
+    <rect x="4" y="4" width="112" height="112" rx="28" fill="#061320" stroke="rgba(56,189,248,0.45)" stroke-width="2.5"/>
+    <polygon points="18,90 18,32 34,22 34,80" fill="url(#${uid}_f1)"/>
+    <polygon points="18,90 34,80 44,86 28,96" fill="#0369a1"/>
+    <polygon points="34,22 48,30 60,54 60,74 34,42" fill="url(#${uid}_f2)"/>
+    <polygon points="60,54 72,30 86,22 86,42 60,74" fill="url(#${uid}_f3)"/>
+    <polygon points="86,22 102,32 102,90 86,80" fill="url(#${uid}_f4)"/>
+    <polygon points="74,86 86,80 86,42 74,56" fill="#0284c7"/>
+    <polygon points="74,86 86,80 102,90 90,96" fill="#9a3412"/>
+  </svg>`;
 }
 
 async function renderHakkindaPage() {
@@ -9645,10 +9679,14 @@ async function renderHakkindaPage() {
         </div>
       </div>
 
-      <div style="text-align:center;margin-bottom:18px">
-        <span style="font-size:13px;color:#0284c7;font-weight:600;text-decoration:underline;cursor:pointer" ${dtmEventAttr('click', function(event) { hakkindaSekmeDegistir('iletisim'); })}>
-          Merih Yazılım © 2024–2026 • Karaman İl Özel İdaresi
-        </span>
+      <div style="display:flex;justify-content:center;margin-bottom:18px">
+        <div ${dtmEventAttr('click', function(event) { hakkindaSekmeDegistir('iletisim'); })}
+          style="display:inline-flex;align-items:center;gap:10px;padding:6px 14px 6px 8px;border-radius:999px;background:#f0f9ff;border:1.5px solid #bae6fd;cursor:pointer;transition:all 0.15s;box-shadow:0 2px 6px rgba(2,132,199,0.08)">
+          ${getMerihYazilimLogoSvg(28)}
+          <span style="font-size:13px;color:#0c4a6e;font-weight:700">
+            Merih Yazılım © 2024–2026 • Karaman İl Özel İdaresi
+          </span>
+        </div>
       </div>
 
       <!-- Sistem & Sürüm Detay Tablosu -->
@@ -9661,7 +9699,7 @@ async function renderHakkindaPage() {
             </tr>
             <tr>
               <td style="padding:7px 8px;color:#475569">Sürüm numarası</td>
-              <td style="padding:7px 8px;font-weight:600;color:#1e293b;font-family:monospace">20261026 (dtm-v117)</td>
+              <td style="padding:7px 8px;font-weight:600;color:#1e293b;font-family:monospace">20261026 (dtm-v120)</td>
             </tr>
             <tr>
               <td style="padding:7px 8px;color:#475569">Yayım tarihi</td>
@@ -9729,14 +9767,12 @@ async function renderHakkindaPage() {
     `;
   } else if (aktifSekme === 'iletisim') {
     icerikHtml = `
-      <div style="background:linear-gradient(135deg,#0c4a6e 0%,#0284c7 100%);border-radius:12px;padding:24px;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;box-shadow:0 6px 18px rgba(2,132,199,0.2)">
-        <div style="width:60px;height:60px;border-radius:14px;background:rgba(255,255,255,0.16);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;flex-shrink:0">
-          M
-        </div>
+      <div style="background:linear-gradient(135deg,#071321 0%,#0c4a6e 55%,#0284c7 100%);border:1.5px solid rgba(56,189,248,0.35);border-radius:14px;padding:24px;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;box-shadow:0 8px 24px rgba(2,132,199,0.22)">
+        ${getMerihYazilimLogoSvg(72)}
         <div>
-          <div style="font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:#bae6fd;font-weight:700">Geliştirici & Teknoloji Çözüm Ortağı</div>
-          <div style="font-size:22px;font-weight:800;margin-top:2px">Merih Yazılım</div>
-          <div style="font-size:13px;color:#e0f2fe;margin-top:3px">Kurumsal Kamu Yazılımları & Mühendislik Otomasyon Sistemleri</div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:#38bdf8;font-weight:700">Geliştirici & Teknoloji Çözüm Ortağı</div>
+          <div style="font-size:24px;font-weight:900;letter-spacing:0.6px;margin-top:3px">MERİH <span style="font-weight:400;color:#7dd3fc">YAZILIM</span></div>
+          <div style="font-size:13px;color:#e0f2fe;margin-top:4px">Kurumsal Kamu Yazılımları & Mühendislik Otomasyon Sistemleri</div>
         </div>
       </div>
 
