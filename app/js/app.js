@@ -1395,7 +1395,7 @@ function renderVeriGirisPage() {
         </div>
       </div>
     </div>
-    <div id="vgStickyHizliGitBar" style="position:sticky;top:8px;z-index:95;background:rgba(240,249,255,0.96);backdrop-filter:blur(8px);border:1.5px solid #7dd3fc;border-radius:10px;padding:8px 12px;margin-bottom:16px;box-shadow:0 4px 14px rgba(2,132,199,0.12);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+    <div id="vgStickyHizliGitBar" style="position:sticky;top:0;z-index:95;background:#f0f9ff;border:1.5px solid #7dd3fc;border-radius:0 0 10px 10px;padding:9px 12px;margin-bottom:16px;box-shadow:0 4px 12px rgba(2,132,199,0.12);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <span style="font-size:11.5px;font-weight:800;color:#0369a1;margin-right:2px">⚡ Hızlı Git:</span>
         <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_proje'); })} style="padding:4px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📋 Proje</button>
