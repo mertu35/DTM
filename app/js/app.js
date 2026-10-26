@@ -1323,6 +1323,96 @@ function renderVeriGirisPage() {
       </div>
     </div>` : '';
 
+  const chkGenel = Boolean(proje.isAdi?.trim() && proje.idareAdi?.trim() && proje.mudurluk?.trim());
+  const chkOlur = Boolean(
+    proje.ymGorevliler?.slice(0, ymSayisi).some(g => g.ad?.trim()) &&
+    proje.dtGorevliler?.slice(0, dtSayisi).some(g => g.ad?.trim()) &&
+    proje.ymOnayTarihi?.trim() && proje.ymOnayNo?.trim() &&
+    proje.dtOnayTarihi?.trim() && proje.dtOnayNo?.trim() &&
+    proje.onaylayanAmir?.ad?.trim()
+  );
+  const chkKalem = !isMalVeyaHizmetTuru(proje.isTuru)
+    ? Boolean(proje.isAdi?.trim())
+    : Boolean(proje.isKalemleri?.some(k => k.ad?.trim() && Number(k.miktar) > 0));
+  const ymDoluSayi = (proje.ymFirmalar || []).filter(f => f.ad?.trim() && hesaplaYMFirmaToplam(f, aktifKalemler) > 0).length;
+  const chkYm = ymDoluSayi > 0 && yaklasikMaliyet > 0;
+  const kazananIdxTop = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
+  const kazananFirmaTop = kazananIdxTop >= 0 ? proje.teklifFirmalar?.[kazananIdxTop] : null;
+  const kazananTutarTop = kazananFirmaTop ? hesaplaTeklifFirmaToplam(kazananFirmaTop, aktifKalemler) : 0;
+  const chkTeklif = Boolean(kazananFirmaTop?.ad?.trim() && kazananTutarTop > 0);
+  const tamamlananAdimSayisi = [chkGenel, chkOlur, chkKalem, chkYm, chkTeklif].filter(Boolean).length;
+
+  const canliDurumVeHizliMenuHtml = `
+    <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;padding:12px 14px;margin-bottom:16px;box-shadow:0 2px 8px rgba(2,132,199,0.06)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:13px;font-weight:800;color:#0c4a6e">📊 Canlı Proje Durumu & Kontrol Listesi</span>
+          <span style="padding:2px 9px;border-radius:12px;font-size:11.5px;font-weight:700;background:${tamamlananAdimSayisi === 5 ? '#dcfce7' : '#e0f2fe'};color:${tamamlananAdimSayisi === 5 ? '#166534' : '#0369a1'};border:1px solid ${tamamlananAdimSayisi === 5 ? '#86efac' : '#7dd3fc'}">
+            ${tamamlananAdimSayisi}/5 Adım Tamam
+          </span>
+        </div>
+        <button type="button" id="vgTumKartlarToggleBtn" ${dtmEventAttr('click', function(event) { veriGirisTumKartlariDaraltAc(); })}
+          style="padding:5px 12px;background:#0c4a6e;color:#fff;border:1px solid #075985;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px">
+          ↕️ Tüm Kartları Daralt / Aç
+        </button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:8px;margin-bottom:10px">
+        <div ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_proje'); })}
+          style="cursor:pointer;padding:8px 10px;border-radius:8px;background:#fff;border:1.5px solid ${chkGenel ? '#86efac' : '#cbd5e1'};display:flex;align-items:center;gap:8px" title="Proje Bilgileri bölümüne git">
+          <span style="font-size:15px">${chkGenel ? '✅' : '⏳'}</span>
+          <div style="overflow:hidden">
+            <div style="font-size:11.5px;font-weight:700;color:#0f172a">1. İş & İdare Bilgisi</div>
+            <div style="font-size:11px;color:${chkGenel ? '#15803d' : '#64748b'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${chkGenel ? escHtml(proje.isAdi) : 'İş adı / idare eksik'}</div>
+          </div>
+        </div>
+        <div ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_ymGorevli'); })}
+          style="cursor:pointer;padding:8px 10px;border-radius:8px;background:#fff;border:1.5px solid ${chkOlur ? '#86efac' : '#cbd5e1'};display:flex;align-items:center;gap:8px" title="Olur & Görevliler bölümüne git">
+          <span style="font-size:15px">${chkOlur ? '✅' : '⏳'}</span>
+          <div style="overflow:hidden">
+            <div style="font-size:11.5px;font-weight:700;color:#0f172a">2. Olur & Görevliler</div>
+            <div style="font-size:11px;color:${chkOlur ? '#15803d' : '#64748b'}">${chkOlur ? 'Görevli & Onay No tamam' : 'Tarih / sayı / görevli eksik'}</div>
+          </div>
+        </div>
+        <div ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_kalemler'); })}
+          style="cursor:pointer;padding:8px 10px;border-radius:8px;background:#fff;border:1.5px solid ${chkKalem ? '#86efac' : '#cbd5e1'};display:flex;align-items:center;gap:8px" title="İş Kalemleri bölümüne git">
+          <span style="font-size:15px">${chkKalem ? '✅' : '⏳'}</span>
+          <div style="overflow:hidden">
+            <div style="font-size:11.5px;font-weight:700;color:#0f172a">3. İş Kalemleri</div>
+            <div style="font-size:11px;color:${chkKalem ? '#15803d' : '#64748b'}">${chkKalem ? `${aktifKalemler.filter(k => k.ad?.trim()).length || 1} kalem tanımlı` : 'En az 1 kalem girin'}</div>
+          </div>
+        </div>
+        <div ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_ymTeklif'); })}
+          style="cursor:pointer;padding:8px 10px;border-radius:8px;background:#fff;border:1.5px solid ${chkYm ? '#86efac' : '#cbd5e1'};display:flex;align-items:center;gap:8px" title="Yaklaşık Maliyet bölümüne git">
+          <span style="font-size:15px">${chkYm ? '✅' : '⏳'}</span>
+          <div style="overflow:hidden">
+            <div style="font-size:11.5px;font-weight:700;color:#0f172a">4. Yaklaşık Maliyet</div>
+            <div style="font-size:11px;font-weight:700;color:${chkYm ? '#0369a1' : '#64748b'}">${chkYm ? `${formatCurrency(yaklasikMaliyet)} TL (${ymDoluSayi} firma)` : 'Firma / fiyat girilmedi'}</div>
+          </div>
+        </div>
+        <div ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_resmiTeklif'); })}
+          style="cursor:pointer;padding:8px 10px;border-radius:8px;background:#fff;border:1.5px solid ${chkTeklif ? '#86efac' : '#cbd5e1'};display:flex;align-items:center;gap:8px" title="Resmi Teklif bölümüne git">
+          <span style="font-size:15px">${chkTeklif ? '🏆' : '⏳'}</span>
+          <div style="overflow:hidden">
+            <div style="font-size:11.5px;font-weight:700;color:#0f172a">5. Kazanan Teklif</div>
+            <div style="font-size:11px;font-weight:700;color:${chkTeklif ? '#15803d' : '#64748b'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${chkTeklif ? `${formatCurrency(kazananTutarTop)} TL • ${escHtml(kazananFirmaTop.ad)}` : 'Resmi teklif girilmedi'}</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #bae6fd">
+        <span style="font-size:11.5px;font-weight:700;color:#0369a1;margin-right:2px">⚡ Hızlı Git:</span>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_proje'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📋 Proje</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_ymGorevli'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">👥 Y.M. Görevli</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_dtGorevli'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">👥 D.T. Görevli</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_amir'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">✒️ Amir</button>
+        ${!isMalVeyaHizmetTuru(proje.isTuru) ? `<button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_tarih'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📅 Tarihler</button>` : `<button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_mk'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">🔍 Kabul Komisyonu</button>`}
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_kalemler'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📦 Kalemler</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_ymTeklif'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📊 Y.M. Teklif</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_resmiTeklif'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">🏷️ Resmi Teklif</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_kesinti'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">🧮 Kesintiler</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_dokuman'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📎 Doküman Yükle</button>
+      </div>
+    </div>`;
+
   return `
     ${kilitBanner}
     ${hesaplamaHatalari.length ? renderHesaplamaUyarisi(hesaplamaHatalari) : ''}
@@ -1330,9 +1420,10 @@ function renderVeriGirisPage() {
       <h2>Veri Giriş Formu</h2>
       <p>Proje bilgilerini girin, belgeler otomatik oluşturulacaktır.</p>
     </div>
+    ${canliDurumVeHizliMenuHtml}
 
     <!-- PROJE BİLGİLERİ -->
-    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+    <div id="vgCard_proje" class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
       <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>📋 Proje Bilgileri</span>
@@ -1393,7 +1484,7 @@ function renderVeriGirisPage() {
     </div>
 
     <!-- GÖREVLİLER -->
-    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+    <div id="vgCard_ymGorevli" class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
       <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>👥 Y.M. Görevlileri</span>
@@ -1437,7 +1528,7 @@ function renderVeriGirisPage() {
       </div>
     </div>
 
-    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+    <div id="vgCard_dtGorevli" class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
       <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>👥 D.T. Görevlileri</span>
@@ -1563,7 +1654,7 @@ function renderVeriGirisPage() {
       </div>
     </div>` : ''}
 
-    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+    <div id="vgCard_amir" class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
       <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>✒️ Onaylayan Amir</span>
@@ -1591,7 +1682,7 @@ function renderVeriGirisPage() {
 
     ${!isMalVeyaHizmetTuru(proje.isTuru) ? `
     <!-- TARİHLER -->
-    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+    <div id="vgCard_tarih" class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
       <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>📅 Sözleşme ve Tarihler</span>
@@ -1643,7 +1734,7 @@ function renderVeriGirisPage() {
 
     ${isMalVeyaHizmetTuru(proje.isTuru) ? `
     <!-- MUAYENE VE KABUL KOMİSYONU / HEYETİ -->
-    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+    <div id="vgCard_mk" class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
       <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>🔍 Muayene ve Kabul Komisyonu (Heyeti)</span>
@@ -1672,7 +1763,7 @@ function renderVeriGirisPage() {
     </div>` : ''}
 
     <!-- İŞ KALEMLERİ -->
-    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+    <div id="vgCard_kalemler" class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
       <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>📦 İş Kalemleri</span>
@@ -1684,7 +1775,7 @@ function renderVeriGirisPage() {
     </div>
 
     <!-- YAKLAŞIK MALİYET FİRMALARI -->
-    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+    <div id="vgCard_ymTeklif" class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
       <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>📊 Yaklaşık Maliyet - Firma Teklifleri</span>
@@ -1703,21 +1794,39 @@ function renderVeriGirisPage() {
     </div>
 
     <!-- TEKLİF FİRMALARI -->
-    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+    <div id="vgCard_resmiTeklif" class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
       <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span>🏷️ Resmi Teklif - Firma Teklifleri</span>
-          <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">TEKLİF MEKTUBUDUR</span>
-        </h3>
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-right:10px;flex-wrap:wrap;gap:8px">
+          <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span>🏷️ Resmi Teklif - Firma Teklifleri</span>
+            <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">TEKLİF MEKTUBUDUR</span>
+          </h3>
+          ${!currentProjeKilitli ? `
+            <button type="button" ${dtmEventAttr('click', function(event) { event.stopPropagation(); ymFirmalariniTeklifeKopyala(); })}
+              style="padding:5px 12px;background:#0284c7;color:#fff;border:1px solid #7dd3fc;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px"
+              title="Yaklaşık Maliyet bölümünde seçtiğiniz firmaları buraya tek tıkla kopyalar">
+              📋 Y.M. Firmalarını Buraya Aktar
+            </button>
+          ` : ''}
+        </div>
         <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       <div class="card-body">
+        ${!currentProjeKilitli ? `
+          <div style="margin-bottom:12px;padding:9px 14px;background:#e0f2fe;border:1px solid #7dd3fc;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <span style="font-size:12.5px;color:#0c4a6e;font-weight:600">💡 Yaklaşık maliyet araştırmasındaki firmalar resmi teklifte de aynıysa tekrar tek tek seçmeyin:</span>
+            <button type="button" ${dtmEventAttr('click', function(event) { ymFirmalariniTeklifeKopyala(); })}
+              style="padding:6px 14px;background:#0284c7;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
+              📋 Y.M. Firmalarını Resmi Teklife Kopyala
+            </button>
+          </div>
+        ` : ''}
         ${teklifFirmaRows}
       </div>
     </div>
 
     <!-- HAKEDİŞ KESİNTİLERİ -->
-    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+    <div id="vgCard_kesinti" class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
       <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>🧮 Hakediş Kesintileri</span>
@@ -1759,7 +1868,7 @@ function renderVeriGirisPage() {
       </div>
     </div>
 
-    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+    <div id="vgCard_dokuman" class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
       <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-right:10px;flex-wrap:wrap;gap:8px">
           <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -2791,6 +2900,13 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
         ` : `<span style="font-size:11.5px;color:#64748b">💡 Fotoğraflara tıklayıp klavye ok tuşlarıyla (⬅️ ➡️) gezinebilir veya kutucukları seçip topluca indirebilirsiniz.</span>`}
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        ${kat.kod === 'fotograf' ? `
+          <button type="button" ${dtmEventAttr('click', function(event) { yazdirProjeFotografRaporu(); })}
+            style="padding:6px 12px;background:#0c4a6e;color:#fff;border:1px solid #075985;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px"
+            title="Seçili veya tüm fotoğraflardan A4 kurumsal Fotoğraf Tutanağı / Görsel Rapor oluşturur">
+            🖨️ Fotoğraf Tutanağı / PDF (${aktifKategorideSeciliSayi > 0 ? aktifKategorideSeciliSayi : toplamSayi})
+          </button>
+        ` : ''}
         ${toplamSeciliSayi > 0 ? `
           <button type="button" ${dtmEventAttr('click', function(event) { topluProjeDokumanIndir('secili', 'zip'); })}
             style="padding:6px 12px;background:#0284c7;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 5px rgba(2,132,199,0.25)">
@@ -2923,10 +3039,208 @@ async function projeDosyaListesiYukle() {
     window._projeDosyalariCache = {};
     dosyalar.forEach(d => { window._projeDosyalariCache[d.docId] = d; });
     window._sonProjeDosyalariListesi = dosyalar;
+    if (window._projeEvrakSayiCache && currentCloudProjeId) {
+      const sayac = { toplam: dosyalar.length, fotograf: 0, fatura: 0, vergi: 0, diger: 0 };
+      dosyalar.forEach(d => {
+        const k = tespitProjeDosyaKategorisi(d);
+        if (sayac[k] !== undefined) sayac[k]++;
+        else sayac.diger++;
+      });
+      window._projeEvrakSayiCache[currentCloudProjeId] = sayac;
+    }
     container.innerHTML = renderKategoriDokumanKutulari(dosyalar, saltOkunur);
   } catch(e) {
     container.innerHTML = `<p style="color:#dc2626;font-size:13px">Dokümanlar yüklenemedi: ${escHtml(hataMesaji(e))}</p>`;
   }
+}
+
+async function yazdirProjeFotografRaporu() {
+  try {
+    const tumDosyalar = Array.isArray(window._sonProjeDosyalariListesi) ? window._sonProjeDosyalariListesi : [];
+    const bekleyenler = Array.isArray(window._bekleyenProjeDosyalari) ? window._bekleyenProjeDosyalari : [];
+    const seciliSet = window._seciliProjeDokumanlari instanceof Set ? window._seciliProjeDokumanlari : new Set();
+
+    const fotoBulut = tumDosyalar.filter(d => tespitProjeDosyaKategorisi(d) === 'fotograf');
+    const fotoBekleyen = bekleyenler
+      .map((b, idx) => ({ ...b, _bekleyenIdx: idx }))
+      .filter(b => tespitProjeDosyaKategorisi({ kategori: b.kategori, ad: b.file?.name, tip: b.file?.type }) === 'fotograf');
+
+    const tumFotoOgeleri = [
+      ...fotoBulut.map(d => ({ kaynak: 'cloud', docId: d.docId, ad: temizProjeDosyaAdi(d.ad), tip: d.tip || '', secimKey: `cloud:${d.docId}` })),
+      ...fotoBekleyen.map(b => ({ kaynak: 'pending', bekleyenIdx: b._bekleyenIdx, ad: temizProjeDosyaAdi(b.file?.name || 'Fotograf'), tip: b.file?.type || '', secimKey: `pending:${b._bekleyenIdx}` }))
+    ];
+
+    const seciliFotolar = tumFotoOgeleri.filter(o => seciliSet.has(o.secimKey));
+    const hedefFotolar = seciliFotolar.length > 0 ? seciliFotolar : tumFotoOgeleri;
+
+    if (!hedefFotolar.length) {
+      showToast('Yazdırılacak fotoğraf bulunamadı.', 'warning');
+      return;
+    }
+
+    showToast('⏳ Fotoğraf tutanağı hazırlanıyor...', 'info', 2500);
+    const cozulmusFotolar = [];
+    for (let i = 0; i < hedefFotolar.length; i++) {
+      const oge = hedefFotolar[i];
+      const veri = await dokumanOgesiCozumle(oge);
+      if (veri && veri.dataUrl && (veri.dataUrl.startsWith('data:image/') || dokumanGoruntuMu(veri.ad, veri.tip))) {
+        cozulmusFotolar.push({
+          sira: cozulmusFotolar.length + 1,
+          ad: veri.ad || `Fotoğraf ${i + 1}`,
+          dataUrl: veri.dataUrl
+        });
+      }
+    }
+
+    if (!cozulmusFotolar.length) {
+      showToast('Fotoğraf sekmesinde görüntülenebilir resim dosyası bulunamadı.', 'warning');
+      return;
+    }
+
+    const idareAdi = escHtml(proje?.idareAdi || 'T.C. KARAMAN İL ÖZEL İDARESİ');
+    const mudurlukAdi = escHtml(proje?.mudurluk || 'Yatırım ve İnşaat Müdürlüğü');
+    const isAdi = escHtml(proje?.isAdi || '-');
+    const isTuru = escHtml(proje?.isTuru || '-');
+    const raporTarihi = new Date().toLocaleDateString('tr-TR');
+
+    const gorevliler = (isMalVeyaHizmetTuru(proje?.isTuru) && Array.isArray(proje?.mkGorevliler) && proje.mkGorevliler.some(g => g?.ad?.trim()))
+      ? proje.mkGorevliler.slice(0, proje.mkGorevliSayisi || 3).filter(g => g?.ad?.trim())
+      : (Array.isArray(proje?.dtGorevliler) && proje.dtGorevliler.some(g => g?.ad?.trim()))
+        ? proje.dtGorevliler.slice(0, proje.dtGorevliSayisi || 1).filter(g => g?.ad?.trim())
+        : (Array.isArray(proje?.ymGorevliler) ? proje.ymGorevliler.slice(0, proje.ymGorevliSayisi || 1).filter(g => g?.ad?.trim()) : []);
+
+    const imzaHucreleri = gorevliler.length > 0
+      ? gorevliler.map(g => `
+          <div style="text-align:center;min-width:160px;padding:6px 10px">
+            <div style="font-weight:700;font-size:12px;color:#111">${escHtml(g.ad)}</div>
+            <div style="font-size:11px;color:#4b5563;margin-top:2px">${escHtml(g.unvan || getUnvanByAd(g.ad, referans) || '')}</div>
+            <div style="margin-top:28px;border-top:1px dotted #9ca3af;font-size:10px;color:#6b7280;padding-top:3px">İmza</div>
+          </div>
+        `).join('')
+      : `<div style="text-align:center;min-width:180px;padding:6px 10px">
+           <div style="font-weight:700;font-size:12px;color:#111">${escHtml(currentDTMUser?.displayName || 'Kontrol Görevlisi')}</div>
+           <div style="margin-top:28px;border-top:1px dotted #9ca3af;font-size:10px;color:#6b7280;padding-top:3px">İmza</div>
+         </div>`;
+
+    const fotoKartlariHtml = cozulmusFotolar.map(f => `
+      <div style="border:1.5px solid #cbd5e1;border-radius:8px;padding:8px;background:#fff;page-break-inside:avoid;break-inside:avoid;display:flex;flex-direction:column;justify-content:space-between">
+        <div style="width:100%;height:230px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:6px;overflow:hidden;border:1px solid #e2e8f0">
+          <img src="${escAttr(f.dataUrl)}" alt="${escAttr(f.ad)}" style="max-width:100%;max-height:226px;object-fit:contain;display:block">
+        </div>
+        <div style="margin-top:6px;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;color:#1e293b;border-top:1px solid #f1f5f9;padding-top:5px">
+          <strong style="color:#0c4a6e">Fotoğraf ${f.sira}</strong>
+          <span style="color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px">${escHtml(f.ad)}</span>
+        </div>
+      </div>
+    `).join('');
+
+    const raporHtml = `
+      <div class="belge-icerik" style="font-family:'Times New Roman',Times,serif;color:#111;padding:8px 12px">
+        <div style="text-align:center;border-bottom:2px solid #0c4a6e;padding-bottom:10px;margin-bottom:14px">
+          <div style="font-size:14px;font-weight:700;letter-spacing:0.3px">T.C.</div>
+          <div style="font-size:15px;font-weight:700">${idareAdi}</div>
+          <div style="font-size:13px;font-weight:600;color:#334155">${mudurlukAdi}</div>
+          <div style="font-size:15px;font-weight:700;color:#0c4a6e;margin-top:6px;text-decoration:underline">İŞE AİT FOTOĞRAF TUTANAĞI / GÖRSEL RAPORU</div>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px">
+          <tbody>
+            <tr>
+              <td style="border:1px solid #cbd5e1;padding:6px 10px;background:#f8fafc;font-weight:700;width:22%">İşin / Alımın Adı</td>
+              <td style="border:1px solid #cbd5e1;padding:6px 10px" colspan="3"><strong>${isAdi}</strong></td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #cbd5e1;padding:6px 10px;background:#f8fafc;font-weight:700;width:22%">İş Türü</td>
+              <td style="border:1px solid #cbd5e1;padding:6px 10px;width:28%">${isTuru}</td>
+              <td style="border:1px solid #cbd5e1;padding:6px 10px;background:#f8fafc;font-weight:700;width:22%">Tutanak Tarihi / Adet</td>
+              <td style="border:1px solid #cbd5e1;padding:6px 10px;width:28%">${raporTarihi} (${cozulmusFotolar.length} Adet Fotoğraf)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+          ${fotoKartlariHtml}
+        </div>
+
+        <div style="page-break-inside:avoid;break-inside:avoid;margin-top:14px;padding-top:10px;border-top:1.5px solid #cbd5e1">
+          <div style="font-size:11.5px;color:#334155;margin-bottom:12px;text-align:center">
+            Yukarıda yer alan <strong>${cozulmusFotolar.length} adet</strong> fotoğraf, <strong>${isAdi}</strong> kapsamında yapılan iş/malzeme tespitine ait olup tarafımızca kayıt altına alınmıştır.
+          </div>
+          <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:16px">
+            ${imzaHucreleri}
+          </div>
+        </div>
+      </div>
+    `;
+
+    belgeYazdir(raporHtml, false);
+  } catch (e) {
+    showToast('Fotoğraf raporu oluşturulamadı: ' + hataMesaji(e), 'error');
+  }
+}
+
+window._projeEvrakSayiCache = window._projeEvrakSayiCache || {};
+
+function guncelleProjeEvrakRozetDom(projeId, bilgi) {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById(`projeEvrakRozet_${projeId}`);
+  if (!el) return;
+  const toplam = Number(bilgi?.toplam || 0);
+  if (toplam > 0) {
+    const detayParcalar = [];
+    if (bilgi.fotograf > 0) detayParcalar.push(`📸${bilgi.fotograf}`);
+    if (bilgi.fatura > 0) detayParcalar.push(`🧾${bilgi.fatura}`);
+    if (bilgi.vergi > 0) detayParcalar.push(`🏛️${bilgi.vergi}`);
+    if (bilgi.diger > 0) detayParcalar.push(`📁${bilgi.diger}`);
+    const detayStr = detayParcalar.length > 0 ? ` (${detayParcalar.join(' ')})` : '';
+    el.style.display = 'inline-flex';
+    el.style.background = '#e0f2fe';
+    el.style.color = '#0369a1';
+    el.style.borderColor = '#bae6fd';
+    el.textContent = `📎 ${toplam} Evrak${detayStr}`;
+    el.title = `Fotoğraf: ${bilgi.fotograf || 0}, Fatura: ${bilgi.fatura || 0}, Vergi Borcu: ${bilgi.vergi || 0}, Diğer: ${bilgi.diger || 0}`;
+  } else if (currentPage === 'dokumanlar') {
+    el.style.display = 'inline-flex';
+    el.style.background = '#f1f5f9';
+    el.style.color = '#64748b';
+    el.style.borderColor = '#cbd5e1';
+    el.textContent = '📎 Evrak Yok';
+    el.title = 'Bu projeye henüz doküman yüklenmemiş';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+async function projeListesiEvrakRozetleriniYukle(projeler) {
+  if (!Array.isArray(projeler) || !projeler.length) return;
+  if (typeof projeDosyalariGetir !== 'function' || typeof db === 'undefined' || !db) return;
+  if (!window._projeEvrakSayiCache) window._projeEvrakSayiCache = {};
+
+  for (const p of projeler) {
+    const pid = p?.id;
+    if (!pid) continue;
+    if (window._projeEvrakSayiCache[pid]) {
+      guncelleProjeEvrakRozetDom(pid, window._projeEvrakSayiCache[pid]);
+      continue;
+    }
+    try {
+      const dosyalar = await projeDosyalariGetir(pid);
+      const liste = Array.isArray(dosyalar) ? dosyalar : [];
+      const sayac = { toplam: liste.length, fotograf: 0, fatura: 0, vergi: 0, diger: 0 };
+      liste.forEach(d => {
+        const k = tespitProjeDosyaKategorisi(d);
+        if (sayac[k] !== undefined) sayac[k]++;
+        else sayac.diger++;
+      });
+      window._projeEvrakSayiCache[pid] = sayac;
+      guncelleProjeEvrakRozetDom(pid, sayac);
+    } catch (_) {}
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.yazdirProjeFotografRaporu = yazdirProjeFotografRaporu;
+  window.projeListesiEvrakRozetleriniYukle = projeListesiEvrakRozetleriniYukle;
 }
 
 async function projeDosyaSecildi(fileList, kategoriKod = 'diger') {
@@ -5302,6 +5616,72 @@ function toggleCard(header) {
   header.nextElementSibling.classList.toggle('collapsed');
 }
 
+function veriGirisBolumeGit(cardId) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  const header = card.querySelector('.card-header');
+  const body = card.querySelector('.card-body');
+  if (header && header.classList.contains('collapsed')) {
+    header.classList.remove('collapsed');
+  }
+  if (body && body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+  }
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function veriGirisTumKartlariDaraltAc() {
+  const main = document.getElementById('mainContent');
+  if (!main) return;
+  const headers = Array.from(main.querySelectorAll('.card[id^="vgCard_"] > .card-header'));
+  if (!headers.length) return;
+  const hepsiKapali = headers.every(h => h.classList.contains('collapsed'));
+  headers.forEach(h => {
+    const body = h.nextElementSibling;
+    if (hepsiKapali) {
+      h.classList.remove('collapsed');
+      if (body) body.classList.remove('collapsed');
+    } else {
+      h.classList.add('collapsed');
+      if (body) body.classList.add('collapsed');
+    }
+  });
+}
+
+function ymFirmalariniTeklifeKopyala() {
+  if (currentProjeKilitli) {
+    showToast('Bu proje kilitli olduğu için değişiklik yapılamaz.', 'warning');
+    return;
+  }
+  const ymFirmalar = Array.isArray(proje?.ymFirmalar) ? proje.ymFirmalar : [];
+  const seciliYmVar = ymFirmalar.some(f => f && String(f.ad || '').trim());
+  if (!seciliYmVar) {
+    showToast('Önce Yaklaşık Maliyet bölümünde en az bir firma seçin.', 'warning');
+    return;
+  }
+  if (!Array.isArray(proje.teklifFirmalar)) proje.teklifFirmalar = [];
+  let aktarılanSayi = 0;
+  ymFirmalar.forEach((yf, idx) => {
+    const ad = String(yf?.ad || '').trim();
+    if (!proje.teklifFirmalar[idx]) {
+      proje.teklifFirmalar[idx] = { ad: '', fiyatlar: [] };
+    }
+    if (ad) {
+      proje.teklifFirmalar[idx].ad = ad;
+      aktarılanSayi++;
+    }
+  });
+  autoSave();
+  renderPage();
+  showToast(`✅ ${aktarılanSayi} Yaklaşık Maliyet firması Resmi Teklif listesine aktarıldı!`, 'success');
+}
+
+if (typeof window !== 'undefined') {
+  window.veriGirisBolumeGit = veriGirisBolumeGit;
+  window.veriGirisTumKartlariDaraltAc = veriGirisTumKartlariDaraltAc;
+  window.ymFirmalariniTeklifeKopyala = ymFirmalariniTeklifeKopyala;
+}
+
 // ===================== BELGELER SAYFASI =====================
 let currentBelge = 'yaklasik-maliyet';
 
@@ -5345,6 +5725,7 @@ async function renderBelgelerPage() {
               <span class="ky-proje-date">&#128197; ${tarih}</span>
               ${getIsTuruBadge(p.isTuru)}
               ${getStatusBadge(p.status || 'taslak')}
+              <span id="projeEvrakRozet_${escAttr(p.id)}" class="ky-proje-evrak-rozet" style="display:none;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:10px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd"></span>
             </div>
           </div>
           <div class="ky-proje-actions">
@@ -5393,7 +5774,9 @@ async function renderBelgelerPage() {
         const durum = document.getElementById('belgelerProjeDurum').value;
         const sirala = document.getElementById('belgelerProjeSirala').value;
         document.getElementById('belgelerProjeGrid').innerHTML = renderBelgelerProjeGrid(ara, durum, sirala);
+        projeListesiEvrakRozetleriniYukle(projeler);
       };
+      projeListesiEvrakRozetleriniYukle(projeler);
     } catch(e) {
       const listEl = document.getElementById('belgelerProjeList');
       if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${escHtml(e?.message || '')}</div>`;
@@ -7203,6 +7586,7 @@ async function renderProjelerimPage() {
             <span class="ky-proje-date">📅 ${tarih}</span>
             ${getIsTuruBadge(p.isTuru)}
             ${p.atananGerceklestirmeciAd ? `<span class="ky-proje-user">👷 ${escHtml(p.atananGerceklestirmeciAd)}</span>` : ''}
+            <span id="projeEvrakRozet_${escAttr(p.id)}" class="ky-proje-evrak-rozet" style="display:none;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:10px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd"></span>
           </div>
           ${durmBilgisi}
           ${p.status === 'geri_gonderildi' && p.geriGonderNot ? `
@@ -7267,7 +7651,9 @@ async function renderProjelerimPage() {
       const durum = document.getElementById('projelerimDurum').value;
       const sirala = document.getElementById('projelerimSirala').value;
       document.getElementById('projelerimListe').innerHTML = renderProjelerimListe(ara, durum, sirala);
+      projeListesiEvrakRozetleriniYukle(projeler);
     };
+    projeListesiEvrakRozetleriniYukle(projeler);
   } catch(e) {
     main.innerHTML = `<div class="page-header"><h2>Projelerim</h2></div><div style="color:red;padding:20px">Hata: ${escHtml(e?.message || '')}</div>`;
   }
@@ -9121,7 +9507,7 @@ async function duyuruKendindenGizleCagir(duyuruId) {
 }
 
 // ===================== HAKKINDA SAYFASI =====================
-const APP_CURRENT_VERSION = '2.5.0';
+const APP_CURRENT_VERSION = '2.6.0';
 
 async function checkForUpdates(showLoading = false) {
   try {
@@ -9184,9 +9570,24 @@ async function renderHakkindaPage() {
         </div>
       </div>
 
+      <!-- v2.6.0 Yenilikler -->
+      <div class="card" style="margin-bottom:16px;border-left:4px solid #0284c7;">
+        <div class="card-header"><h3 style="font-size:15px;color:#0284c7;">🚀 v2.6.0 Sürüm Notları (En Son)</h3></div>
+        <div class="card-body">
+          <ul style="margin:0;padding-left:20px;font-size:13.5px;line-height:2;color:var(--gray-800);">
+            <li>🌊 <strong>Yumuşak Okyanus (Çelik Mavisi) Kurumsal Tema:</strong> Veri Giriş Formu kartları, teklif tabloları ve birim fiyat kutuları göz yormayan okyanus mavisi kurumsal tasarımla yenilendi.</li>
+            <li>📊 <strong>Canlı Proje Durumu & Hızlı Geçiş Çubuğu:</strong> Veri giriş formunun en üstünde 5 adımlı canlı kontrol listesi (Checklist), tek tıkla bölüme kaydırma ve tüm kartları daraltıp açma aracı eklendi.</li>
+            <li>⚡ <strong>Y.M. Firmalarını Resmi Teklife Tek Tıkla Aktarma:</strong> Yaklaşık maliyette seçilen firmaları resmi teklif mektuplarına tek tuşla kopyalama özelliği eklendi.</li>
+            <li>🖼️ <strong>Tam Ekran Fotoğraf Galerisi & Klavye Gezinmesi:</strong> Dokümanlar sekmesinde fotoğraflar arasında <code>←</code> <code>→</code> yön tuşlarıyla tam ekran gezinme, yakınlaştırma, döndürme ve çoklu ZIP indirme eklendi.</li>
+            <li>🖨️ <strong>Fotoğraf Tutanağı / Görsel Rapor (A4 PDF):</strong> İşe ait fotoğraflardan tek tıkla kurumsal başlıklı ve imzalı A4 Fotoğraf Tutanağı üretme özelliği eklendi.</li>
+            <li>📎 <strong>Proje Kartlarında Canlı Evrak Rozetleri:</strong> Projelerim ve Dokümanlar listelerinde her projenin yüklü evrak/fotoğraf sayısını gösteren özet rozetler eklendi.</li>
+          </ul>
+        </div>
+      </div>
+
       <!-- v2.5.0 Yenilikler -->
-      <div class="card" style="margin-bottom:16px;border-left:4px solid var(--primary);">
-        <div class="card-header"><h3 style="font-size:15px;color:var(--primary);">🚀 v2.5.0 Sürüm Notları (En Son)</h3></div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3 style="font-size:15px;">📝 v2.5.0 Sürüm Notları</h3></div>
         <div class="card-body">
           <ul style="margin:0;padding-left:20px;font-size:13.5px;line-height:2;color:var(--gray-800);">
             <li>🤖 <strong>Google Gemini AI ile Çoklu Evraktan Proje Oluşturma:</strong> Yaklaşık maliyet, teklif mektupları ve tutanakları tek seferde okuyup iş kalemlerini, firmaları ve fiyatları otomatik çıkaran yapay zeka asistanı.</li>

@@ -1,12 +1,13 @@
 const assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
 let notices=[], sent=0, reads=0;
 const ctx=vm.createContext({console,setTimeout(){},clearTimeout(){},localStorage:{getItem(){return null;},setItem(){}},
+ currentDTMUser:{uid:'u1',role:'user',displayName:'User'},
  document:{getElementById(id){return id==='gerceklestirmeciSelect'?{value:'reviewer',selectedIndex:0,options:[{dataset:{ad:'Reviewer'}}]}:{remove(){}};},createElement(){return {};},head:{appendChild(){}},addEventListener(){}},
  window:{addEventListener(){}},projeSurumleri:new Map([['p',0]]),projeCakismaHatasi:()=>new Error('Conflict')});
 for(const file of ['data','utils','calculations','app'])vm.runInContext(fs.readFileSync(`app/js/${file}.js`,'utf8'),ctx);
 const run=code=>vm.runInContext(code,ctx);
 const data=Object.assign(ctx.getDefaultProje(),{isAdi:'Çatı',teklifFirmalar:[{ad:'A',fiyatlar:[200000]}],kazananFirmaIndex:0});
-ctx.doc={data,revision:0};ctx.r={firmaList:[{ad:'A',basitUsul:false}],yukleniciList:[]};ctx.input=data;
+ctx.doc={data,revision:0};ctx.r={ ...ctx.getDefaultReferans(), firmaList:[{ad:'A',basitUsul:false}],yukleniciList:[]};ctx.input=data;
 ctx.getProjeFromCloud=async()=>{reads++;return ctx.doc;};ctx.gonderiProje=async()=>{sent++;};
 run("showToast = message => {}; renderPage=()=>{}; butonKilitli=async (b,t,fn)=>fn(); referans=r;");ctx.showToast=m=>notices.push(m);
 function reset(){ctx.input=JSON.parse(JSON.stringify(data));run("proje=input;currentCloudProjeId='p';currentProjeStatus='taslak';currentProjeKilitli=false;lastSavedProjeSnapshot=JSON.stringify(proje);");}
@@ -16,6 +17,12 @@ async function main(){
  reset();ctx.doc.revision=0;await ctx.gonderiOnayla('p',{});assert.equal(sent,1);
  assert.equal(run('currentProjeStatus'),'gonderildi');assert.equal(run('currentProjeKilitli'),true);assert.equal(run('hasUnsavedChanges()'),false);
  ctx.r.firmaList[0].basitUsul=true;assert.equal(run('hesaplaSozlesmeVergileri(proje,referans).kdvOrani'),20,'open screen freezes immediately after sending');
- console.log('PASS: unsaved/stale submission blocked and current screen freezes on successful submission');
+ reset();run("proje.ymFirmalar=[{ad:'Firma 1',fiyatlar:[100]},{ad:'Firma 2',fiyatlar:[110]},{ad:'Firma 3',fiyatlar:[120]}];proje.teklifFirmalar=[{ad:'',fiyatlar:[0]},{ad:'',fiyatlar:[0]},{ad:'',fiyatlar:[0]}];ymFirmalariniTeklifeKopyala();");
+ assert.deepEqual(Array.from(run('proje.teklifFirmalar.map(f=>f.ad)')),['Firma 1','Firma 2','Firma 3'],'YM firms copied to official offer firms');
+ assert.equal(run('APP_CURRENT_VERSION'),'2.6.0','version bumped to 2.6.0');
+ const vgHtml=run('renderVeriGirisPage()');
+ assert.match(vgHtml,/Canlı Proje Durumu & Kontrol Listesi/,'live checklist rendered');
+ assert.match(vgHtml,/Y\.M\. Firmalarını Buraya Aktar/,'copy YM firms button rendered');
+ console.log('PASS: unsaved/stale submission blocked, YM firm copy, live checklist and current screen freezes on successful submission');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
