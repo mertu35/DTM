@@ -1343,7 +1343,7 @@ function renderVeriGirisPage() {
   const tamamlananAdimSayisi = [chkGenel, chkOlur, chkKalem, chkYm, chkTeklif].filter(Boolean).length;
 
   const canliDurumVeHizliMenuHtml = `
-    <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;padding:12px 14px;margin-bottom:16px;box-shadow:0 2px 8px rgba(2,132,199,0.06)">
+    <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(2,132,199,0.06)">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span style="font-size:13px;font-weight:800;color:#0c4a6e">📊 Canlı Proje Durumu & Kontrol Listesi</span>
@@ -1351,12 +1351,8 @@ function renderVeriGirisPage() {
             ${tamamlananAdimSayisi}/5 Adım Tamam
           </span>
         </div>
-        <button type="button" id="vgTumKartlarToggleBtn" ${dtmEventAttr('click', function(event) { veriGirisTumKartlariDaraltAc(); })}
-          style="padding:5px 12px;background:#0c4a6e;color:#fff;border:1px solid #075985;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px">
-          ↕️ Tüm Kartları Daralt / Aç
-        </button>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:8px;margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:8px">
         <div ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_proje'); })}
           style="cursor:pointer;padding:8px 10px;border-radius:8px;background:#fff;border:1.5px solid ${chkGenel ? '#86efac' : '#cbd5e1'};display:flex;align-items:center;gap:8px" title="Proje Bilgileri bölümüne git">
           <span style="font-size:15px">${chkGenel ? '✅' : '⏳'}</span>
@@ -1398,19 +1394,25 @@ function renderVeriGirisPage() {
           </div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #bae6fd">
-        <span style="font-size:11.5px;font-weight:700;color:#0369a1;margin-right:2px">⚡ Hızlı Git:</span>
-        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_proje'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📋 Proje</button>
-        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_ymGorevli'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">👥 Y.M. Görevli</button>
-        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_dtGorevli'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">👥 D.T. Görevli</button>
-        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_amir'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">✒️ Amir</button>
-        ${!isMalVeyaHizmetTuru(proje.isTuru) ? `<button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_tarih'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📅 Tarihler</button>` : `<button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_mk'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">🔍 Kabul Komisyonu</button>`}
-        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_kalemler'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📦 Kalemler</button>
-        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_ymTeklif'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📊 Y.M. Teklif</button>
-        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_resmiTeklif'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">🏷️ Resmi Teklif</button>
-        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_kesinti'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">🧮 Kesintiler</button>
-        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_dokuman'); })} style="padding:3px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📎 Doküman Yükle</button>
+    </div>
+    <div id="vgStickyHizliGitBar" style="position:sticky;top:8px;z-index:95;background:rgba(240,249,255,0.96);backdrop-filter:blur(8px);border:1.5px solid #7dd3fc;border-radius:10px;padding:8px 12px;margin-bottom:16px;box-shadow:0 4px 14px rgba(2,132,199,0.12);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-size:11.5px;font-weight:800;color:#0369a1;margin-right:2px">⚡ Hızlı Git:</span>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_proje'); })} style="padding:4px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📋 Proje</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_ymGorevli'); })} style="padding:4px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">👥 Y.M. Görevli</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_dtGorevli'); })} style="padding:4px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">👥 D.T. Görevli</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_amir'); })} style="padding:4px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">✒️ Amir</button>
+        ${!isMalVeyaHizmetTuru(proje.isTuru) ? `<button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_tarih'); })} style="padding:4px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📅 Tarihler</button>` : `<button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_mk'); })} style="padding:4px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">🔍 Kabul Komisyonu</button>`}
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_kalemler'); })} style="padding:4px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📦 Kalemler</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_ymTeklif'); })} style="padding:4px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📊 Y.M. Teklif</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_resmiTeklif'); })} style="padding:4px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">🏷️ Resmi Teklif</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_kesinti'); })} style="padding:4px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">🧮 Kesintiler</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { veriGirisBolumeGit('vgCard_dokuman'); })} style="padding:4px 9px;background:#fff;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">📎 Doküman Yükle</button>
       </div>
+      <button type="button" id="vgTumKartlarToggleBtn" ${dtmEventAttr('click', function(event) { veriGirisTumKartlariDaraltAc(); })}
+        style="padding:4px 10px;background:#0c4a6e;color:#fff;border:1px solid #075985;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap">
+        ↕️ Daralt / Aç
+      </button>
     </div>`;
 
   return `
@@ -5627,6 +5629,7 @@ function veriGirisBolumeGit(cardId) {
   if (body && body.classList.contains('collapsed')) {
     body.classList.remove('collapsed');
   }
+  card.style.scrollMarginTop = '68px';
   card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
