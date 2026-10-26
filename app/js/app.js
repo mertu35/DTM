@@ -1883,14 +1883,27 @@ function etiketliProjeDosyasiOlustur(dosya, kategoriKod = 'diger', altEtiket = '
 window._projeDosyalariCache = {};
 window._sonProjeDosyalariListesi = [];
 window._bekleyenProjeDosyalari = [];
+window._seciliProjeDokumanlari = new Set();
+window._dokumanGaleriDurumu = {
+  acik: false,
+  liste: [],
+  aktifIndex: 0,
+  zoom: 1,
+  rotation: 0,
+  aktifBlobUrl: null
+};
 
-window.dokumanKategoriSec = function(kod) {
-  if (!PROJE_DOKUMAN_KATEGORILERI.some(k => k.kod === kod)) return;
-  currentDokumanKategori = kod;
+function dokumanPaneliniYenile() {
   const container = document.getElementById('projeDosyaListesi');
   if (!container) return;
   const saltOkunur = Boolean(currentProjeKilitli || currentGerceklestirmeciReadOnly || currentPage === 'proje-ozet');
   container.innerHTML = renderKategoriDokumanKutulari(window._sonProjeDosyalariListesi || [], saltOkunur);
+}
+
+window.dokumanKategoriSec = function(kod) {
+  if (!PROJE_DOKUMAN_KATEGORILERI.some(k => k.kod === kod)) return;
+  currentDokumanKategori = kod;
+  dokumanPaneliniYenile();
 };
 
 function projeDokumanlarSekmesineGit() {
@@ -1904,9 +1917,658 @@ function projeDokumanlarSekmesineGit() {
   renderPage();
 }
 
+function dokumanGoruntuMu(ad, tip) {
+  const t = String(tip || '').toLowerCase();
+  const a = String(ad || '').toLowerCase();
+  return t.startsWith('image/') || /\.(jpe?g|png|webp|bmp|gif)$/i.test(a);
+}
+
+function dokumanPdfMi(ad, tip) {
+  const t = String(tip || '').toLowerCase();
+  const a = String(ad || '').toLowerCase();
+  return t === 'application/pdf' || /\.pdf$/i.test(a);
+}
+
+function dataUrlToUint8Array(dataUrl) {
+  const parts = String(dataUrl || '').split(';base64,');
+  const rawBase64 = parts.length > 1 ? parts[1] : parts[0];
+  const bin = atob(rawBase64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) {
+    bytes[i] = bin.charCodeAt(i);
+  }
+  return bytes;
+}
+
+// Saf JS ile standart ZIP (STORE + UTF-8 dosya adı) oluşturucu
+const _zipCrcTable = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) {
+      c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    }
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+function _hesaplaCrc32(bytes) {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) {
+    crc = _zipCrcTable[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function olusturProjeDokumanZipBlob(dosyaGirdileri) {
+  const encoder = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+  const kullanilanAdlar = new Map();
+
+  const now = new Date();
+  const dosTime = ((now.getHours() & 0x1F) << 11) | ((now.getMinutes() & 0x3F) << 5) | ((now.getSeconds() >> 1) & 0x1F);
+  const dosDate = (((Math.max(1980, now.getFullYear()) - 1980) & 0x7F) << 9) | (((now.getMonth() + 1) & 0x0F) << 5) | (now.getDate() & 0x1F);
+
+  for (const girdi of dosyaGirdileri) {
+    let safAd = String(girdi.zipYolu || girdi.ad || 'belge')
+      .replace(/[\\:*?"<>|]/g, '_')
+      .replace(/^\/+/, '');
+    if (!safAd) safAd = 'belge';
+
+    const anahtar = safAd.toLocaleLowerCase('tr');
+    const adet = kullanilanAdlar.get(anahtar) || 0;
+    kullanilanAdlar.set(anahtar, adet + 1);
+    if (adet > 0) {
+      const nokta = safAd.lastIndexOf('.');
+      if (nokta > 0) safAd = `${safAd.slice(0, nokta)} (${adet + 1})${safAd.slice(nokta)}`;
+      else safAd = `${safAd} (${adet + 1})`;
+    }
+
+    const nameBytes = encoder.encode(safAd);
+    const dataBytes = girdi.bytes instanceof Uint8Array ? girdi.bytes : new Uint8Array(girdi.bytes || []);
+    const crc = _hesaplaCrc32(dataBytes);
+    const size = dataBytes.length;
+
+    const localHeader = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(localHeader.buffer);
+    lv.setUint32(0, 0x04034b50, true); // Local file header signature
+    lv.setUint16(4, 20, true);         // Version needed
+    lv.setUint16(6, 0x0800, true);     // UTF-8 filename flag
+    lv.setUint16(8, 0, true);          // Compression method: 0 (STORE)
+    lv.setUint16(10, dosTime, true);
+    lv.setUint16(12, dosDate, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, size, true);
+    lv.setUint32(22, size, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    localHeader.set(nameBytes, 30);
+
+    const centralHeader = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(centralHeader.buffer);
+    cv.setUint32(0, 0x02014b50, true); // Central directory signature
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true);     // UTF-8 filename flag
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, dosTime, true);
+    cv.setUint16(14, dosDate, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, size, true);
+    cv.setUint32(24, size, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, offset, true);
+    centralHeader.set(nameBytes, 46);
+
+    localParts.push(localHeader, dataBytes);
+    centralParts.push(centralHeader);
+    offset += localHeader.length + size;
+  }
+
+  const centralSize = centralParts.reduce((acc, p) => acc + p.length, 0);
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(4, 0, true);
+  ev.setUint16(6, 0, true);
+  ev.setUint16(8, dosyaGirdileri.length, true);
+  ev.setUint16(10, dosyaGirdileri.length, true);
+  ev.setUint32(12, centralSize, true);
+  ev.setUint32(16, offset, true);
+  ev.setUint16(20, 0, true);
+
+  return new Blob([...localParts, ...centralParts, eocd], { type: 'application/zip' });
+}
+
+function tetikleBlobIndirme(blob, dosyaAdi) {
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = dosyaAdi || 'belge';
+  if (document.body && typeof document.body.appendChild === 'function') {
+    document.body.appendChild(a);
+  }
+  if (typeof a.click === 'function') a.click();
+  if (typeof a.remove === 'function') a.remove();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+}
+
+async function cozDokumanKaydiVerisi(kayit) {
+  if (!kayit) throw new Error('Belge bulunamadı.');
+  if (kayit.kaynak === 'cloud') {
+    const d = window._projeDosyalariCache?.[kayit.docId] || kayit.raw;
+    if (!d) throw new Error('Bulut belgesi bulunamadı.');
+    let dataUrl = d.url;
+    if (d.parcali && !dataUrl) {
+      dataUrl = await projeDosyaIcerigiGetir(d.projeId, d.docId, d);
+      d.url = dataUrl;
+    }
+    if (!dataUrl) throw new Error('Belge içeriği boş.');
+    const temizAd = temizProjeDosyaAdi(d.ad);
+    const mime = (typeof dosyaMimeTipiBelirle === 'function' ? dosyaMimeTipiBelirle({ name: temizAd }) : '') || d.tip || 'application/octet-stream';
+    const bytes = dataUrlToUint8Array(dataUrl);
+    const blob = new Blob([bytes], { type: mime });
+    return { temizAd, dataUrl, mime, bytes, blob, boyut: d.boyut || bytes.length, kategoriKod: kayit.kategoriKod };
+  } else if (kayit.kaynak === 'pending') {
+    const item = (window._bekleyenProjeDosyalari || [])[kayit.bekleyenIdx] || kayit.raw;
+    if (!item || !item.file) throw new Error('Bekleyen belge bulunamadı.');
+    const dataUrl = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(item.file);
+    });
+    const temizAd = (item.altEtiket ? `${item.altEtiket} - ` : '') + temizProjeDosyaAdi(item.file.name || 'Belge');
+    const mime = (typeof dosyaMimeTipiBelirle === 'function' ? dosyaMimeTipiBelirle({ name: temizAd }) : '') || item.file.type || 'application/octet-stream';
+    const bytes = dataUrlToUint8Array(dataUrl);
+    const blob = new Blob([bytes], { type: mime });
+    return { temizAd, dataUrl, mime, bytes, blob, boyut: item.file.size || bytes.length, kategoriKod: kayit.kategoriKod };
+  }
+  throw new Error('Geçersiz belge kaynağı.');
+}
+
+function tumNormalizedDokumanKayitlariniGetir() {
+  const dosyalar = window._sonProjeDosyalariListesi || [];
+  const bekleyenler = (!currentCloudProjeId && Array.isArray(window._bekleyenProjeDosyalari))
+    ? window._bekleyenProjeDosyalari
+    : [];
+
+  const liste = [];
+  dosyalar.forEach(d => {
+    const katKod = tespitProjeDosyaKategorisi(d);
+    const temizAd = temizProjeDosyaAdi(d.ad);
+    liste.push({
+      key: `cloud:${d.docId}`,
+      kaynak: 'cloud',
+      docId: d.docId,
+      kategoriKod: katKod,
+      temizAd,
+      boyut: d.boyut || 0,
+      tip: d.tip || '',
+      yukleyenAd: d.yukleyenAd || '',
+      thumbUrl: (dokumanGoruntuMu(temizAd, d.tip) && d.url && d.url.startsWith('data:image/')) ? d.url : '',
+      raw: d
+    });
+  });
+
+  bekleyenler.forEach((b, idx) => {
+    const f = b.file || {};
+    const katKod = b.kategori === 'olur_teklif' ? 'diger' : (b.kategori || tespitProjeDosyaKategorisi(f));
+    const temizAd = (b.altEtiket ? `${b.altEtiket} - ` : '') + temizProjeDosyaAdi(f.name || 'Belge');
+    liste.push({
+      key: `pending:${idx}`,
+      kaynak: 'pending',
+      bekleyenIdx: idx,
+      kategoriKod: katKod,
+      temizAd,
+      boyut: f.size || 0,
+      tip: f.type || '',
+      yukleyenAd: '',
+      thumbUrl: '',
+      raw: b
+    });
+  });
+
+  return liste;
+}
+
+// ===================== SEÇİM & İNDİRME İŞLEMLERİ =====================
+window.dokumanSecimDegistir = function(key) {
+  if (!key) return;
+  if (window._seciliProjeDokumanlari.has(key)) {
+    window._seciliProjeDokumanlari.delete(key);
+  } else {
+    window._seciliProjeDokumanlari.add(key);
+  }
+  dokumanPaneliniYenile();
+};
+
+window.dokumanKategoriTumunuSec = function(kategoriKod) {
+  const tumu = tumNormalizedDokumanKayitlariniGetir().filter(k => !kategoriKod || k.kategoriKod === kategoriKod);
+  if (!tumu.length) return;
+  const hepsiSecili = tumu.every(k => window._seciliProjeDokumanlari.has(k.key));
+  if (hepsiSecili) {
+    tumu.forEach(k => window._seciliProjeDokumanlari.delete(k.key));
+  } else {
+    tumu.forEach(k => window._seciliProjeDokumanlari.add(k.key));
+  }
+  dokumanPaneliniYenile();
+};
+
+window.dokumanTumSecimiTemizle = function() {
+  window._seciliProjeDokumanlari.clear();
+  dokumanPaneliniYenile();
+};
+
+window.projeDosyaIndir = async function(docId) {
+  const kayit = tumNormalizedDokumanKayitlariniGetir().find(k => k.key === `cloud:${docId}`);
+  if (!kayit) return;
+  try {
+    if (typeof showToast === 'function' && kayit.raw?.parcali && !kayit.raw?.url) {
+      showToast('⏳ Dosya hazırlanıyor...', 'info', 2000);
+    }
+    const veri = await cozDokumanKaydiVerisi(kayit);
+    tetikleBlobIndirme(veri.blob, veri.temizAd);
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('Dosya indirilemedi: ' + (e.message || e), 'error');
+  }
+};
+
+window.bekleyenProjeDosyaIndir = async function(idx) {
+  const kayit = tumNormalizedDokumanKayitlariniGetir().find(k => k.key === `pending:${idx}`);
+  if (!kayit) return;
+  try {
+    const veri = await cozDokumanKaydiVerisi(kayit);
+    tetikleBlobIndirme(veri.blob, veri.temizAd);
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('Dosya indirilemedi: ' + (e.message || e), 'error');
+  }
+};
+
+window.topluProjeDokumanIndir = async function(kapsam = 'secili', mod = 'zip') {
+  const tumKayitlar = tumNormalizedDokumanKayitlariniGetir();
+  let hedefler = [];
+  if (kapsam === 'secili') {
+    hedefler = tumKayitlar.filter(k => window._seciliProjeDokumanlari.has(k.key));
+  } else if (kapsam === 'kategori') {
+    hedefler = tumKayitlar.filter(k => k.kategoriKod === currentDokumanKategori);
+  } else if (kapsam === 'tumu') {
+    hedefler = tumKayitlar;
+  }
+
+  if (!hedefler.length) {
+    if (typeof showToast === 'function') showToast('İndirilecek belge seçilmedi.', 'warning');
+    return;
+  }
+
+  try {
+    // Tek dosya varsa doğrudan indir
+    if (hedefler.length === 1 && mod !== 'zip-zorla') {
+      const veri = await cozDokumanKaydiVerisi(hedefler[0]);
+      tetikleBlobIndirme(veri.blob, veri.temizAd);
+      if (typeof showToast === 'function') showToast('✅ Belge indirildi.', 'success');
+      return;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(`⏳ ${hedefler.length} adet belge hazırlanıyor, lütfen bekleyin...`, 'info', 3000);
+    }
+
+    if (mod === 'tektek') {
+      for (let i = 0; i < hedefler.length; i++) {
+        const veri = await cozDokumanKaydiVerisi(hedefler[i]);
+        tetikleBlobIndirme(veri.blob, veri.temizAd);
+        if (i < hedefler.length - 1) {
+          await new Promise(r => setTimeout(r, 260));
+        }
+      }
+      if (typeof showToast === 'function') showToast(`✅ ${hedefler.length} adet belge indirildi.`, 'success');
+      return;
+    }
+
+    // ZIP modu (varsayılan)
+    const klasorAdMap = {
+      fotograf: '1_Fotograflar',
+      fatura: '2_Fatura',
+      vergi: '3_Vergi_Borcu_Yoktur',
+      diger: '4_Diger_Belgeler'
+    };
+
+    const zipGirdileri = [];
+    for (const kayit of hedefler) {
+      const veri = await cozDokumanKaydiVerisi(kayit);
+      const klasor = kapsam === 'tumu' ? (klasorAdMap[kayit.kategoriKod] || 'Belgeler') + '/' : '';
+      zipGirdileri.push({
+        ad: veri.temizAd,
+        zipYolu: klasor + veri.temizAd,
+        bytes: veri.bytes
+      });
+    }
+
+    const zipBlob = olusturProjeDokumanZipBlob(zipGirdileri);
+    const projeAdTemiz = String(proje?.isAdi || 'Proje')
+      .replace(/[\\/:*?"<>|]/g, ' ')
+      .replace(/\s+/g, '_')
+      .slice(0, 45)
+      .replace(/^_+|_+$/g, '') || 'Proje';
+    const altEk = kapsam === 'kategori'
+      ? `_${klasorAdMap[currentDokumanKategori] || currentDokumanKategori}`
+      : (kapsam === 'secili' ? `_Secili_${hedefler.length}_Belge` : '_Tum_Dokumanlar');
+
+    tetikleBlobIndirme(zipBlob, `${projeAdTemiz}${altEk}.zip`);
+    if (typeof showToast === 'function') {
+      showToast(`📦 ${hedefler.length} belge tek ZIP paketi olarak indirildi!`, 'success');
+    }
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('Toplu indirme hatası: ' + (e.message || e), 'error');
+  }
+};
+
+// ===================== GALERİ (LIGHTBOX) & KLAVYE GEÇİŞ SİSTEMİ =====================
+function dokumanGaleriKlavyeBagla() {
+  if (window._dokumanGaleriKeybound) return;
+  window._dokumanGaleriKeybound = true;
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('keydown', function(e) {
+      if (!window._dokumanGaleriDurumu?.acik) return;
+      const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        window.dokumanGaleriGezin(-1);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        window.dokumanGaleriGezin(1);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        window.dokumanGaleriKapat();
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        window.dokumanGaleriZoom(0.25);
+      } else if (e.key === '-') {
+        e.preventDefault();
+        window.dokumanGaleriZoom(-0.25);
+      } else if (e.key === '0') {
+        e.preventDefault();
+        window.dokumanGaleriZoomSifirla();
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        window.dokumanGaleriDondur();
+      }
+    });
+  }
+}
+
+function dokumanGaleriTemizleBlob() {
+  if (window._dokumanGaleriDurumu?.aktifBlobUrl) {
+    try { URL.revokeObjectURL(window._dokumanGaleriDurumu.aktifBlobUrl); } catch (_) {}
+    window._dokumanGaleriDurumu.aktifBlobUrl = null;
+  }
+}
+
+window.dokumanGaleriKapat = function() {
+  window._dokumanGaleriDurumu.acik = false;
+  dokumanGaleriTemizleBlob();
+  const modal = document.getElementById('dtmDokumanGaleriModal');
+  if (modal) modal.remove();
+};
+
+window.dokumanGaleriZoom = function(delta) {
+  const st = window._dokumanGaleriDurumu;
+  if (!st.acik) return;
+  st.zoom = Math.min(3.5, Math.max(0.5, Math.round((st.zoom + delta) * 100) / 100));
+  dokumanGaleriDomStilGuncelle();
+};
+
+window.dokumanGaleriZoomSifirla = function() {
+  const st = window._dokumanGaleriDurumu;
+  if (!st.acik) return;
+  st.zoom = 1;
+  st.rotation = 0;
+  dokumanGaleriDomStilGuncelle();
+};
+
+window.dokumanGaleriResimTiklaZoom = function() {
+  const st = window._dokumanGaleriDurumu;
+  if (!st.acik) return;
+  st.zoom = st.zoom > 1.05 ? 1 : 1.75;
+  dokumanGaleriDomStilGuncelle();
+};
+
+window.dokumanGaleriDondur = function() {
+  const st = window._dokumanGaleriDurumu;
+  if (!st.acik) return;
+  st.rotation = (st.rotation + 90) % 360;
+  dokumanGaleriDomStilGuncelle();
+};
+
+function dokumanGaleriDomStilGuncelle() {
+  const st = window._dokumanGaleriDurumu;
+  const img = document.getElementById('dtmGaleriAnaGorsel');
+  if (img) {
+    img.style.transform = `scale(${st.zoom}) rotate(${st.rotation}deg)`;
+    img.style.cursor = st.zoom > 1.05 ? 'zoom-out' : 'zoom-in';
+  }
+  const zoomLbl = document.getElementById('dtmGaleriZoomLabel');
+  if (zoomLbl) {
+    zoomLbl.textContent = `%${Math.round(st.zoom * 100)}`;
+  }
+}
+
+window.dokumanGaleriGezin = function(yon) {
+  const st = window._dokumanGaleriDurumu;
+  if (!st.acik || !st.liste.length) return;
+  const len = st.liste.length;
+  st.aktifIndex = (st.aktifIndex + yon + len) % len;
+  st.zoom = 1;
+  st.rotation = 0;
+  dokumanGaleriIcerikYukle();
+};
+
+window.dokumanGaleriIndexAc = function(idx) {
+  const st = window._dokumanGaleriDurumu;
+  if (!st.acik || idx < 0 || idx >= st.liste.length) return;
+  st.aktifIndex = idx;
+  st.zoom = 1;
+  st.rotation = 0;
+  dokumanGaleriIcerikYukle();
+};
+
+window.dokumanGaleriAktifiIndir = async function() {
+  const st = window._dokumanGaleriDurumu;
+  const kayit = st.liste?.[st.aktifIndex];
+  if (!kayit) return;
+  try {
+    const veri = await cozDokumanKaydiVerisi(kayit);
+    tetikleBlobIndirme(veri.blob, veri.temizAd);
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('Dosya indirilemedi: ' + (e.message || e), 'error');
+  }
+};
+
+window.dokumanGaleriAktifiYeniSekmedeAc = async function() {
+  const st = window._dokumanGaleriDurumu;
+  const kayit = st.liste?.[st.aktifIndex];
+  if (!kayit) return;
+  try {
+    const veri = await cozDokumanKaydiVerisi(kayit);
+    if (typeof projeDosyaGoruntule === 'function') {
+      projeDosyaGoruntule(veri.dataUrl, veri.temizAd, veri.mime);
+    }
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('Dosya açılamadı: ' + (e.message || e), 'error');
+  }
+};
+
+async function dokumanGaleriIcerikYukle() {
+  const st = window._dokumanGaleriDurumu;
+  if (!st.acik || !st.liste.length) return;
+
+  dokumanGaleriTemizleBlob();
+
+  let modal = document.getElementById('dtmDokumanGaleriModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'dtmDokumanGaleriModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.92);z-index:99999;display:flex;flex-direction:column;justify-content:space-between;backdrop-filter:blur(6px);user-select:none';
+    document.body.appendChild(modal);
+  }
+
+  const kayit = st.liste[st.aktifIndex];
+  const toplam = st.liste.length;
+  const katObj = PROJE_DOKUMAN_KATEGORILERI.find(k => k.kod === kayit.kategoriKod) || PROJE_DOKUMAN_KATEGORILERI[0];
+  const isImg = dokumanGoruntuMu(kayit.temizAd, kayit.tip);
+
+  // Önce yükleniyor görünümü (parçalı bulut dosyaları için)
+  modal.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(15,23,42,0.85);border-bottom:1px solid rgba(255,255,255,0.12);gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">
+        <span style="background:#0284c7;color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:16px;white-space:nowrap">${st.aktifIndex + 1} / ${toplam}</span>
+        <span style="background:rgba(255,255,255,0.12);color:#e2e8f0;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:8px;white-space:nowrap">${escHtml(katObj.sekmeAd)}</span>
+        <div style="min-width:0;flex:1">
+          <div style="color:#fff;font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(kayit.temizAd)}</div>
+          <div style="color:#94a3b8;font-size:11px">${formatDosyaBoyutu(kayit.boyut)}${kayit.yukleyenAd ? ' • 👤 ' + escHtml(kayit.yukleyenAd) : ''}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        ${isImg ? `
+          <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriZoom(-0.25); })} title="Uzaklaştır (-)" style="padding:7px 10px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.18);border-radius:7px;cursor:pointer;font-size:12px;font-weight:600">🔍-</button>
+          <button type="button" id="dtmGaleriZoomLabel" ${dtmEventAttr('click', function(event) { dokumanGaleriZoomSifirla(); })} title="Boyutu Sıfırla (0)" style="padding:7px 10px;background:rgba(255,255,255,0.1);color:#e2e8f0;border:1px solid rgba(255,255,255,0.18);border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;min-width:52px">%100</button>
+          <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriZoom(0.25); })} title="Yakınlaştır (+)" style="padding:7px 10px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.18);border-radius:7px;cursor:pointer;font-size:12px;font-weight:600">🔍+</button>
+          <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriDondur(); })} title="90° Döndür (R)" style="padding:7px 11px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.18);border-radius:7px;cursor:pointer;font-size:12px;font-weight:600">🔄 Döndür</button>
+        ` : ''}
+        <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriAktifiIndir(); })} style="padding:7px 13px;background:#0284c7;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px">⬇️ İndir</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriAktifiYeniSekmedeAc(); })} title="Yeni Sekmede Aç" style="padding:7px 11px;background:rgba(255,255,255,0.12);color:#e2e8f0;border:1px solid rgba(255,255,255,0.2);border-radius:7px;cursor:pointer;font-size:12px;font-weight:600">↗ Yeni Sekme</button>
+        <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriKapat(); })} title="Kapat (Esc)" style="padding:7px 13px;background:#dc2626;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:700">✕ Kapat</button>
+      </div>
+    </div>
+
+    <div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:16px 68px" ${dtmEventAttr('click', function(event) { if (event.target === this) dokumanGaleriKapat(); })}>
+      ${toplam > 1 ? `
+        <button type="button" ${dtmEventAttr('click', function(event) { event.stopPropagation(); dokumanGaleriGezin(-1); })} title="Önceki (Sol Ok ⬅️)"
+          style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(15,23,42,0.78);color:#fff;border:1.5px solid rgba(255,255,255,0.28);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;box-shadow:0 4px 14px rgba(0,0,0,0.35)">
+          ‹
+        </button>
+      ` : ''}
+
+      <div id="dtmGaleriMerkezAlan" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:auto">
+        <div style="color:#cbd5e1;font-size:14px;font-weight:600">⏳ Belge yükleniyor...</div>
+      </div>
+
+      ${toplam > 1 ? `
+        <button type="button" ${dtmEventAttr('click', function(event) { event.stopPropagation(); dokumanGaleriGezin(1); })} title="Sonraki (Sağ Ok ➡️)"
+          style="position:absolute;right:14px;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(15,23,42,0.78);color:#fff;border:1.5px solid rgba(255,255,255,0.28);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;box-shadow:0 4px 14px rgba(0,0,0,0.35)">
+          ›
+        </button>
+      ` : ''}
+    </div>
+
+    <div style="background:rgba(15,23,42,0.9);border-top:1px solid rgba(255,255,255,0.12);padding:10px 16px;display:flex;flex-direction:column;gap:6px">
+      ${toplam > 1 ? `
+        <div style="display:flex;align-items:center;gap:8px;overflow-x:auto;padding-bottom:2px">
+          ${st.liste.map((item, idx) => {
+            const aktif = idx === st.aktifIndex;
+            const itemImg = dokumanGoruntuMu(item.temizAd, item.tip);
+            return `
+              <div ${dtmEventAttr('click', function(event) { dokumanGaleriIndexAc(Number(idx)); })}
+                title="${escAttr(item.temizAd)}"
+                style="display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:8px;cursor:pointer;flex-shrink:0;max-width:170px;background:${aktif ? '#0284c7' : 'rgba(255,255,255,0.08)'};border:1.5px solid ${aktif ? '#7dd3fc' : 'rgba(255,255,255,0.12)'};color:${aktif ? '#fff' : '#cbd5e1'}">
+                ${item.thumbUrl
+                  ? `<img src="${escAttr(item.thumbUrl)}" style="width:26px;height:26px;object-fit:cover;border-radius:4px;flex-shrink:0">`
+                  : `<span style="font-size:14px">${itemImg ? '🖼️' : '📄'}</span>`}
+                <span style="font-size:11.5px;font-weight:${aktif ? '700' : '500'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${idx + 1}. ${escHtml(item.temizAd)}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      ` : ''}
+      <div style="text-align:center;font-size:11.5px;color:#94a3b8">
+        💡 Klavyeden <strong style="color:#e2e8f0">⬅️ Sol / Sağ ➡️</strong> ok tuşlarıyla geçiş yapabilir, <strong style="color:#e2e8f0">R</strong> ile fotoğrafı döndürebilir, <strong style="color:#e2e8f0">ESC</strong> ile çıkabilirsiniz.
+      </div>
+    </div>
+  `;
+
+  try {
+    const veri = await cozDokumanKaydiVerisi(kayit);
+    if (!st.acik || st.liste[st.aktifIndex]?.key !== kayit.key) return;
+    // Küçük resmi önbelleğe yaz
+    if (isImg && veri.dataUrl) kayit.thumbUrl = veri.dataUrl;
+
+    const merkez = document.getElementById('dtmGaleriMerkezAlan');
+    if (!merkez) return;
+
+    if (isImg) {
+      merkez.innerHTML = `
+        <img id="dtmGaleriAnaGorsel" src="${escAttr(veri.dataUrl)}" alt="${escAttr(veri.temizAd)}"
+          ${dtmEventAttr('click', function(event) { event.stopPropagation(); dokumanGaleriResimTiklaZoom(); })}
+          style="max-width:92%;max-height:76vh;object-fit:contain;border-radius:8px;box-shadow:0 15px 40px rgba(0,0,0,0.5);transition:transform 0.18s ease;cursor:zoom-in">
+      `;
+    } else if (dokumanPdfMi(veri.temizAd, veri.mime)) {
+      const blobUrl = URL.createObjectURL(veri.blob);
+      st.aktifBlobUrl = blobUrl;
+      merkez.innerHTML = `
+        <iframe src="${escAttr(blobUrl)}" style="width:92%;height:76vh;border:none;border-radius:10px;background:#fff;box-shadow:0 15px 40px rgba(0,0,0,0.5)"></iframe>
+      `;
+    } else {
+      merkez.innerHTML = `
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:32px;text-align:center;max-width:420px;color:#fff;box-shadow:0 15px 40px rgba(0,0,0,0.4)">
+          <div style="font-size:46px;margin-bottom:12px">📄</div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:6px;word-break:break-word">${escHtml(veri.temizAd)}</div>
+          <div style="font-size:12.5px;color:#94a3b8;margin-bottom:20px">${formatDosyaBoyutu(veri.boyut)} • Office / İndirilebilir Belge</div>
+          <button type="button" ${dtmEventAttr('click', function(event) { dokumanGaleriAktifiIndir(); })}
+            style="padding:10px 22px;background:#0284c7;color:#fff;border:none;border-radius:8px;font-size:13.5px;font-weight:700;cursor:pointer">
+            ⬇️ Bilgisayara İndir
+          </button>
+        </div>
+      `;
+    }
+  } catch (e) {
+    const merkez = document.getElementById('dtmGaleriMerkezAlan');
+    if (merkez) {
+      merkez.innerHTML = `<div style="color:#fca5a5;font-size:14px;font-weight:600">⚠️ Belge yüklenemedi: ${escHtml(e.message || String(e))}</div>`;
+    }
+  }
+}
+
+function acDokumanGaleri(hedefKey, sadeceAktifKategori = true) {
+  dokumanGaleriKlavyeBagla();
+  const tumKayitlar = tumNormalizedDokumanKayitlariniGetir();
+  let liste = sadeceAktifKategori
+    ? tumKayitlar.filter(k => k.kategoriKod === currentDokumanKategori)
+    : tumKayitlar;
+  if (!liste.some(k => k.key === hedefKey)) {
+    liste = tumKayitlar;
+  }
+  const idx = liste.findIndex(k => k.key === hedefKey);
+  if (idx < 0) return;
+
+  window._dokumanGaleriDurumu = {
+    acik: true,
+    liste,
+    aktifIndex: idx,
+    zoom: 1,
+    rotation: 0,
+    aktifBlobUrl: null
+  };
+  dokumanGaleriIcerikYukle();
+}
+
 window.projeDosyaAc = async function(docId) {
   const d = window._projeDosyalariCache?.[docId];
   if (!d) return;
+  if (typeof document !== 'undefined' && document.body && typeof document.body.appendChild === 'function') {
+    acDokumanGaleri(`cloud:${docId}`, true);
+    return;
+  }
   try {
     let dataUrl = d.url;
     if (d.parcali && !dataUrl) {
@@ -1925,6 +2587,10 @@ window.projeDosyaAc = async function(docId) {
 window.bekleyenProjeDosyaAc = async function(idx) {
   const item = (window._bekleyenProjeDosyalari || [])[idx];
   if (!item || !item.file) return;
+  if (typeof document !== 'undefined' && document.body && typeof document.body.appendChild === 'function') {
+    acDokumanGaleri(`pending:${idx}`, true);
+    return;
+  }
   try {
     const dataUrl = await new Promise((resolve, reject) => {
       const r = new FileReader();
@@ -1944,6 +2610,7 @@ window.bekleyenProjeDosyaSil = function(idx) {
   if (!Array.isArray(window._bekleyenProjeDosyalari)) return;
   if (idx >= 0 && idx < window._bekleyenProjeDosyalari.length) {
     window._bekleyenProjeDosyalari.splice(idx, 1);
+    window._seciliProjeDokumanlari.clear();
     projeDosyaListesiYukle();
   }
 };
@@ -1952,6 +2619,7 @@ async function bekleyenProjeDosyalariniBulutaYukle(projeId) {
   if (!projeId || !Array.isArray(window._bekleyenProjeDosyalari) || window._bekleyenProjeDosyalari.length === 0) return 0;
   const kuyruk = [...window._bekleyenProjeDosyalari];
   window._bekleyenProjeDosyalari = [];
+  window._seciliProjeDokumanlari.clear();
   let basarili = 0;
   for (const item of kuyruk) {
     try {
@@ -1971,10 +2639,21 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
     : [];
   const toplamBulut = dosyalar.length;
   const toplamBekleyen = bekleyenler.length;
+  const genelToplam = toplamBulut + toplamBekleyen;
 
   if (!PROJE_DOKUMAN_KATEGORILERI.some(k => k.kod === currentDokumanKategori)) {
     currentDokumanKategori = 'fotograf';
   }
+
+  // Geçersiz seçim anahtarlarını temizle
+  const gecerliAnahtarlar = new Set([
+    ...dosyalar.map(d => `cloud:${d.docId}`),
+    ...bekleyenler.map((_, idx) => `pending:${idx}`)
+  ]);
+  for (const k of Array.from(window._seciliProjeDokumanlari)) {
+    if (!gecerliAnahtarlar.has(k)) window._seciliProjeDokumanlari.delete(k);
+  }
+  const toplamSeciliSayi = window._seciliProjeDokumanlari.size;
 
   // Kategori bazlı sayıları hesapla
   const kategoriVerileri = PROJE_DOKUMAN_KATEGORILERI.map(kat => {
@@ -2012,61 +2691,136 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
       <div style="font-size:12.5px;color:#92400e">
         💡 <strong>Proje henüz buluta kaydedilmedi.</strong> ${toplamBekleyen > 0 ? `Seçtiğiniz <strong>${toplamBekleyen} adet evrak</strong> hazır bekliyor; projeyi kaydettiğiniz anda otomatik olarak buluta yüklenecektir.` : 'Evrakları şimdiden ilgili sekmelere ekleyebilirsiniz; projeyi kaydettiğinizde otomatik olarak buluta aktarılır.'}
       </div>
-      ${!saltOkunur ? `
-        <button type="button" class="btn btn-primary btn-sm" ${dtmEventAttr('click', function(event) { cloudKaydet(); })} style="white-space:nowrap">
-          💾 Projeyi ve Evrakları Şimdi Kaydet
-        </button>
-      ` : ''}
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        ${genelToplam > 0 ? `
+          <button type="button" ${dtmEventAttr('click', function(event) { topluProjeDokumanIndir('tumu', 'zip'); })}
+            style="padding:6px 12px;background:#0284c7;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">
+            📦 Tüm Evrakları ZIP İndir (${genelToplam})
+          </button>
+        ` : ''}
+        ${!saltOkunur ? `
+          <button type="button" class="btn btn-primary btn-sm" ${dtmEventAttr('click', function(event) { cloudKaydet(); })} style="white-space:nowrap">
+            💾 Projeyi ve Evrakları Şimdi Kaydet
+          </button>
+        ` : ''}
+      </div>
     </div>
   ` : `
     <div style="padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <span style="font-size:12.5px;color:#334155">📎 Bu projeye kayıtlı toplam <strong>${toplamBulut} adet</strong> resmi doküman / fotoğraf bulunuyor.</span>
-      <span style="font-size:11.5px;color:#64748b">Dosya başına maks. 5 MB (PDF, JPG, PNG, Word, Excel)</span>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        ${toplamBulut > 0 ? `
+          <button type="button" ${dtmEventAttr('click', function(event) { topluProjeDokumanIndir('tumu', 'zip'); })}
+            style="padding:6px 12px;background:#0284c7;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px">
+            📦 Tüm Proje Evraklarını ZIP İndir (${toplamBulut})
+          </button>
+        ` : ''}
+        <span style="font-size:11.5px;color:#64748b">Dosya başına maks. 5 MB</span>
+      </div>
     </div>
   `;
 
   const aktifVeri = kategoriVerileri.find(v => v.kat.kod === currentDokumanKategori) || kategoriVerileri[0];
   const { kat, katDosyalar, katBekleyenler, toplamSayi } = aktifVeri;
 
+  const aktifKategoriAnahtarlari = [
+    ...katDosyalar.map(d => `cloud:${d.docId}`),
+    ...katBekleyenler.map(b => `pending:${b._bekleyenIdx}`)
+  ];
+  const aktifKategorideSeciliSayi = aktifKategoriAnahtarlari.filter(k => window._seciliProjeDokumanlari.has(k)).length;
+  const aktifKategoriHepsiSecili = aktifKategoriAnahtarlari.length > 0 && aktifKategorideSeciliSayi === aktifKategoriAnahtarlari.length;
+
+  // Toplu seçim ve indirme araç çubuğu
+  const topluIslemBarHtml = toplamSayi > 0 ? `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding:9px 12px;background:rgba(255,255,255,0.78);border:1px solid ${kat.border};border-radius:8px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button type="button" ${dtmEventAttr('click', function(event) { dokumanKategoriTumunuSec(String(kat.kod)); })}
+          style="padding:5px 11px;background:#fff;color:#1e293b;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+          <span>${aktifKategoriHepsiSecili ? '☑️ Seçimi Kaldır' : '☐ Bu Sekmedeki Tümünü Seç'}</span>
+        </button>
+        ${toplamSeciliSayi > 0 ? `
+          <span style="font-size:12px;font-weight:700;color:#0369a1;background:#e0f2fe;padding:4px 10px;border-radius:12px">
+            ${toplamSeciliSayi} belge seçildi
+          </span>
+          <button type="button" ${dtmEventAttr('click', function(event) { dokumanTumSecimiTemizle(); })}
+            style="padding:4px 8px;background:transparent;color:#64748b;border:none;font-size:11.5px;cursor:pointer;text-decoration:underline">
+            Temizle
+          </button>
+        ` : `<span style="font-size:11.5px;color:#64748b">💡 Fotoğraflara tıklayıp klavye ok tuşlarıyla (⬅️ ➡️) gezinebilir veya kutucukları seçip topluca indirebilirsiniz.</span>`}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        ${toplamSeciliSayi > 0 ? `
+          <button type="button" ${dtmEventAttr('click', function(event) { topluProjeDokumanIndir('secili', 'zip'); })}
+            style="padding:6px 12px;background:#0284c7;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 5px rgba(2,132,199,0.25)">
+            📦 Seçilenleri ZIP İndir (${toplamSeciliSayi})
+          </button>
+          <button type="button" ${dtmEventAttr('click', function(event) { topluProjeDokumanIndir('secili', 'tektek'); })}
+            style="padding:6px 11px;background:#fff;color:#0369a1;border:1px solid #7dd3fc;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">
+            ⬇️ Ayrı Ayrı İndir
+          </button>
+        ` : `
+          <button type="button" ${dtmEventAttr('click', function(event) { topluProjeDokumanIndir('kategori', 'zip'); })}
+            style="padding:6px 12px;background:#fff;color:${kat.text};border:1px solid ${kat.border};border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px">
+            📥 Bu Sekmedekileri İndir (${toplamSayi})
+          </button>
+        `}
+      </div>
+    </div>
+  ` : '';
+
   const satirlarHtml = [
-    ...katDosyalar.map(d => {
+    ...katDosyalar.map((d, siraIdx) => {
+      const secimKey = `cloud:${d.docId}`;
+      const isSecili = window._seciliProjeDokumanlari.has(secimKey);
       const temizAd = temizProjeDosyaAdi(d.ad);
-      const isImg = (d.tip || '').startsWith('image/') || /\.(jpe?g|png|webp|bmp|gif)$/i.test(temizAd);
+      const isImg = dokumanGoruntuMu(temizAd, d.tip);
       const thumbHtml = (isImg && d.url && d.url.startsWith('data:image/'))
-        ? `<img src="${escAttr(d.url)}" alt="${escAttr(temizAd)}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;flex-shrink:0">`
-        : `<span style="width:44px;height:44px;border-radius:6px;background:${kat.badgeBg};color:${kat.text};display:inline-flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${isImg ? '🖼️' : '📄'}</span>`;
+        ? `<img src="${escAttr(d.url)}" alt="${escAttr(temizAd)}" style="width:46px;height:46px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;flex-shrink:0">`
+        : `<span style="width:46px;height:46px;border-radius:6px;background:${kat.badgeBg};color:${kat.text};display:inline-flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${isImg ? '🖼️' : '📄'}</span>`;
       return `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:8px">
-          <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')); })} title="Görüntüle / İndir">
-            ${thumbHtml}
-            <div style="overflow:hidden;flex:1">
-              <div style="font-size:13px;font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(temizAd)}</div>
-              <div style="font-size:11px;color:#64748b;margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                <span>${formatDosyaBoyutu(d.boyut)}</span>
-                ${d.yukleyenAd ? `<span>• 👤 ${escHtml(d.yukleyenAd)}</span>` : ''}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:${isSecili ? '#f0f9ff' : '#fff'};border:1.5px solid ${isSecili ? '#38bdf8' : 'rgba(0,0,0,0.08)'};border-radius:8px;transition:all 0.15s">
+          <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1">
+            <input type="checkbox" ${isSecili ? 'checked' : ''} ${dtmEventAttr('change', function(event) { dokumanSecimDegistir(String(secimKey)); })}
+              style="width:17px;height:17px;cursor:pointer;accent-color:#0284c7;flex-shrink:0" title="İndirmek için seç">
+            <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')); })} title="Galeride Aç (Klavye ok tuşlarıyla gezin)">
+              ${thumbHtml}
+              <div style="overflow:hidden;flex:1">
+                <div style="font-size:13px;font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${siraIdx + 1}. ${escHtml(temizAd)}</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <span>${formatDosyaBoyutu(d.boyut)}</span>
+                  ${d.yukleyenAd ? `<span>• 👤 ${escHtml(d.yukleyenAd)}</span>` : ''}
+                </div>
               </div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-            <button type="button" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')); })} style="padding:6px 12px;background:${kat.bg};color:${kat.text};border:1px solid ${kat.border};border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">👁️ Aç</button>
+            <button type="button" ${dtmEventAttr('click', function(event) { projeDosyaAc(String(d.docId ?? '')); })} style="padding:6px 11px;background:${kat.bg};color:${kat.text};border:1px solid ${kat.border};border-radius:6px;font-size:12px;font-weight:600;cursor:pointer" title="Önizleme / Galeri">👁️ Aç</button>
+            <button type="button" ${dtmEventAttr('click', function(event) { projeDosyaIndir(String(d.docId ?? '')); })} style="padding:6px 10px;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer" title="Bu Dosyayı İndir">⬇️</button>
             ${!saltOkunur ? `<button type="button" ${dtmEventAttr('click', function(event) { projeDosyaSilOnayla(String(d.yol ?? '')); })} title="Sil" style="padding:6px 9px;background:#fff;border:1px solid #fecaca;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px">🗑️</button>` : ''}
           </div>
         </div>`;
     }),
-    ...katBekleyenler.map(b => {
+    ...katBekleyenler.map((b, siraIdx) => {
+      const secimKey = `pending:${b._bekleyenIdx}`;
+      const isSecili = window._seciliProjeDokumanlari.has(secimKey);
       const f = b.file || {};
       const temizAd = (b.altEtiket ? `${b.altEtiket} - ` : '') + temizProjeDosyaAdi(f.name || 'Belge');
       return `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fffbeb;border:1px dashed #f59e0b;border-radius:8px">
-          <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaAc(Number(b._bekleyenIdx)); })}>
-            <span style="width:40px;height:40px;border-radius:6px;background:#fef3c7;color:#b45309;display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">⏳</span>
-            <div style="overflow:hidden;flex:1">
-              <div style="font-size:12.5px;font-weight:600;color:#78350f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(temizAd)}</div>
-              <div style="font-size:11px;color:#b45309">${formatDosyaBoyutu(f.size)} • Kaydedildiğinde buluta yüklenecek</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:${isSecili ? '#f0f9ff' : '#fffbeb'};border:1.5px dashed ${isSecili ? '#0284c7' : '#f59e0b'};border-radius:8px">
+          <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1">
+            <input type="checkbox" ${isSecili ? 'checked' : ''} ${dtmEventAttr('change', function(event) { dokumanSecimDegistir(String(secimKey)); })}
+              style="width:17px;height:17px;cursor:pointer;accent-color:#0284c7;flex-shrink:0" title="İndirmek için seç">
+            <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaAc(Number(b._bekleyenIdx)); })}>
+              <span style="width:42px;height:42px;border-radius:6px;background:#fef3c7;color:#b45309;display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">⏳</span>
+              <div style="overflow:hidden;flex:1">
+                <div style="font-size:12.5px;font-weight:600;color:#78350f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${katDosyalar.length + siraIdx + 1}. ${escHtml(temizAd)}</div>
+                <div style="font-size:11px;color:#b45309">${formatDosyaBoyutu(f.size)} • Kaydedildiğinde buluta yüklenecek</div>
+              </div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
             <button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaAc(Number(b._bekleyenIdx)); })} style="padding:5px 10px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer">👁️ Önizle</button>
+            <button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaIndir(Number(b._bekleyenIdx)); })} style="padding:5px 9px;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer" title="İndir">⬇️</button>
             ${!saltOkunur ? `<button type="button" ${dtmEventAttr('click', function(event) { bekleyenProjeDosyaSil(Number(b._bekleyenIdx)); })} style="padding:5px 9px;background:#fff;border:1px solid #fecaca;border-radius:6px;cursor:pointer;color:#dc2626;font-size:12px">✕</button>` : ''}
           </div>
         </div>`;
@@ -2092,8 +2846,9 @@ function renderKategoriDokumanKutulari(dosyalar = [], saltOkunur = false) {
           </label>
         ` : ''}
       </div>
+      ${topluIslemBarHtml}
       ${toplamSayi > 0 ? `
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
           ${satirlarHtml}
         </div>
       ` : `
