@@ -1178,42 +1178,61 @@ function renderVeriGirisPage() {
       </table>
     </div>`;
 
-  // YM Firma tabloları
+  // YM Firma tabloları (Yumuşak Okyanus / Çelik Mavisi Tema)
   const aktifKalemler = getKalemler(proje);
   const ymFirmaRows = proje.ymFirmalar.map((f, fi) => `
-    <div class="card" style="margin-bottom:12px">
-      <div class="card-body" style="padding:12px">
+    <div class="card" style="margin-bottom:12px;border:1.5px solid #bae6fd;border-radius:12px;background:#fff;box-shadow:0 2px 6px rgba(2,132,199,0.06)">
+      <div class="card-body" style="padding:14px">
         <div class="form-group" style="margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <label style="margin:0">${fi + 1}. Firma</label>
-            <label title="PDF'den oku" style="cursor:pointer;padding:3px 8px;background:#eff6ff;border:1px solid #93c5fd;border-radius:5px;font-size:11px;color:#1e40af;white-space:nowrap">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="padding:3px 10px;border-radius:6px;background:#e0f2fe;color:#0c4a6e;font-size:12px;font-weight:700">${fi + 1}. Firma</span>
+              <span style="font-size:11.5px;color:#0369a1;font-weight:600">Piyasa Fiyat Araştırması</span>
+            </div>
+            <label title="PDF'den oku" style="cursor:pointer;padding:4px 10px;background:#f0f9ff;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;color:#0369a1;white-space:nowrap">
               📄 PDF'den Oku
               <input type="file" accept=".pdf" style="display:none" ${dtmEventAttr('change', function(event) { parseTeklifPDF(this.files[0],'ym',(fi));this.value='' })}>
             </label>
           </div>
-          <select data-field="ymFirmalar" data-index="${fi}" data-sub="ad" ${dtmEventAttr('change', function(event) { onFirmaChange(this, 'ym') })}>
+          <select data-field="ymFirmalar" data-index="${fi}" data-sub="ad" ${dtmEventAttr('change', function(event) { onFirmaChange(this, 'ym') })}
+            style="border:1.5px solid #cbd5e1;font-weight:600;color:#0f172a">
             <option value="">-- Firma Seçin --</option>
             ${[...referans.firmaList].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')).map(fr => `<option value="${escAttr(fr.ad)}" ${f.ad === fr.ad ? 'selected' : ''}>${escHtml(fr.ad)}</option>`).join('')}
           </select>
         </div>
-        <table class="data-table">
-          <thead><tr><th>Kalem</th><th>Birim Fiyat (TL)</th><th>Toplam (TL)</th></tr></thead>
-          <tbody>
-            ${aktifKalemler.map((k, ki) => {
-              const bf = f.fiyatlar[ki] || 0;
-              const toplam = hesaplaKalemTutar(bf, k.miktar);
-              return `<tr>
-                <td>${escHtml(k.ad || '-')}</td>
-                <td><input type="number" min="0" step="0.01" value="${escAttr(bf || '')}" data-firma="ym" data-fi="${fi}" data-ki="${ki}" ${dtmEventAttr('change', function(event) { onFiyatChange(this) })} style="width:120px"></td>
-                <td class="rakam">${toplam > 0 ? formatCurrency(toplam) : '-'}</td>
-              </tr>`;
-            }).join('')}
-            <tr class="toplam-row">
-              <td colspan="2"><strong>TOPLAM</strong></td>
-              <td class="rakam"><strong>${formatCurrency(hesaplaYMFirmaToplam(f, aktifKalemler))}</strong></td>
-            </tr>
-          </tbody>
-        </table>
+        <div style="border:1px solid #e0f2fe;border-radius:10px;overflow:hidden;background:#f8fafc">
+          <table class="data-table" style="margin:0">
+            <thead>
+              <tr style="background:#e0f2fe">
+                <th style="color:#0c4a6e;border-bottom:1.5px solid #bae6fd">İş Kalemi</th>
+                <th style="color:#0c4a6e;border-bottom:1.5px solid #bae6fd;width:230px">💰 Birim Fiyat (TL)</th>
+                <th style="color:#0c4a6e;border-bottom:1.5px solid #bae6fd;text-align:right;width:160px">Toplam (TL)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${aktifKalemler.map((k, ki) => {
+                const bf = f.fiyatlar[ki] || 0;
+                const toplam = hesaplaKalemTutar(bf, k.miktar);
+                const dolu = Number(bf) > 0;
+                return `<tr style="background:#fff">
+                  <td style="font-weight:600;color:#1e293b">${escHtml(k.ad || '-')}</td>
+                  <td>
+                    <div style="position:relative;display:flex;align-items:center;max-width:210px">
+                      <input type="number" min="0" step="0.01" value="${escAttr(bf || '')}" placeholder="Fiyat girin..." data-firma="ym" data-fi="${fi}" data-ki="${ki}" ${dtmEventAttr('change', function(event) { onFiyatChange(this) })}
+                        style="width:100%;padding:7px 38px 7px 10px;border:2px ${dolu ? 'solid #0284c7' : 'dashed #38bdf8'};border-radius:8px;background:${dolu ? '#fff' : '#f0f9ff'};color:#082f49;font-size:14px;font-weight:700;box-sizing:border-box">
+                      <span style="position:absolute;right:6px;background:#0369a1;color:#fff;font-size:11px;font-weight:700;padding:2px 6px;border-radius:5px;pointer-events:none">TL</span>
+                    </div>
+                  </td>
+                  <td class="rakam" style="font-weight:700;color:#0c4a6e">${toplam > 0 ? formatCurrency(toplam) + ' TL' : '-'}</td>
+                </tr>`;
+              }).join('')}
+              <tr class="toplam-row" style="background:#e0f2fe;border-top:2px solid #0284c7">
+                <td colspan="2" style="color:#0c4a6e"><strong>TOPLAM</strong></td>
+                <td class="rakam" style="color:#0c4a6e"><strong>${formatCurrency(hesaplaYMFirmaToplam(f, aktifKalemler))} TL</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>`).join('');
 
@@ -1225,46 +1244,65 @@ function renderVeriGirisPage() {
     return sinirObj && sinirObj.sinir > 0 && yaklasikMaliyet > sinirObj.sinir;
   })();
 
-  // Teklif Firma tabloları
+  // Teklif Firma tabloları (Yumuşak Okyanus / Çelik Mavisi Tema)
   const teklifFirmaRows = proje.teklifFirmalar.map((f, fi) => {
     const kazananIdx = proje.kazananFirmaIndex >= 0 ? proje.kazananFirmaIndex : hesaplaKazananFirma(proje);
     const isKazanan = fi === kazananIdx;
     return `
-    <div class="card" style="margin-bottom:12px;${isKazanan ? 'border:2px solid var(--success)' : ''}">
-      <div class="card-body" style="padding:12px">
+    <div class="card" style="margin-bottom:12px;border:${isKazanan ? '2px solid #0284c7' : '1.5px solid #bae6fd'};border-radius:12px;background:#fff;box-shadow:${isKazanan ? '0 4px 14px rgba(2,132,199,0.14)' : '0 2px 6px rgba(2,132,199,0.06)'}">
+      <div class="card-body" style="padding:14px">
         <div class="form-group" style="margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <label style="margin:0">${fi + 1}. Firma ${isKazanan ? '(KAZANAN)' : ''}</label>
-            <label title="PDF'den oku" style="cursor:pointer;padding:3px 8px;background:#f0fdf4;border:1px solid #86efac;border-radius:5px;font-size:11px;color:#166534;white-space:nowrap">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="padding:3px 10px;border-radius:6px;background:${isKazanan ? '#0369a1' : '#e0f2fe'};color:${isKazanan ? '#fff' : '#0c4a6e'};font-size:12px;font-weight:700">${fi + 1}. Firma</span>
+              ${isKazanan ? `<span style="padding:2px 10px;border-radius:12px;background:#f0f9ff;color:#075985;border:1px solid #7dd3fc;font-size:11.5px;font-weight:700">✓ En Düşük Teklif (KAZANAN)</span>` : `<span style="font-size:11.5px;color:#0369a1;font-weight:600">Resmi Teklif Mektubu</span>`}
+            </div>
+            <label title="PDF'den oku" style="cursor:pointer;padding:4px 10px;background:#f0f9ff;border:1px solid #7dd3fc;border-radius:6px;font-size:11.5px;font-weight:600;color:#0369a1;white-space:nowrap">
               📄 PDF'den Oku
               <input type="file" accept=".pdf" style="display:none" ${dtmEventAttr('change', function(event) { parseTeklifPDF(this.files[0],'teklif',(fi));this.value='' })}>
             </label>
           </div>
-          <select data-field="teklifFirmalar" data-index="${fi}" data-sub="ad" ${dtmEventAttr('change', function(event) { onFirmaChange(this, 'teklif') })}>
+          <select data-field="teklifFirmalar" data-index="${fi}" data-sub="ad" ${dtmEventAttr('change', function(event) { onFirmaChange(this, 'teklif') })}
+            style="border:1.5px solid #cbd5e1;font-weight:600;color:#0f172a">
             <option value="">-- Firma Seçin --</option>
             ${[...referans.firmaList].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')).map(fr => `<option value="${escAttr(fr.ad)}" ${f.ad === fr.ad ? 'selected' : ''}>${escHtml(fr.ad)}</option>`).join('')}
           </select>
         </div>
         ${f.analizEksik ? `<div class="alert alert-warning">Analizde eksik veya tutarsız teklif bulundu. Kalemleri ve fiyatları belgenizle karşılaştırıp düzeltin.
           <button class="btn btn-sm" ${dtmEventAttr('click', function(event) { analizTeklifiniDogrula(fi) })}>Teklifi kontrol ettim</button></div>` : ''}
-        <table class="data-table">
-          <thead><tr><th>Kalem</th><th>Birim Fiyat (TL)</th><th>Toplam (TL)</th></tr></thead>
-          <tbody>
-            ${aktifKalemler.map((k, ki) => {
-              const bf = f.fiyatlar[ki] || 0;
-              const toplam = hesaplaKalemTutar(bf, k.miktar);
-              return `<tr>
-                <td>${escHtml(k.ad || '-')}</td>
-                <td><input type="number" min="0" step="0.01" value="${escAttr(bf || '')}" data-firma="teklif" data-fi="${fi}" data-ki="${ki}" ${dtmEventAttr('change', function(event) { onFiyatChange(this) })} style="width:120px"></td>
-                <td class="rakam">${toplam > 0 ? formatCurrency(toplam) : '-'}</td>
-              </tr>`;
-            }).join('')}
-            <tr class="toplam-row">
-              <td colspan="2"><strong>TOPLAM</strong></td>
-              <td class="rakam"><strong>${formatCurrency(hesaplaTeklifFirmaToplam(f, aktifKalemler))}</strong></td>
-            </tr>
-          </tbody>
-        </table>
+        <div style="border:1px solid #e0f2fe;border-radius:10px;overflow:hidden;background:#f8fafc">
+          <table class="data-table" style="margin:0">
+            <thead>
+              <tr style="background:#e0f2fe">
+                <th style="color:#0c4a6e;border-bottom:1.5px solid #bae6fd">İş Kalemi</th>
+                <th style="color:#0c4a6e;border-bottom:1.5px solid #bae6fd;width:230px">💰 Birim Fiyat (TL)</th>
+                <th style="color:#0c4a6e;border-bottom:1.5px solid #bae6fd;text-align:right;width:160px">Toplam (TL)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${aktifKalemler.map((k, ki) => {
+                const bf = f.fiyatlar[ki] || 0;
+                const toplam = hesaplaKalemTutar(bf, k.miktar);
+                const dolu = Number(bf) > 0;
+                return `<tr style="background:#fff">
+                  <td style="font-weight:600;color:#1e293b">${escHtml(k.ad || '-')}</td>
+                  <td>
+                    <div style="position:relative;display:flex;align-items:center;max-width:210px">
+                      <input type="number" min="0" step="0.01" value="${escAttr(bf || '')}" placeholder="Fiyat girin..." data-firma="teklif" data-fi="${fi}" data-ki="${ki}" ${dtmEventAttr('change', function(event) { onFiyatChange(this) })}
+                        style="width:100%;padding:7px 38px 7px 10px;border:2px ${dolu ? 'solid #0284c7' : 'dashed #38bdf8'};border-radius:8px;background:${dolu ? '#fff' : '#f0f9ff'};color:#082f49;font-size:14px;font-weight:700;box-sizing:border-box">
+                      <span style="position:absolute;right:6px;background:#0369a1;color:#fff;font-size:11px;font-weight:700;padding:2px 6px;border-radius:5px;pointer-events:none">TL</span>
+                    </div>
+                  </td>
+                  <td class="rakam" style="font-weight:700;color:#0c4a6e">${toplam > 0 ? formatCurrency(toplam) + ' TL' : '-'}</td>
+                </tr>`;
+              }).join('')}
+              <tr class="toplam-row" style="background:#e0f2fe;border-top:2px solid #0284c7">
+                <td colspan="2" style="color:#0c4a6e"><strong>TOPLAM</strong></td>
+                <td class="rakam" style="color:#0c4a6e"><strong>${formatCurrency(hesaplaTeklifFirmaToplam(f, aktifKalemler))} TL</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -1622,26 +1660,32 @@ function renderVeriGirisPage() {
     </div>
 
     <!-- YAKLAŞIK MALİYET FİRMALARI -->
-    <div class="card">
-      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3>Yaklaşık Maliyet - Firma Teklifleri</h3>
-        <span class="toggle-icon">&#9660;</span>
+    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+      <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
+        <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>📊 Yaklaşık Maliyet - Firma Teklifleri</span>
+          <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">PİYASA FİYAT ARAŞTIRMASI</span>
+        </h3>
+        <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       <div class="card-body">
         ${ymFirmaRows}
-        <div style="margin-top:12px; padding:12px; background:${ymSinirAsildi ? '#fef2f2' : 'var(--primary-light)'}; border-radius:6px; border:${ymSinirAsildi ? '1px solid #fca5a5' : 'none'}">
+        <div style="margin-top:12px; padding:12px 14px; background:${ymSinirAsildi ? '#fef2f2' : '#e0f2fe'}; border-radius:8px; border:${ymSinirAsildi ? '1.5px solid #fca5a5' : '1.5px solid #7dd3fc'}; color:#0c4a6e">
           <strong>Yaklaşık Maliyet: ${formatCurrency(yaklasikMaliyet)} TL</strong>
-          <span style="color:var(--gray-500); margin-left:10px;">(${sayidanYaziya(yaklasikMaliyet)})</span>
+          <span style="color:#0369a1; margin-left:10px;">(${sayidanYaziya(yaklasikMaliyet)})</span>
           ${ymSinirAsildi ? '<div style="color:#dc2626;font-size:12px;margin-top:4px;font-weight:600">⚠️ Doğrudan Temin sınırı aşıldı!</div>' : ''}
         </div>
       </div>
     </div>
 
     <!-- TEKLİF FİRMALARI -->
-    <div class="card">
-      <div class="card-header" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
-        <h3>Resmi Teklif - Firma Teklifleri</h3>
-        <span class="toggle-icon">&#9660;</span>
+    <div class="card" style="border:1.5px solid #bae6fd;background:#f0f9ff4d">
+      <div class="card-header" style="background:#0c4a6e;color:#fff;border-bottom:1px solid #075985" ${dtmEventAttr('click', function(event) { toggleCard(this) })}>
+        <h3 style="color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>🏷️ Resmi Teklif - Firma Teklifleri</span>
+          <span style="background:#0369a1;color:#e0f2fe;font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px">TEKLİF MEKTUBUDUR</span>
+        </h3>
+        <span class="toggle-icon" style="color:#bae6fd">&#9660;</span>
       </div>
       <div class="card-body">
         ${teklifFirmaRows}
