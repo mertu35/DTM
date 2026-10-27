@@ -6113,6 +6113,68 @@ if (typeof window !== 'undefined') {
   window.ymFirmalariniTeklifeKopyala = ymFirmalariniTeklifeKopyala;
 }
 
+// ===================== PROJE LİSTESİ SAYFALAMA YARDIMCISI =====================
+const PROJE_SAYFA_BOYUTU = 10;
+
+function renderProjeSayfalamaBar(toplamAdet, aktifSayfa, sayfaBoyutu, onSayfaSecCallback, icKenarModu = false) {
+  if (!toplamAdet || toplamAdet <= 0) return '';
+  const boyut = sayfaBoyutu || PROJE_SAYFA_BOYUTU;
+  const toplamSayfa = Math.max(1, Math.ceil(toplamAdet / boyut));
+  const sayfa = Math.min(Math.max(1, aktifSayfa || 1), toplamSayfa);
+  const baslangic = (sayfa - 1) * boyut + 1;
+  const bitis = Math.min(toplamAdet, sayfa * boyut);
+
+  const sayfaNoList = [];
+  if (toplamSayfa <= 7) {
+    for (let i = 1; i <= toplamSayfa; i++) sayfaNoList.push(i);
+  } else {
+    sayfaNoList.push(1);
+    if (sayfa > 3) sayfaNoList.push('...');
+    const sBas = Math.max(2, sayfa - 1);
+    const sBit = Math.min(toplamSayfa - 1, sayfa + 1);
+    for (let i = sBas; i <= sBit; i++) sayfaNoList.push(i);
+    if (sayfa < toplamSayfa - 2) sayfaNoList.push('...');
+    sayfaNoList.push(toplamSayfa);
+  }
+
+  const oncekiDis = sayfa <= 1;
+  const sonrakiDis = sayfa >= toplamSayfa;
+
+  const sayfaBtnHtml = sayfaNoList.map(no => {
+    if (no === '...') {
+      return `<span style="padding:4px 6px;color:#9ca3af;font-size:12.5px;font-weight:600">…</span>`;
+    }
+    const aktifMi = no === sayfa;
+    return `<button type="button" ${aktifMi ? 'disabled' : dtmEventAttr('click', function(event) { event.stopPropagation(); onSayfaSecCallback(no); })}
+      style="min-width:32px;height:32px;padding:0 8px;border-radius:7px;font-size:12.5px;font-weight:700;cursor:${aktifMi ? 'default' : 'pointer'};border:1px solid ${aktifMi ? '#1e3a5f' : '#d1d5db'};background:${aktifMi ? '#1e3a5f' : '#fff'};color:${aktifMi ? '#fff' : '#374151'};transition:all 0.15s">
+      ${no}
+    </button>`;
+  }).join('');
+
+  const wrapStyle = icKenarModu
+    ? 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px 16px;background:#f8fafc;border-top:1px solid #e5e7eb'
+    : 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:14px;padding:10px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,0.03)';
+
+  return `
+    <div class="dtm-sayfalama-bar" style="${wrapStyle}">
+      <div style="font-size:12.5px;color:#4b5563">
+        Toplam <strong style="color:#111827">${toplamAdet}</strong> projeden <strong style="color:#111827">${baslangic}–${bitis}</strong> arası gösteriliyor
+        <span style="color:#9ca3af;margin-left:4px">(Sayfa ${sayfa} / ${toplamSayfa} • Sayfa başına ${boyut})</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+        <button type="button" ${oncekiDis ? 'disabled' : dtmEventAttr('click', function(event) { event.stopPropagation(); onSayfaSecCallback(sayfa - 1); })}
+          style="height:32px;padding:0 11px;border-radius:7px;font-size:12.5px;font-weight:600;border:1px solid #d1d5db;background:${oncekiDis ? '#f3f4f6' : '#fff'};color:${oncekiDis ? '#9ca3af' : '#374151'};cursor:${oncekiDis ? 'not-allowed' : 'pointer'}">
+          ◀ Önceki
+        </button>
+        ${sayfaBtnHtml}
+        <button type="button" ${sonrakiDis ? 'disabled' : dtmEventAttr('click', function(event) { event.stopPropagation(); onSayfaSecCallback(sayfa + 1); })}
+          style="height:32px;padding:0 11px;border-radius:7px;font-size:12.5px;font-weight:600;border:1px solid #d1d5db;background:${sonrakiDis ? '#f3f4f6' : '#fff'};color:${sonrakiDis ? '#9ca3af' : '#374151'};cursor:${sonrakiDis ? 'not-allowed' : 'pointer'}">
+          Sonraki ▶
+        </button>
+      </div>
+    </div>`;
+}
+
 // ===================== BELGELER SAYFASI =====================
 let currentBelge = 'yaklasik-maliyet';
 
@@ -6165,6 +6227,9 @@ async function renderBelgelerPage() {
         </div>`;
       };
 
+      let belgelerAktifSayfa = 1;
+      let sonGorunenSayfaProjeleri = [];
+
       const renderBelgelerProjeGrid = (aramaMetni, durumFiltre, siralamaAnahtari) => {
         const ara = aramaMetni.trim().toLocaleLowerCase('tr');
         let filtrelenen = projeler;
@@ -6172,16 +6237,25 @@ async function renderBelgelerPage() {
         if (ara) filtrelenen = filtrelenen.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara));
         filtrelenen = siralaProjeler(filtrelenen, siralamaAnahtari);
         if (filtrelenen.length === 0) {
+          sonGorunenSayfaProjeleri = [];
           return `<div style="text-align:center;padding:30px;color:#9ca3af;font-size:13px">Arama/filtre ile eşleşen proje yok.</div>`;
         }
-        return `<div class="ky-proje-grid">${filtrelenen.map(projeKartBelge).join('')}</div>`;
+        const toplamSayfa = Math.max(1, Math.ceil(filtrelenen.length / PROJE_SAYFA_BOYUTU));
+        if (belgelerAktifSayfa > toplamSayfa) belgelerAktifSayfa = toplamSayfa;
+        if (belgelerAktifSayfa < 1) belgelerAktifSayfa = 1;
+        sonGorunenSayfaProjeleri = filtrelenen.slice((belgelerAktifSayfa - 1) * PROJE_SAYFA_BOYUTU, belgelerAktifSayfa * PROJE_SAYFA_BOYUTU);
+        return `<div class="ky-proje-grid">${sonGorunenSayfaProjeleri.map(projeKartBelge).join('')}</div>` +
+          renderProjeSayfalamaBar(filtrelenen.length, belgelerAktifSayfa, PROJE_SAYFA_BOYUTU, (yeniSayfa) => {
+            belgelerAktifSayfa = yeniSayfa;
+            window.belgelerProjeFiltrele(false);
+          });
       };
 
       listEl.innerHTML = `
         <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-          <input id="belgelerProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." ${dtmEventAttr('input', function(event) { belgelerProjeFiltrele() })}
+          <input id="belgelerProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." ${dtmEventAttr('input', function(event) { belgelerProjeFiltrele(true) })}
             style="flex:1;min-width:200px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
-          <select id="belgelerProjeDurum" ${dtmEventAttr('change', function(event) { belgelerProjeFiltrele() })}
+          <select id="belgelerProjeDurum" ${dtmEventAttr('change', function(event) { belgelerProjeFiltrele(true) })}
             style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
             <option value="hepsi">Tüm Durumlar</option>
             <option value="taslak">Taslak</option>
@@ -6190,7 +6264,7 @@ async function renderBelgelerPage() {
             <option value="onaylandi">Onaylandı</option>
             <option value="arsivlendi">Arşivlendi</option>
           </select>
-          <select id="belgelerProjeSirala" ${dtmEventAttr('change', function(event) { belgelerProjeFiltrele() })}
+          <select id="belgelerProjeSirala" ${dtmEventAttr('change', function(event) { belgelerProjeFiltrele(true) })}
             style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
             <option value="tarih-yeni">Tarihe göre (Yeni → Eski)</option>
             <option value="tarih-eski">Tarihe göre (Eski → Yeni)</option>
@@ -6200,14 +6274,15 @@ async function renderBelgelerPage() {
         </div>
         <div id="belgelerProjeGrid">${renderBelgelerProjeGrid('', 'hepsi', 'tarih-yeni')}</div>`;
 
-      window.belgelerProjeFiltrele = () => {
+      window.belgelerProjeFiltrele = (sayfaSifirla = true) => {
+        if (sayfaSifirla) belgelerAktifSayfa = 1;
         const ara = document.getElementById('belgelerProjeArama').value;
         const durum = document.getElementById('belgelerProjeDurum').value;
         const sirala = document.getElementById('belgelerProjeSirala').value;
         document.getElementById('belgelerProjeGrid').innerHTML = renderBelgelerProjeGrid(ara, durum, sirala);
-        projeListesiEvrakRozetleriniYukle(projeler);
+        projeListesiEvrakRozetleriniYukle(sonGorunenSayfaProjeleri);
       };
-      projeListesiEvrakRozetleriniYukle(projeler);
+      projeListesiEvrakRozetleriniYukle(sonGorunenSayfaProjeleri);
     } catch(e) {
       const listEl = document.getElementById('belgelerProjeList');
       if (listEl) listEl.innerHTML = `<div style="color:red;padding:20px">Projeler yüklenemedi: ${escHtml(e?.message || '')}</div>`;
@@ -7747,24 +7822,35 @@ async function renderKaydetYuklePage() {
           Henüz onaylanmış proje yok.
         </div>`;
     } else {
-      listEl.innerHTML = `<div class="ky-proje-grid">
-        ${onaylananlar.map(p => {
-          const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR')
-                      : (p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-');
-          return `<div class="ky-proje-item">
-            <div class="ky-proje-info">
-              <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
-              <div class="ky-proje-meta">
-                <span class="ky-proje-date">📅 ${tarih}</span>
-                ${getStatusBadge('onaylandi')}
+      let indirSayfa = 1;
+      const renderIndirSayfa = () => {
+        const toplamSayfa = Math.max(1, Math.ceil(onaylananlar.length / PROJE_SAYFA_BOYUTU));
+        if (indirSayfa > toplamSayfa) indirSayfa = toplamSayfa;
+        if (indirSayfa < 1) indirSayfa = 1;
+        const sayfaListe = onaylananlar.slice((indirSayfa - 1) * PROJE_SAYFA_BOYUTU, indirSayfa * PROJE_SAYFA_BOYUTU);
+        listEl.innerHTML = `<div class="ky-proje-grid">
+          ${sayfaListe.map(p => {
+            const tarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR')
+                        : (p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-');
+            return `<div class="ky-proje-item">
+              <div class="ky-proje-info">
+                <div class="ky-proje-name">${escHtml(p.isAdi || '(İsimsiz)')}</div>
+                <div class="ky-proje-meta">
+                  <span class="ky-proje-date">📅 ${tarih}</span>
+                  ${getStatusBadge('onaylandi')}
+                </div>
               </div>
-            </div>
-            <div class="ky-proje-actions">
-              <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { dosyaGetir(String(p.id ?? '')) })}>📥 İndir</button>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>`;
+              <div class="ky-proje-actions">
+                <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { dosyaGetir(String(p.id ?? '')) })}>📥 İndir</button>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>` + renderProjeSayfalamaBar(onaylananlar.length, indirSayfa, PROJE_SAYFA_BOYUTU, (yeniSayfa) => {
+          indirSayfa = yeniSayfa;
+          renderIndirSayfa();
+        });
+      };
+      renderIndirSayfa();
     }
   } catch(e) {
     const listEl = document.getElementById('dosyaGetirList');
@@ -8540,20 +8626,36 @@ async function renderProjelerimPage() {
       </div>`;
     };
 
+    const bolumSayfalari = { taslak: 1, geri_gonderildi: 1, gonderildi: 1, onaylandi: 1 };
+    let sonGorunenProjelerim = [];
+
     const renderProjelerimListe = (aramaMetni, durumFiltre, siralamaAnahtari) => {
       const ara = aramaMetni.trim().toLocaleLowerCase('tr');
+      sonGorunenProjelerim = [];
       return bolumler.map(b => {
         if (durumFiltre !== 'hepsi' && !b.keys.includes(durumFiltre)) return '';
+        const bolumKey = b.keys[0];
         let grup = projeler.filter(p => b.keys.includes(p.status || 'taslak'));
         if (ara) grup = grup.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara));
         grup = siralaProjeler(grup, siralamaAnahtari);
+
+        const toplamSayfa = Math.max(1, Math.ceil(grup.length / PROJE_SAYFA_BOYUTU));
+        if ((bolumSayfalari[bolumKey] || 1) > toplamSayfa) bolumSayfalari[bolumKey] = toplamSayfa;
+        const aktifSayfa = Math.max(1, bolumSayfalari[bolumKey] || 1);
+        const sayfaGrup = grup.slice((aktifSayfa - 1) * PROJE_SAYFA_BOYUTU, aktifSayfa * PROJE_SAYFA_BOYUTU);
+        sonGorunenProjelerim.push(...sayfaGrup);
+
         return `<div class="ky-bolum-kart" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
           <div class="ky-bolum-baslik" style="padding:12px 16px;background:${b.renk};border-bottom:1px solid ${b.kenar};font-weight:700;font-size:13px;color:${b.yaziRenk}">
             ${b.baslik} (${grup.length})
           </div>
           ${grup.length === 0
             ? `<div class="ky-bolum-empty" style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Bu kategoride proje yok.'}</div>`
-            : `<div class="ky-proje-grid">${grup.map(projeKart).join('')}</div>`}
+            : `<div class="ky-proje-grid">${sayfaGrup.map(projeKart).join('')}</div>` +
+              renderProjeSayfalamaBar(grup.length, aktifSayfa, PROJE_SAYFA_BOYUTU, (yeniSayfa) => {
+                bolumSayfalari[bolumKey] = yeniSayfa;
+                window.projelerimFiltrele(false);
+              }, true)}
         </div>`;
       }).join('');
     };
@@ -8564,16 +8666,16 @@ async function renderProjelerimPage() {
         <button class="btn btn-primary" ${dtmEventAttr('click', function(event) { yeniProjeBaslat() })}>&#43; Yeni Proje</button>
       </div>
       <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-        <input id="projelerimArama" type="text" placeholder="🔍 Proje adına göre ara..." ${dtmEventAttr('input', function(event) { projelerimFiltrele() })}
+        <input id="projelerimArama" type="text" placeholder="🔍 Proje adına göre ara..." ${dtmEventAttr('input', function(event) { projelerimFiltrele(true) })}
           style="flex:1;min-width:200px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
-        <select id="projelerimDurum" ${dtmEventAttr('change', function(event) { projelerimFiltrele() })}
+        <select id="projelerimDurum" ${dtmEventAttr('change', function(event) { projelerimFiltrele(true) })}
           style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
           <option value="hepsi">Tüm Durumlar</option>
           <option value="taslak">Devam Edenler</option>
           <option value="geri_gonderildi">İşlem Bekleyenler</option>
           <option value="gonderildi">Onaylananlar</option>
         </select>
-        <select id="projelerimSirala" ${dtmEventAttr('change', function(event) { projelerimFiltrele() })}
+        <select id="projelerimSirala" ${dtmEventAttr('change', function(event) { projelerimFiltrele(true) })}
           style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
           <option value="tarih-yeni">Tarihe göre (Yeni → Eski)</option>
           <option value="tarih-eski">Tarihe göre (Eski → Yeni)</option>
@@ -8583,14 +8685,17 @@ async function renderProjelerimPage() {
       </div>
       <div id="projelerimListe">${renderProjelerimListe('', 'hepsi', 'tarih-yeni')}</div>`;
 
-    window.projelerimFiltrele = () => {
+    window.projelerimFiltrele = (sayfaSifirla = true) => {
+      if (sayfaSifirla) {
+        Object.keys(bolumSayfalari).forEach(k => { bolumSayfalari[k] = 1; });
+      }
       const ara = document.getElementById('projelerimArama').value;
       const durum = document.getElementById('projelerimDurum').value;
       const sirala = document.getElementById('projelerimSirala').value;
       document.getElementById('projelerimListe').innerHTML = renderProjelerimListe(ara, durum, sirala);
-      projeListesiEvrakRozetleriniYukle(projeler);
+      projeListesiEvrakRozetleriniYukle(sonGorunenProjelerim);
     };
-    projeListesiEvrakRozetleriniYukle(projeler);
+    projeListesiEvrakRozetleriniYukle(sonGorunenProjelerim);
   } catch(e) {
     main.innerHTML = `<div class="page-header"><h2>Projelerim</h2></div><div style="color:red;padding:20px">Hata: ${escHtml(e?.message || '')}</div>`;
   }
@@ -8641,6 +8746,8 @@ async function renderGonderilenProjelerPage() {
       </div>`;
     };
 
+    const gonderilenSayfalari = { bekleyen: 1, onaylanan: 1 };
+
     const renderGonderilenListe = (aramaMetni) => {
       const ara = aramaMetni.trim().toLocaleLowerCase('tr');
       const filtrele = (liste) => ara
@@ -8650,19 +8757,35 @@ async function renderGonderilenProjelerPage() {
       const bek = filtrele(bekleyenler);
       const ona = filtrele(onaylananlar);
 
+      const bekToplamSayfa = Math.max(1, Math.ceil(bek.length / PROJE_SAYFA_BOYUTU));
+      if (gonderilenSayfalari.bekleyen > bekToplamSayfa) gonderilenSayfalari.bekleyen = bekToplamSayfa;
+      const bekSayfa = Math.max(1, gonderilenSayfalari.bekleyen || 1);
+      const sayfaBek = bek.slice((bekSayfa - 1) * PROJE_SAYFA_BOYUTU, bekSayfa * PROJE_SAYFA_BOYUTU);
+
+      const onaToplamSayfa = Math.max(1, Math.ceil(ona.length / PROJE_SAYFA_BOYUTU));
+      if (gonderilenSayfalari.onaylanan > onaToplamSayfa) gonderilenSayfalari.onaylanan = onaToplamSayfa;
+      const onaSayfa = Math.max(1, gonderilenSayfalari.onaylanan || 1);
+      const sayfaOna = ona.slice((onaSayfa - 1) * PROJE_SAYFA_BOYUTU, onaSayfa * PROJE_SAYFA_BOYUTU);
+
       const bHTML = bek.length === 0
         ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Bekleyen proje yok.'}</div>`
-        : `<div class="ky-proje-grid">${bek.map(p => projeKart(p, (id, ad) => `
+        : `<div class="ky-proje-grid">${sayfaBek.map(p => projeKart(p, (id, ad) => `
             <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { cloudProjeAc(String(id ?? '')) })}>Aç</button>
             <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { gonderilenOnaylaClick(String(id ?? ''), String(ad ?? '')) })} style="background:#16a34a;color:#fff;border-color:#16a34a">✓ Onayla</button>
             <button class="ky-btn-delete" ${dtmEventAttr('click', function(event) { geriGonderClick(String(id ?? ''), String(ad ?? '')) })} style="background:#dc2626;color:#fff;border-color:#dc2626">↩ Geri Gönder</button>
-          `)).join('')}</div>`;
+          `)).join('')}</div>` + renderProjeSayfalamaBar(bek.length, bekSayfa, PROJE_SAYFA_BOYUTU, (yeniSayfa) => {
+            gonderilenSayfalari.bekleyen = yeniSayfa;
+            window.gonderilenFiltrele(false);
+          }, true);
 
       const oHTML = ona.length === 0
         ? `<div style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px">${ara ? 'Arama ile eşleşen proje yok.' : 'Henüz onaylanan proje yok.'}</div>`
-        : `<div class="ky-proje-grid">${ona.map(p => projeKart(p, (id, ad) => `
+        : `<div class="ky-proje-grid">${sayfaOna.map(p => projeKart(p, (id, ad) => `
             <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { cloudProjeAc(String(id ?? '')) })}>Görüntüle</button>
-          `)).join('')}</div>`;
+          `)).join('')}</div>` + renderProjeSayfalamaBar(ona.length, onaSayfa, PROJE_SAYFA_BOYUTU, (yeniSayfa) => {
+            gonderilenSayfalari.onaylanan = yeniSayfa;
+            window.gonderilenFiltrele(false);
+          }, true);
 
       return `
         <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:16px;overflow:hidden">
@@ -8682,12 +8805,16 @@ async function renderGonderilenProjelerPage() {
     main.innerHTML = `
       <div class="page-header"><h2>Projeler</h2><p>Size iletilen projeler.</p></div>
       <div style="margin-bottom:16px">
-        <input id="gonderilenArama" type="text" placeholder="🔍 Proje adı veya kullanıcıya göre ara..." ${dtmEventAttr('input', function(event) { gonderilenFiltrele() })}
+        <input id="gonderilenArama" type="text" placeholder="🔍 Proje adı veya kullanıcıya göre ara..." ${dtmEventAttr('input', function(event) { gonderilenFiltrele(true) })}
           style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
       </div>
       <div id="gonderilenListe">${renderGonderilenListe('')}</div>`;
 
-    window.gonderilenFiltrele = () => {
+    window.gonderilenFiltrele = (sayfaSifirla = true) => {
+      if (sayfaSifirla) {
+        gonderilenSayfalari.bekleyen = 1;
+        gonderilenSayfalari.onaylanan = 1;
+      }
       const ara = document.getElementById('gonderilenArama').value;
       document.getElementById('gonderilenListe').innerHTML = renderGonderilenListe(ara);
     };
@@ -9129,6 +9256,8 @@ async function renderGerceklestirmeciBelgelerPage() {
       return;
     }
 
+    const gcSayfalari = { aktif: 1, onaylanan: 1 };
+
     const renderGrupHTML = (aramaMetni, siralamaAnahtari) => {
       const ara = aramaMetni.trim().toLocaleLowerCase('tr');
       let eslesenAktif = ara ? aktif.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara)) : aktif;
@@ -9140,21 +9269,41 @@ async function renderGerceklestirmeciBelgelerPage() {
       }
       let h = '';
       if (eslesenAktif.length > 0) {
-        h += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Aktif Projeler</h3>
-          <div class="ky-proje-grid" style="margin-bottom:28px">${eslesenAktif.map(p => projeKarti(p, false)).join('')}</div>`;
+        const topSayfa = Math.max(1, Math.ceil(eslesenAktif.length / PROJE_SAYFA_BOYUTU));
+        if (gcSayfalari.aktif > topSayfa) gcSayfalari.aktif = topSayfa;
+        const sayfa = Math.max(1, gcSayfalari.aktif || 1);
+        const sayfaAktif = eslesenAktif.slice((sayfa - 1) * PROJE_SAYFA_BOYUTU, sayfa * PROJE_SAYFA_BOYUTU);
+        h += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Aktif Projeler (${eslesenAktif.length})</h3>
+          <div style="margin-bottom:28px">
+            <div class="ky-proje-grid">${sayfaAktif.map(p => projeKarti(p, false)).join('')}</div>
+            ${renderProjeSayfalamaBar(eslesenAktif.length, sayfa, PROJE_SAYFA_BOYUTU, (yeniSayfa) => {
+              gcSayfalari.aktif = yeniSayfa;
+              window.gcBelgeProjeFiltrele(false);
+            })}
+          </div>`;
       }
       if (eslesenOnaylanan.length > 0) {
-        h += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Onayladıklarım</h3>
-          <div class="ky-proje-grid">${eslesenOnaylanan.map(p => projeKarti(p, true)).join('')}</div>`;
+        const topSayfa = Math.max(1, Math.ceil(eslesenOnaylanan.length / PROJE_SAYFA_BOYUTU));
+        if (gcSayfalari.onaylanan > topSayfa) gcSayfalari.onaylanan = topSayfa;
+        const sayfa = Math.max(1, gcSayfalari.onaylanan || 1);
+        const sayfaOnay = eslesenOnaylanan.slice((sayfa - 1) * PROJE_SAYFA_BOYUTU, sayfa * PROJE_SAYFA_BOYUTU);
+        h += `<h3 style="font-size:14px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px">Onayladıklarım (${eslesenOnaylanan.length})</h3>
+          <div>
+            <div class="ky-proje-grid">${sayfaOnay.map(p => projeKarti(p, true)).join('')}</div>
+            ${renderProjeSayfalamaBar(eslesenOnaylanan.length, sayfa, PROJE_SAYFA_BOYUTU, (yeniSayfa) => {
+              gcSayfalari.onaylanan = yeniSayfa;
+              window.gcBelgeProjeFiltrele(false);
+            })}
+          </div>`;
       }
       return h;
     };
 
     listEl.innerHTML = `
       <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-        <input id="gcBelgeProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." ${dtmEventAttr('input', function(event) { gcBelgeProjeFiltrele() })}
+        <input id="gcBelgeProjeArama" type="text" placeholder="🔍 Proje adına göre ara..." ${dtmEventAttr('input', function(event) { gcBelgeProjeFiltrele(true) })}
           style="flex:1;min-width:200px;max-width:400px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none">
-        <select id="gcBelgeProjeSirala" ${dtmEventAttr('change', function(event) { gcBelgeProjeFiltrele() })}
+        <select id="gcBelgeProjeSirala" ${dtmEventAttr('change', function(event) { gcBelgeProjeFiltrele(true) })}
           style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;outline:none">
           <option value="tarih-yeni">Tarihe göre (Yeni → Eski)</option>
           <option value="tarih-eski">Tarihe göre (Eski → Yeni)</option>
@@ -9164,7 +9313,11 @@ async function renderGerceklestirmeciBelgelerPage() {
       </div>
       <div id="gcBelgeProjeGrup">${renderGrupHTML('', 'tarih-yeni')}</div>`;
 
-    window.gcBelgeProjeFiltrele = () => {
+    window.gcBelgeProjeFiltrele = (sayfaSifirla = true) => {
+      if (sayfaSifirla) {
+        gcSayfalari.aktif = 1;
+        gcSayfalari.onaylanan = 1;
+      }
       const ara = document.getElementById('gcBelgeProjeArama').value;
       const sirala = document.getElementById('gcBelgeProjeSirala').value;
       document.getElementById('gcBelgeProjeGrup').innerHTML = renderGrupHTML(ara, sirala);
@@ -9634,6 +9787,7 @@ async function renderOnayliBelgelerPage() {
     if (!el) return;
 
     let aktifSekme = 'bekleyenler'; // 'bekleyenler' | 'arsiv'
+    let onayliAktifSayfa = 1;
 
     const filtrele = (kaynak, ara, tarih, kullanici, siralama, bas, bit) => {
       const simdi = new Date();
@@ -9661,7 +9815,8 @@ async function renderOnayliBelgelerPage() {
       return liste;
     };
 
-    const renderListe = () => {
+    const renderListe = (sayfaSifirla = true) => {
+      if (sayfaSifirla !== false) onayliAktifSayfa = 1;
       const ara      = (el.querySelector('#onayliArama')?.value||'').trim().toLocaleLowerCase('tr');
       const tarih    = el.querySelector('#onayliTarih')?.value||'hepsi';
       const kullanici= el.querySelector('#onayliKullanici')?.value||'hepsi';
@@ -9685,7 +9840,12 @@ async function renderOnayliBelgelerPage() {
         return;
       }
 
-      listeEl.innerHTML = `<div class="ky-proje-grid">${liste.map(p => {
+      const toplamSayfa = Math.max(1, Math.ceil(liste.length / PROJE_SAYFA_BOYUTU));
+      if (onayliAktifSayfa > toplamSayfa) onayliAktifSayfa = toplamSayfa;
+      if (onayliAktifSayfa < 1) onayliAktifSayfa = 1;
+      const sayfaListe = liste.slice((onayliAktifSayfa - 1) * PROJE_SAYFA_BOYUTU, onayliAktifSayfa * PROJE_SAYFA_BOYUTU);
+
+      listeEl.innerHTML = `<div class="ky-proje-grid">${sayfaListe.map(p => {
         const tarihStr = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
         const adSafe   = p.isAdi||'(İsimsiz)';
         const aksiyonlar = aktifSekme === 'arsiv' ? `
@@ -9716,7 +9876,10 @@ async function renderOnayliBelgelerPage() {
           </div>
           <div class="ky-proje-actions">${aksiyonlar}</div>
         </div>`;
-      }).join('')}</div>`;
+      }).join('')}</div>` + renderProjeSayfalamaBar(liste.length, onayliAktifSayfa, PROJE_SAYFA_BOYUTU, (yeniSayfa) => {
+        onayliAktifSayfa = yeniSayfa;
+        renderListe(false);
+      });
     };
 
     const tumKullanicilar = [...new Set([...bekleyenler,...arsivdekiler].map(p=>p.userDisplayName).filter(Boolean))].sort();
