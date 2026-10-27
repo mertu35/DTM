@@ -2,7 +2,7 @@
 // Word çıktısı: HTML-to-DOC yöntemi
 // HTML formatındaki metni Microsoft Word belgesi olarak (.doc) indirir.
 
-const WORD_DESTEKLI_BELGELER = ['sozlesme', 'teknik-sartname', 'hakedis-raporu', 'bitti-tutanagi', 'muayene-kabul'];
+const WORD_DESTEKLI_BELGELER = ['dt-onay-belgesi', 'sozlesme', 'teknik-sartname', 'hakedis-raporu', 'bitti-tutanagi', 'muayene-kabul'];
 
 // ── HTML tablosunu/metnini .doc olarak indir ──
 function htmlIndirDoc(htmlStr, dosyaAdi) {
@@ -94,7 +94,7 @@ ${icerik}
 }
 
 // ── Belge ID'sine göre Word üret ──
-function belgeIdindenWordUret(belgeId, proje, referans) {
+function belgeIdindenWordUret(belgeId, proje, referans, returnVeriOnly = false) {
   referans = getBelgeReferansi(proje, referans);
   if (!belgeHesaplamaKontrol(proje, referans)) return false;
   let icerik = '';
@@ -102,6 +102,10 @@ function belgeIdindenWordUret(belgeId, proje, referans) {
   let dosyaAdi = '';
 
   switch (belgeId) {
+    case 'dt-onay-belgesi':
+      icerik = typeof renderDogrudanTeminOnayBelgesi === 'function' ? renderDogrudanTeminOnayBelgesi(proje, referans) : '';
+      dosyaAdi = `Doğrudan Temin Onay Belgesi - ${proje.isAdi || 'Proje'}`;
+      break;
     case 'sozlesme':
       icerik = renderSozlesme(proje, referans);
       dosyaAdi = `Sözleşme - ${proje.isAdi || 'Proje'}`;
@@ -130,7 +134,9 @@ function belgeIdindenWordUret(belgeId, proje, referans) {
   // HTML'i doc şablonuna sarıp indir
   const tamHtml = wordHtmlSaric(icerik, landscape);
   const guvenliDosyaAdi = dosyaAdi.replace(/[<>:"/\\|?*]/g, '-').substring(0, 80);
-  
+  if (returnVeriOnly) {
+    return { dosyaAdi: guvenliDosyaAdi.replace(/\.docx?$/, '') + '.doc', icerik: tamHtml };
+  }
   htmlIndirDoc(tamHtml, guvenliDosyaAdi);
   return true;
 }

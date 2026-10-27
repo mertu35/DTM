@@ -171,7 +171,7 @@ function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
   const sonTutanakAd = isMalVeyaHizmet ? 'Muayene ve Kabul' : 'Bitti Tutanağı';
 
   const belgeler = [
-    ...(dtOnayBelgesi ? [{ id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi', excel: false, word: false }] : []),
+    ...(dtOnayBelgesi ? [{ id: 'dt-onay-belgesi', ad: 'D.T. Onay Belgesi', excel: false, word: true }] : []),
     { id: 'yaklasik-maliyet', ad: 'Yaklaşık Maliyet', excel: true, word: false },
     { id: 'teklif-tutanagi', ad: 'Teklif Tutanağı', excel: true, word: false },
     { id: 'teknik-sartname', ad: 'Teknik Şartname', excel: false, word: true },
@@ -185,7 +185,7 @@ function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
       <input type="checkbox" class="belge-indir-cb" value="${escAttr(b.id)}" data-excel="${b.excel}" data-word="${b.word}" checked
         style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
       <span style="font-size:14px;color:var(--gray-800);flex:1">${b.ad}</span>
-      ${b.excel ? '<span style="font-size:10px;background:#10b981;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">XLSX</span>' : ''}
+      ${b.excel ? '<span style="font-size:10px;background:#10b981;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">XLS</span>' : ''}
       ${b.word ? '<span style="font-size:10px;background:#2563eb;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">DOC</span>' : ''}
     </label>`).join('');
 
@@ -193,9 +193,9 @@ function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
   overlay.id = 'dtmBelgeIndirModal';
   overlay.className = 'dtm-modal-overlay';
   overlay.innerHTML = `
-    <div class="dtm-modal" style="max-width:420px">
+    <div class="dtm-modal" style="max-width:460px">
       <div class="dtm-modal-header">
-        <h3>&#128196; Belge İndir</h3>
+        <h3>&#128196; Belge ve İhale Dosyası İndir</h3>
       </div>
       <div class="dtm-modal-body">
         <p style="margin:0 0 14px;font-size:13px;color:var(--gray-500)">İndirilecek belgeleri işaretleyin</p>
@@ -205,11 +205,17 @@ function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
           <span style="font-size:14px;color:var(--gray-700)">Tümünü Seç</span>
         </label>
         ${checkboxler}
+        <div style="margin-top:14px;padding:10px 12px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div style="font-size:12px;color:#5b21b6;line-height:1.35">
+            <strong>📦 Tek Tıkla İhale Dosyası (ZIP):</strong> Seçili resmi tutanakları (Excel/Word) ve yüklenen tüm proje evraklarını (Fatura, Vergi, Fotoğraf vb.) klasörlenmiş tek ZIP olarak indirir.
+          </div>
+          <button id="dtmBelgeIndirIhaleZip" class="btn" style="background:#7c3aed;color:#fff;white-space:nowrap;flex-shrink:0;padding:8px 12px;font-size:12.5px;font-weight:700">&#128230; İhale ZIP</button>
+        </div>
       </div>
       <div class="dtm-modal-footer">
         <button id="dtmBelgeIndirIptal" class="btn btn-outline">İptal</button>
         <button id="dtmBelgeIndirWord" class="btn" style="background:#2563eb;color:#fff" title="Sadece DOC işaretli belgeler">&#128196; Word</button>
-        <button id="dtmBelgeIndirExcel" class="btn" style="background:#10b981;color:#fff" title="Sadece XLSX işaretli belgeler">&#128202; Excel</button>
+        <button id="dtmBelgeIndirExcel" class="btn" style="background:#10b981;color:#fff" title="Sadece XLS işaretli belgeler">&#128202; Excel</button>
         <button id="dtmBelgeIndirOnay" class="btn btn-primary">&#128196; PDF</button>
       </div>
     </div>`;
@@ -230,6 +236,13 @@ function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
 
   document.getElementById('dtmBelgeIndirIptal').onclick = () => overlay.remove();
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  document.getElementById('dtmBelgeIndirIhaleZip').onclick = async () => {
+    const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')].map(cb => cb.value);
+    if (!secilen.length) { showToast('En az bir belge seçin', 'warning'); return; }
+    overlay.remove();
+    await ihaleDosyasiZipIndir(dtOnayBelgesi, secilen);
+  };
 
   document.getElementById('dtmBelgeIndirOnay').onclick = async () => {
     const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')].map(cb => cb.value);
@@ -258,6 +271,136 @@ function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
     showToast(`${secilen.length} belge Word olarak indirildi.`, 'success');
   };
 }
+
+// ── Tek Tıkla İhale Dosyası (ZIP) İndir ──
+// Projenin tüm resmi tutanaklarını (Excel .xls ve Word .doc) + Dokümanlar arşivindeki
+// yüklenmiş evrakları (Fotoğraflar, Fatura, Vergi Borcu Yoktur, Diğer Belgeler)
+// düzenli klasör yapısıyla tek bir .zip paketi halinde indirir.
+window.ihaleDosyasiZipIndir = async function(dtOnayDahil = false, secilenBelgeIdleri = null) {
+  if (!proje) {
+    showToast('Aktif proje bulunamadı.', 'warning');
+    return;
+  }
+  if (!belgeHesaplamaKontrol(proje, referans)) return;
+
+  try {
+    showToast('📦 İhale dosyası (ZIP) hazırlanıyor, lütfen bekleyin...', 'info', 3500);
+
+    const isMalVeyaHizmet = isMalVeyaHizmetTuru(proje.isTuru);
+    const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
+    const dtOnayOlsunMu = Boolean(dtOnayDahil || proje.dtOnayNo || proje.odenek || proje.butceTertibi);
+
+    const varsayilanSiraliBelgeler = [
+      ...(dtOnayOlsunMu ? ['dt-onay-belgesi'] : []),
+      'yaklasik-maliyet',
+      'teklif-tutanagi',
+      'teknik-sartname',
+      ...(isMalVeyaHizmet ? [] : ['sozlesme']),
+      sonTutanakId,
+      'hakedis-raporu'
+    ];
+
+    const hedefBelgeler = Array.isArray(secilenBelgeIdleri) && secilenBelgeIdleri.length > 0
+      ? secilenBelgeIdleri
+      : varsayilanSiraliBelgeler;
+
+    const encoder = new TextEncoder();
+    const zipGirdileri = [];
+    let resmiBelgeSayisi = 0;
+
+    hedefBelgeler.forEach((belgeId, idx) => {
+      const siraPrefix = String(idx + 1).padStart(2, '0');
+      let uretilen = null;
+      if (belgeId === 'yaklasik-maliyet' || belgeId === 'teklif-tutanagi') {
+        uretilen = belgeIdindenExcelUret(belgeId, proje, referans, true);
+      } else {
+        uretilen = belgeIdindenWordUret(belgeId, proje, referans, true);
+      }
+      if (uretilen && uretilen.icerik && uretilen.dosyaAdi) {
+        const bytes = encoder.encode('\ufeff' + uretilen.icerik);
+        const temizDosyaAdi = `${siraPrefix}_${uretilen.dosyaAdi}`;
+        zipGirdileri.push({
+          ad: temizDosyaAdi,
+          zipYolu: `01_Resmi_Tutanak_ve_Belgeler/${temizDosyaAdi}`,
+          bytes
+        });
+        resmiBelgeSayisi++;
+      }
+    });
+
+    // Projeye yüklenmiş ek evrakları (Dokümanlar arşivi) da ZIP'e dahil et
+    const aktifProjeId = currentBelgelerProjeId || currentGerceklestirmeciBelgelerProjeId || currentCloudProjeId;
+    if (aktifProjeId && typeof projeDosyalariGetir === 'function') {
+      try {
+        const bulutDosyalar = await projeDosyalariGetir(aktifProjeId);
+        window._projeDosyalariCache = {};
+        bulutDosyalar.forEach(d => { window._projeDosyalariCache[d.docId] = d; });
+        window._sonProjeDosyalariListesi = bulutDosyalar;
+      } catch (err) {
+        console.warn('Bulut evrakları ZIP için alınamadı:', err);
+      }
+    }
+
+    const ekKayitlar = typeof tumNormalizedDokumanKayitlariniGetir === 'function'
+      ? tumNormalizedDokumanKayitlariniGetir()
+      : [];
+
+    const ekKlasorMap = {
+      fatura: '02_Fatura',
+      vergi: '03_Vergi_Borcu_Yoktur',
+      fotograf: '04_Fotograflar',
+      diger: '05_Diger_Belgeler'
+    };
+
+    let ekEvrakSayisi = 0;
+    const kullanilanYollar = new Set(zipGirdileri.map(g => g.zipYolu));
+
+    for (const kayit of ekKayitlar) {
+      try {
+        const veri = await cozDokumanKaydiVerisi(kayit);
+        const klasor = ekKlasorMap[kayit.kategoriKod] || '05_Diger_Belgeler';
+        let adayYol = `${klasor}/${veri.temizAd}`;
+        let sayac = 2;
+        while (kullanilanYollar.has(adayYol)) {
+          const noktaIdx = veri.temizAd.lastIndexOf('.');
+          const adKismi = noktaIdx > 0 ? veri.temizAd.slice(0, noktaIdx) : veri.temizAd;
+          const uzanti = noktaIdx > 0 ? veri.temizAd.slice(noktaIdx) : '';
+          adayYol = `${klasor}/${adKismi}_${sayac}${uzanti}`;
+          sayac++;
+        }
+        kullanilanYollar.add(adayYol);
+        zipGirdileri.push({
+          ad: veri.temizAd,
+          zipYolu: adayYol,
+          bytes: veri.bytes
+        });
+        ekEvrakSayisi++;
+      } catch (err) {
+        console.warn('Evrak ZIP paketine eklenemedi:', kayit?.temizAd, err);
+      }
+    }
+
+    if (zipGirdileri.length === 0) {
+      showToast('İndirilecek belge oluşturulamadı.', 'warning');
+      return;
+    }
+
+    const zipBlob = olusturProjeDokumanZipBlob(zipGirdileri);
+    const projeAdTemiz = String(proje.isAdi || 'Proje')
+      .replace(/[\\/:*?"<>|]/g, ' ')
+      .replace(/\s+/g, '_')
+      .slice(0, 50)
+      .replace(/^_+|_+$/g, '') || 'Proje';
+
+    tetikleBlobIndirme(zipBlob, `Ihale_Dosyasi_${projeAdTemiz}.zip`);
+    const detayMetin = ekEvrakSayisi > 0
+      ? `${resmiBelgeSayisi} resmi tutanak + ${ekEvrakSayisi} ek evrak`
+      : `${resmiBelgeSayisi} resmi tutanak`;
+    showToast(`📦 İhale dosyası (${detayMetin}) ZIP olarak indirildi!`, 'success', 4500);
+  } catch (e) {
+    showToast('İhale ZIP oluşturma hatası: ' + (e.message || e), 'error');
+  }
+};
 
 function acBelgeIndirModal() {
   belgeIndirModalAc(currentBelgelerProjeId, false, cokluBelgeIndir);
@@ -812,6 +955,15 @@ async function renderAnaSayfaPage() {
             <div style="font-weight:600;color:var(--gray-800)">📄 Olur Dosyasından Oluştur</div>
             <div style="font-size:12px;color:var(--gray-500);margin-top:4px">Onay belgesi yükleyerek iş adını otomatik doldurun</div>
           </button>
+          <button ${dtmEventAttr('click', function(event) { acYeniProjeSablonAdim() })}
+            style="padding:16px;border:2px solid #ddd6fe;border-radius:10px;background:#faf5ff;cursor:pointer;text-align:left;font-size:14px;transition:all 0.15s"
+            ${dtmEventAttr('mouseover', function(event) { this.style.borderColor='#7c3aed';this.style.background='#f3e8ff' })} ${dtmEventAttr('mouseout', function(event) { this.style.borderColor='#ddd6fe';this.style.background='#faf5ff' })}>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font-weight:700;color:#6d28d9;font-size:14.5px">📑 Benzer Projeden Kopyala (Şablon)</div>
+              <span style="background:#7c3aed;color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px">Hızlı Şablon</span>
+            </div>
+            <div style="font-size:12px;color:#5b21b6;margin-top:4px">Önceki bir projenin iş kalemlerini, görevlilerini ve teknik şartnamesini kopyalayarak yeni proje başlatın</div>
+          </button>
           <button ${dtmEventAttr('click', function(event) { kapatYeniProjeModal(); })} style="padding:8px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--gray-400)">İptal</button>
         </div>
 
@@ -960,6 +1112,22 @@ async function renderAnaSayfaPage() {
             </div>
           </div>
         </div>
+
+        <!-- Adım 2d: Benzer Projeden Kopyala (Şablon) -->
+        <div id="yeniProjeAdim2Sablon" style="display:none">
+          <p style="font-size:13px;color:var(--gray-600);margin:0 0 12px 0">
+            Şablon olarak kullanmak istediğiniz projeyi seçin. Hangi bilgilerin kopyalanacağını bir sonraki adımda seçebilirsiniz.
+          </p>
+          <input id="sablonProjeAraInput" type="text" placeholder="🔍 Kayıtlı projelerinizde ara..."
+            ${dtmEventAttr('input', function(event) { sablonProjeleriFiltrele() })}
+            style="width:100%;padding:9px 12px;border:1px solid var(--gray-300);border-radius:8px;font-size:13.5px;margin-bottom:10px;box-sizing:border-box;outline:none">
+          <div id="sablonProjeListesi" style="max-height:280px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;background:#f8fafc;padding:6px;display:flex;flex-direction:column;gap:6px">
+            <div style="padding:18px;text-align:center;color:var(--gray-500);font-size:13px">⏳ Projeler yükleniyor...</div>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+            <button type="button" ${dtmEventAttr('click', function(event) { document.getElementById('yeniProjeAdim2Sablon').style.display='none';document.getElementById('yeniProjeAdim1').style.display='flex'; })} style="padding:8px 20px;border:1px solid var(--gray-300);background:#fff;border-radius:6px;cursor:pointer;font-size:13px">← Geri</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -1012,10 +1180,12 @@ function yeniProjeModalSifirla(modal) {
   const adim2m = modal.querySelector('#yeniProjeAdim2Manuel');
   const adim2o = modal.querySelector('#yeniProjeAdim2Olur');
   const adim2t = modal.querySelector('#yeniProjeAdim2Toplu');
+  const adim2s = modal.querySelector('#yeniProjeAdim2Sablon');
   if (adim1) adim1.style.display = 'flex';
   if (adim2m) adim2m.style.display = 'none';
   if (adim2o) adim2o.style.display = 'none';
   if (adim2t) adim2t.style.display = 'none';
+  if (adim2s) adim2s.style.display = 'none';
   const inp = modal.querySelector('#yeniProjeAdi');
   if (inp) inp.value = '';
   // Dosya seçimlerini temizle
@@ -1075,6 +1245,265 @@ function projeAcSayfasinaGit() {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelector('[data-page="projelerim"]')?.classList.add('active');
   renderPage();
+}
+
+// ===================== BENZER PROJEDEN KOPYALA (ŞABLON PROJE) =====================
+window._sablonProjelerCache = [];
+
+window.acYeniProjeSablonAdim = async function() {
+  const adim1 = document.getElementById('yeniProjeAdim1');
+  const adim2s = document.getElementById('yeniProjeAdim2Sablon');
+  if (adim1) adim1.style.display = 'none';
+  if (adim2s) adim2s.style.display = 'block';
+  const araInp = document.getElementById('sablonProjeAraInput');
+  if (araInp) {
+    araInp.value = '';
+    setTimeout(() => araInp.focus(), 50);
+  }
+  const listeEl = document.getElementById('sablonProjeListesi');
+  if (!listeEl) return;
+  listeEl.innerHTML = `<div style="padding:18px;text-align:center;color:var(--gray-500);font-size:13px">⏳ Kayıtlı projeleriniz yükleniyor...</div>`;
+  try {
+    const projeler = await getUserProjeler();
+    window._sablonProjelerCache = projeler || [];
+    sablonProjeleriFiltrele();
+  } catch (e) {
+    listeEl.innerHTML = `<div style="padding:18px;text-align:center;color:#dc2626;font-size:13px">Projeler yüklenemedi: ${escHtml(hataMesaji(e))}</div>`;
+  }
+};
+
+window.sablonProjeleriFiltrele = function() {
+  const listeEl = document.getElementById('sablonProjeListesi');
+  if (!listeEl) return;
+  const ara = (document.getElementById('sablonProjeAraInput')?.value || '').trim().toLocaleLowerCase('tr');
+  const tum = Array.isArray(window._sablonProjelerCache) ? window._sablonProjelerCache : [];
+  const filtreli = ara
+    ? tum.filter(p => (p.isAdi || '').toLocaleLowerCase('tr').includes(ara) || (p.isTuru || '').toLocaleLowerCase('tr').includes(ara))
+    : tum;
+
+  if (filtreli.length === 0) {
+    listeEl.innerHTML = `<div style="padding:20px;text-align:center;color:var(--gray-500);font-size:13px">${ara ? 'Aramanızla eşleşen proje bulunamadı.' : 'Henüz şablon olarak kopyalanabilecek kayıtlı projeniz yok.'}</div>`;
+    return;
+  }
+
+  listeEl.innerHTML = filtreli.map(p => {
+    const tarih = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString('tr-TR') : '-';
+    return `
+      <div ${dtmEventAttr('click', function(event) { kapatYeniProjeModal(); projeSablonKopyalaClick(String(p.id ?? '')); })}
+        style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;transition:all 0.15s"
+        ${dtmEventAttr('mouseover', function(event) { this.style.borderColor='#7c3aed';this.style.background='#faf5ff'; })}
+        ${dtmEventAttr('mouseout', function(event) { this.style.borderColor='#e2e8f0';this.style.background='#fff'; })}>
+        <div style="min-width:0;flex:1">
+          <div style="font-size:13.5px;font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.isAdi || '(İsimsiz)')}</div>
+          <div style="font-size:11.5px;color:#64748b;margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span>📅 ${tarih}</span>
+            ${getIsTuruBadge(p.isTuru)}
+          </div>
+        </div>
+        <span style="padding:5px 10px;background:#f3e8ff;color:#6d28d9;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0">📑 Seç →</span>
+      </div>`;
+  }).join('');
+};
+
+window.projeSablonKopyalaClick = async function(projeId) {
+  if (!projeId) return;
+  try {
+    showToast('⏳ Şablon proje verileri okunuyor...', 'info', 2000);
+    const doc = await getProjeFromCloud(projeId);
+    if (!doc || !doc.data) {
+      showToast('Kaynak proje verisi bulunamadı.', 'error');
+      return;
+    }
+    acProjeSablonKopyalaModal(doc.data, doc.isAdi || doc.data.isAdi || 'Proje');
+  } catch (e) {
+    showToast('Proje kopyalanamadı: ' + hataMesaji(e), 'error');
+  }
+};
+
+function acProjeSablonKopyalaModal(kaynakData, kaynakIsAdi) {
+  const mevcut = document.getElementById('dtmSablonKopyalaModal');
+  if (mevcut) mevcut.remove();
+
+  const kalemSayisi = Array.isArray(kaynakData.isKalemleri)
+    ? kaynakData.isKalemleri.filter(k => (k.ad || '').trim() !== '').length
+    : 0;
+  const sartnameVar = Boolean((kaynakData.teknikSartnameMetni || '').trim() || (kaynakData.sozlesmeOzelMaddeleri || '').trim());
+  const varsayilanYeniAd = `${kaynakIsAdi} (Yeni)`;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'dtmSablonKopyalaModal';
+  overlay.className = 'dtm-modal-overlay';
+  overlay.innerHTML = `
+    <div class="dtm-modal" style="max-width:480px">
+      <div class="dtm-modal-header" style="display:flex;align-items:center;justify-content:space-between">
+        <h3>📑 Benzer Projeden Kopyala (Şablon)</h3>
+      </div>
+      <div class="dtm-modal-body">
+        <div style="padding:10px 12px;background:#faf5ff;border:1px solid #ddd6fe;border-radius:8px;margin-bottom:14px;font-size:12.5px;color:#5b21b6">
+          <strong>Kaynak Proje:</strong> ${escHtml(kaynakIsAdi)}
+          <div style="font-size:11.5px;color:#6d28d9;margin-top:2px">Seçtiğiniz bilgilerle yeni bir <strong>Taslak</strong> proje oluşturulacaktır (Eski onay tarihleri ve sayıları sıfırlanır).</div>
+        </div>
+
+        <label style="font-size:13px;font-weight:700;color:var(--gray-800);display:block;margin-bottom:6px">Yeni İş / Hizmet Adı</label>
+        <input id="sablonYeniIsAdiInput" type="text" value="${escAttr(varsayilanYeniAd)}"
+          placeholder="Yeni projenin iş adını girin"
+          style="width:100%;padding:10px 12px;border:1.5px solid #c4b5fd;border-radius:8px;font-size:14px;margin-bottom:16px;box-sizing:border-box;outline:none">
+
+        <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:8px">Kopyalanacak Bölümler:</div>
+
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;cursor:pointer;border-bottom:1px solid var(--gray-100)">
+          <input type="checkbox" id="sablonCbKalemler" checked style="width:16px;height:16px;margin-top:2px;cursor:pointer;accent-color:#7c3aed">
+          <div style="font-size:13.5px;color:var(--gray-800)">
+            <strong>İş Kalemleri, Birimler ve Miktarlar</strong>
+            <div style="font-size:11.5px;color:var(--gray-500)">${kalemSayisi} adet iş kalemi ve birim bilgisi aktarılır</div>
+          </div>
+        </label>
+
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;cursor:pointer;border-bottom:1px solid var(--gray-100)">
+          <input type="checkbox" id="sablonCbIdare" checked style="width:16px;height:16px;margin-top:2px;cursor:pointer;accent-color:#7c3aed">
+          <div style="font-size:13.5px;color:var(--gray-800)">
+            <strong>İdare, Müdürlük, İş Türü, KDV ve İlçe Bilgileri</strong>
+            <div style="font-size:11.5px;color:var(--gray-500)">${escHtml(kaynakData.isTuru || 'Yapım/Onarım')} • KDV %${escHtml(String(kaynakData.kdvOrani ?? 20))} • ${escHtml(kaynakData.ilce || 'Merkez')}</div>
+          </div>
+        </label>
+
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;cursor:pointer;border-bottom:1px solid var(--gray-100)">
+          <input type="checkbox" id="sablonCbGorevliler" checked style="width:16px;height:16px;margin-top:2px;cursor:pointer;accent-color:#7c3aed">
+          <div style="font-size:13.5px;color:var(--gray-800)">
+            <strong>Görevli Personeller ve Onaylayan Amir</strong>
+            <div style="font-size:11.5px;color:var(--gray-500)">Y.M., D.T., Muayene/Kabul görevlileri ve İhale Yetkilisi aktarılır</div>
+          </div>
+        </label>
+
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;cursor:pointer;border-bottom:1px solid var(--gray-100)">
+          <input type="checkbox" id="sablonCbSartname" checked style="width:16px;height:16px;margin-top:2px;cursor:pointer;accent-color:#7c3aed">
+          <div style="font-size:13.5px;color:var(--gray-800)">
+            <strong>Teknik Şartname ve Sözleşme Özel Maddeleri</strong>
+            <div style="font-size:11.5px;color:var(--gray-500)">${sartnameVar ? 'Kayıtlı şartname ve sözleşme metinleri aktarılır' : 'Varsayılan şablon ayarları aktarılır'}</div>
+          </div>
+        </label>
+
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;cursor:pointer">
+          <input type="checkbox" id="sablonCbFirmalar" style="width:16px;height:16px;margin-top:2px;cursor:pointer;accent-color:#7c3aed">
+          <div style="font-size:13.5px;color:var(--gray-800)">
+            <strong>Firma İsimleri ve Birim Fiyat Teklifleri</strong>
+            <div style="font-size:11.5px;color:var(--gray-500)">İşaretlenmezse yeni ihale için firma ve fiyat tabloları temiz başlatılır</div>
+          </div>
+        </label>
+      </div>
+      <div class="dtm-modal-footer">
+        <button id="sablonKopyalaIptalBtn" class="btn btn-outline">İptal</button>
+        <button id="sablonKopyalaOnayBtn" class="btn" style="background:#7c3aed;color:#fff;font-weight:700">📑 Kopyala ve Projeyi Aç</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  const adInput = document.getElementById('sablonYeniIsAdiInput');
+  setTimeout(() => {
+    if (adInput) {
+      adInput.focus();
+      adInput.select();
+    }
+  }, 50);
+
+  document.getElementById('sablonKopyalaIptalBtn').onclick = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  const uygulaKopyalama = () => {
+    const yeniAd = (adInput?.value || '').trim();
+    if (!yeniAd) {
+      markError(adInput);
+      showToast('Lütfen yeni proje için bir iş adı girin.', 'warning');
+      return;
+    }
+
+    const cbKalemler = document.getElementById('sablonCbKalemler')?.checked;
+    const cbIdare = document.getElementById('sablonCbIdare')?.checked;
+    const cbGorevliler = document.getElementById('sablonCbGorevliler')?.checked;
+    const cbSartname = document.getElementById('sablonCbSartname')?.checked;
+    const cbFirmalar = document.getElementById('sablonCbFirmalar')?.checked;
+
+    const klon = (obj) => JSON.parse(JSON.stringify(obj));
+    const yeniProje = getDefaultProje();
+    yeniProje.isAdi = yeniAd;
+
+    if (cbIdare) {
+      if (kaynakData.idareAdi) yeniProje.idareAdi = kaynakData.idareAdi;
+      if (kaynakData.mudurluk) yeniProje.mudurluk = kaynakData.mudurluk;
+      if (kaynakData.isTuru) yeniProje.isTuru = kaynakData.isTuru;
+      if (kaynakData.kdvOrani !== undefined) yeniProje.kdvOrani = kaynakData.kdvOrani;
+      if (kaynakData.ilce) yeniProje.ilce = kaynakData.ilce;
+      if (kaynakData.il) yeniProje.il = kaynakData.il;
+      if (kaynakData.isinSuresi) yeniProje.isinSuresi = kaynakData.isinSuresi;
+      if (kaynakData.cezaOrani) yeniProje.cezaOrani = kaynakData.cezaOrani;
+    }
+
+    if (cbGorevliler) {
+      if (Array.isArray(kaynakData.ymGorevliler)) yeniProje.ymGorevliler = klon(kaynakData.ymGorevliler);
+      if (Array.isArray(kaynakData.dtGorevliler)) yeniProje.dtGorevliler = klon(kaynakData.dtGorevliler);
+      if (Array.isArray(kaynakData.mkGorevliler)) yeniProje.mkGorevliler = klon(kaynakData.mkGorevliler);
+      if (kaynakData.ymGorevliSayisi !== undefined) yeniProje.ymGorevliSayisi = kaynakData.ymGorevliSayisi;
+      if (kaynakData.dtGorevliSayisi !== undefined) yeniProje.dtGorevliSayisi = kaynakData.dtGorevliSayisi;
+      if (kaynakData.mkGorevliSayisi !== undefined) yeniProje.mkGorevliSayisi = kaynakData.mkGorevliSayisi;
+      if (kaynakData.dtGorevlilerYmIleAyni !== undefined) yeniProje.dtGorevlilerYmIleAyni = kaynakData.dtGorevlilerYmIleAyni;
+      if (kaynakData.onaylayanAmir) yeniProje.onaylayanAmir = klon(kaynakData.onaylayanAmir);
+    }
+
+    if (cbSartname) {
+      if (kaynakData.teknikSartnameMetni !== undefined) yeniProje.teknikSartnameMetni = kaynakData.teknikSartnameMetni;
+      if (kaynakData.sozlesmeOzelMaddeleri !== undefined) yeniProje.sozlesmeOzelMaddeleri = kaynakData.sozlesmeOzelMaddeleri;
+    }
+
+    if (cbKalemler && Array.isArray(kaynakData.isKalemleri) && kaynakData.isKalemleri.length > 0) {
+      yeniProje.isKalemleri = klon(kaynakData.isKalemleri);
+      const kalemAdet = yeniProje.isKalemleri.length;
+      yeniProje.ymFirmalar = [
+        { ad: '', fiyatlar: Array(kalemAdet).fill('') },
+        { ad: '', fiyatlar: Array(kalemAdet).fill('') },
+        { ad: '', fiyatlar: Array(kalemAdet).fill('') }
+      ];
+      yeniProje.teklifFirmalar = [
+        { ad: '', fiyatlar: Array(kalemAdet).fill('') },
+        { ad: '', fiyatlar: Array(kalemAdet).fill('') },
+        { ad: '', fiyatlar: Array(kalemAdet).fill('') }
+      ];
+    }
+
+    if (cbFirmalar) {
+      if (Array.isArray(kaynakData.ymFirmalar)) yeniProje.ymFirmalar = klon(kaynakData.ymFirmalar);
+      if (Array.isArray(kaynakData.teklifFirmalar)) yeniProje.teklifFirmalar = klon(kaynakData.teklifFirmalar);
+      if (kaynakData.kazananFirmaIndex !== undefined) yeniProje.kazananFirmaIndex = kaynakData.kazananFirmaIndex;
+    }
+
+    proje = yeniProje;
+    if (typeof window !== 'undefined') {
+      window._bekleyenProjeDosyalari = [];
+      window._sonProjeDosyalariListesi = [];
+      if (window._seciliProjeDokumanlari instanceof Set) window._seciliProjeDokumanlari.clear();
+    }
+    currentCloudProjeId = null;
+    currentProjeStatus = 'taslak';
+    currentProjeKilitli = false;
+    currentProjeBaskaKullanici = false;
+    currentProjeKazananBasitUsul = null;
+    saveProje(proje);
+    lastSavedProjeSnapshot = JSON.stringify(proje);
+
+    overlay.remove();
+    projeAktif = true;
+    currentPage = 'veri-giris';
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector('[data-page="veri-giris"]')?.classList.add('active');
+    updateNavLock();
+    renderPage();
+    showToast('📑 Proje şablon olarak kopyalandı! Yeni proje bilgilerini düzenleyip kaydedebilirsiniz.', 'success', 4500);
+  };
+
+  document.getElementById('sablonKopyalaOnayBtn').onclick = uygulaKopyalama;
+  adInput?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') uygulaKopyalama();
+  });
 }
 
 // ===================== VERİ GİRİŞ SAYFASI =====================
@@ -1418,9 +1847,16 @@ function renderVeriGirisPage() {
   return `
     ${kilitBanner}
     ${hesaplamaHatalari.length ? renderHesaplamaUyarisi(hesaplamaHatalari) : ''}
-    <div class="page-header">
-      <h2>Veri Giriş Formu</h2>
-      <p>Proje bilgilerini girin, belgeler otomatik oluşturulacaktır.</p>
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2>Veri Giriş Formu</h2>
+        <p>Proje bilgilerini girin, belgeler otomatik oluşturulacaktır.</p>
+      </div>
+      <button type="button" ${dtmEventAttr('click', function(event) { acProjeSablonKopyalaModal(proje, proje.isAdi || 'Proje'); })}
+        style="padding:8px 14px;background:#faf5ff;color:#6d28d9;border:1.5px solid #ddd6fe;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px"
+        title="Bu projenin kalemlerini, görevlilerini ve şartnamesini kopyalayarak yeni bir taslak proje oluştur">
+        📑 Bu Projeden Kopyala (Şablon)
+      </button>
     </div>
     ${canliDurumVeHizliMenuHtml}
 
@@ -5882,6 +6318,12 @@ async function renderBelgelerPage() {
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         İndir
       </button>
+      <button ${dtmEventAttr('click', function(event) { ihaleDosyasiZipIndir(false) })}
+        title="Tüm resmi tutanakları (Excel/Word) ve yüklenen evrakları tek bir ZIP dosyası olarak indir"
+        style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(124,58,237,0.35)"
+        ${dtmEventAttr('mouseover', function(event) { this.style.background='#6d28d9' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#7c3aed' })}>
+        📦 İhale Dosyası (ZIP)
+      </button>
       <button ${dtmEventAttr('click', function(event) { pdfIndirBelge() })} style="display:none">PDF İndir</button>
     </div>
     <div class="belge-preview${['yaklasik-maliyet','teklif-tutanagi'].includes(currentBelge) ? ' landscape' : ''}">${belgeHTML}</div>
@@ -7599,6 +8041,7 @@ async function renderProjelerimPage() {
         </div>
         <div class="ky-proje-actions">
           <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { cloudProjeAc(String(p.id ?? '')) })}>Aç</button>
+          <button class="ky-btn-lock" ${dtmEventAttr('click', function(event) { projeSablonKopyalaClick(String(p.id ?? '')) })} style="background:#faf5ff;color:#6d28d9;border-color:#ddd6fe" title="Bu projeyi şablon olarak kopyala ve yeni taslak oluştur">📑 Kopyala</button>
           ${aktif && !kilitli ? `<button class="ky-btn-lock" ${dtmEventAttr('click', function(event) { gonderiClick(String(p.id ?? ''), String(isAdiSafe ?? '')) })} style="background:#16a34a;color:#fff;border-color:#16a34a">📤 Gönder</button>` : ''}
           ${aktif ? `<button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" ${dtmEventAttr('click', function(event) { cloudProjeKilitle(String(p.id ?? ''), (!kilitli)) })}>${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>` : ''}
           ${aktif && !kilitli ? `<button class="ky-btn-delete" ${dtmEventAttr('click', function(event) { cloudProjeSil(String(p.id ?? ''), String(isAdiSafe ?? ''), (kilitli)) })}>Sil</button>` : ''}
@@ -8319,6 +8762,12 @@ function renderGerceklestirmeciBelgelerView(main) {
         ${dtmEventAttr('mouseover', function(event) { this.style.background='#059669' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#10b981' })}>
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         İndir
+      </button>
+      <button ${dtmEventAttr('click', function(event) { ihaleDosyasiZipIndir(true) })}
+        title="Tüm resmi tutanakları (D.T. Onay dahil) ve yüklenen evrakları tek bir ZIP dosyası olarak indir"
+        style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(124,58,237,0.35)"
+        ${dtmEventAttr('mouseover', function(event) { this.style.background='#6d28d9' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#7c3aed' })}>
+        📦 İhale Dosyası (ZIP)
       </button>
       <button ${dtmEventAttr('click', function(event) { gerceklestirmeciBelgePdfIndir() })} style="display:none">PDF İndir</button>
     </div>

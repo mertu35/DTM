@@ -101,7 +101,7 @@ function tdRakam(sayi, bold) {
 // ===== YAKLAŞIK MALİYET TESPİT TUTANAĞI =====
 // =============================================
 // 11 sütun: S.NO | İş | Miktar | BF1 | T1 | BF2 | T2 | BF3 | T3 | BFYM | TYM
-function exportYaklasikMaliyetExcel(proje, referans) {
+function exportYaklasikMaliyetExcel(proje, referans, returnVeriOnly = false) {
   referans = getBelgeReferansi(proje, referans);
   if (!belgeHesaplamaKontrol(proje, referans)) return false;
   const kalemler = getKalemler(proje);
@@ -231,7 +231,11 @@ function exportYaklasikMaliyetExcel(proje, referans) {
   </table>`;
 
   const dosyaAdi = `Yaklaşık Maliyet Tespit Tutanağı - ${(proje.isAdi || 'Proje').replace(/[<>:"/\\|?*]/g, '-').substring(0, 60)}`;
-  htmlIndirXls(excelHtmlSaric(html, 'Yaklaşık Maliyet Tespit Tutanak'), dosyaAdi);
+  const tamHtml = excelHtmlSaric(html, 'Yaklaşık Maliyet Tespit Tutanak');
+  if (returnVeriOnly) {
+    return { dosyaAdi: dosyaAdi.replace(/\.xlsx?$/, '') + '.xls', icerik: tamHtml };
+  }
+  htmlIndirXls(tamHtml, dosyaAdi);
 }
 
 // =============================
@@ -248,7 +252,7 @@ function exportYaklasikMaliyetExcel(proje, referans) {
 // M,N   : Firma 3    (12,13)
 // O,P   : Firma 4    (14,15) — yok ise boş
 // Q     : boş        (16)
-function exportTeklifTutanagiExcel(proje, referans) {
+function exportTeklifTutanagiExcel(proje, referans, returnVeriOnly = false) {
   referans = getBelgeReferansi(proje, referans);
   if (!belgeHesaplamaKontrol(proje, referans)) return false;
   const C = 17;
@@ -509,16 +513,22 @@ function exportTeklifTutanagiExcel(proje, referans) {
 </table>`;
 
   const dosyaAdi = `Teklif Tutanağı - ${(proje.isAdi || 'Proje').replace(/[<>:"/\\|?*]/g, '-').substring(0, 60)}`;
-  htmlIndirXls(excelHtmlSaric(html, 'Teklif Tutanağı'), dosyaAdi);
+  const tamHtml = excelHtmlSaric(html, 'Teklif Tutanağı');
+  if (returnVeriOnly) {
+    return { dosyaAdi: dosyaAdi.replace(/\.xlsx?$/, '') + '.xls', icerik: tamHtml };
+  }
+  htmlIndirXls(tamHtml, dosyaAdi);
 }
 
 // ── Belge ID'sine göre Excel üret ──
-function belgeIdindenExcelUret(belgeId, proje, referans) {
+function belgeIdindenExcelUret(belgeId, proje, referans, returnVeriOnly = false) {
   referans = getBelgeReferansi(proje, referans);
   if (!belgeHesaplamaKontrol(proje, referans)) return false;
   switch (belgeId) {
-    case 'yaklasik-maliyet': exportYaklasikMaliyetExcel(proje, referans); return true;
-    case 'teklif-tutanagi':  exportTeklifTutanagiExcel(proje, referans); return true;
+    case 'yaklasik-maliyet':
+      return returnVeriOnly ? exportYaklasikMaliyetExcel(proje, referans, true) : (exportYaklasikMaliyetExcel(proje, referans), true);
+    case 'teklif-tutanagi':
+      return returnVeriOnly ? exportTeklifTutanagiExcel(proje, referans, true) : (exportTeklifTutanagiExcel(proje, referans), true);
     default: return false;
   }
 }
