@@ -26,20 +26,22 @@ async function mainTest() {
       gonderiClick = (...args) => received.push(args);
       cloudProjeSil = (...args) => received.push(args);
       cloudProjeKilitle = (...args) => received.push(args);
+      projeSablonKopyalaClick = (...args) => received.push(args);
     `, context);
     await context.renderProjelerimPage();
     assert.ok(!main.innerHTML.includes('<img'), 'user HTML must remain text');
     const handlers = [...main.innerHTML.matchAll(/data-dtm-onclick="([^"]*)"/g)].map(m => m[1]).filter(id => id.startsWith('dynamic-'));
-    // Four project actions plus the page's new-project button.
+    // Five project actions (Aç, Kopyala, Gönder, Kilitle, Sil) plus the page's new-project button.
     handlers.shift();
-    assert.equal(handlers.length, 4, 'all project action buttons rendered');
+    assert.equal(handlers.length, 5, 'all project action buttons rendered');
     for (const handler of handlers) {
       context.handlerId = handler;
       vm.runInContext("dtmDispatchEvent({ type: 'click', target: { getAttribute: () => handlerId }, cancelBubble: false });", context);
     }
     assert.equal(context.received[0][0], payload);
-    assert.equal(context.received[1][1], payload);
-    assert.equal(context.received[3][1], payload);
+    assert.equal(context.received[1][0], payload);
+    assert.equal(context.received[2][1], payload);
+    assert.equal(context.received[4][1], payload);
     assert.equal(context.injected, undefined, 'payload must never execute');
     count++;
   }
