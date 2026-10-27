@@ -90,7 +90,7 @@ function getDefaultReferans() {
     ],
     firmaList: [
       { ad: 'Ramazan TEKİN', adres: '', tur: 'Kişi', tel: '', faks: '', eposta: '' },
-      { ad: 'Alper YAMAÇ', adres: 'Abbas Mh. Dr.Mehmet Armurlu Sk. No:44/A Merkez/KARAMAN', tur: 'Kişi', tel: '0 543 360 0756', faks: '', eposta: '' },
+      { ad: 'Alper YAMAÇ', adres: 'Abbas Mh. Dr.Mehmet Armurlu Sk. No:44/A Merkez/KARAMAN', tur: 'Kişi', tel: '(0) 543 360 07 56', faks: '', eposta: '' },
       { ad: 'Süleyman POYRAZ', adres: 'Karaman', tur: 'Kişi', tel: '', faks: '', eposta: '' },
       { ad: 'Gültes Enerji', adres: 'Karaman', tur: 'Şirket', tel: '', faks: '', eposta: '' },
       { ad: 'İsa CEYLAN', adres: 'Karaman', tur: 'Şirket', tel: '', faks: '', eposta: '' }

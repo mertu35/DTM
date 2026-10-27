@@ -4027,7 +4027,7 @@ function matchOrAddFirma(firmaData) {
         match.adres = firmaData.adres.trim();
         degisti = true;
       }
-      if (!match.tel && firmaData.tel) { match.tel = firmaData.tel.trim(); degisti = true; }
+      if (!match.tel && telefonNormalize(firmaData.tel)) { match.tel = telefonNormalize(firmaData.tel); degisti = true; }
       if (!match.eposta && firmaData.eposta) { match.eposta = firmaData.eposta.trim(); degisti = true; }
       if (!match.vkn && rawVkn) { match.vkn = rawVkn; degisti = true; }
       if (!match.vergiDairesi && firmaData.vergiDairesi) { match.vergiDairesi = firmaData.vergiDairesi.trim(); degisti = true; }
@@ -4049,8 +4049,8 @@ function matchOrAddFirma(firmaData) {
     ad: temizAd,
     tur: tespitTur,
     adres: (typeof firmaData === 'object' && firmaData.adres) ? firmaData.adres.trim() : '',
-    tel: (typeof firmaData === 'object' && firmaData.tel) ? firmaData.tel.trim() : '',
-    faks: (typeof firmaData === 'object' && firmaData.faks) ? firmaData.faks.trim() : '',
+    tel: typeof firmaData === 'object' ? telefonNormalize(firmaData.tel) : '',
+    faks: typeof firmaData === 'object' ? telefonNormalize(firmaData.faks) : '',
     eposta: (typeof firmaData === 'object' && firmaData.eposta) ? firmaData.eposta.trim() : '',
     vkn: rawVkn || '',
     vergiDairesi: (typeof firmaData === 'object' && firmaData.vergiDairesi) ? firmaData.vergiDairesi.trim() : '',
@@ -6795,8 +6795,8 @@ function renderVeriMerkeziPage() {
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
               <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'adres', this.value) })}></div>
-              <div class="form-group"><label>Telefon</label><input type="text" class="ref-input" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'tel', this.value) })}></div>
-              <div class="form-group"><label>Faks</label><input type="text" class="ref-input" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'faks', this.value) })}></div>
+              <div class="form-group"><label>Telefon</label><input type="tel" inputmode="tel" autocomplete="off" class="ref-input${telefonGecerliMi(f.tel) ? '' : ' has-error'}" id="firmaInputTel" value="${escAttr(f.tel || '')}" placeholder="(0) 500 123 45 67" ${dtmEventAttr('input', function(event) { telefonGirdiIsle(this, event) })} ${dtmEventAttr('change', function(event) { this.value = telefonNormalize(this.value); this.classList.toggle('has-error', !telefonGecerliMi(this.value)); onFirmaFieldChange('firmaList', String(i ?? ''), 'tel', this.value) })}></div>
+              <div class="form-group"><label>Faks</label><input type="tel" inputmode="tel" autocomplete="off" class="ref-input${telefonGecerliMi(f.faks) ? '' : ' has-error'}" id="firmaInputFaks" value="${escAttr(f.faks || '')}" placeholder="(0) 500 123 45 67" ${dtmEventAttr('input', function(event) { telefonGirdiIsle(this, event) })} ${dtmEventAttr('change', function(event) { this.value = telefonNormalize(this.value); this.classList.toggle('has-error', !telefonGecerliMi(this.value)); onFirmaFieldChange('firmaList', String(i ?? ''), 'faks', this.value) })}></div>
               <div class="form-group"><label>E-Posta</label><input type="text" class="ref-input" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'eposta', this.value) })}></div>
               ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" class="ref-input" value="${escAttr(f.dogumTarihi || '')}" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'dogumTarihi', this.value) })}></div>`}
               <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
@@ -7009,6 +7009,20 @@ function onRefChange(list, index, field, value) {
 
 let dtmYeniEklenenFirma = null;
 
+// Kaydetmeden önce telefon/faksı biçime çevirir; 10 haneye tamamlanamıyorsa kaydı durdurur.
+function firmaTelefonlariniDogrula(f, idOnEki) {
+  const hatali = [];
+  [['tel', 'Tel', 'Telefon'], ['faks', 'Faks', 'Faks']].forEach(([alan, idSonEki, etiket]) => {
+    f[alan] = telefonNormalize(f[alan]);
+    if (!telefonGecerliMi(f[alan])) {
+      hatali.push(etiket);
+      markError(document.getElementById(idOnEki + idSonEki));
+    }
+  });
+  if (hatali.length) showToast(`${hatali.join(' ve ')} numarası 10 haneli olmalı. Örn: (0) 500 123 45 67`, 'error');
+  return hatali.length === 0;
+}
+
 function onFirmaFieldChange(list, index, field, value) {
   if (index === 'NEW' || index === 'NEW_YUKLENICI') {
     if (list === 'firmaList' && dtmYeniEklenenFirma) {
@@ -7044,6 +7058,7 @@ window.kaydetFirmaFormu = function(index) {
     if (inputAd) markError(inputAd);
     return;
   }
+  if (!firmaTelefonlariniDogrula(f, 'firmaInput')) return;
 
   if(!referans.firmaList) referans.firmaList = [];
 
@@ -7181,8 +7196,8 @@ function firmaHavuzaTekilBirlestir(hedefListe, kaynakFirma) {
       ad: temizAd,
       tur: kaynakTur,
       adres: (kaynakFirma.adres || '').trim(),
-      tel: (kaynakFirma.tel || '').trim(),
-      faks: (kaynakFirma.faks || '').trim(),
+      tel: telefonNormalize(kaynakFirma.tel),
+      faks: telefonNormalize(kaynakFirma.faks),
       eposta: (kaynakFirma.eposta || '').trim(),
       vkn: kaynakFirma.vkn || '',
       vergiDairesi: (kaynakFirma.vergiDairesi || '').trim(),
@@ -7207,7 +7222,7 @@ function firmaHavuzaTekilBirlestir(hedefListe, kaynakFirma) {
 
   ['tel', 'faks', 'eposta', 'vkn', 'vergiDairesi'].forEach(alan => {
     if (!mevcut[alan] && kaynakFirma[alan]) {
-      mevcut[alan] = String(kaynakFirma[alan]).trim();
+      mevcut[alan] = (alan === 'tel' || alan === 'faks') ? telefonNormalize(kaynakFirma[alan]) : String(kaynakFirma[alan]).trim();
       degisti = true;
     }
   });
@@ -7405,8 +7420,8 @@ window.havuzdanFirmayiListemeEkle = function(encodedAd) {
       ad: (kaynak.ad || '').trim(),
       tur: kaynak.tur === 'Şirket' ? 'Şirket' : 'Kişi',
       adres: (kaynak.adres || '').trim(),
-      tel: (kaynak.tel || '').trim(),
-      faks: (kaynak.faks || '').trim(),
+      tel: telefonNormalize(kaynak.tel),
+      faks: telefonNormalize(kaynak.faks),
       eposta: (kaynak.eposta || '').trim(),
       dogumTarihi: kaynak.dogumTarihi || '',
       vkn: kaynak.vkn || '',
@@ -7420,7 +7435,7 @@ window.havuzdanFirmayiListemeEkle = function(encodedAd) {
     let guncellendi = false;
     ['adres', 'tel', 'faks', 'eposta', 'dogumTarihi', 'vkn', 'vergiDairesi'].forEach(alan => {
       if (!mevcut[alan] && kaynak[alan]) {
-        mevcut[alan] = String(kaynak[alan]).trim();
+        mevcut[alan] = (alan === 'tel' || alan === 'faks') ? telefonNormalize(kaynak[alan]) : String(kaynak[alan]).trim();
         guncellendi = true;
       }
     });
@@ -7447,8 +7462,8 @@ window.havuzdanTumEksikleriListemeEkle = function() {
       ad: (kaynak.ad || '').trim(),
       tur: kaynak.tur === 'Şirket' ? 'Şirket' : 'Kişi',
       adres: (kaynak.adres || '').trim(),
-      tel: (kaynak.tel || '').trim(),
-      faks: (kaynak.faks || '').trim(),
+      tel: telefonNormalize(kaynak.tel),
+      faks: telefonNormalize(kaynak.faks),
       eposta: (kaynak.eposta || '').trim(),
       dogumTarihi: kaynak.dogumTarihi || '',
       vkn: kaynak.vkn || '',
@@ -9039,8 +9054,8 @@ function renderGerceklestirmeciVeriMerkeziPage() {
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
               <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'adres', this.value) })}></div>
-              <div class="form-group"><label>Telefon</label><input type="text" class="ref-input" value="${escAttr(f.tel || '')}" placeholder="Örn: 05xx xxx xx xx" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'tel', this.value) })}></div>
-              <div class="form-group"><label>Faks</label><input type="text" class="ref-input" value="${escAttr(f.faks || '')}" placeholder="Faks no giriniz" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'faks', this.value) })}></div>
+              <div class="form-group"><label>Telefon</label><input type="tel" inputmode="tel" autocomplete="off" class="ref-input${telefonGecerliMi(f.tel) ? '' : ' has-error'}" id="yukleniciInputTel" value="${escAttr(f.tel || '')}" placeholder="(0) 500 123 45 67" ${dtmEventAttr('input', function(event) { telefonGirdiIsle(this, event) })} ${dtmEventAttr('change', function(event) { this.value = telefonNormalize(this.value); this.classList.toggle('has-error', !telefonGecerliMi(this.value)); onFirmaFieldChange('yukleniciList', String(i ?? ''), 'tel', this.value) })}></div>
+              <div class="form-group"><label>Faks</label><input type="tel" inputmode="tel" autocomplete="off" class="ref-input${telefonGecerliMi(f.faks) ? '' : ' has-error'}" id="yukleniciInputFaks" value="${escAttr(f.faks || '')}" placeholder="(0) 500 123 45 67" ${dtmEventAttr('input', function(event) { telefonGirdiIsle(this, event) })} ${dtmEventAttr('change', function(event) { this.value = telefonNormalize(this.value); this.classList.toggle('has-error', !telefonGecerliMi(this.value)); onFirmaFieldChange('yukleniciList', String(i ?? ''), 'faks', this.value) })}></div>
               <div class="form-group"><label>E-Posta</label><input type="text" class="ref-input" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'eposta', this.value) })}></div>
               ${f.tur === 'Şirket' ? '' : `<div class="form-group"><label>Doğum Tarihi</label><input type="date" class="ref-input" value="${escAttr(f.dogumTarihi || '')}" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'dogumTarihi', this.value) })}></div>`}
               <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 5px;">
@@ -9104,6 +9119,7 @@ window.kaydetYukleniciFormu = function(index) {
     if (inputAd) markError(inputAd);
     return;
   }
+  if (!firmaTelefonlariniDogrula(f, 'yukleniciInput')) return;
 
   if (!referans.yukleniciList) referans.yukleniciList = [];
 
