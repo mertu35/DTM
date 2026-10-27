@@ -7500,15 +7500,37 @@ window.havuzdanFirmayiListemeEkle = function(encodedAd) {
   }
 };
 
-window.havuzdanTumEksikleriListemeEkle = function() {
+window.havuzdanTumEksikleriListemeEkle = async function() {
   const havuz = tekillestirFirmaHavuzuListesi(referans.yukleniciList);
   if (!Array.isArray(referans.firmaList)) referans.firmaList = [];
   const benimAnahtarlarim = new Set(referans.firmaList.map(f => firmaAdAnahtari(f.ad)).filter(Boolean));
 
-  let eklenenSayisi = 0;
+  const eklenecekler = [];
   havuz.forEach(kaynak => {
     const anahtar = firmaAdAnahtari(kaynak.ad);
     if (!anahtar || benimAnahtarlarim.has(anahtar)) return;
+    benimAnahtarlarim.add(anahtar);
+    eklenecekler.push(kaynak);
+  });
+
+  if (eklenecekler.length === 0) {
+    showToast('Havuzdaki tüm firmalar zaten listenizde ekli.', 'info');
+    return;
+  }
+
+  const ornekSayisi = 5;
+  const ornekler = eklenecekler.slice(0, ornekSayisi).map(f => `<li>${escHtml(f.ad)}</li>`).join('');
+  const kalan = eklenecekler.length - ornekSayisi;
+  const onay = await showConfirm(
+    `<strong>${eklenecekler.length} firma</strong> ortak havuzdan kendi firma listenize eklenecek:` +
+    `<ul style="margin:8px 0 4px 18px">${ornekler}</ul>` +
+    (kalan > 0 ? `<div style="color:var(--gray-500)">ve ${kalan} firma daha</div>` : '') +
+    `<div style="margin-top:10px">Yalnızca bir firmaya ihtiyacınız varsa, o firmanın yanındaki "Listeme Ekle" düğmesini kullanın.</div>`,
+    `Evet, ${eklenecekler.length} Firmayı Ekle`, 'Vazgeç'
+  );
+  if (!onay) return;
+
+  eklenecekler.forEach(kaynak => {
     referans.firmaList.push({
       ad: (kaynak.ad || '').trim(),
       tur: kaynak.tur === 'Şirket' ? 'Şirket' : 'Kişi',
@@ -7523,17 +7545,10 @@ window.havuzdanTumEksikleriListemeEkle = function() {
       vergiDairesi: (kaynak.vergiDairesi || '').trim(),
       basitUsul: !!kaynak.basitUsul
     });
-    benimAnahtarlarim.add(anahtar);
-    eklenenSayisi++;
   });
 
-  if (eklenenSayisi === 0) {
-    showToast('Havuzdaki tüm firmalar zaten listenizde ekli.', 'info');
-    return;
-  }
-
   saveReferans(referans);
-  showToast(`${eklenenSayisi} firma ortak havuzdan kendi listenize eklendi!`, 'success');
+  showToast(`${eklenecekler.length} firma ortak havuzdan kendi listenize eklendi!`, 'success');
   renderPage('veri-merkezi');
 };
 
