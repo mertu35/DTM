@@ -1233,23 +1233,31 @@ function belgeYazdir(html, landscape = false, sozlesme = false, dosyaAdi = '') {
   }, 1500);
 }
 
-function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge') {
-  if (html.includes('data-hesaplama-hatasi="true"')) return false;
+function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge', returnBytesOnly = false) {
+  if (html.includes('data-hesaplama-hatasi="true"')) return Promise.resolve(false);
   // A4 @96dpi: portrait=794px(210mm), landscape=1123px(297mm)
   const pageW = landscape ? 1123 : 794;
-  const bodyPadding = landscape ? '38px 57px' : '57px 76px';
+  const bodyPadding = landscape ? '30px 42px' : '42px 58px';
 
   const container = document.createElement('div');
-  container.style.cssText = `position:fixed;left:-9999px;top:0;width:${pageW}px;`;
+  container.style.cssText = `position:fixed;left:-9999px;top:0;width:${pageW}px;background:#fff;`;
   container.innerHTML = `
-    <style>${belgeOrtakCSS()}</style>
-    <div class="pdf-content" style="font-family:Times New Roman,serif;font-size:9.5pt;color:#000;padding:${bodyPadding};width:${pageW}px;box-sizing:border-box;">
+    <style>
+      * { box-sizing: border-box; }
+      ${belgeOrtakCSS()}
+      .bilgi-tablo, .bilgi-tablo td, .bilgi-tablo th,
+      .sozlesme-sayfa-tablo, .sozlesme-sayfa-tablo > tbody > tr > td,
+      .sozlesme-sayfa-tablo > thead > tr > td, .sozlesme-sayfa-tablo > tfoot > tr > td {
+        border: none !important;
+      }
+    </style>
+    <div class="pdf-content" style="font-family:'Times New Roman',Times,serif;font-size:9.5pt;color:#000;background:#fff;padding:${bodyPadding};width:${pageW}px;box-sizing:border-box;">
       ${html}
     </div>`;
   document.body.appendChild(container);
 
-  // html2canvas border-collapse fix: inline border stillerini zorla uygula
-  container.querySelectorAll('table').forEach(t => {
+  // html2canvas border-collapse fix: sadece kenarlıklı veri tablolarına uygula
+  container.querySelectorAll('.veri-tablo').forEach(t => {
     t.style.borderCollapse = 'collapse';
     t.style.border = '1px solid #000';
     t.querySelectorAll('th, td').forEach(cell => {
@@ -1263,17 +1271,34 @@ function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge') {
     margin: 0,
     filename: dosyaAdi + '.pdf',
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+    pagebreak: { mode: ['css', 'legacy'], avoid: ['.madde', '.sozlesme-imza', 'tr'] },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
     jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' }
   };
 
-  return html2pdf()
+  const worker = html2pdf()
     .set(opts)
     .from(container.querySelector('.pdf-content'))
-    .toPdf()
+    .toPdf();
+
+  if (returnBytesOnly) {
+    return worker
+      .output('arraybuffer')
+      .then(buf => {
+        if (document.body.contains(container)) document.body.removeChild(container);
+        return new Uint8Array(buf);
+      })
+      .catch(err => {
+        if (document.body.contains(container)) document.body.removeChild(container);
+        console.error('PDF byte üretim hatası:', err);
+        return null;
+      });
+  }
+
+  return worker
     .output('blob')
     .then(blob => {
-      document.body.removeChild(container);
+      if (document.body.contains(container)) document.body.removeChild(container);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1290,4 +1315,103 @@ function belgePdfIndir(html, landscape = false, dosyaAdi = 'belge') {
       console.error('PDF hatası:', err);
       showToast('PDF oluşturulamadı: ' + (err.message || err), 'error');
     });
+}
+
+// ── Belge ID'sine göre PDF verisi (Uint8Array) üret (ZIP paketleme için) ──
+async function belgeIdindenPdfVerisiUret(belgeId, proje, referans) {
+  referans = getBelgeReferansi(proje, referans);
+  if (!belgeHesaplamaKontrol(proje, referans)) return null;
+  let html = '';
+  let landscape = false;
+  let baslik = '';
+
+  switch (belgeId) {
+    case 'dt-onay-belgesi':
+      html = renderDogrudanTeminOnayBelgesi(proje, referans);
+      baslik = 'Doğrudan Temin Onay Belgesi';
+      break;
+    case 'yaklasik-maliyet':
+      html = renderYaklasikMaliyet(proje, referans);
+      landscape = true;
+      baslik = 'Yaklaşık Maliyet Tespit Tutanağı';
+      break;
+    case 'teklif-tutanagi':
+      html = renderTeklifTutanagi(proje, referans);
+      landscape = true;
+      baslik = 'Teklif Tutanağı';
+      break;
+    case 'teknik-sartname':
+      html = renderTeknikSartname(proje, referans);
+      baslik = 'Teknik Şartname';
+      break;
+    case 'sozlesme':
+      html = renderSozlesme(proje, referans);
+      baslik = 'Sözleşme';
+      break;
+    case 'bitti-tutanagi':
+      html = renderBittiTutanagi(proje, referans);
+      baslik = 'Bitti Tutanağı';
+      break;
+    case 'muayene-kabul':
+      html = renderMuayeneKabulTutanagi(proje, referans);
+      baslik = 'Muayene ve Kabul Tutanağı';
+      break;
+    case 'hakedis-raporu':
+      html = renderHakedisRaporu(proje, referans);
+      baslik = 'Hakediş Raporu';
+      break;
+    default:
+      return null;
+  }
+
+  const guvenliProjeAdi = (proje.isAdi || 'Proje').replace(/[<>:"/\\|?*]/g, '-').substring(0, 55).trim();
+  const dosyaAdi = `${baslik} - ${guvenliProjeAdi}.pdf`;
+  const bytes = await belgePdfIndir(html, landscape, dosyaAdi.replace(/\.pdf$/i, ''), true);
+  if (!bytes || !bytes.length) return null;
+  return { dosyaAdi, bytes };
+}
+
+// ── Yüklenen görsel (JPG/PNG/WEBP) evrakları ZIP için A4 PDF'e dönüştürür ──
+async function gorselDataUrlToPdfBytes(dataUrl, baslik = '') {
+  if (!dataUrl) return null;
+  const pageW = 794;
+  const container = document.createElement('div');
+  container.style.cssText = `position:fixed;left:-9999px;top:0;width:${pageW}px;background:#fff;`;
+  container.innerHTML = `
+    <div class="pdf-img-content" style="width:${pageW}px;padding:28px;background:#fff;box-sizing:border-box;text-align:center;font-family:Arial,sans-serif">
+      ${baslik ? `<div style="font-size:11pt;font-weight:bold;color:#1e293b;margin-bottom:12px;word-break:break-word">${escHtml(baslik)}</div>` : ''}
+      <img src="${escAttr(dataUrl)}" style="max-width:100%;max-height:980px;object-fit:contain;display:block;margin:0 auto" />
+    </div>`;
+  document.body.appendChild(container);
+
+  const imgEl = container.querySelector('img');
+  if (imgEl && !imgEl.complete) {
+    await new Promise(resolve => {
+      imgEl.onload = resolve;
+      imgEl.onerror = resolve;
+      setTimeout(resolve, 1500);
+    });
+  }
+
+  const opts = {
+    margin: 0,
+    filename: 'evrak.pdf',
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  try {
+    const buf = await html2pdf()
+      .set(opts)
+      .from(container.querySelector('.pdf-img-content'))
+      .toPdf()
+      .output('arraybuffer');
+    if (document.body.contains(container)) document.body.removeChild(container);
+    return new Uint8Array(buf);
+  } catch (err) {
+    if (document.body.contains(container)) document.body.removeChild(container);
+    console.warn('Görsel PDF dönüşüm hatası:', err);
+    return null;
+  }
 }

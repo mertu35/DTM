@@ -185,8 +185,7 @@ function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
       <input type="checkbox" class="belge-indir-cb" value="${escAttr(b.id)}" data-excel="${b.excel}" data-word="${b.word}" checked
         style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
       <span style="font-size:14px;color:var(--gray-800);flex:1">${b.ad}</span>
-      ${b.excel ? '<span style="font-size:10px;background:#10b981;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">XLS</span>' : ''}
-      ${b.word ? '<span style="font-size:10px;background:#2563eb;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">DOC</span>' : ''}
+      <span style="font-size:10px;background:#ef4444;color:#fff;padding:2px 6px;border-radius:3px;font-weight:600">PDF</span>
     </label>`).join('');
 
   const overlay = document.createElement('div');
@@ -195,7 +194,7 @@ function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
   overlay.innerHTML = `
     <div class="dtm-modal" style="max-width:460px">
       <div class="dtm-modal-header">
-        <h3>&#128196; Belge ve İhale Dosyası İndir</h3>
+        <h3>&#128196; Belge ve İhale Dosyası İndir (PDF)</h3>
       </div>
       <div class="dtm-modal-body">
         <p style="margin:0 0 14px;font-size:13px;color:var(--gray-500)">İndirilecek belgeleri işaretleyin</p>
@@ -207,16 +206,14 @@ function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
         ${checkboxler}
         <div style="margin-top:14px;padding:10px 12px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:10px">
           <div style="font-size:12px;color:#5b21b6;line-height:1.35">
-            <strong>📦 Tek Tıkla İhale Dosyası (ZIP):</strong> Seçili resmi tutanakları (Excel/Word) ve yüklenen tüm proje evraklarını (Fatura, Vergi, Fotoğraf vb.) klasörlenmiş tek ZIP olarak indirir.
+            <strong>📦 Tek Tıkla İhale Dosyası (ZIP):</strong> Seçili resmi tutanakları ve yüklenen tüm proje evraklarını (Fatura, Vergi, Fotoğraf vb.) <strong>tamamı PDF formatında</strong> klasörlenmiş tek ZIP olarak indirir.
           </div>
-          <button id="dtmBelgeIndirIhaleZip" class="btn" style="background:#7c3aed;color:#fff;white-space:nowrap;flex-shrink:0;padding:8px 12px;font-size:12.5px;font-weight:700">&#128230; İhale ZIP</button>
+          <button id="dtmBelgeIndirIhaleZip" class="btn" style="background:#7c3aed;color:#fff;white-space:nowrap;flex-shrink:0;padding:8px 12px;font-size:12.5px;font-weight:700">&#128230; İhale ZIP (PDF)</button>
         </div>
       </div>
       <div class="dtm-modal-footer">
         <button id="dtmBelgeIndirIptal" class="btn btn-outline">İptal</button>
-        <button id="dtmBelgeIndirWord" class="btn" style="background:#2563eb;color:#fff" title="Sadece DOC işaretli belgeler">&#128196; Word</button>
-        <button id="dtmBelgeIndirExcel" class="btn" style="background:#10b981;color:#fff" title="Sadece XLS işaretli belgeler">&#128202; Excel</button>
-        <button id="dtmBelgeIndirOnay" class="btn btn-primary">&#128196; PDF</button>
+        <button id="dtmBelgeIndirOnay" class="btn btn-primary">&#128196; PDF İndir</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -250,31 +247,11 @@ function belgeIndirModalAc(guard, dtOnayBelgesi, onIndir) {
     overlay.remove();
     await onIndir(secilen);
   };
-
-  document.getElementById('dtmBelgeIndirExcel').onclick = () => {
-    const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')]
-      .filter(cb => cb.dataset.excel === 'true')
-      .map(cb => cb.value);
-    if (!secilen.length) { showToast('Excel desteği olan belge seçilmedi (Yaklaşık Maliyet veya Teklif Tutanağı)', 'warning'); return; }
-    overlay.remove();
-    secilen.forEach(belgeId => belgeIdindenExcelUret(belgeId, proje, referans));
-    showToast(`${secilen.length} belge Excel olarak indirildi.`, 'success');
-  };
-
-  document.getElementById('dtmBelgeIndirWord').onclick = () => {
-    const secilen = [...overlay.querySelectorAll('.belge-indir-cb:checked')]
-      .filter(cb => cb.dataset.word === 'true')
-      .map(cb => cb.value);
-    if (!secilen.length) { showToast('Word desteği olan belge seçilmedi', 'warning'); return; }
-    overlay.remove();
-    secilen.forEach(belgeId => belgeIdindenWordUret(belgeId, proje, referans));
-    showToast(`${secilen.length} belge Word olarak indirildi.`, 'success');
-  };
 }
 
-// ── Tek Tıkla İhale Dosyası (ZIP) İndir ──
-// Projenin tüm resmi tutanaklarını (Excel .xls ve Word .doc) + Dokümanlar arşivindeki
-// yüklenmiş evrakları (Fotoğraflar, Fatura, Vergi Borcu Yoktur, Diğer Belgeler)
+// ── Tek Tıkla İhale Dosyası (ZIP - Tamamı PDF) İndir ──
+// Projenin tüm resmi tutanaklarını (.pdf) + Dokümanlar arşivindeki
+// yüklenmiş evrakları (Fotoğraflar, Fatura, Vergi Borcu Yoktur, Diğer Belgeler - tamamı .pdf olarak)
 // düzenli klasör yapısıyla tek bir .zip paketi halinde indirir.
 window.ihaleDosyasiZipIndir = async function(dtOnayDahil = false, secilenBelgeIdleri = null) {
   if (!proje) {
@@ -284,7 +261,7 @@ window.ihaleDosyasiZipIndir = async function(dtOnayDahil = false, secilenBelgeId
   if (!belgeHesaplamaKontrol(proje, referans)) return;
 
   try {
-    showToast('📦 İhale dosyası (ZIP) hazırlanıyor, lütfen bekleyin...', 'info', 3500);
+    showToast('📦 İhale dosyası (PDF belgeleri) hazırlanıyor, lütfen bekleyin...', 'info', 5000);
 
     const isMalVeyaHizmet = isMalVeyaHizmetTuru(proje.isTuru);
     const sonTutanakId = isMalVeyaHizmet ? 'muayene-kabul' : 'bitti-tutanagi';
@@ -304,31 +281,25 @@ window.ihaleDosyasiZipIndir = async function(dtOnayDahil = false, secilenBelgeId
       ? secilenBelgeIdleri
       : varsayilanSiraliBelgeler;
 
-    const encoder = new TextEncoder();
     const zipGirdileri = [];
     let resmiBelgeSayisi = 0;
 
-    hedefBelgeler.forEach((belgeId, idx) => {
+    for (let idx = 0; idx < hedefBelgeler.length; idx++) {
+      const belgeId = hedefBelgeler[idx];
       const siraPrefix = String(idx + 1).padStart(2, '0');
-      let uretilen = null;
-      if (belgeId === 'yaklasik-maliyet' || belgeId === 'teklif-tutanagi') {
-        uretilen = belgeIdindenExcelUret(belgeId, proje, referans, true);
-      } else {
-        uretilen = belgeIdindenWordUret(belgeId, proje, referans, true);
-      }
-      if (uretilen && uretilen.icerik && uretilen.dosyaAdi) {
-        const bytes = encoder.encode('\ufeff' + uretilen.icerik);
-        const temizDosyaAdi = `${siraPrefix}_${uretilen.dosyaAdi}`;
+      const uretilen = await belgeIdindenPdfVerisiUret(belgeId, proje, referans);
+      if (uretilen && uretilen.bytes && uretilen.dosyaAdi) {
+        const temizDosyaAdi = `${siraPrefix}_${uretilen.dosyaAdi.replace(/\.pdf$/i, '')}.pdf`;
         zipGirdileri.push({
           ad: temizDosyaAdi,
           zipYolu: `01_Resmi_Tutanak_ve_Belgeler/${temizDosyaAdi}`,
-          bytes
+          bytes: uretilen.bytes
         });
         resmiBelgeSayisi++;
       }
-    });
+    }
 
-    // Projeye yüklenmiş ek evrakları (Dokümanlar arşivi) da ZIP'e dahil et
+    // Projeye yüklenmiş ek evrakları (Dokümanlar arşivi) da PDF olarak ZIP'e dahil et
     const aktifProjeId = currentBelgelerProjeId || currentGerceklestirmeciBelgelerProjeId || currentCloudProjeId;
     if (aktifProjeId && typeof projeDosyalariGetir === 'function') {
       try {
@@ -359,20 +330,35 @@ window.ihaleDosyasiZipIndir = async function(dtOnayDahil = false, secilenBelgeId
       try {
         const veri = await cozDokumanKaydiVerisi(kayit);
         const klasor = ekKlasorMap[kayit.kategoriKod] || '05_Diger_Belgeler';
-        let adayYol = `${klasor}/${veri.temizAd}`;
+        const isPdf = /\.pdf$/i.test(veri.temizAd) || veri.mime === 'application/pdf';
+        const isGorsel = dokumanGoruntuMu(veri.temizAd, veri.mime) || (veri.dataUrl && veri.dataUrl.startsWith('data:image/'));
+
+        let pdfBytes = null;
+        const tabanAd = veri.temizAd.replace(/\.[^.]+$/, '') || 'Evrak';
+        const pdfDosyaAdi = `${tabanAd}.pdf`;
+
+        if (isPdf) {
+          pdfBytes = veri.bytes;
+        } else if (isGorsel && typeof gorselDataUrlToPdfBytes === 'function') {
+          pdfBytes = await gorselDataUrlToPdfBytes(veri.dataUrl, tabanAd);
+        } else {
+          // Word/Excel vb. bozuk çıkmaması için ZIP'e yalnızca PDF formatındaki belgeler alınır
+          continue;
+        }
+
+        if (!pdfBytes || !pdfBytes.length) continue;
+
+        let adayYol = `${klasor}/${pdfDosyaAdi}`;
         let sayac = 2;
         while (kullanilanYollar.has(adayYol)) {
-          const noktaIdx = veri.temizAd.lastIndexOf('.');
-          const adKismi = noktaIdx > 0 ? veri.temizAd.slice(0, noktaIdx) : veri.temizAd;
-          const uzanti = noktaIdx > 0 ? veri.temizAd.slice(noktaIdx) : '';
-          adayYol = `${klasor}/${adKismi}_${sayac}${uzanti}`;
+          adayYol = `${klasor}/${tabanAd}_${sayac}.pdf`;
           sayac++;
         }
         kullanilanYollar.add(adayYol);
         zipGirdileri.push({
-          ad: veri.temizAd,
+          ad: pdfDosyaAdi,
           zipYolu: adayYol,
-          bytes: veri.bytes
+          bytes: pdfBytes
         });
         ekEvrakSayisi++;
       } catch (err) {
@@ -381,7 +367,7 @@ window.ihaleDosyasiZipIndir = async function(dtOnayDahil = false, secilenBelgeId
     }
 
     if (zipGirdileri.length === 0) {
-      showToast('İndirilecek belge oluşturulamadı.', 'warning');
+      showToast('İndirilecek PDF belgesi oluşturulamadı.', 'warning');
       return;
     }
 
@@ -394,8 +380,8 @@ window.ihaleDosyasiZipIndir = async function(dtOnayDahil = false, secilenBelgeId
 
     tetikleBlobIndirme(zipBlob, `Ihale_Dosyasi_${projeAdTemiz}.zip`);
     const detayMetin = ekEvrakSayisi > 0
-      ? `${resmiBelgeSayisi} resmi tutanak + ${ekEvrakSayisi} ek evrak`
-      : `${resmiBelgeSayisi} resmi tutanak`;
+      ? `${resmiBelgeSayisi} resmi PDF tutanak + ${ekEvrakSayisi} PDF ek evrak`
+      : `${resmiBelgeSayisi} resmi PDF tutanak`;
     showToast(`📦 İhale dosyası (${detayMetin}) ZIP olarak indirildi!`, 'success', 4500);
   } catch (e) {
     showToast('İhale ZIP oluşturma hatası: ' + (e.message || e), 'error');
@@ -6319,7 +6305,7 @@ async function renderBelgelerPage() {
         İndir
       </button>
       <button ${dtmEventAttr('click', function(event) { ihaleDosyasiZipIndir(false) })}
-        title="Tüm resmi tutanakları (Excel/Word) ve yüklenen evrakları tek bir ZIP dosyası olarak indir"
+        title="Tüm resmi tutanakları ve yüklenen evrakları tamamı PDF formatında tek bir ZIP dosyası olarak indir"
         style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(124,58,237,0.35)"
         ${dtmEventAttr('mouseover', function(event) { this.style.background='#6d28d9' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#7c3aed' })}>
         📦 İhale Dosyası (ZIP)
@@ -8764,7 +8750,7 @@ function renderGerceklestirmeciBelgelerView(main) {
         İndir
       </button>
       <button ${dtmEventAttr('click', function(event) { ihaleDosyasiZipIndir(true) })}
-        title="Tüm resmi tutanakları (D.T. Onay dahil) ve yüklenen evrakları tek bir ZIP dosyası olarak indir"
+        title="Tüm resmi tutanakları (D.T. Onay dahil) ve yüklenen evrakları tamamı PDF formatında tek bir ZIP dosyası olarak indir"
         style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(124,58,237,0.35)"
         ${dtmEventAttr('mouseover', function(event) { this.style.background='#6d28d9' })} ${dtmEventAttr('mouseout', function(event) { this.style.background='#7c3aed' })}>
         📦 İhale Dosyası (ZIP)
