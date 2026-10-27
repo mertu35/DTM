@@ -6997,6 +6997,7 @@ window.kaydetFirmaFormu = function(index) {
 let dtmFirmaHavuzuAcik = false;
 let dtmFirmaHavuzuFiltre = 'eksikler'; // 'eksikler' | 'tumu'
 let dtmFirmaHavuzuArama = '';
+let dtmFirmaHavuzuSeciliAnahtar = null;
 let dtmFirmaHavuzuYukleniyor = false;
 let dtmFirmaHavuzuIlkYuklendi = false;
 
@@ -7182,6 +7183,13 @@ window.firmaHavuzuAramaDegistir = function(deger) {
   guncelleOrtakFirmaHavuzuDOM();
 };
 
+window.toggleHavuzFirmaDetay = function(encodedAd) {
+  const anahtar = firmaAdAnahtari(decodeURIComponent(encodedAd || ''));
+  if (!anahtar) return;
+  dtmFirmaHavuzuSeciliAnahtar = (dtmFirmaHavuzuSeciliAnahtar === anahtar) ? null : anahtar;
+  guncelleOrtakFirmaHavuzuDOM();
+};
+
 window.havuzdanFirmayiListemeEkle = function(encodedAd) {
   const hedefAd = decodeURIComponent(encodedAd || '');
   const anahtar = firmaAdAnahtari(hedefAd);
@@ -7361,6 +7369,7 @@ function renderOrtakFirmaHavuzuBolumu() {
                 const anahtar = firmaAdAnahtari(f.ad);
                 const bendeVar = benimMap.get(anahtar);
                 const encodedAd = encodeURIComponent(f.ad || '');
+                const detayAcik = dtmFirmaHavuzuSeciliAnahtar === anahtar;
                 const eksikDetayVar = bendeVar && (
                   (!bendeVar.adres && f.adres) ||
                   (!bendeVar.tel && f.tel) ||
@@ -7368,43 +7377,87 @@ function renderOrtakFirmaHavuzuBolumu() {
                   (!bendeVar.faks && f.faks)
                 );
                 return `
-                  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 14px; background:var(--gray-50); border:1px solid ${bendeVar ? 'var(--gray-200)' : '#bfdbfe'}; border-radius:10px; transition:all 0.15s;">
-                    <div style="min-width:0; flex:1;">
-                      <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                        <span style="font-size:13.5px; font-weight:700; color:var(--gray-800);">${escHtml(f.ad)}</span>
-                        <span style="font-size:10.5px; padding:2px 8px; border-radius:999px; font-weight:600; background:${f.tur === 'Şirket' ? '#eef2ff' : '#fef3c7'}; color:${f.tur === 'Şirket' ? '#4338ca' : '#92400e'};">
-                          ${escHtml(f.tur || 'Kişi')}
-                        </span>
-                        ${f.basitUsul ? `<span style="font-size:10.5px; padding:2px 8px; border-radius:999px; font-weight:600; background:#dcfce7; color:#166534;">Basit Usul</span>` : ''}
+                  <div style="background:${detayAcik ? '#fff' : 'var(--gray-50)'}; border:1.5px solid ${detayAcik ? 'var(--primary)' : (bendeVar ? 'var(--gray-200)' : '#bfdbfe')}; border-radius:10px; transition:all 0.15s; overflow:hidden;">
+                    <div ${dtmEventAttr('click', function(event) { toggleHavuzFirmaDetay(encodedAd) })}
+                      style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 14px; cursor:pointer; user-select:none;"
+                      title="Firma detaylarını görüntülemek için tıklayın">
+                      <div style="min-width:0; flex:1;">
+                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                          <span style="font-size:13.5px; font-weight:700; color:${detayAcik ? 'var(--primary)' : 'var(--gray-800)'};">${escHtml(f.ad)}</span>
+                          <span style="font-size:10.5px; padding:2px 8px; border-radius:999px; font-weight:600; background:${f.tur === 'Şirket' ? '#eef2ff' : '#fef3c7'}; color:${f.tur === 'Şirket' ? '#4338ca' : '#92400e'};">
+                            ${escHtml(f.tur || 'Kişi')}
+                          </span>
+                          ${f.basitUsul ? `<span style="font-size:10.5px; padding:2px 8px; border-radius:999px; font-weight:600; background:#dcfce7; color:#166534;">Basit Usul</span>` : ''}
+                          <span style="font-size:11px; color:var(--gray-400); margin-left:2px;">${detayAcik ? '▲ Detayı Gizle' : '▼ Bilgileri Gör'}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:12px; color:var(--gray-500);">
+                          ${f.adres ? `<span title="${escAttr(f.adres)}" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:480px;">📍 ${escHtml(f.adres)}</span>` : `<span style="color:var(--gray-400);">📍 Adres belirtilmemiş</span>`}
+                          ${f.tel ? `<span>📞 ${escHtml(f.tel)}</span>` : ''}
+                        </div>
                       </div>
-                      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:12px; color:var(--gray-500);">
-                        ${f.adres ? `<span title="${escAttr(f.adres)}" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:480px;">📍 ${escHtml(f.adres)}</span>` : `<span style="color:var(--gray-400);">📍 Adres belirtilmemiş</span>`}
-                        ${f.tel ? `<span>📞 ${escHtml(f.tel)}</span>` : ''}
+                      <div style="flex-shrink:0; display:flex; align-items:center; gap:6px;">
+                        ${!bendeVar ? `
+                          <button type="button" class="btn btn-primary btn-sm"
+                            style="padding:6px 12px; font-size:12px; font-weight:600; border-radius:8px; white-space:nowrap;"
+                            ${dtmEventAttr('click', function(event) { event.stopPropagation(); havuzdanFirmayiListemeEkle(encodedAd); })}>
+                            ➕ Listeme Ekle
+                          </button>
+                        ` : eksikDetayVar ? `
+                          <button type="button" class="btn btn-outline btn-sm"
+                            style="padding:5px 10px; font-size:11.5px; font-weight:600; border-radius:8px; white-space:nowrap; background:#fff;"
+                            title="Havuzdaki adres/telefon bilgilerini kendi kaydınıza tamamlayın"
+                            ${dtmEventAttr('click', function(event) { event.stopPropagation(); havuzdanFirmayiListemeEkle(encodedAd); })}>
+                            🔄 Bilgileri Tamamla
+                          </button>
+                          <span style="font-size:11.5px; font-weight:600; color:#15803d; background:#dcfce7; padding:5px 10px; border-radius:8px; white-space:nowrap;">
+                            ✓ Listenizde
+                          </span>
+                        ` : `
+                          <span style="font-size:11.5px; font-weight:600; color:#15803d; background:#dcfce7; padding:5px 10px; border-radius:8px; white-space:nowrap;">
+                            ✓ Listenizde Ekli
+                          </span>
+                        `}
                       </div>
                     </div>
-                    <div style="flex-shrink:0; display:flex; align-items:center; gap:6px;">
-                      ${!bendeVar ? `
-                        <button type="button" class="btn btn-primary btn-sm"
-                          style="padding:6px 12px; font-size:12px; font-weight:600; border-radius:8px; white-space:nowrap;"
-                          ${dtmEventAttr('click', function(event) { havuzdanFirmayiListemeEkle(encodedAd) })}>
-                          ➕ Listeme Ekle
-                        </button>
-                      ` : eksikDetayVar ? `
-                        <button type="button" class="btn btn-outline btn-sm"
-                          style="padding:5px 10px; font-size:11.5px; font-weight:600; border-radius:8px; white-space:nowrap; background:#fff;"
-                          title="Havuzdaki adres/telefon bilgilerini kendi kaydınıza tamamlayın"
-                          ${dtmEventAttr('click', function(event) { havuzdanFirmayiListemeEkle(encodedAd) })}>
-                          🔄 Bilgileri Tamamla
-                        </button>
-                        <span style="font-size:11.5px; font-weight:600; color:#15803d; background:#dcfce7; padding:5px 10px; border-radius:8px; white-space:nowrap;">
-                          ✓ Listenizde
-                        </span>
-                      ` : `
-                        <span style="font-size:11.5px; font-weight:600; color:#15803d; background:#dcfce7; padding:5px 10px; border-radius:8px; white-space:nowrap;">
-                          ✓ Listenizde Ekli
-                        </span>
-                      `}
-                    </div>
+
+                    ${detayAcik ? `
+                      <div style="padding:12px 16px 14px; background:#f8fafc; border-top:1px solid #e2e8f0; font-size:12.5px;">
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px 16px;">
+                          <div>
+                            <div style="font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:2px;">Firma / Kişi Adı</div>
+                            <div style="font-weight:700; color:var(--gray-800);">${escHtml(f.ad || '-')}</div>
+                          </div>
+                          <div>
+                            <div style="font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:2px;">Kayıt Türü & Vergi Durumu</div>
+                            <div style="color:var(--gray-800); font-weight:600;">
+                              ${escHtml(f.tur || 'Kişi')} &middot; ${f.basitUsul ? '<span style="color:#166534;">Basit Usule Tabi (KDV Muaf)</span>' : 'Standart (KDV\'li)'}
+                            </div>
+                          </div>
+                          <div style="grid-column:1 / -1;">
+                            <div style="font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:2px;">Açık Adres</div>
+                            <div style="color:var(--gray-800);">${f.adres ? escHtml(f.adres) : '<span style="color:var(--gray-400);">Belirtilmemiş</span>'}</div>
+                          </div>
+                          <div>
+                            <div style="font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:2px;">Telefon</div>
+                            <div style="color:var(--gray-800);">${f.tel ? escHtml(f.tel) : '<span style="color:var(--gray-400);">Belirtilmemiş</span>'}</div>
+                          </div>
+                          <div>
+                            <div style="font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:2px;">Faks</div>
+                            <div style="color:var(--gray-800);">${f.faks ? escHtml(f.faks) : '<span style="color:var(--gray-400);">Belirtilmemiş</span>'}</div>
+                          </div>
+                          <div>
+                            <div style="font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:2px;">E-Posta</div>
+                            <div style="color:var(--gray-800);">${f.eposta ? escHtml(f.eposta) : '<span style="color:var(--gray-400);">Belirtilmemiş</span>'}</div>
+                          </div>
+                          ${f.tur !== 'Şirket' ? `
+                            <div>
+                              <div style="font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:2px;">Doğum Tarihi</div>
+                              <div style="color:var(--gray-800);">${f.dogumTarihi ? escHtml(f.dogumTarihi) : '<span style="color:var(--gray-400);">Belirtilmemiş</span>'}</div>
+                            </div>
+                          ` : ''}
+                        </div>
+                      </div>
+                    ` : ''}
                   </div>
                 `;
               }).join('')}
