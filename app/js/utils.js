@@ -264,3 +264,13 @@ function telefonGirdiIsle(el, event) {
   }
   el.value = ['(0) ' + r.slice(0, 3), r.slice(3, 6), r.slice(6, 8), r.slice(8, 10)].filter(Boolean).join(' ');
 }
+
+function epostaNormalize(deger) {
+  return String(deger || '').trim().toLowerCase();
+}
+
+// "ad@alan.uzantı" biçimi aranır; .com zorunlu değildir (.gov.tr, .com.tr, .org da geçerli).
+function epostaGecerliMi(deger) {
+  const e = String(deger || '').trim();
+  return !e || /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(e);
+}
