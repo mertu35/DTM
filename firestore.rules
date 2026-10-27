@@ -60,12 +60,13 @@ service cloud.firestore {
           'avatar', 'okunanDuyurular', 'silinenDuyurular', 'gorulenGeriGonderilenler', 'lastLogin',
           'lastGonderilenVisit', 'lastOnayliVisit',
           'email', 'emailVerified', 'pendingEmail', 'emailUpdatedAt'
-        ]);
+        ]) &&
+        epostaGuncellemesiGecerli(userId);
 
       // Şifre gibi hassas alanlar: sadece sahibi veya admin/superadmin okuyup yazabilir/silebilir
       match /secret/{secretId} {
         allow read, write: if request.auth != null &&
-          (request.auth.uid == userId || kullaniciYonetebilir(userId));
+          ((request.auth.uid == userId && kayitliKullanici()) || kullaniciYonetebilir(userId));
       }
     }
 
@@ -73,7 +74,7 @@ service cloud.firestore {
     match /publicUsers/{userId} {
       allow read: if request.auth != null;
       allow create, update: if request.auth != null &&
-        (request.auth.uid == userId || kullaniciYonetebilir(userId)) &&
+        ((request.auth.uid == userId && kayitliKullanici()) || kullaniciYonetebilir(userId)) &&
         request.resource.data.keys().hasOnly(['uid', 'displayName', 'role']) &&
         request.resource.data.keys().hasAll(['displayName', 'role']) &&
         request.resource.data.displayName is string &&
@@ -111,16 +112,19 @@ service cloud.firestore {
       );
 
       // Sadece yetkili kullanıcı kendi adına, taslak olarak oluşturabilir
-      allow create: if request.auth != null &&
+      allow create: if kayitliKullanici() &&
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.status == 'taslak';
 
-      allow update: if request.auth != null && (
+      allow update: if kayitliKullanici() && (
         // Admin/superadmin her alanı değiştirebilir
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
-        // Gerçekleştirmeci kendi atandığı projeyi güncelleyebilir
+        // Gerçekleştirmeci kendi atandığı projeyi güncelleyebilir (sahibini değiştiremez, arşivli projeye dokunamaz)
         (resource.data.atananGerceklestirmeciUid == request.auth.uid &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci') ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci' &&
+         resource.data.status in ['gonderildi', 'onaylandi'] &&
+         request.resource.data.userId == resource.data.userId &&
+         request.resource.data.status in ['gonderildi', 'onaylandi', 'geri_gonderildi']) ||
         // Proje sahibi: taslak veya geri_gonderildi aşamasındayken güncelleyebilir
         (
           resource.data.userId == request.auth.uid &&
@@ -134,7 +138,7 @@ service cloud.firestore {
         )
       );
 
-      allow delete: if request.auth != null && (
+      allow delete: if kayitliKullanici() && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
         (resource.data.userId == request.auth.uid && resource.data.status in ['taslak', 'geri_gonderildi'] && resource.data.get('locked', false) != true)
       );
@@ -155,7 +159,7 @@ service cloud.firestore {
     // Referans verileri (kullanıcıya özel; ortak firma havuzu için okuma tüm oturum açmış kullanıcılara açıktır)
     match /referans/{userId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if kayitliKullanici() && request.auth.uid == userId;
     }
 
     // Kurumsal Gemini AI yapılandırması (globalReferans/default'tan izole edilmiştir).
@@ -172,10 +176,14 @@ service cloud.firestore {
     match /globalReferans/{docId} {
       allow read: if docId != 'aiConfig' && request.auth != null;
       allow create, update: if docId != 'aiConfig' &&
-        request.auth != null && (
+        kayitliKullanici() && (
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'gerceklestirmeci'] ||
-          (docId == 'default' && (!resource.data.keys().hasAny(['idareList', 'mudurlukler', 'onaylayanList', 'ilceler', 'dtSinirlari']) ||
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['yukleniciList', 'updatedAt'])))
+          (docId == 'default' &&
+            (!resource.data.keys().hasAny(['idareList', 'mudurlukler', 'onaylayanList', 'ilceler', 'dtSinirlari']) ||
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['yukleniciList', 'updatedAt'])) &&
+            request.resource.data.get('yukleniciList', []) is list &&
+            request.resource.data.get('yukleniciList', []).size() >= 1 &&
+            request.resource.data.get('yukleniciList', []).size() <= 1000)
         );
       allow delete: if docId != 'aiConfig' &&
         request.auth != null &&
