@@ -7015,12 +7015,13 @@ function firmaAdresOnizlemeGuncelle(f, idOnEki) {
   if (el) el.textContent = firmaTamAdres(f) || '—';
 }
 
-// Kurumun kendi ilinde ilçe listeden seçilir; diğer illerde elle yazılır.
+// İlçe listeden seçilir; kurumun kendi ilinde yöneticinin tanımladığı ilçe listesi kullanılır.
 function firmaIlIlceAlanlari(f, list, i, idOnEki, yenidenCiz) {
   const index = String(i ?? '');
   const yerelIl = referans.sehir || 'Karaman';
-  const ilceler = Array.isArray(referans.ilceler) ? referans.ilceler : [];
-  const ilceSecimli = f.il === yerelIl && ilceler.length > 0;
+  const yerelIlceler = Array.isArray(referans.ilceler) ? referans.ilceler : [];
+  const ilceler = f.il === yerelIl && yerelIlceler.length > 0 ? yerelIlceler : (TURKIYE_ILCELERI[f.il] || []);
+  const ilceSecimli = ilceler.length > 0;
   const ilceSecenekleri = f.ilce && !ilceler.includes(f.ilce) ? [...ilceler, f.ilce] : ilceler;
   return `
     <div class="form-group"><label>İl</label><select class="ref-input" id="${idOnEki}Il" ${dtmEventAttr('change', function(event) { onFirmaFieldChange(list, index, 'il', this.value); onFirmaFieldChange(list, index, 'ilce', ''); yenidenCiz(); })}>
