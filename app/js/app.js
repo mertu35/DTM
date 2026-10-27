@@ -4033,7 +4033,10 @@ function matchOrAddFirma(firmaData) {
       if (!match.vergiDairesi && firmaData.vergiDairesi) { match.vergiDairesi = firmaData.vergiDairesi.trim(); degisti = true; }
       if (match.basitUsul === undefined && firmaData.basitUsul !== undefined) { match.basitUsul = !!firmaData.basitUsul; degisti = true; }
     }
-    if (degisti && !dtmReferansProva) saveReferans(referans);
+    if (degisti && !dtmReferansProva) {
+      saveReferans(referans);
+      if (typeof firmaHavuzaSenkronizeEt === 'function') firmaHavuzaSenkronizeEt(match);
+    }
     return { firma: match, isNew: false };
   }
 
@@ -4056,7 +4059,10 @@ function matchOrAddFirma(firmaData) {
 
   referans.firmaList.push(yeni);
   referans.firmaList.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
-  if (!dtmReferansProva) saveReferans(referans);
+  if (!dtmReferansProva) {
+    saveReferans(referans);
+    if (typeof firmaHavuzaSenkronizeEt === 'function') firmaHavuzaSenkronizeEt(yeni);
+  }
 
   return { firma: yeni, isNew: true };
 }
@@ -6567,6 +6573,9 @@ const DTM_DISIPLIN_LISTESI = [
 
 function renderVeriMerkeziPage() {
   const isSuperAdmin = currentDTMUser?.role === 'superadmin';
+  if (!dtmFirmaHavuzuIlkYuklendi && !dtmFirmaHavuzuYukleniyor) {
+    setTimeout(() => ortakFirmaHavuzunuYukle(true), 20);
+  }
 
   // Geçmişte kaydedilmiş boş/isimsiz mühendis ve personelleri otomatik temizle ve alfabetik sırala
   if (referans.muhendisList && Array.isArray(referans.muhendisList)) {
@@ -6735,6 +6744,11 @@ function renderVeriMerkeziPage() {
           </div>
           `;
         })() : ''}
+
+        <!-- ORTAK FİRMA HAVUZU (DİĞER KULLANICILARIN FİRMALARI) -->
+        <div id="ortakFirmaHavuzuContainer" style="margin-top:18px; padding-top:16px; border-top:1.5px dashed var(--gray-200);">
+          ${renderOrtakFirmaHavuzuBolumu()}
+        </div>
       </div>
     </div>
     ` : ''}
@@ -6964,12 +6978,448 @@ window.kaydetFirmaFormu = function(index) {
 
   const isSuperAdmin = currentDTMUser?.role === 'superadmin';
   saveReferans(referans);
+  const kaydedilenFirma = isNew ? referans.firmaList[dtmSeciliFirmaIndex] : f;
+  if (kaydedilenFirma) {
+    firmaHavuzaSenkronizeEt(kaydedilenFirma);
+  }
   if (isSuperAdmin) {
     saveGlobalReferans(referans);
   }
-  showToast("Firma / Kişi bilgileri başarıyla kaydedildi.", "success");
+  showToast("Firma / Kişi bilgileri başarıyla kaydedildi ve ortak havuza aktarıldı.", "success");
   renderPage('veri-merkezi');
 };
+
+// ===== ORTAK FİRMA HAVUZU (DİĞER KULLANICILARIN FİRMALARI) =====
+let dtmFirmaHavuzuAcik = false;
+let dtmFirmaHavuzuFiltre = 'eksikler'; // 'eksikler' | 'tumu'
+let dtmFirmaHavuzuArama = '';
+let dtmFirmaHavuzuYukleniyor = false;
+let dtmFirmaHavuzuIlkYuklendi = false;
+
+function firmaAdAnahtari(ad) {
+  return String(ad || '').trim().toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ');
+}
+
+function firmaHavuzaTekilBirlestir(hedefListe, kaynakFirma) {
+  if (!kaynakFirma || !kaynakFirma.ad) return false;
+  const temizAd = String(kaynakFirma.ad).trim();
+  if (!temizAd || temizAd === 'Yeni Firma' || temizAd === '(İsimsiz Firma)') return false;
+  const anahtar = firmaAdAnahtari(temizAd);
+  const mevcut = hedefListe.find(x => firmaAdAnahtari(x.ad) === anahtar);
+  if (!mevcut) {
+    hedefListe.push({
+      ad: temizAd,
+      tur: kaynakFirma.tur === 'Şirket' ? 'Şirket' : 'Kişi',
+      adres: (kaynakFirma.adres || '').trim(),
+      tel: (kaynakFirma.tel || '').trim(),
+      faks: (kaynakFirma.faks || '').trim(),
+      eposta: (kaynakFirma.eposta || '').trim(),
+      dogumTarihi: kaynakFirma.dogumTarihi || '',
+      vkn: kaynakFirma.vkn || '',
+      vergiDairesi: (kaynakFirma.vergiDairesi || '').trim(),
+      basitUsul: !!kaynakFirma.basitUsul
+    });
+    return true;
+  }
+  let degisti = false;
+  ['adres', 'tel', 'faks', 'eposta', 'dogumTarihi', 'vkn', 'vergiDairesi'].forEach(alan => {
+    if (!mevcut[alan] && kaynakFirma[alan]) {
+      mevcut[alan] = String(kaynakFirma[alan]).trim();
+      degisti = true;
+    }
+  });
+  if (mevcut.tur !== 'Şirket' && kaynakFirma.tur === 'Şirket') {
+    mevcut.tur = 'Şirket';
+    degisti = true;
+  }
+  if (!mevcut.basitUsul && kaynakFirma.basitUsul) {
+    mevcut.basitUsul = true;
+    degisti = true;
+  }
+  return degisti;
+}
+
+async function firmaHavuzaSenkronizeEt(firmaObj) {
+  if (!firmaObj || !firmaObj.ad) return;
+  try {
+    if (!Array.isArray(referans.yukleniciList)) referans.yukleniciList = [];
+    firmaHavuzaTekilBirlestir(referans.yukleniciList, firmaObj);
+    referans.yukleniciList.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
+    localStorage.setItem(REF_KEY, JSON.stringify(referans));
+
+    if (typeof db !== 'undefined' && currentDTMUser) {
+      const globalRef = db.collection('globalReferans').doc('default');
+      const snap = await globalRef.get();
+      const globalFirms = (snap.exists && Array.isArray(snap.data()?.yukleniciList)) ? [...snap.data().yukleniciList] : [];
+      const degisti = firmaHavuzaTekilBirlestir(globalFirms, firmaObj);
+      if (degisti || !snap.exists) {
+        globalFirms.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
+        await globalRef.set({
+          yukleniciList: globalFirms,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      }
+      referans.yukleniciList = globalFirms;
+      localStorage.setItem(REF_KEY, JSON.stringify(referans));
+    }
+  } catch (e) {
+    console.warn('Firma ortak havuza senkronize edilemedi:', e);
+  }
+}
+
+async function ortakFirmaHavuzunuYukle(sessiz = true) {
+  if (dtmFirmaHavuzuYukleniyor) return;
+  dtmFirmaHavuzuYukleniyor = true;
+  guncelleOrtakFirmaHavuzuDOM();
+
+  try {
+    const birlesikHavuz = [];
+    (referans.yukleniciList || []).forEach(f => firmaHavuzaTekilBirlestir(birlesikHavuz, f));
+    (referans.firmaList || []).forEach(f => firmaHavuzaTekilBirlestir(birlesikHavuz, f));
+
+    let globalFirms = [];
+    let globalChanged = false;
+
+    if (typeof db !== 'undefined' && currentDTMUser) {
+      try {
+        const globalSnap = await db.collection('globalReferans').doc('default').get();
+        if (globalSnap.exists && Array.isArray(globalSnap.data()?.yukleniciList)) {
+          globalFirms = [...globalSnap.data().yukleniciList];
+          globalFirms.forEach(f => firmaHavuzaTekilBirlestir(birlesikHavuz, f));
+        }
+      } catch (errGlobal) {
+        console.warn('Global firma havuzu okunamadı:', errGlobal);
+      }
+
+      try {
+        const usersRefSnap = await db.collection('referans').get();
+        usersRefSnap.forEach(doc => {
+          const data = doc.data();
+          if (data && Array.isArray(data.firmaList)) {
+            data.firmaList.forEach(f => {
+              if (firmaHavuzaTekilBirlestir(birlesikHavuz, f)) {
+                globalChanged = true;
+              }
+            });
+          }
+        });
+      } catch (errUsers) {
+        console.warn('Kullanıcı firma listeleri taranamadı (globalReferans kullanılıyor):', errUsers);
+      }
+
+      birlesikHavuz.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
+
+      if (globalChanged || birlesikHavuz.length > globalFirms.length) {
+        try {
+          await db.collection('globalReferans').doc('default').set({
+            yukleniciList: birlesikHavuz,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+        } catch (errWrite) {
+          console.warn('Birleşik firma havuzu buluta yazılamadı:', errWrite);
+        }
+      }
+    } else {
+      birlesikHavuz.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
+    }
+
+    referans.yukleniciList = birlesikHavuz;
+    localStorage.setItem(REF_KEY, JSON.stringify(referans));
+    dtmFirmaHavuzuIlkYuklendi = true;
+
+    if (!sessiz) {
+      showToast(`Firma Havuzu güncellendi (${birlesikHavuz.length} firma).`, 'success');
+    }
+  } catch (e) {
+    console.error('Ortak firma havuzu yükleme hatası:', e);
+    if (!sessiz) showToast('Firma havuzu yenilenirken hata oluştu.', 'error');
+  } finally {
+    dtmFirmaHavuzuYukleniyor = false;
+    guncelleOrtakFirmaHavuzuDOM();
+  }
+}
+
+function guncelleOrtakFirmaHavuzuDOM() {
+  const container = document.getElementById('ortakFirmaHavuzuContainer');
+  if (!container) return;
+  const aramaEl = document.getElementById('firmaHavuzuAramaInput');
+  const aktifMi = document.activeElement === aramaEl;
+  const cursorStart = aktifMi ? aramaEl.selectionStart : null;
+  const cursorEnd = aktifMi ? aramaEl.selectionEnd : null;
+
+  container.innerHTML = renderOrtakFirmaHavuzuBolumu();
+
+  if (aktifMi) {
+    const yeniAramaEl = document.getElementById('firmaHavuzuAramaInput');
+    if (yeniAramaEl) {
+      yeniAramaEl.focus();
+      if (cursorStart !== null && cursorEnd !== null) {
+        try { yeniAramaEl.setSelectionRange(cursorStart, cursorEnd); } catch (_) {}
+      }
+    }
+  }
+}
+
+window.toggleOrtakFirmaHavuzu = function() {
+  dtmFirmaHavuzuAcik = !dtmFirmaHavuzuAcik;
+  if (dtmFirmaHavuzuAcik && !dtmFirmaHavuzuIlkYuklendi && !dtmFirmaHavuzuYukleniyor) {
+    ortakFirmaHavuzunuYukle(true);
+  }
+  guncelleOrtakFirmaHavuzuDOM();
+};
+
+window.firmaHavuzuFiltreDegistir = function(filtre) {
+  dtmFirmaHavuzuFiltre = filtre;
+  guncelleOrtakFirmaHavuzuDOM();
+};
+
+window.firmaHavuzuAramaDegistir = function(deger) {
+  dtmFirmaHavuzuArama = deger || '';
+  guncelleOrtakFirmaHavuzuDOM();
+};
+
+window.havuzdanFirmayiListemeEkle = function(encodedAd) {
+  const hedefAd = decodeURIComponent(encodedAd || '');
+  const anahtar = firmaAdAnahtari(hedefAd);
+  const havuz = Array.isArray(referans.yukleniciList) ? referans.yukleniciList : [];
+  const kaynak = havuz.find(f => firmaAdAnahtari(f.ad) === anahtar);
+  if (!kaynak) {
+    showToast('Firma havuzda bulunamadı.', 'error');
+    return;
+  }
+
+  if (!Array.isArray(referans.firmaList)) referans.firmaList = [];
+  const mevcut = referans.firmaList.find(f => firmaAdAnahtari(f.ad) === anahtar);
+
+  if (!mevcut) {
+    referans.firmaList.push({
+      ad: (kaynak.ad || '').trim(),
+      tur: kaynak.tur === 'Şirket' ? 'Şirket' : 'Kişi',
+      adres: (kaynak.adres || '').trim(),
+      tel: (kaynak.tel || '').trim(),
+      faks: (kaynak.faks || '').trim(),
+      eposta: (kaynak.eposta || '').trim(),
+      dogumTarihi: kaynak.dogumTarihi || '',
+      vkn: kaynak.vkn || '',
+      vergiDairesi: (kaynak.vergiDairesi || '').trim(),
+      basitUsul: !!kaynak.basitUsul
+    });
+    saveReferans(referans);
+    showToast(`"${kaynak.ad}" firmanız kendi listenize eklendi!`, 'success');
+    renderPage('veri-merkezi');
+  } else {
+    let guncellendi = false;
+    ['adres', 'tel', 'faks', 'eposta', 'dogumTarihi', 'vkn', 'vergiDairesi'].forEach(alan => {
+      if (!mevcut[alan] && kaynak[alan]) {
+        mevcut[alan] = String(kaynak[alan]).trim();
+        guncellendi = true;
+      }
+    });
+    if (guncellendi) {
+      saveReferans(referans);
+      showToast(`"${kaynak.ad}" firmasının eksik bilgileri havuzdan tamamlandı.`, 'success');
+      renderPage('veri-merkezi');
+    } else {
+      showToast('Bu firma zaten listenizde mevcut.', 'info');
+    }
+  }
+};
+
+window.havuzdanTumEksikleriListemeEkle = function() {
+  const havuz = Array.isArray(referans.yukleniciList) ? referans.yukleniciList : [];
+  if (!Array.isArray(referans.firmaList)) referans.firmaList = [];
+  const benimAnahtarlarim = new Set(referans.firmaList.map(f => firmaAdAnahtari(f.ad)));
+
+  let eklenenSayisi = 0;
+  havuz.forEach(kaynak => {
+    const anahtar = firmaAdAnahtari(kaynak.ad);
+    if (!anahtar || benimAnahtarlarim.has(anahtar)) return;
+    referans.firmaList.push({
+      ad: (kaynak.ad || '').trim(),
+      tur: kaynak.tur === 'Şirket' ? 'Şirket' : 'Kişi',
+      adres: (kaynak.adres || '').trim(),
+      tel: (kaynak.tel || '').trim(),
+      faks: (kaynak.faks || '').trim(),
+      eposta: (kaynak.eposta || '').trim(),
+      dogumTarihi: kaynak.dogumTarihi || '',
+      vkn: kaynak.vkn || '',
+      vergiDairesi: (kaynak.vergiDairesi || '').trim(),
+      basitUsul: !!kaynak.basitUsul
+    });
+    benimAnahtarlarim.add(anahtar);
+    eklenenSayisi++;
+  });
+
+  if (eklenenSayisi === 0) {
+    showToast('Havuzdaki tüm firmalar zaten listenizde ekli.', 'info');
+    return;
+  }
+
+  saveReferans(referans);
+  showToast(`${eklenenSayisi} firma ortak havuzdan kendi listenize eklendi!`, 'success');
+  renderPage('veri-merkezi');
+};
+
+function renderOrtakFirmaHavuzuBolumu() {
+  const havuz = Array.isArray(referans.yukleniciList)
+    ? referans.yukleniciList.filter(f => f && f.ad && f.ad.trim() && f.ad.trim() !== 'Yeni Firma' && f.ad.trim() !== '(İsimsiz Firma)')
+    : [];
+  const benimFirmalarim = Array.isArray(referans.firmaList) ? referans.firmaList : [];
+  const benimMap = new Map();
+  benimFirmalarim.forEach(f => {
+    if (f && f.ad) benimMap.set(firmaAdAnahtari(f.ad), f);
+  });
+
+  const eksikFirmalar = havuz.filter(f => !benimMap.has(firmaAdAnahtari(f.ad)));
+  const aktifFiltre = (dtmFirmaHavuzuFiltre === 'eksikler' && eksikFirmalar.length === 0 && havuz.length > 0)
+    ? 'tumu'
+    : dtmFirmaHavuzuFiltre;
+
+  const q = dtmFirmaHavuzuArama.trim().toLocaleLowerCase('tr-TR');
+  const bazListe = aktifFiltre === 'eksikler' ? eksikFirmalar : havuz;
+  const filtrelenmis = q
+    ? bazListe.filter(f =>
+        String(f.ad || '').toLocaleLowerCase('tr-TR').includes(q) ||
+        String(f.adres || '').toLocaleLowerCase('tr-TR').includes(q) ||
+        String(f.tel || '').toLocaleLowerCase('tr-TR').includes(q) ||
+        String(f.tur || '').toLocaleLowerCase('tr-TR').includes(q)
+      )
+    : bazListe;
+
+  return `
+    <div style="background:linear-gradient(180deg,#f8fafc 0%,#f1f5f9 100%); border:1.5px solid #cbd5e1; border-radius:12px; overflow:hidden;">
+      <!-- Üst Başlık / Aç-Kapa Barı -->
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 16px; background:#fff; border-bottom:${dtmFirmaHavuzuAcik ? '1px solid #e2e8f0' : 'none'}; cursor:pointer; flex-wrap:wrap;" ${dtmEventAttr('click', function(event) { toggleOrtakFirmaHavuzu() })}>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span style="width:32px; height:32px; border-radius:8px; background:#eff6ff; color:#1d4ed8; display:inline-flex; align-items:center; justify-content:center; font-size:16px; font-weight:700;">🌐</span>
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="font-size:13.5px; font-weight:700; color:var(--gray-800);">Firma Havuzu (Diğer Kullanıcıların Firmaları)</span>
+              <span style="font-size:11px; background:#dbeafe; color:#1e40af; padding:2px 8px; border-radius:999px; font-weight:700;">Toplam ${havuz.length} Firma</span>
+              ${eksikFirmalar.length > 0 ? `
+                <span style="font-size:11px; background:#dcfce7; color:#166534; padding:2px 8px; border-radius:999px; font-weight:700;">+${eksikFirmalar.length} Listenizde Yok</span>
+              ` : `
+                <span style="font-size:11px; background:#f1f5f9; color:#475569; padding:2px 8px; border-radius:999px; font-weight:600;">✓ Tümü Listenizde Ekli</span>
+              `}
+            </div>
+            <div style="font-size:12px; color:var(--gray-500); margin-top:2px;">
+              Diğer personellerin eklediği firmaları görüntüleyin ve tek tıkla kendi firma listenize dahil edin.
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:12px; font-weight:600; color:var(--primary); background:#eff6ff; padding:5px 10px; border-radius:7px; border:1px solid #bfdbfe;">
+            ${dtmFirmaHavuzuAcik ? 'Havuzu Gizle ▲' : 'Havuzu Göster ▼'}
+          </span>
+        </div>
+      </div>
+
+      ${dtmFirmaHavuzuAcik ? `
+        <div style="padding:14px 16px;">
+          <!-- Filtre Sekmeleri, Arama ve Aksiyonlar -->
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+            <div style="display:inline-flex; background:#e2e8f0; padding:3px; border-radius:8px; gap:3px;">
+              <button type="button" ${dtmEventAttr('click', function(event) { firmaHavuzuFiltreDegistir('eksikler') })}
+                style="border:none; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; background:${aktifFiltre === 'eksikler' ? '#fff' : 'transparent'}; color:${aktifFiltre === 'eksikler' ? 'var(--primary)' : 'var(--gray-600)'}; box-shadow:${aktifFiltre === 'eksikler' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'};">
+                ✨ Listemde Olmayanlar (${eksikFirmalar.length})
+              </button>
+              <button type="button" ${dtmEventAttr('click', function(event) { firmaHavuzuFiltreDegistir('tumu') })}
+                style="border:none; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; background:${aktifFiltre === 'tumu' ? '#fff' : 'transparent'}; color:${aktifFiltre === 'tumu' ? 'var(--primary)' : 'var(--gray-600)'}; box-shadow:${aktifFiltre === 'tumu' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'};">
+                📋 Tüm Havuz (${havuz.length})
+              </button>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:220px; justify-content:flex-end; flex-wrap:wrap;">
+              <input type="text" id="firmaHavuzuAramaInput" class="ref-input"
+                value="${escAttr(dtmFirmaHavuzuArama)}"
+                placeholder="🔍 Havuzda firma adı, adres veya telefon ara..."
+                style="flex:1; min-width:200px; max-width:320px; height:34px; font-size:12.5px; padding:0 10px; border-radius:7px; background:#fff;"
+                ${dtmEventAttr('input', function(event) { firmaHavuzuAramaDegistir(this.value) })}>
+              ${eksikFirmalar.length > 0 ? `
+                <button type="button" class="btn btn-primary btn-sm"
+                  style="height:34px; padding:0 12px; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:5px; white-space:nowrap;"
+                  ${dtmEventAttr('click', function(event) { havuzdanTumEksikleriListemeEkle() })}>
+                  ➕ Tüm Eksikleri Ekle (${eksikFirmalar.length})
+                </button>
+              ` : ''}
+              <button type="button" class="btn btn-outline btn-sm"
+                style="height:34px; padding:0 10px; font-size:12px; background:#fff; white-space:nowrap;"
+                title="Diğer kullanıcıların eklediği son firmaları buluttan çek"
+                ${dtmEventAttr('click', function(event) { ortakFirmaHavuzunuYukle(false) })}>
+                ${dtmFirmaHavuzuYukleniyor ? '⏳ Yenileniyor...' : '🔄 Yenile'}
+              </button>
+            </div>
+          </div>
+
+          <!-- Havuz Firma Listesi -->
+          ${dtmFirmaHavuzuYukleniyor && havuz.length === 0 ? `
+            <div style="text-align:center; padding:24px; color:var(--gray-500); font-size:13px; background:#fff; border-radius:8px; border:1px solid #e2e8f0;">
+              ⏳ Ortak firma havuzu senkronize ediliyor...
+            </div>
+          ` : filtrelenmis.length === 0 ? `
+            <div style="text-align:center; padding:22px 16px; color:var(--gray-500); font-size:13px; background:#fff; border-radius:8px; border:1px dashed #cbd5e1;">
+              ${q ? `"<strong>${escHtml(dtmFirmaHavuzuArama)}</strong>" aramasına uygun firma bulunamadı.` : (aktifFiltre === 'eksikler' ? '🎉 Harika! Ortak havuzdaki tüm firmalar zaten kendi listenizde ekli.' : 'Ortak havuzda henüz kayıtlı firma bulunmuyor.')}
+            </div>
+          ` : `
+            <div style="max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:2px;">
+              ${filtrelenmis.map(f => {
+                const anahtar = firmaAdAnahtari(f.ad);
+                const bendeVar = benimMap.get(anahtar);
+                const encodedAd = encodeURIComponent(f.ad || '');
+                const eksikDetayVar = bendeVar && (
+                  (!bendeVar.adres && f.adres) ||
+                  (!bendeVar.tel && f.tel) ||
+                  (!bendeVar.eposta && f.eposta) ||
+                  (!bendeVar.faks && f.faks)
+                );
+                return `
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; background:#fff; border:1px solid ${bendeVar ? '#e2e8f0' : '#bfdbfe'}; border-radius:8px; transition:all 0.15s;">
+                    <div style="min-width:0; flex:1;">
+                      <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                        <span style="font-size:13px; font-weight:700; color:var(--gray-800);">${escHtml(f.ad)}</span>
+                        <span style="font-size:10.5px; padding:1px 7px; border-radius:999px; font-weight:600; background:${f.tur === 'Şirket' ? '#eef2ff' : '#fef3c7'}; color:${f.tur === 'Şirket' ? '#4338ca' : '#92400e'};">
+                          ${escHtml(f.tur || 'Kişi')}
+                        </span>
+                        ${f.basitUsul ? `<span style="font-size:10.5px; padding:1px 7px; border-radius:999px; font-weight:600; background:#dcfce7; color:#166534;">Basit Usul</span>` : ''}
+                      </div>
+                      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:11.5px; color:var(--gray-500);">
+                        ${f.adres ? `<span title="${escAttr(f.adres)}" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:440px;">📍 ${escHtml(f.adres)}</span>` : `<span style="color:var(--gray-400);">📍 Adres belirtilmemiş</span>`}
+                        ${f.tel ? `<span>📞 ${escHtml(f.tel)}</span>` : ''}
+                      </div>
+                    </div>
+                    <div style="flex-shrink:0; display:flex; align-items:center; gap:6px;">
+                      ${!bendeVar ? `
+                        <button type="button" class="btn btn-primary btn-sm"
+                          style="padding:5px 11px; font-size:12px; font-weight:600; border-radius:7px; white-space:nowrap;"
+                          ${dtmEventAttr('click', function(event) { havuzdanFirmayiListemeEkle(encodedAd) })}>
+                          ➕ Listeme Ekle
+                        </button>
+                      ` : eksikDetayVar ? `
+                        <button type="button" class="btn btn-outline btn-sm"
+                          style="padding:4px 10px; font-size:11.5px; font-weight:600; border-radius:7px; white-space:nowrap;"
+                          title="Havuzdaki adres/telefon bilgilerini kendi kaydınıza tamamlayın"
+                          ${dtmEventAttr('click', function(event) { havuzdanFirmayiListemeEkle(encodedAd) })}>
+                          🔄 Bilgileri Tamamla
+                        </button>
+                        <span style="font-size:11.5px; font-weight:600; color:#15803d; background:#dcfce7; padding:4px 9px; border-radius:7px; white-space:nowrap;">
+                          ✓ Listenizde
+                        </span>
+                      ` : `
+                        <span style="font-size:11.5px; font-weight:600; color:#15803d; background:#dcfce7; padding:4px 9px; border-radius:7px; white-space:nowrap;">
+                          ✓ Listenizde Ekli
+                        </span>
+                      `}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
 
 function onRefDelete(list, index) {
   referans[list].splice(index, 1);

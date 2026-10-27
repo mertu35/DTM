@@ -257,10 +257,10 @@ service cloud.firestore {
 
     }
 
-    // Referans verileri (kullanıcıya özel)
+    // Referans verileri (kullanıcıya özel; ortak firma havuzu için okuma tüm kayıtlı kullanıcılara açıktır)
     match /referans/{userId} {
-      allow read, write: if kayitliKullanici() && request.auth.uid == userId;
-      allow read: if kayitliKullanici() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+      allow read: if kayitliKullanici();
+      allow write: if kayitliKullanici() && request.auth.uid == userId;
     }
 
     // Kurumsal Gemini AI yapılandırması (globalReferans/default'tan izole edilmiştir).
@@ -275,15 +275,18 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
 
-    // Global referans verileri (idare, müdürlük, amir, ilçe, yüklenici havuzu).
+    // Global referans verileri (idare, müdürlük, amir, ilçe, yüklenici/firma havuzu).
     // API anahtarı bu dokümanlarda kesinlikle tutulamaz.
     match /globalReferans/{docId} {
       allow read: if docId != 'aiConfig' && kayitliKullanici();
       allow create, update: if docId != 'aiConfig' &&
         kayitliKullanici() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'gerceklestirmeci'] &&
         !('geminiApiKey' in request.resource.data) &&
-        !('geminiModel' in request.resource.data);
+        !('geminiModel' in request.resource.data) && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'gerceklestirmeci'] ||
+          (docId == 'default' && (!resource.data.keys().hasAny(['idareList', 'mudurlukler', 'onaylayanList', 'ilceler', 'dtSinirlari']) ||
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['yukleniciList', 'updatedAt'])))
+        );
       allow delete: if docId != 'aiConfig' &&
         kayitliKullanici() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
