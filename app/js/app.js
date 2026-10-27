@@ -7236,7 +7236,6 @@ async function firmaHavuzaSenkronizeEt(firmaObj) {
     if (!Array.isArray(referans.yukleniciList)) referans.yukleniciList = [];
     firmaHavuzaTekilBirlestir(referans.yukleniciList, firmaObj);
     referans.yukleniciList = tekillestirFirmaHavuzuListesi(referans.yukleniciList);
-    localStorage.setItem(REF_KEY, JSON.stringify(referans));
 
     if (typeof db !== 'undefined' && currentDTMUser) {
       const globalRef = db.collection('globalReferans').doc('default');
@@ -7252,7 +7251,6 @@ async function firmaHavuzaSenkronizeEt(firmaObj) {
         }, { merge: true });
       }
       referans.yukleniciList = globalFirms;
-      localStorage.setItem(REF_KEY, JSON.stringify(referans));
     }
   } catch (e) {
     console.warn('Firma ortak havuza senkronize edilemedi:', e);
@@ -7316,7 +7314,11 @@ async function ortakFirmaHavuzunuYukle(sessiz = true) {
     }
 
     referans.yukleniciList = birlesikHavuz;
-    localStorage.setItem(REF_KEY, JSON.stringify(referans));
+    try {
+      const mevcutGlobal = JSON.parse(localStorage.getItem(GLOBAL_REF_KEY) || '{}');
+      mevcutGlobal.yukleniciList = birlesikHavuz;
+      localStorage.setItem(GLOBAL_REF_KEY, JSON.stringify(mevcutGlobal));
+    } catch (_) {}
     dtmFirmaHavuzuIlkYuklendi = true;
 
     if (!sessiz) {
