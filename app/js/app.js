@@ -7072,24 +7072,114 @@ window.kaydetFirmaFormu = function(index) {
 let dtmFirmaHavuzuAcik = true;
 let dtmFirmaHavuzuFiltre = 'eksikler'; // 'eksikler' | 'tumu'
 let dtmFirmaHavuzuArama = '';
+let dtmFirmaHavuzuSayfa = 1;
 let dtmFirmaHavuzuSeciliAnahtar = null;
 let dtmFirmaHavuzuYukleniyor = false;
 let dtmFirmaHavuzuIlkYuklendi = false;
 
+function firmaGecersizTestKaydiMi(ad) {
+  const ham = String(ad || '').trim();
+  if (!ham || ham.length < 3) return true;
+  const kucuk = ham.toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ');
+  if (['yeni firma', '(isimsiz firma)', '(i̇simsiz firma)', 'test', 'deneme', 'firma', 'ahmet ahmet'].includes(kucuk)) return true;
+  const kelimeler = kucuk.split(' ').filter(Boolean);
+  if (kelimeler.length === 2 && kelimeler[0] === kelimeler[1]) return true;
+  return false;
+}
+
 function firmaAdAnahtari(ad) {
-  return String(ad || '').trim().toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ');
+  const ham = String(ad || '').trim();
+  if (firmaGecersizTestKaydiMi(ham)) return '';
+  const temiz = ham
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's')
+    .replace(/ı/g, 'i').replace(/i̇/g, 'i').replace(/ö/g, 'o').replace(/ç/g, 'c')
+    .replace(/\bsezen\s+su\b/g, 'sezensu')
+    .replace(/\b(elektik|elektirk|elektr)\b/g, 'elektrik')
+    .replace(/\botoamsyon\b/g, 'otomasyon')
+    .replace(/\bsihhi\b/g, 'sihhi')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!temiz) return '';
+  const hamKelimeler = temiz.split(' ').filter(Boolean);
+
+  const kisaltmaHaritasi = {
+    muh: 'muhendislik',
+    mut: 'muteahhitlik',
+    sis: 'sistemleri',
+    malz: 'malzemeleri',
+    kal: 'kalorifer',
+    mak: 'makina',
+    asan: 'asansor',
+    tes: 'tesisat',
+    en: 'enerji',
+    teks: 'tekstil',
+    ins: 'insaat'
+  };
+
+  const sirketBelirtecleri = new Set([
+    'ltd', 'limited', 'sti', 'sirketi', 'as', 'anonim', 'san', 'sanayi', 'sanayii',
+    'tic', 'ticaret', 'ins', 'insaat', 'muh', 'muhendislik', 'yapi', 'enerji',
+    'tesisat', 'otomasyon', 'bilgisayar', 'telekom', 'telekomunikasyon', 'motor', 'musavirlik'
+  ]);
+  const sirketMi = hamKelimeler.some(k => sirketBelirtecleri.has(k)) || hamKelimeler[0] === 'gultes';
+
+  const dolguKelimeler = new Set([
+    've', 'san', 'sanayi', 'sanayii', 'tic', 'ticaret', 'ltd', 'limited',
+    'sti', 'sirketi', 'as', 'anonim', 'ins', 'insaat', 'taah', 'taahhut',
+    'ith', 'ihr', 'paz', 'pazarlama'
+  ]);
+
+  const ozelKelimeler = hamKelimeler
+    .map(k => kisaltmaHaritasi[k] || k)
+    .filter(k => !dolguKelimeler.has(k));
+
+  if (ozelKelimeler.length === 0) return temiz;
+  if (ozelKelimeler[0] === 'gultes') return 'gultes yapi';
+  if (sirketMi) {
+    if (ozelKelimeler[0] === 'karaman' && ozelKelimeler.length >= 3) {
+      return ozelKelimeler.slice(0, 3).join(' ');
+    }
+    if (ozelKelimeler.length >= 2) {
+      return ozelKelimeler.slice(0, 2).join(' ');
+    }
+  }
+  return ozelKelimeler.join(' ');
+}
+
+function firmaAdiKalitePuani(ad) {
+  const s = String(ad || '').trim();
+  if (!s) return 0;
+  let puan = Math.min(s.length, 85);
+  // Yazım hatası içeren kayıtların puanını düşür
+  if (/elektik|elektirk|otoamsyon|sıhhı/i.test(s)) puan -= 30;
+  // Tamamı BÜYÜK HARF yerine Baş Harfleri Büyük (Title Case) olan düzgün yazımı tercih et
+  const harfler = s.replace(/[^a-zA-ZçğıöşüÇĞİÖŞÜ]/g, '');
+  const buyukHarfler = s.replace(/[^A-ZÇĞİÖŞÜ]/g, '');
+  if (harfler.length > 10 && buyukHarfler.length < harfler.length * 0.85) {
+    puan += 15;
+  }
+  // Çok kısa eksik şirket isimlerinin puanını düşür
+  if (s.split(/\s+/).length <= 2 && /^gültes/i.test(s)) puan -= 40;
+  return puan;
 }
 
 function firmaHavuzaTekilBirlestir(hedefListe, kaynakFirma) {
   if (!kaynakFirma || !kaynakFirma.ad) return false;
   const temizAd = String(kaynakFirma.ad).trim();
-  if (!temizAd || temizAd === 'Yeni Firma' || temizAd === '(İsimsiz Firma)') return false;
   const anahtar = firmaAdAnahtari(temizAd);
+  if (!anahtar) return false;
+
   const mevcut = hedefListe.find(x => firmaAdAnahtari(x.ad) === anahtar);
+  const sirketIpucu = /\b(ltd|şti|a\.?ş|san|tic|mühendislik|inşaat|enerji|otomasyon|tesisat|yapı)\b/i.test(temizAd);
+  const kaynakTur = (kaynakFirma.tur === 'Şirket' || sirketIpucu) ? 'Şirket' : 'Kişi';
+
   if (!mevcut) {
     hedefListe.push({
       ad: temizAd,
-      tur: kaynakFirma.tur === 'Şirket' ? 'Şirket' : 'Kişi',
+      tur: kaynakTur,
       adres: (kaynakFirma.adres || '').trim(),
       tel: (kaynakFirma.tel || '').trim(),
       faks: (kaynakFirma.faks || '').trim(),
@@ -7101,14 +7191,28 @@ function firmaHavuzaTekilBirlestir(hedefListe, kaynakFirma) {
     });
     return true;
   }
+
   let degisti = false;
-  ['adres', 'tel', 'faks', 'eposta', 'dogumTarihi', 'vkn', 'vergiDairesi'].forEach(alan => {
+  if (firmaAdiKalitePuani(temizAd) > firmaAdiKalitePuani(mevcut.ad)) {
+    mevcut.ad = temizAd;
+    degisti = true;
+  }
+
+  // Adres sadece "Karaman" gibi tek kelimeyse ve yeni kayıtta açık adres varsa güncelle
+  const mevcutAdres = (mevcut.adres || '').trim();
+  const yeniAdres = (kaynakFirma.adres || '').trim();
+  if (yeniAdres && (!mevcutAdres || (mevcutAdres.length <= 10 && yeniAdres.length > mevcutAdres.length))) {
+    mevcut.adres = yeniAdres;
+    degisti = true;
+  }
+
+  ['tel', 'faks', 'eposta', 'dogumTarihi', 'vkn', 'vergiDairesi'].forEach(alan => {
     if (!mevcut[alan] && kaynakFirma[alan]) {
       mevcut[alan] = String(kaynakFirma[alan]).trim();
       degisti = true;
     }
   });
-  if (mevcut.tur !== 'Şirket' && kaynakFirma.tur === 'Şirket') {
+  if (mevcut.tur !== 'Şirket' && kaynakTur === 'Şirket') {
     mevcut.tur = 'Şirket';
     degisti = true;
   }
@@ -7119,20 +7223,28 @@ function firmaHavuzaTekilBirlestir(hedefListe, kaynakFirma) {
   return degisti;
 }
 
+function tekillestirFirmaHavuzuListesi(liste) {
+  const sonuc = [];
+  (Array.isArray(liste) ? liste : []).forEach(f => firmaHavuzaTekilBirlestir(sonuc, f));
+  sonuc.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
+  return sonuc;
+}
+
 async function firmaHavuzaSenkronizeEt(firmaObj) {
   if (!firmaObj || !firmaObj.ad) return;
   try {
     if (!Array.isArray(referans.yukleniciList)) referans.yukleniciList = [];
     firmaHavuzaTekilBirlestir(referans.yukleniciList, firmaObj);
-    referans.yukleniciList.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
+    referans.yukleniciList = tekillestirFirmaHavuzuListesi(referans.yukleniciList);
     localStorage.setItem(REF_KEY, JSON.stringify(referans));
 
     if (typeof db !== 'undefined' && currentDTMUser) {
       const globalRef = db.collection('globalReferans').doc('default');
       const snap = await globalRef.get();
-      const globalFirms = (snap.exists && Array.isArray(snap.data()?.yukleniciList)) ? [...snap.data().yukleniciList] : [];
+      const hamGlobal = (snap.exists && Array.isArray(snap.data()?.yukleniciList)) ? [...snap.data().yukleniciList] : [];
+      const globalFirms = tekillestirFirmaHavuzuListesi(hamGlobal);
       const degisti = firmaHavuzaTekilBirlestir(globalFirms, firmaObj);
-      if (degisti || !snap.exists) {
+      if (degisti || !snap.exists || globalFirms.length !== hamGlobal.length) {
         globalFirms.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
         await globalRef.set({
           yukleniciList: globalFirms,
@@ -7189,7 +7301,7 @@ async function ortakFirmaHavuzunuYukle(sessiz = true) {
 
       birlesikHavuz.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
 
-      if (globalChanged || birlesikHavuz.length > globalFirms.length) {
+      if (globalChanged || birlesikHavuz.length !== globalFirms.length) {
         try {
           await db.collection('globalReferans').doc('default').set({
             yukleniciList: birlesikHavuz,
@@ -7223,18 +7335,11 @@ function guncelleOrtakFirmaHavuzuDOM() {
   const container = document.getElementById('ortakFirmaHavuzuContainer');
   if (!container) return;
   const aramaEl = document.getElementById('firmaHavuzuAramaInput');
-  const scrollEl = document.getElementById('firmaHavuzuScrollList');
-  const oncekiScrollTop = scrollEl ? scrollEl.scrollTop : 0;
   const aktifMi = document.activeElement === aramaEl;
   const cursorStart = aktifMi ? aramaEl.selectionStart : null;
   const cursorEnd = aktifMi ? aramaEl.selectionEnd : null;
 
   container.innerHTML = renderOrtakFirmaHavuzuBolumu();
-
-  const yeniScrollEl = document.getElementById('firmaHavuzuScrollList');
-  if (yeniScrollEl && oncekiScrollTop > 0) {
-    yeniScrollEl.scrollTop = oncekiScrollTop;
-  }
 
   if (aktifMi) {
     const yeniAramaEl = document.getElementById('firmaHavuzuAramaInput');
@@ -7257,11 +7362,13 @@ window.toggleOrtakFirmaHavuzu = function() {
 
 window.firmaHavuzuFiltreDegistir = function(filtre) {
   dtmFirmaHavuzuFiltre = filtre;
+  dtmFirmaHavuzuSayfa = 1;
   guncelleOrtakFirmaHavuzuDOM();
 };
 
 window.firmaHavuzuAramaDegistir = function(deger) {
   dtmFirmaHavuzuArama = deger || '';
+  dtmFirmaHavuzuSayfa = 1;
   guncelleOrtakFirmaHavuzuDOM();
 };
 
@@ -7275,7 +7382,7 @@ window.toggleHavuzFirmaDetay = function(encodedAd) {
 window.havuzdanFirmayiListemeEkle = function(encodedAd) {
   const hedefAd = decodeURIComponent(encodedAd || '');
   const anahtar = firmaAdAnahtari(hedefAd);
-  const havuz = Array.isArray(referans.yukleniciList) ? referans.yukleniciList : [];
+  const havuz = tekillestirFirmaHavuzuListesi(referans.yukleniciList);
   const kaynak = havuz.find(f => firmaAdAnahtari(f.ad) === anahtar);
   if (!kaynak) {
     showToast('Firma havuzda bulunamadı.', 'error');
@@ -7320,9 +7427,9 @@ window.havuzdanFirmayiListemeEkle = function(encodedAd) {
 };
 
 window.havuzdanTumEksikleriListemeEkle = function() {
-  const havuz = Array.isArray(referans.yukleniciList) ? referans.yukleniciList : [];
+  const havuz = tekillestirFirmaHavuzuListesi(referans.yukleniciList);
   if (!Array.isArray(referans.firmaList)) referans.firmaList = [];
-  const benimAnahtarlarim = new Set(referans.firmaList.map(f => firmaAdAnahtari(f.ad)));
+  const benimAnahtarlarim = new Set(referans.firmaList.map(f => firmaAdAnahtari(f.ad)).filter(Boolean));
 
   let eklenenSayisi = 0;
   havuz.forEach(kaynak => {
@@ -7355,13 +7462,14 @@ window.havuzdanTumEksikleriListemeEkle = function() {
 };
 
 function renderOrtakFirmaHavuzuBolumu() {
-  const havuz = Array.isArray(referans.yukleniciList)
-    ? referans.yukleniciList.filter(f => f && f.ad && f.ad.trim() && f.ad.trim() !== 'Yeni Firma' && f.ad.trim() !== '(İsimsiz Firma)')
-    : [];
+  const havuz = tekillestirFirmaHavuzuListesi(referans.yukleniciList);
   const benimFirmalarim = Array.isArray(referans.firmaList) ? referans.firmaList : [];
   const benimMap = new Map();
   benimFirmalarim.forEach(f => {
-    if (f && f.ad) benimMap.set(firmaAdAnahtari(f.ad), f);
+    if (f && f.ad) {
+      const k = firmaAdAnahtari(f.ad);
+      if (k) benimMap.set(k, f);
+    }
   });
 
   const eksikFirmalar = havuz.filter(f => !benimMap.has(firmaAdAnahtari(f.ad)));
@@ -7379,6 +7487,11 @@ function renderOrtakFirmaHavuzuBolumu() {
         String(f.tur || '').toLocaleLowerCase('tr-TR').includes(q)
       )
     : bazListe;
+
+  const toplamSayfa = Math.max(1, Math.ceil(filtrelenmis.length / PROJE_SAYFA_BOYUTU));
+  if (dtmFirmaHavuzuSayfa > toplamSayfa) dtmFirmaHavuzuSayfa = toplamSayfa;
+  if (dtmFirmaHavuzuSayfa < 1) dtmFirmaHavuzuSayfa = 1;
+  const sayfaFirmalari = filtrelenmis.slice((dtmFirmaHavuzuSayfa - 1) * PROJE_SAYFA_BOYUTU, dtmFirmaHavuzuSayfa * PROJE_SAYFA_BOYUTU);
 
   return `
     <div class="card">
@@ -7446,8 +7559,8 @@ function renderOrtakFirmaHavuzuBolumu() {
               ${q ? `"<strong>${escHtml(dtmFirmaHavuzuArama)}</strong>" aramasına uygun firma bulunamadı.` : (aktifFiltre === 'eksikler' ? '🎉 Harika! Ortak havuzdaki tüm firmalar zaten kendi listenizde ekli.' : 'Ortak havuzda henüz kayıtlı firma bulunmuyor.')}
             </div>
           ` : `
-            <div id="firmaHavuzuScrollList" style="max-height:360px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:4px;">
-              ${filtrelenmis.map(f => {
+            <div id="firmaHavuzuScrollList" style="display:block;">
+              ${sayfaFirmalari.map(f => {
                 const anahtar = firmaAdAnahtari(f.ad);
                 const bendeVar = benimMap.get(anahtar);
                 const encodedAd = encodeURIComponent(f.ad || '');
@@ -7459,43 +7572,43 @@ function renderOrtakFirmaHavuzuBolumu() {
                   (!bendeVar.faks && f.faks)
                 );
                 return `
-                  <div style="background:${detayAcik ? '#fff' : 'var(--gray-50)'}; border:1.5px solid ${detayAcik ? 'var(--primary)' : (bendeVar ? 'var(--gray-200)' : '#bfdbfe')}; border-radius:10px; transition:all 0.15s; overflow:hidden;">
+                  <div style="background:${detayAcik ? '#fff' : '#f8fafc'}; border:1.5px solid ${detayAcik ? 'var(--primary)' : (bendeVar ? '#e2e8f0' : '#bfdbfe')}; border-radius:10px; margin-bottom:10px; box-shadow:0 1px 2px rgba(0,0,0,0.03);">
                     <div ${dtmEventAttr('click', function(event) { toggleHavuzFirmaDetay(encodedAd) })}
-                      style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 14px; cursor:pointer; user-select:none;"
+                      style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 16px; cursor:pointer; user-select:none; flex-wrap:wrap;"
                       title="Firma detaylarını görüntülemek için tıklayın">
-                      <div style="min-width:0; flex:1;">
-                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                          <span style="font-size:13.5px; font-weight:700; color:${detayAcik ? 'var(--primary)' : 'var(--gray-800)'};">${escHtml(f.ad)}</span>
-                          <span style="font-size:10.5px; padding:2px 8px; border-radius:999px; font-weight:600; background:${f.tur === 'Şirket' ? '#eef2ff' : '#fef3c7'}; color:${f.tur === 'Şirket' ? '#4338ca' : '#92400e'};">
+                      <div style="min-width:220px; flex:1;">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; line-height:1.4;">
+                          <span style="font-size:13.5px; font-weight:700; color:${detayAcik ? 'var(--primary)' : '#1e293b'};">${escHtml(f.ad)}</span>
+                          <span style="font-size:11px; padding:2px 8px; border-radius:999px; font-weight:600; background:${f.tur === 'Şirket' ? '#eef2ff' : '#fef3c7'}; color:${f.tur === 'Şirket' ? '#4338ca' : '#92400e'};">
                             ${escHtml(f.tur || 'Kişi')}
                           </span>
-                          ${f.basitUsul ? `<span style="font-size:10.5px; padding:2px 8px; border-radius:999px; font-weight:600; background:#dcfce7; color:#166534;">Basit Usul</span>` : ''}
-                          <span style="font-size:11px; color:var(--gray-400); margin-left:2px;">${detayAcik ? '▲ Detayı Gizle' : '▼ Bilgileri Gör'}</span>
+                          ${f.basitUsul ? `<span style="font-size:11px; padding:2px 8px; border-radius:999px; font-weight:600; background:#dcfce7; color:#166534;">Basit Usul</span>` : ''}
+                          <span style="font-size:11.5px; font-weight:500; color:#64748b;">${detayAcik ? '▲ Detayı Gizle' : '▼ Bilgileri Gör'}</span>
                         </div>
-                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:12px; color:var(--gray-500);">
-                          ${f.adres ? `<span title="${escAttr(f.adres)}" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:480px;">📍 ${escHtml(f.adres)}</span>` : `<span style="color:var(--gray-400);">📍 Adres belirtilmemiş</span>`}
-                          ${f.tel ? `<span>📞 ${escHtml(f.tel)}</span>` : ''}
+                        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:6px; font-size:12px; color:#64748b; line-height:1.4;">
+                          ${f.adres ? `<span>📍 ${escHtml(f.adres)}</span>` : `<span style="color:#94a3b8;">📍 Adres belirtilmemiş</span>`}
+                          ${f.tel ? `<span style="font-weight:500; color:#475569;">📞 ${escHtml(f.tel)}</span>` : ''}
                         </div>
                       </div>
-                      <div style="flex-shrink:0; display:flex; align-items:center; gap:6px;">
+                      <div style="flex-shrink:0; display:flex; align-items:center; gap:8px;">
                         ${!bendeVar ? `
                           <button type="button" class="btn btn-primary btn-sm"
-                            style="padding:6px 12px; font-size:12px; font-weight:600; border-radius:8px; white-space:nowrap;"
+                            style="height:34px; padding:0 14px; font-size:12.5px; font-weight:600; border-radius:8px; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;"
                             ${dtmEventAttr('click', function(event) { event.stopPropagation(); havuzdanFirmayiListemeEkle(encodedAd); })}>
                             ➕ Listeme Ekle
                           </button>
                         ` : eksikDetayVar ? `
                           <button type="button" class="btn btn-outline btn-sm"
-                            style="padding:5px 10px; font-size:11.5px; font-weight:600; border-radius:8px; white-space:nowrap; background:#fff;"
+                            style="height:32px; padding:0 12px; font-size:12px; font-weight:600; border-radius:8px; white-space:nowrap; background:#fff; display:inline-flex; align-items:center; gap:4px;"
                             title="Havuzdaki adres/telefon bilgilerini kendi kaydınıza tamamlayın"
                             ${dtmEventAttr('click', function(event) { event.stopPropagation(); havuzdanFirmayiListemeEkle(encodedAd); })}>
                             🔄 Bilgileri Tamamla
                           </button>
-                          <span style="font-size:11.5px; font-weight:600; color:#15803d; background:#dcfce7; padding:5px 10px; border-radius:8px; white-space:nowrap;">
+                          <span style="font-size:12px; font-weight:600; color:#15803d; background:#dcfce7; padding:6px 10px; border-radius:8px; white-space:nowrap;">
                             ✓ Listenizde
                           </span>
                         ` : `
-                          <span style="font-size:11.5px; font-weight:600; color:#15803d; background:#dcfce7; padding:5px 10px; border-radius:8px; white-space:nowrap;">
+                          <span style="font-size:12px; font-weight:600; color:#15803d; background:#dcfce7; padding:6px 12px; border-radius:8px; white-space:nowrap;">
                             ✓ Listenizde Ekli
                           </span>
                         `}
@@ -7503,7 +7616,7 @@ function renderOrtakFirmaHavuzuBolumu() {
                     </div>
 
                     ${detayAcik ? `
-                      <div style="padding:12px 16px 14px; background:#f8fafc; border-top:1px solid #e2e8f0; font-size:12.5px;">
+                      <div style="padding:14px 16px; background:#fff; border-top:1px solid #e2e8f0; border-radius:0 0 10px 10px; font-size:12.5px;">
                         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px 16px;">
                           <div>
                             <div style="font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:2px;">Firma / Kişi Adı</div>
@@ -7544,6 +7657,10 @@ function renderOrtakFirmaHavuzuBolumu() {
                 `;
               }).join('')}
             </div>
+            ${renderProjeSayfalamaBar(filtrelenmis.length, dtmFirmaHavuzuSayfa, PROJE_SAYFA_BOYUTU, (yeniSayfa) => {
+              dtmFirmaHavuzuSayfa = yeniSayfa;
+              guncelleOrtakFirmaHavuzuDOM();
+            })}
           `}
         </div>
       ` : ''}
