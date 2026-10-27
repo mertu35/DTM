@@ -7347,7 +7347,7 @@ async function ortakFirmaHavuzunuYukle(sessiz = true) {
     }
   } catch (e) {
     console.error('Ortak firma havuzu yükleme hatası:', e);
-    if (!sessiz) showToast('Firma havuzu yenilenirken hata oluştu.', 'error');
+    if (!sessiz) showToast('Firma havuzu yenilenirken hata oluştu: ' + (e?.message || e), 'error');
   } finally {
     dtmFirmaHavuzuYukleniyor = false;
     guncelleOrtakFirmaHavuzuDOM();

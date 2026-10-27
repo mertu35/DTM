@@ -25,7 +25,15 @@ window.pdfjsReady.catch(err => {
   console.error('PDF.js modül yükleme hatası:', err);
 });
 if (!window.dtmDisableServiceWorker && 'serviceWorker' in navigator) {
+  let dtmSwRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (dtmSwRefreshing) return;
+    dtmSwRefreshing = true;
+    window.location.reload();
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(error => console.error('Service Worker:', error));
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+      .then(reg => reg.update().catch(() => {}))
+      .catch(error => console.error('Service Worker:', error));
   });
 }
