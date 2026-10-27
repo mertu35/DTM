@@ -7184,7 +7184,6 @@ function firmaHavuzaTekilBirlestir(hedefListe, kaynakFirma) {
       tel: (kaynakFirma.tel || '').trim(),
       faks: (kaynakFirma.faks || '').trim(),
       eposta: (kaynakFirma.eposta || '').trim(),
-      dogumTarihi: kaynakFirma.dogumTarihi || '',
       vkn: kaynakFirma.vkn || '',
       vergiDairesi: (kaynakFirma.vergiDairesi || '').trim(),
       basitUsul: !!kaynakFirma.basitUsul
@@ -7206,12 +7205,16 @@ function firmaHavuzaTekilBirlestir(hedefListe, kaynakFirma) {
     degisti = true;
   }
 
-  ['tel', 'faks', 'eposta', 'dogumTarihi', 'vkn', 'vergiDairesi'].forEach(alan => {
+  ['tel', 'faks', 'eposta', 'vkn', 'vergiDairesi'].forEach(alan => {
     if (!mevcut[alan] && kaynakFirma[alan]) {
       mevcut[alan] = String(kaynakFirma[alan]).trim();
       degisti = true;
     }
   });
+  if ('dogumTarihi' in mevcut) {
+    delete mevcut.dogumTarihi;
+    degisti = true;
+  }
   if (mevcut.tur !== 'Şirket' && kaynakTur === 'Şirket') {
     mevcut.tur = 'Şirket';
     degisti = true;
@@ -7237,7 +7240,8 @@ async function firmaHavuzaSenkronizeEt(firmaObj) {
     firmaHavuzaTekilBirlestir(referans.yukleniciList, firmaObj);
     referans.yukleniciList = tekillestirFirmaHavuzuListesi(referans.yukleniciList);
 
-    if (typeof db !== 'undefined' && currentDTMUser) {
+    const yazmaYetkili = ['admin', 'superadmin', 'gerceklestirmeci'].includes(currentDTMUser?.role);
+    if (typeof db !== 'undefined' && currentDTMUser && yazmaYetkili) {
       const globalRef = db.collection('globalReferans').doc('default');
       const snap = await globalRef.get();
       const hamGlobal = (snap.exists && Array.isArray(snap.data()?.yukleniciList)) ? [...snap.data().yukleniciList] : [];
@@ -7269,6 +7273,8 @@ async function ortakFirmaHavuzunuYukle(sessiz = true) {
 
     let globalFirms = [];
     let globalChanged = false;
+    const isSuperAdmin = currentDTMUser?.role === 'superadmin';
+    const yazmaYetkili = ['admin', 'superadmin', 'gerceklestirmeci'].includes(currentDTMUser?.role);
 
     if (typeof db !== 'undefined' && currentDTMUser) {
       try {
@@ -7281,25 +7287,27 @@ async function ortakFirmaHavuzunuYukle(sessiz = true) {
         console.warn('Global firma havuzu okunamadı:', errGlobal);
       }
 
-      try {
-        const usersRefSnap = await db.collection('referans').get();
-        usersRefSnap.forEach(doc => {
-          const data = doc.data();
-          if (data && Array.isArray(data.firmaList)) {
-            data.firmaList.forEach(f => {
-              if (firmaHavuzaTekilBirlestir(birlesikHavuz, f)) {
-                globalChanged = true;
-              }
-            });
-          }
-        });
-      } catch (errUsers) {
-        console.warn('Kullanıcı firma listeleri taranamadı (globalReferans kullanılıyor):', errUsers);
+      if (isSuperAdmin) {
+        try {
+          const usersRefSnap = await db.collection('referans').get();
+          usersRefSnap.forEach(doc => {
+            const data = doc.data();
+            if (data && Array.isArray(data.firmaList)) {
+              data.firmaList.forEach(f => {
+                if (firmaHavuzaTekilBirlestir(birlesikHavuz, f)) {
+                  globalChanged = true;
+                }
+              });
+            }
+          });
+        } catch (errUsers) {
+          console.warn('Kullanıcı firma listeleri taranamadı:', errUsers);
+        }
       }
 
       birlesikHavuz.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
 
-      if (globalChanged || birlesikHavuz.length !== globalFirms.length) {
+      if (yazmaYetkili && (globalChanged || birlesikHavuz.length !== globalFirms.length)) {
         try {
           await db.collection('globalReferans').doc('default').set({
             yukleniciList: birlesikHavuz,
@@ -7646,12 +7654,6 @@ function renderOrtakFirmaHavuzuBolumu() {
                             <div style="font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:2px;">E-Posta</div>
                             <div style="color:var(--gray-800);">${f.eposta ? escHtml(f.eposta) : '<span style="color:var(--gray-400);">Belirtilmemiş</span>'}</div>
                           </div>
-                          ${f.tur !== 'Şirket' ? `
-                            <div>
-                              <div style="font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:2px;">Doğum Tarihi</div>
-                              <div style="color:var(--gray-800);">${f.dogumTarihi ? escHtml(f.dogumTarihi) : '<span style="color:var(--gray-400);">Belirtilmemiş</span>'}</div>
-                            </div>
-                          ` : ''}
                         </div>
                       </div>
                     ` : ''}
