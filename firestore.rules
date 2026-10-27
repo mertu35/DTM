@@ -157,15 +157,21 @@ service cloud.firestore {
          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleting', 'revision']) && request.resource.data.deleting == false)) && (
         // Admin/superadmin her alanı değiştirebilir
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin']) ||
-        // Gerçekleştirmeci sadece kendi atandığı ve 'gonderildi' durumundaki projeyi güncelleyebilir
+        // Gerçekleştirmeci sadece kendi atandığı ve 'gonderildi' durumundaki projeyi güncelleyebilir.
+        // Kendi projesini onaylayamaz; onaylayan/geri gönderen adı ve zamanı gerçek olmalıdır.
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerceklestirmeci' &&
          resource.data.atananGerceklestirmeciUid == request.auth.uid &&
+         resource.data.userId != request.auth.uid &&
          resource.data.status == 'gonderildi' &&
          (
            (request.resource.data.status == 'onaylandi' &&
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'onaylandiAt', 'onaylandiBy', 'revision'])) ||
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'onaylandiAt', 'onaylandiBy', 'revision']) &&
+            request.resource.data.get('onaylandiAt', null) == request.time &&
+            request.resource.data.get('onaylandiBy', null) == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('displayName', '')) ||
            (request.resource.data.status == 'geri_gonderildi' &&
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'geriGonderNot', 'geriGonderAt', 'geriGonderBy', 'revision']))
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'geriGonderNot', 'geriGonderAt', 'geriGonderBy', 'revision']) &&
+            request.resource.data.get('geriGonderAt', null) == request.time &&
+            request.resource.data.get('geriGonderBy', null) == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('displayName', ''))
          )) ||
         // Proje sahibi:
         // Yalnızca proje taslak veya geri_gonderildi aşamasındayken güncelleyebilir.
@@ -179,10 +185,13 @@ service cloud.firestore {
             (resource.data.status == 'taslak' && request.resource.data.status in ['taslak', 'gonderildi']) ||
             (resource.data.status == 'geri_gonderildi' && request.resource.data.status in ['geri_gonderildi', 'gonderildi'])
           ) &&
-          // 'gonderildi' durumuna geçiriliyorsa gerçekleştirmeci atanmış olmalıdır
+          // 'gonderildi' durumuna geçiriliyorsa başka bir gerçekleştirmeci atanmış olmalıdır
           (
             request.resource.data.status != 'gonderildi' ||
-            (request.resource.data.atananGerceklestirmeciUid is string && request.resource.data.atananGerceklestirmeciUid.size() > 0)
+            (request.resource.data.atananGerceklestirmeciUid is string && request.resource.data.atananGerceklestirmeciUid.size() > 0 &&
+             request.resource.data.atananGerceklestirmeciUid != request.auth.uid &&
+             exists(/databases/$(database)/documents/users/$(request.resource.data.atananGerceklestirmeciUid)) &&
+             get(/databases/$(database)/documents/users/$(request.resource.data.atananGerceklestirmeciUid)).data.role == 'gerceklestirmeci')
           ) &&
           (
             resource.data.get('locked', false) != true ||

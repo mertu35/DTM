@@ -8199,7 +8199,7 @@ async function gonderiClick(projeId, isAdi) {
   // Gerçekleştirmecileri yükle
   let gerceklestirmeciler;
   try {
-    gerceklestirmeciler = await getGerceklestirmeciler();
+    gerceklestirmeciler = (await getGerceklestirmeciler()).filter(g => g.uid !== currentDTMUser?.uid);
   } catch(e) {
     showToast('Gerçekleştirmeciler yüklenemedi.', 'error'); return;
   }

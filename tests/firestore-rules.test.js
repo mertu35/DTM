@@ -32,6 +32,14 @@ async function update(p, data, uid) {
   const mask = Object.keys(data).map(k => `updateMask.fieldPaths=${k}`).join('&');
   return request('PATCH', `${base}/${p}?${mask}`, { fields: fields(data) }, uid);
 }
+// İstemcideki serverTimestamp() ile aynı: verilen alanlar sunucu saatiyle yazılır.
+async function updateAt(p, data, timeFields, uid) {
+  return request('POST', `${base}:commit`, { writes: [{
+    update: { name: name(p), fields: fields(data) },
+    updateMask: { fieldPaths: Object.keys(data) },
+    updateTransforms: timeFields.map(fieldPath => ({ fieldPath, setToServerValue: 'REQUEST_TIME' }))
+  }] }, uid);
+}
 async function seedAs(p, data, uid) { return request('PATCH', `${base}/${p}`, { fields: fields(data) }, uid); }
 const header = 'data:application/pdf;base64,';
 function fileMeta(uid = 'owner', multi = false) { return {
@@ -135,17 +143,32 @@ async function main() {
   const reset = (status = 'gonderildi', locked = false) => seed(p, {
     userId: 'owner', atananGerceklestirmeciUid: 'reviewer', status, locked, isAdi: 'Original'
   });
-  for (const [status, patch] of [
-    ['onaylandi', { status: 'onaylandi', onaylandiAt: 'date', onaylandiBy: 'Reviewer' }],
-    ['geri_gonderildi', { status: 'geri_gonderildi', geriGonderNot: 'Düzelt', geriGonderAt: 'date', geriGonderBy: 'Reviewer' }]
+  // Onaylayan adı kişinin profil adıdır (test gerçekleştirmecisinin adı yok, istemci '' yazar), zaman sunucu saatidir.
+  for (const [status, patch, timeField, byField] of [
+    ['onaylandi', { status: 'onaylandi', onaylandiBy: '' }, 'onaylandiAt', 'onaylandiBy'],
+    ['geri_gonderildi', { status: 'geri_gonderildi', geriGonderNot: 'Düzelt', geriGonderBy: '' }, 'geriGonderAt', 'geriGonderBy']
   ]) {
     await reset();
-    await check(`reviewer transition ${status}`, await update(p, patch, 'reviewer'), true);
+    await check(`reviewer transition ${status}`, await updateAt(p, patch, [timeField], 'reviewer'), true);
     for (const extra of [{ isAdi: 'Changed' }, { userId: 'reviewer' }, { atananGerceklestirmeciUid: 'other' }]) {
       await reset();
-      await check(`reject ${status} with ${Object.keys(extra)[0]}`, await update(p, { ...patch, ...extra }, 'reviewer'), false);
+      await check(`reject ${status} with ${Object.keys(extra)[0]}`, await updateAt(p, { ...patch, ...extra }, [timeField], 'reviewer'), false);
     }
+    await reset();
+    await check(`reject ${status} with someone else's name`, await updateAt(p, { ...patch, [byField]: 'Genel Sekreter' }, [timeField], 'reviewer'), false);
+    await reset();
+    await check(`reject ${status} with backdated time`, await update(p, { ...patch, [timeField]: new Date('2026-01-01') }, 'reviewer'), false);
   }
+  await seed('projeler/self-review', { userId: 'reviewer', atananGerceklestirmeciUid: 'reviewer', status: 'gonderildi' });
+  await check('reviewer cannot approve own project', await updateAt('projeler/self-review', { status: 'onaylandi', onaylandiBy: '' }, ['onaylandiAt'], 'reviewer'), false);
+  await seed('projeler/self-submit', { userId: 'reviewer', status: 'taslak' });
+  await check('reviewer cannot submit own project to self', await update('projeler/self-submit', { status: 'gonderildi', atananGerceklestirmeciUid: 'reviewer' }, 'reviewer'), false);
+  await reset('taslak');
+  await check('owner cannot submit to self', await update(p, { status: 'gonderildi', atananGerceklestirmeciUid: 'owner' }, 'owner'), false);
+  await reset('taslak');
+  await check('owner cannot submit to non-reviewer', await update(p, { status: 'gonderildi', atananGerceklestirmeciUid: 'other' }, 'owner'), false);
+  await reset('taslak');
+  await check('owner cannot submit to unknown account', await update(p, { status: 'gonderildi', atananGerceklestirmeciUid: 'ghost' }, 'owner'), false);
   await reset();
   await check('reject unrelated reviewer edit', await update(p, { isAdi: 'Changed' }, 'reviewer'), false);
   await check('reject unassigned approval', await update(p, { status: 'onaylandi' }, 'other'), false);
@@ -190,10 +213,10 @@ async function main() {
   await check('revision rollback denied', await update(versioned, { revision: 0 }, 'admin'), false);
   await check('admin financial change without revision denied', await update(versioned, { data: 'unversioned' }, 'admin'), false);
   await seed(versioned, { userId: 'owner', status: 'gonderildi', atananGerceklestirmeciUid: 'reviewer', revision: 2 });
-  await check('reviewer approval with next version allowed', await update(versioned, { status: 'onaylandi', onaylandiBy: 'Reviewer', revision: 3 }, 'reviewer'), true);
+  await check('reviewer approval with next version allowed', await updateAt(versioned, { status: 'onaylandi', onaylandiBy: '', revision: 3 }, ['onaylandiAt'], 'reviewer'), true);
   await check('reviewer repeated approval denied', await update(versioned, { onaylandiBy: 'Changed', revision: 4 }, 'reviewer'), false);
   await seed(versioned, { userId: 'owner', status: 'gonderildi', atananGerceklestirmeciUid: 'reviewer', revision: 3 });
-  await check('reviewer return with next version allowed', await update(versioned, { status: 'geri_gonderildi', geriGonderNot: 'Düzelt', revision: 4 }, 'reviewer'), true);
+  await check('reviewer return with next version allowed', await updateAt(versioned, { status: 'geri_gonderildi', geriGonderNot: 'Düzelt', geriGonderBy: '', revision: 4 }, ['geriGonderAt'], 'reviewer'), true);
   await reset('taslak');
   const frozen = { version: 1, firmaList: [], yukleniciList: [] };
   await check('snapshot can be captured at submission', await update(p, { status: 'gonderildi', belgeReferans: frozen }, 'owner'), true);
