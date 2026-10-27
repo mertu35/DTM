@@ -284,6 +284,14 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'gerceklestirmeci'] &&
         !('geminiApiKey' in request.resource.data) &&
         !('geminiModel' in request.resource.data);
+      // Ortak firma havuzu: her kayıtlı kullanıcı firma ekleyebilir/eksik bilgisini
+      // tamamlayabilir; diğer alanlara dokunamaz ve havuzu küçültemez (silemez).
+      allow update: if docId == 'default' &&
+        kayitliKullanici() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['yukleniciList', 'updatedAt']) &&
+        request.resource.data.yukleniciList is list &&
+        request.resource.data.yukleniciList.size() >= resource.data.get('yukleniciList', []).size() &&
+        request.resource.data.get('updatedAt', null) == request.time;
       allow delete: if docId != 'aiConfig' &&
         kayitliKullanici() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];

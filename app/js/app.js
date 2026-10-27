@@ -7233,32 +7233,44 @@ function tekillestirFirmaHavuzuListesi(liste) {
   return sonuc;
 }
 
-async function firmaHavuzaSenkronizeEt(firmaObj) {
-  if (!firmaObj || !firmaObj.ad) return;
+// Firmaları ortak havuza tek transaction'da ekler; başarısızsa null döner.
+// Normal kullanıcılar için kurallar listenin küçülmesine izin vermez, bu yüzden
+// tekilleştirme (kayıt birleştirip silme) yalnızca yetkili rollerde yapılır.
+async function firmalariOrtakHavuzaEkle(firmalar) {
+  if (typeof db === 'undefined' || !currentDTMUser) return null;
+  const yetkili = ['admin', 'superadmin', 'gerceklestirmeci'].includes(currentDTMUser.role);
+  const globalRef = db.collection('globalReferans').doc('default');
   try {
-    if (!Array.isArray(referans.yukleniciList)) referans.yukleniciList = [];
-    firmaHavuzaTekilBirlestir(referans.yukleniciList, firmaObj);
-    referans.yukleniciList = tekillestirFirmaHavuzuListesi(referans.yukleniciList);
-
-    const yazmaYetkili = ['admin', 'superadmin', 'gerceklestirmeci'].includes(currentDTMUser?.role);
-    if (typeof db !== 'undefined' && currentDTMUser && yazmaYetkili) {
-      const globalRef = db.collection('globalReferans').doc('default');
-      const snap = await globalRef.get();
+    return await db.runTransaction(async tx => {
+      const snap = await tx.get(globalRef);
       const hamGlobal = (snap.exists && Array.isArray(snap.data()?.yukleniciList)) ? [...snap.data().yukleniciList] : [];
-      const globalFirms = tekillestirFirmaHavuzuListesi(hamGlobal);
-      const degisti = firmaHavuzaTekilBirlestir(globalFirms, firmaObj);
-      if (degisti || !snap.exists || globalFirms.length !== hamGlobal.length) {
-        globalFirms.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
-        await globalRef.set({
-          yukleniciList: globalFirms,
+      if (!snap.exists && !yetkili) return hamGlobal;
+      const liste = yetkili ? tekillestirFirmaHavuzuListesi(hamGlobal) : hamGlobal.map(f => ({ ...f }));
+      let degisti = !snap.exists || liste.length !== hamGlobal.length;
+      (firmalar || []).forEach(f => { if (firmaHavuzaTekilBirlestir(liste, f)) degisti = true; });
+      if (degisti) {
+        liste.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
+        tx.set(globalRef, {
+          yukleniciList: liste,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
       }
-      referans.yukleniciList = globalFirms;
-    }
+      return liste;
+    });
   } catch (e) {
-    console.warn('Firma ortak havuza senkronize edilemedi:', e);
+    console.warn('Firma ortak havuza eklenemedi:', e);
+    return null;
   }
+}
+
+async function firmaHavuzaSenkronizeEt(firmaObj) {
+  if (!firmaObj || !firmaObj.ad) return;
+  if (!Array.isArray(referans.yukleniciList)) referans.yukleniciList = [];
+  firmaHavuzaTekilBirlestir(referans.yukleniciList, firmaObj);
+  referans.yukleniciList = tekillestirFirmaHavuzuListesi(referans.yukleniciList);
+
+  const guncelHavuz = await firmalariOrtakHavuzaEkle([firmaObj]);
+  if (guncelHavuz) referans.yukleniciList = tekillestirFirmaHavuzuListesi(guncelHavuz);
 }
 
 async function ortakFirmaHavuzunuYukle(sessiz = true) {
@@ -7271,52 +7283,38 @@ async function ortakFirmaHavuzunuYukle(sessiz = true) {
     (referans.yukleniciList || []).forEach(f => firmaHavuzaTekilBirlestir(birlesikHavuz, f));
     (referans.firmaList || []).forEach(f => firmaHavuzaTekilBirlestir(birlesikHavuz, f));
 
-    let globalFirms = [];
-    let globalChanged = false;
-    const isSuperAdmin = currentDTMUser?.role === 'superadmin';
-    const yazmaYetkili = ['admin', 'superadmin', 'gerceklestirmeci'].includes(currentDTMUser?.role);
-
     if (typeof db !== 'undefined' && currentDTMUser) {
-      try {
-        const globalSnap = await db.collection('globalReferans').doc('default').get();
-        if (globalSnap.exists && Array.isArray(globalSnap.data()?.yukleniciList)) {
-          globalFirms = [...globalSnap.data().yukleniciList];
-          globalFirms.forEach(f => firmaHavuzaTekilBirlestir(birlesikHavuz, f));
-        }
-      } catch (errGlobal) {
-        console.warn('Global firma havuzu okunamadı:', errGlobal);
-      }
+      const yetkili = ['admin', 'superadmin', 'gerceklestirmeci'].includes(currentDTMUser.role);
+      // Normal kullanıcı yalnızca kendi firma listesini gönderir; havuz önbelleğini
+      // (yukleniciList) geri yazmak, yöneticinin havuzdan sildiği kayıtları geri getirirdi.
+      const eklenecek = yetkili
+        ? [...(referans.yukleniciList || []), ...(referans.firmaList || [])]
+        : [...(referans.firmaList || [])];
 
-      if (isSuperAdmin) {
+      if (currentDTMUser.role === 'superadmin') {
         try {
           const usersRefSnap = await db.collection('referans').get();
           usersRefSnap.forEach(doc => {
             const data = doc.data();
-            if (data && Array.isArray(data.firmaList)) {
-              data.firmaList.forEach(f => {
-                if (firmaHavuzaTekilBirlestir(birlesikHavuz, f)) {
-                  globalChanged = true;
-                }
-              });
-            }
+            if (data && Array.isArray(data.firmaList)) eklenecek.push(...data.firmaList);
           });
         } catch (errUsers) {
           console.warn('Kullanıcı firma listeleri taranamadı:', errUsers);
         }
       }
 
-      birlesikHavuz.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
-
-      if (yazmaYetkili && (globalChanged || birlesikHavuz.length !== globalFirms.length)) {
+      let guncelHavuz = await firmalariOrtakHavuzaEkle(eklenecek);
+      if (!guncelHavuz) {
         try {
-          await db.collection('globalReferans').doc('default').set({
-            yukleniciList: birlesikHavuz,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true });
-        } catch (errWrite) {
-          console.warn('Birleşik firma havuzu buluta yazılamadı:', errWrite);
+          const globalSnap = await db.collection('globalReferans').doc('default').get();
+          guncelHavuz = (globalSnap.exists && Array.isArray(globalSnap.data()?.yukleniciList)) ? globalSnap.data().yukleniciList : [];
+        } catch (errGlobal) {
+          console.warn('Global firma havuzu okunamadı:', errGlobal);
+          guncelHavuz = [];
         }
       }
+      guncelHavuz.forEach(f => firmaHavuzaTekilBirlestir(birlesikHavuz, f));
+      birlesikHavuz.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
     } else {
       birlesikHavuz.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr-TR'));
     }
@@ -9285,10 +9283,11 @@ async function forceMergeYukleniciHavuzu() {
           if(!firma.ad) return;
           const mevcut = globalFirms.find(gf => gf.ad.trim().toLowerCase() === firma.ad.trim().toLowerCase());
           if (!mevcut) {
-            globalFirms.push({...firma});
+            const { dogumTarihi, ...havuzFirmasi } = firma;
+            globalFirms.push(havuzFirmasi);
             changed = true;
           } else {
-            ['adres', 'tur', 'tel', 'faks', 'eposta', 'dogumTarihi'].forEach(fld => {
+            ['adres', 'tur', 'tel', 'faks', 'eposta'].forEach(fld => {
               if (!mevcut[fld] && firma[fld]) {
                 mevcut[fld] = firma[fld];
                 changed = true;
