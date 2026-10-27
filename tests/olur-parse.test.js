@@ -179,7 +179,7 @@ const fMatch2 = context.matchOrAddFirma({
 assert.equal(fMatch2.isNew, false);
 assert.equal(fMatch2.firma.ad, 'Gültes Enerji');
 assert.equal(fMatch2.firma.adres, 'Yeni Sanayi Sitesi No:12 Karaman');
-assert.equal(fMatch2.firma.tel, '0338 212 00 00');
+assert.equal(fMatch2.firma.tel, '(0) 338 212 00 00');
 
 // c. Yeni kurumsal firma ekleme ('Şirket' tespiti)
 const fYeniSirket = context.matchOrAddFirma({

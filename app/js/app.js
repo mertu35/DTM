@@ -6794,7 +6794,8 @@ function renderVeriMerkeziPage() {
                   <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
-              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'adres', this.value) })}></div>
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" id="firmaInputAdres" value="${escAttr(f.adres || '')}" placeholder="Mahalle, sokak, no (il/ilçe aşağıdan seçilir)" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('firmaList', String(i ?? ''), 'adres', this.value); firmaAdresOnizlemeGuncelle(f, 'firmaInput') })}></div>
+              ${firmaIlIlceAlanlari(f, 'firmaList', i, 'firmaInput', () => renderPage('veri-merkezi'))}
               <div class="form-group"><label>Telefon</label><input type="tel" inputmode="tel" autocomplete="off" class="ref-input${telefonGecerliMi(f.tel) ? '' : ' has-error'}" id="firmaInputTel" value="${escAttr(f.tel || '')}" placeholder="(0) 500 123 45 67" ${dtmEventAttr('input', function(event) { telefonGirdiIsle(this, event) })} ${dtmEventAttr('change', function(event) { this.value = telefonNormalize(this.value); this.classList.toggle('has-error', !telefonGecerliMi(this.value)); onFirmaFieldChange('firmaList', String(i ?? ''), 'tel', this.value) })}></div>
               <div class="form-group"><label>Faks</label><input type="tel" inputmode="tel" autocomplete="off" class="ref-input${telefonGecerliMi(f.faks) ? '' : ' has-error'}" id="firmaInputFaks" value="${escAttr(f.faks || '')}" placeholder="(0) 500 123 45 67" ${dtmEventAttr('input', function(event) { telefonGirdiIsle(this, event) })} ${dtmEventAttr('change', function(event) { this.value = telefonNormalize(this.value); this.classList.toggle('has-error', !telefonGecerliMi(this.value)); onFirmaFieldChange('firmaList', String(i ?? ''), 'faks', this.value) })}></div>
               <div class="form-group"><label>E-Posta</label><input type="email" inputmode="email" autocomplete="off" class="ref-input${epostaGecerliMi(f.eposta) ? '' : ' has-error'}" id="firmaInputEposta" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" ${dtmEventAttr('change', function(event) { this.value = epostaNormalize(this.value); this.classList.toggle('has-error', !epostaGecerliMi(this.value)); if (!epostaGecerliMi(this.value)) showToast('E-posta adresi eksik: "@" işareti ve .com, .gov.tr gibi bir uzantı olmalı.', 'error'); onFirmaFieldChange('firmaList', String(i ?? ''), 'eposta', this.value) })}></div>
@@ -7009,6 +7010,33 @@ function onRefChange(list, index, field, value) {
 
 let dtmYeniEklenenFirma = null;
 
+function firmaAdresOnizlemeGuncelle(f, idOnEki) {
+  const el = document.getElementById(idOnEki + 'AdresOnizleme');
+  if (el) el.textContent = firmaTamAdres(f) || '—';
+}
+
+// Kurumun kendi ilinde ilçe listeden seçilir; diğer illerde elle yazılır.
+function firmaIlIlceAlanlari(f, list, i, idOnEki, yenidenCiz) {
+  const index = String(i ?? '');
+  const yerelIl = referans.sehir || 'Karaman';
+  const ilceler = Array.isArray(referans.ilceler) ? referans.ilceler : [];
+  const ilceSecimli = f.il === yerelIl && ilceler.length > 0;
+  const ilceSecenekleri = f.ilce && !ilceler.includes(f.ilce) ? [...ilceler, f.ilce] : ilceler;
+  return `
+    <div class="form-group"><label>İl</label><select class="ref-input" id="${idOnEki}Il" ${dtmEventAttr('change', function(event) { onFirmaFieldChange(list, index, 'il', this.value); onFirmaFieldChange(list, index, 'ilce', ''); yenidenCiz(); })}>
+      <option value="">Seçiniz</option>
+      ${TURKIYE_ILLERI.map(il => `<option value="${escAttr(il)}" ${f.il === il ? 'selected' : ''}>${escHtml(il)}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>İlçe</label>${ilceSecimli
+      ? `<select class="ref-input" id="${idOnEki}Ilce" ${dtmEventAttr('change', function(event) { onFirmaFieldChange(list, index, 'ilce', this.value); firmaAdresOnizlemeGuncelle(f, idOnEki); })}>
+          <option value="">Seçiniz</option>
+          ${ilceSecenekleri.map(x => `<option value="${escAttr(x)}" ${f.ilce === x ? 'selected' : ''}>${escHtml(x)}</option>`).join('')}
+        </select>`
+      : `<input type="text" class="ref-input" id="${idOnEki}Ilce" value="${escAttr(f.ilce || '')}" placeholder="${f.il ? 'İlçe giriniz' : 'Önce il seçiniz'}" ${f.il ? '' : 'disabled'} ${dtmEventAttr('change', function(event) { this.value = this.value.trim(); onFirmaFieldChange(list, index, 'ilce', this.value); firmaAdresOnizlemeGuncelle(f, idOnEki); })}>`}
+    </div>
+    <div class="form-group" style="grid-column: span 2; margin-top:-6px; font-size:12px; color:var(--gray-500);">Belgelerde görünecek adres: <strong id="${idOnEki}AdresOnizleme" style="color:var(--gray-700);">${escHtml(firmaTamAdres(f) || '—')}</strong></div>`;
+}
+
 // Kaydetmeden önce telefon/faks/e-postayı düzeltir; geçersiz alan varsa kaydı durdurur.
 function firmaIletisimDogrula(f, idOnEki) {
   const hatali = [];
@@ -7204,6 +7232,8 @@ function firmaHavuzaTekilBirlestir(hedefListe, kaynakFirma) {
       ad: temizAd,
       tur: kaynakTur,
       adres: (kaynakFirma.adres || '').trim(),
+      il: (kaynakFirma.il || '').trim(),
+      ilce: (kaynakFirma.ilce || '').trim(),
       tel: telefonNormalize(kaynakFirma.tel),
       faks: telefonNormalize(kaynakFirma.faks),
       eposta: (kaynakFirma.eposta || '').trim(),
@@ -7225,6 +7255,12 @@ function firmaHavuzaTekilBirlestir(hedefListe, kaynakFirma) {
   const yeniAdres = (kaynakFirma.adres || '').trim();
   if (yeniAdres && (!mevcutAdres || (mevcutAdres.length <= 10 && yeniAdres.length > mevcutAdres.length))) {
     mevcut.adres = yeniAdres;
+    degisti = true;
+  }
+
+  if (!mevcut.il && kaynakFirma.il) {
+    mevcut.il = String(kaynakFirma.il).trim();
+    mevcut.ilce = String(kaynakFirma.ilce || '').trim();
     degisti = true;
   }
 
@@ -7428,6 +7464,8 @@ window.havuzdanFirmayiListemeEkle = function(encodedAd) {
       ad: (kaynak.ad || '').trim(),
       tur: kaynak.tur === 'Şirket' ? 'Şirket' : 'Kişi',
       adres: (kaynak.adres || '').trim(),
+      il: (kaynak.il || '').trim(),
+      ilce: (kaynak.ilce || '').trim(),
       tel: telefonNormalize(kaynak.tel),
       faks: telefonNormalize(kaynak.faks),
       eposta: (kaynak.eposta || '').trim(),
@@ -7441,6 +7479,11 @@ window.havuzdanFirmayiListemeEkle = function(encodedAd) {
     renderPage('veri-merkezi');
   } else {
     let guncellendi = false;
+    if (!mevcut.il && kaynak.il) {
+      mevcut.il = String(kaynak.il).trim();
+      mevcut.ilce = String(kaynak.ilce || '').trim();
+      guncellendi = true;
+    }
     ['adres', 'tel', 'faks', 'eposta', 'dogumTarihi', 'vkn', 'vergiDairesi'].forEach(alan => {
       if (!mevcut[alan] && kaynak[alan]) {
         mevcut[alan] = (alan === 'tel' || alan === 'faks') ? telefonNormalize(kaynak[alan]) : String(kaynak[alan]).trim();
@@ -7470,6 +7513,8 @@ window.havuzdanTumEksikleriListemeEkle = function() {
       ad: (kaynak.ad || '').trim(),
       tur: kaynak.tur === 'Şirket' ? 'Şirket' : 'Kişi',
       adres: (kaynak.adres || '').trim(),
+      il: (kaynak.il || '').trim(),
+      ilce: (kaynak.ilce || '').trim(),
       tel: telefonNormalize(kaynak.tel),
       faks: telefonNormalize(kaynak.faks),
       eposta: (kaynak.eposta || '').trim(),
@@ -7513,7 +7558,7 @@ function renderOrtakFirmaHavuzuBolumu() {
   const filtrelenmis = q
     ? bazListe.filter(f =>
         String(f.ad || '').toLocaleLowerCase('tr-TR').includes(q) ||
-        String(f.adres || '').toLocaleLowerCase('tr-TR').includes(q) ||
+        firmaTamAdres(f).toLocaleLowerCase('tr-TR').includes(q) ||
         String(f.tel || '').toLocaleLowerCase('tr-TR').includes(q) ||
         String(f.tur || '').toLocaleLowerCase('tr-TR').includes(q)
       )
@@ -7617,7 +7662,7 @@ function renderOrtakFirmaHavuzuBolumu() {
                           <span style="font-size:11.5px; font-weight:500; color:#64748b;">${detayAcik ? '▲ Detayı Gizle' : '▼ Bilgileri Gör'}</span>
                         </div>
                         <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:6px; font-size:12px; color:#64748b; line-height:1.4;">
-                          ${f.adres ? `<span>📍 ${escHtml(f.adres)}</span>` : `<span style="color:#94a3b8;">📍 Adres belirtilmemiş</span>`}
+                          ${firmaTamAdres(f) ? `<span>📍 ${escHtml(firmaTamAdres(f))}</span>` : `<span style="color:#94a3b8;">📍 Adres belirtilmemiş</span>`}
                           ${f.tel ? `<span style="font-weight:500; color:#475569;">📞 ${escHtml(f.tel)}</span>` : ''}
                         </div>
                       </div>
@@ -7661,7 +7706,7 @@ function renderOrtakFirmaHavuzuBolumu() {
                           </div>
                           <div style="grid-column:1 / -1;">
                             <div style="font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:2px;">Açık Adres</div>
-                            <div style="color:var(--gray-800);">${f.adres ? escHtml(f.adres) : '<span style="color:var(--gray-400);">Belirtilmemiş</span>'}</div>
+                            <div style="color:var(--gray-800);">${firmaTamAdres(f) ? escHtml(firmaTamAdres(f)) : '<span style="color:var(--gray-400);">Belirtilmemiş</span>'}</div>
                           </div>
                           <div>
                             <div style="font-size:11px; font-weight:600; color:var(--gray-500); margin-bottom:2px;">Telefon</div>
@@ -9061,7 +9106,8 @@ function renderGerceklestirmeciVeriMerkeziPage() {
                   <option value="Kişi" ${f.tur === 'Kisi' || f.tur === 'Kişi' ? 'selected' : ''}>Kişi</option>
                   <option value="Şirket" ${f.tur === 'Şirket' ? 'selected' : ''}>Şirket</option>
               </select></div>
-              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" value="${escAttr(f.adres || '')}" placeholder="Açık adres giriniz" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'adres', this.value) })}></div>
+              <div class="form-group" style="grid-column: span 2;"><label>Adres</label><input type="text" class="ref-input" id="yukleniciInputAdres" value="${escAttr(f.adres || '')}" placeholder="Mahalle, sokak, no (il/ilçe aşağıdan seçilir)" ${dtmEventAttr('change', function(event) { onFirmaFieldChange('yukleniciList', String(i ?? ''), 'adres', this.value); firmaAdresOnizlemeGuncelle(f, 'yukleniciInput') })}></div>
+              ${firmaIlIlceAlanlari(f, 'yukleniciList', i, 'yukleniciInput', () => { document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage(); })}
               <div class="form-group"><label>Telefon</label><input type="tel" inputmode="tel" autocomplete="off" class="ref-input${telefonGecerliMi(f.tel) ? '' : ' has-error'}" id="yukleniciInputTel" value="${escAttr(f.tel || '')}" placeholder="(0) 500 123 45 67" ${dtmEventAttr('input', function(event) { telefonGirdiIsle(this, event) })} ${dtmEventAttr('change', function(event) { this.value = telefonNormalize(this.value); this.classList.toggle('has-error', !telefonGecerliMi(this.value)); onFirmaFieldChange('yukleniciList', String(i ?? ''), 'tel', this.value) })}></div>
               <div class="form-group"><label>Faks</label><input type="tel" inputmode="tel" autocomplete="off" class="ref-input${telefonGecerliMi(f.faks) ? '' : ' has-error'}" id="yukleniciInputFaks" value="${escAttr(f.faks || '')}" placeholder="(0) 500 123 45 67" ${dtmEventAttr('input', function(event) { telefonGirdiIsle(this, event) })} ${dtmEventAttr('change', function(event) { this.value = telefonNormalize(this.value); this.classList.toggle('has-error', !telefonGecerliMi(this.value)); onFirmaFieldChange('yukleniciList', String(i ?? ''), 'faks', this.value) })}></div>
               <div class="form-group"><label>E-Posta</label><input type="email" inputmode="email" autocomplete="off" class="ref-input${epostaGecerliMi(f.eposta) ? '' : ' has-error'}" id="yukleniciInputEposta" value="${escAttr(f.eposta || '')}" placeholder="ornek@domain.com" ${dtmEventAttr('change', function(event) { this.value = epostaNormalize(this.value); this.classList.toggle('has-error', !epostaGecerliMi(this.value)); if (!epostaGecerliMi(this.value)) showToast('E-posta adresi eksik: "@" işareti ve .com, .gov.tr gibi bir uzantı olmalı.', 'error'); onFirmaFieldChange('yukleniciList', String(i ?? ''), 'eposta', this.value) })}></div>
@@ -9108,7 +9154,7 @@ window.vazgecYukleniciFormu = function() {
 };
 
 window.onYukleniciEkle = function() {
-  dtmYeniEklenenYuklenici = {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:'', basitUsul:false};
+  dtmYeniEklenenYuklenici = {ad:'', adres:'', il: referans.sehir || 'Karaman', ilce:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:'', basitUsul:false};
   dtmSeciliYukleniciIndex = -1;
   document.getElementById('mainContent').innerHTML = renderGerceklestirmeciVeriMerkeziPage();
   setTimeout(() => {
@@ -9153,7 +9199,7 @@ window.onFirmaListeSelect = function(val) {
 };
 
 window.onFirmaListeEkle = function() {
-  dtmYeniEklenenFirma = {ad:'', adres:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:'', basitUsul:false};
+  dtmYeniEklenenFirma = {ad:'', adres:'', il: referans.sehir || 'Karaman', ilce:'', tur:'Kisi', tel:'', faks:'', eposta:'', dogumTarihi:'', basitUsul:false};
   dtmSeciliFirmaIndex = -1;
   renderPage('veri-merkezi');
   setTimeout(() => {
@@ -9311,7 +9357,7 @@ async function forceMergeYukleniciHavuzu() {
             globalFirms.push(havuzFirmasi);
             changed = true;
           } else {
-            ['adres', 'tur', 'tel', 'faks', 'eposta'].forEach(fld => {
+            ['adres', 'il', 'ilce', 'tur', 'tel', 'faks', 'eposta'].forEach(fld => {
               if (!mevcut[fld] && firma[fld]) {
                 mevcut[fld] = firma[fld];
                 changed = true;

@@ -221,31 +221,6 @@ function sayidanYaziyaParantezli(sayi) {
   return `(${yazi})`;
 }
 
-// Telefon / faks numaraları "(0) 500 123 45 67" biçiminde tutulur.
-function telefonUlusalHaneler(deger) {
-  let r = String(deger || '').replace(/\D/g, '').replace(/^0+/, '');
-  if (r.length === 12 && r.startsWith('90')) r = r.slice(2);
-  return r;
-}
-
-function telefonBicimlendir(deger) {
-  const r = telefonUlusalHaneler(deger);
-  if (r.length !== 10) return null;
-  return `(0) ${r.slice(0, 3)} ${r.slice(3, 6)} ${r.slice(6, 8)} ${r.slice(8)}`;
-}
-
-// Biçimlenemeyen eski/aktarılan değerler kaybolmasın diye olduğu gibi bırakılır.
-function telefonNormalize(deger) {
-  const ham = String(deger || '').trim();
-  if (!/[1-9]/.test(ham)) return '';
-  return telefonBicimlendir(ham) || ham;
-}
-
-function telefonGecerliMi(deger) {
-  const ham = String(deger || '').trim();
-  return !ham || telefonBicimlendir(ham) === ham;
-}
-
 // Yazarken harfleri atar ve rakamları biçime oturtur. Silerken yeniden
 // biçimlendirmez; yoksa boşluk/parantez silinemez ve imleç sona kaçar.
 function telefonGirdiIsle(el, event) {
@@ -263,14 +238,4 @@ function telefonGirdiIsle(el, event) {
     return;
   }
   el.value = ['(0) ' + r.slice(0, 3), r.slice(3, 6), r.slice(6, 8), r.slice(8, 10)].filter(Boolean).join(' ');
-}
-
-function epostaNormalize(deger) {
-  return String(deger || '').trim().toLowerCase();
-}
-
-// "ad@alan.uzantı" biçimi aranır; .com zorunlu değildir (.gov.tr, .com.tr, .org da geçerli).
-function epostaGecerliMi(deger) {
-  const e = String(deger || '').trim();
-  return !e || /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(e);
 }

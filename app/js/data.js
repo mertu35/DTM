@@ -361,3 +361,54 @@ function importProjeJSON(file, callback) {
   };
   reader.readAsText(file);
 }
+
+// Telefon / faks numaraları "(0) 500 123 45 67" biçiminde tutulur.
+function telefonUlusalHaneler(deger) {
+  let r = String(deger || '').replace(/\D/g, '').replace(/^0+/, '');
+  if (r.length === 12 && r.startsWith('90')) r = r.slice(2);
+  return r;
+}
+
+function telefonBicimlendir(deger) {
+  const r = telefonUlusalHaneler(deger);
+  if (r.length !== 10) return null;
+  return `(0) ${r.slice(0, 3)} ${r.slice(3, 6)} ${r.slice(6, 8)} ${r.slice(8)}`;
+}
+
+// Biçimlenemeyen eski/aktarılan değerler kaybolmasın diye olduğu gibi bırakılır.
+function telefonNormalize(deger) {
+  const ham = String(deger || '').trim();
+  if (!/[1-9]/.test(ham)) return '';
+  return telefonBicimlendir(ham) || ham;
+}
+
+function telefonGecerliMi(deger) {
+  const ham = String(deger || '').trim();
+  return !ham || telefonBicimlendir(ham) === ham;
+}
+
+function epostaNormalize(deger) {
+  return String(deger || '').trim().toLowerCase();
+}
+
+// "ad@alan.uzantı" biçimi aranır; .com zorunlu değildir (.gov.tr, .com.tr, .org da geçerli).
+function epostaGecerliMi(deger) {
+  const e = String(deger || '').trim();
+  return !e || /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(e);
+}
+
+
+const TURKIYE_ILLERI = ['Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya', 'Ardahan', 'Artvin', 'Aydın', 'Balıkesir', 'Bartın', 'Batman', 'Bayburt', 'Bilecik', 'Bingöl', 'Bitlis', 'Bolu', 'Burdur', 'Bursa', 'Çanakkale', 'Çankırı', 'Çorum', 'Denizli', 'Diyarbakır', 'Düzce', 'Edirne', 'Elazığ', 'Erzincan', 'Erzurum', 'Eskişehir', 'Gaziantep', 'Giresun', 'Gümüşhane', 'Hakkari', 'Hatay', 'Iğdır', 'Isparta', 'İstanbul', 'İzmir', 'Kahramanmaraş', 'Karabük', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kırıkkale', 'Kırklareli', 'Kırşehir', 'Kilis', 'Kocaeli', 'Konya', 'Kütahya', 'Malatya', 'Manisa', 'Mardin', 'Mersin', 'Muğla', 'Muş', 'Nevşehir', 'Niğde', 'Ordu', 'Osmaniye', 'Rize', 'Sakarya', 'Samsun', 'Siirt', 'Sinop', 'Sivas', 'Şanlıurfa', 'Şırnak', 'Tekirdağ', 'Tokat', 'Trabzon', 'Tunceli', 'Uşak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak'];
+
+// Belgelerde basılan adres: "adres İlçe/İL". Eski kayıtlarda il/ilçe yoksa ya da
+// adreste zaten yazılıysa adres aynen döner (iki kez yazılmasın).
+function firmaTamAdres(f) {
+  const adres = String((f && f.adres) || '').trim();
+  const il = String((f && f.il) || '').trim();
+  const ilce = String((f && f.ilce) || '').trim();
+  if (!il && !ilce) return adres;
+  const ek = [ilce, il.toLocaleUpperCase('tr-TR')].filter(Boolean).join('/');
+  const sade = s => s.toLocaleLowerCase('tr-TR').replace(/\s+/g, '');
+  if (adres && sade(adres).includes(sade(ek))) return adres;
+  return adres ? `${adres} ${ek}` : ek;
+}

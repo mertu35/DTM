@@ -41,7 +41,7 @@ function belgeReferansiOlustur(proje, referans) {
   const adlar = new Set([...(proje.ymFirmalar || []), ...(proje.teklifFirmalar || [])]
     .map(f => normalizeStr(f.ad || '')));
   const sec = list => (list || []).filter(f => adlar.has(normalizeStr(f.ad || ''))).map(f => ({
-    ad: f.ad || '', adres: f.adres || '', tel: f.tel || '', faks: f.faks || '', eposta: f.eposta || '', tur: f.tur || 'Kişi',
+    ad: f.ad || '', adres: firmaTamAdres(f), tel: f.tel || '', faks: f.faks || '', eposta: f.eposta || '', tur: f.tur || 'Kişi',
     basitUsul: f.basitUsul === true
   }));
   return { version: 1, firmaList: sec(referans.firmaList), yukleniciList: sec(referans.yukleniciList) };
@@ -211,7 +211,7 @@ function getKazananFirma(proje, referans) {
   return {
     ad: firma.ad,
     toplam: hesaplaTeklifFirmaToplam(firma, kalemler),
-    adres: firmaDetay ? firmaDetay.adres : '',
+    adres: firmaDetay ? firmaTamAdres(firmaDetay) : '',
     tel: firmaDetay ? firmaDetay.tel : '',
     tur: firmaDetay ? firmaDetay.tur : 'Kişi'
   };
