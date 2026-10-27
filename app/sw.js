@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dtm-v125';
+const CACHE_NAME = 'dtm-v126';
 const STATIC_ASSETS = [
   './index.html',
   './css/style.css',
@@ -40,10 +40,18 @@ const STATIC_ASSETS = [
   './manifest.json'
 ];
 
-// Kurulum: statik dosyaları cache'e al
+// Kurulum: statik dosyaları HTTP önbelleğini atlayarak cache'e al
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.all(
+        STATIC_ASSETS.map(asset =>
+          fetch(asset, { cache: 'no-cache' })
+            .then(res => (res && res.ok ? cache.put(asset, res) : null))
+            .catch(() => null)
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -58,8 +66,8 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch: önce cache, sonra network
-// Firebase istekleri (firestore/googleapis) her zaman network'ten gider
+// Fetch: uygulama kodları (HTML/JS/CSS) için önce güncel Network (offline ise cache);
+// büyük sabit kütüphaneler (vendor/font/icon) için önce cache
 self.addEventListener('fetch', event => {
   const parsed = new URL(event.request.url);
   if (event.request.method !== 'GET' || parsed.origin !== self.location.origin) return;
@@ -82,19 +90,43 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  const isStaticVendor =
+    url.includes('/js/vendor/') ||
+    url.includes('html2pdf.bundle.min.js') ||
+    url.includes('/icons/');
+
+  if (isStaticVendor) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(cache => cache.match(event.request, { ignoreSearch: true })).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(response => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Uygulama dosyaları (index.html, app.js, documents.js, style.css vb.): Network-First
   event.respondWith(
-    caches.open(CACHE_NAME).then(cache => cache.match(event.request, { ignoreSearch: true })).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        if (response && response.status === 200 && response.type === 'basic' && url.includes('/js/vendor/tesseract/')) {
+    fetch(event.request, { cache: 'no-cache' })
+      .then(response => {
+        if (response && response.status === 200 && response.type === 'basic') {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return response;
-      }).catch(async () => {
+      })
+      .catch(async () => {
+        const cache = await caches.open(CACHE_NAME);
+        const cached = await cache.match(event.request, { ignoreSearch: true });
+        if (cached) return cached;
         if (event.request.mode === 'navigate') return (await caches.match('./index.html')) || Response.error();
         return Response.error();
-      });
-    })
+      })
   );
 });

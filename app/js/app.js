@@ -6994,7 +6994,7 @@ window.kaydetFirmaFormu = function(index) {
 };
 
 // ===== ORTAK FİRMA HAVUZU (DİĞER KULLANICILARIN FİRMALARI) =====
-let dtmFirmaHavuzuAcik = false;
+let dtmFirmaHavuzuAcik = true;
 let dtmFirmaHavuzuFiltre = 'eksikler'; // 'eksikler' | 'tumu'
 let dtmFirmaHavuzuArama = '';
 let dtmFirmaHavuzuSeciliAnahtar = null;
@@ -7148,11 +7148,18 @@ function guncelleOrtakFirmaHavuzuDOM() {
   const container = document.getElementById('ortakFirmaHavuzuContainer');
   if (!container) return;
   const aramaEl = document.getElementById('firmaHavuzuAramaInput');
+  const scrollEl = document.getElementById('firmaHavuzuScrollList');
+  const oncekiScrollTop = scrollEl ? scrollEl.scrollTop : 0;
   const aktifMi = document.activeElement === aramaEl;
   const cursorStart = aktifMi ? aramaEl.selectionStart : null;
   const cursorEnd = aktifMi ? aramaEl.selectionEnd : null;
 
   container.innerHTML = renderOrtakFirmaHavuzuBolumu();
+
+  const yeniScrollEl = document.getElementById('firmaHavuzuScrollList');
+  if (yeniScrollEl && oncekiScrollTop > 0) {
+    yeniScrollEl.scrollTop = oncekiScrollTop;
+  }
 
   if (aktifMi) {
     const yeniAramaEl = document.getElementById('firmaHavuzuAramaInput');
@@ -7364,7 +7371,7 @@ function renderOrtakFirmaHavuzuBolumu() {
               ${q ? `"<strong>${escHtml(dtmFirmaHavuzuArama)}</strong>" aramasına uygun firma bulunamadı.` : (aktifFiltre === 'eksikler' ? '🎉 Harika! Ortak havuzdaki tüm firmalar zaten kendi listenizde ekli.' : 'Ortak havuzda henüz kayıtlı firma bulunmuyor.')}
             </div>
           ` : `
-            <div style="max-height:340px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:4px;">
+            <div id="firmaHavuzuScrollList" style="max-height:360px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:4px;">
               ${filtrelenmis.map(f => {
                 const anahtar = firmaAdAnahtari(f.ad);
                 const bendeVar = benimMap.get(anahtar);
