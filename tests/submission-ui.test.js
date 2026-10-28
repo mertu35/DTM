@@ -23,6 +23,13 @@ async function main(){
  const vgHtml=run('renderVeriGirisPage()');
  assert.match(vgHtml,/Canlı Proje Durumu & Kontrol Listesi/,'live checklist rendered');
  assert.match(vgHtml,/Y\.M\. Firmalarını Buraya Aktar/,'copy YM firms button rendered');
- console.log('PASS: unsaved/stale submission blocked, YM firm copy, live checklist and current screen freezes on successful submission');
+ let printedHtml='';
+ ctx.Blob=Blob; ctx.Uint8Array=Uint8Array; ctx.atob=s=>Buffer.from(s,'base64').toString('binary');
+ ctx.belgeYazdir=html=>{printedHtml=html;};
+ run("window._sonProjeDosyalariListesi=[{docId:'d1',projeId:'p',ad:'[FOTO] saha1.png',tip:'image/png',kategori:'fotograf',url:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='}];");
+ await run('yazdirProjeFotografRaporu()');
+ assert.match(printedHtml,/İŞE AİT FOTOĞRAF TUTANAĞI/,'photo report HTML generated without error');
+ assert.match(printedHtml,/saha1\.png/,'photo filename included in report');
+ console.log('PASS: unsaved/stale submission blocked, YM firm copy, live checklist, photo report and current screen freezes on successful submission');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

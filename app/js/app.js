@@ -2661,6 +2661,7 @@ async function cozDokumanKaydiVerisi(kayit) {
   }
   throw new Error('Geçersiz belge kaynağı.');
 }
+const dokumanOgesiCozumle = cozDokumanKaydiVerisi;
 
 function tumNormalizedDokumanKayitlariniGetir() {
   const dosyalar = window._sonProjeDosyalariListesi || [];
@@ -3490,8 +3491,8 @@ async function yazdirProjeFotografRaporu() {
       .filter(b => tespitProjeDosyaKategorisi({ kategori: b.kategori, ad: b.file?.name, tip: b.file?.type }) === 'fotograf');
 
     const tumFotoOgeleri = [
-      ...fotoBulut.map(d => ({ kaynak: 'cloud', docId: d.docId, ad: temizProjeDosyaAdi(d.ad), tip: d.tip || '', secimKey: `cloud:${d.docId}` })),
-      ...fotoBekleyen.map(b => ({ kaynak: 'pending', bekleyenIdx: b._bekleyenIdx, ad: temizProjeDosyaAdi(b.file?.name || 'Fotograf'), tip: b.file?.type || '', secimKey: `pending:${b._bekleyenIdx}` }))
+      ...fotoBulut.map(d => ({ kaynak: 'cloud', docId: d.docId, ad: temizProjeDosyaAdi(d.ad), tip: d.tip || '', secimKey: `cloud:${d.docId}`, raw: d })),
+      ...fotoBekleyen.map(b => ({ kaynak: 'pending', bekleyenIdx: b._bekleyenIdx, ad: temizProjeDosyaAdi(b.file?.name || 'Fotograf'), tip: b.file?.type || '', secimKey: `pending:${b._bekleyenIdx}`, raw: b }))
     ];
 
     const seciliFotolar = tumFotoOgeleri.filter(o => seciliSet.has(o.secimKey));
@@ -3506,11 +3507,13 @@ async function yazdirProjeFotografRaporu() {
     const cozulmusFotolar = [];
     for (let i = 0; i < hedefFotolar.length; i++) {
       const oge = hedefFotolar[i];
-      const veri = await dokumanOgesiCozumle(oge);
-      if (veri && veri.dataUrl && (veri.dataUrl.startsWith('data:image/') || dokumanGoruntuMu(veri.ad, veri.tip))) {
+      const veri = await cozDokumanKaydiVerisi(oge);
+      const dosyaAdi = veri?.temizAd || veri?.ad || oge?.ad || `Fotoğraf ${i + 1}`;
+      const dosyaTipi = veri?.mime || veri?.tip || oge?.tip || '';
+      if (veri && veri.dataUrl && (veri.dataUrl.startsWith('data:image/') || dokumanGoruntuMu(dosyaAdi, dosyaTipi))) {
         cozulmusFotolar.push({
           sira: cozulmusFotolar.length + 1,
-          ad: veri.ad || `Fotoğraf ${i + 1}`,
+          ad: dosyaAdi,
           dataUrl: veri.dataUrl
         });
       }
@@ -3597,7 +3600,8 @@ async function yazdirProjeFotografRaporu() {
       </div>
     `;
 
-    belgeYazdir(raporHtml, false);
+    const pdfDosyaAdi = 'Fotograf_Tutanagi_' + String(proje?.isAdi || 'Proje').replace(/[\\/:*?"<>|]/g, ' ').trim().slice(0, 40);
+    belgeYazdir(raporHtml, false, false, pdfDosyaAdi);
   } catch (e) {
     showToast('Fotoğraf raporu oluşturulamadı: ' + hataMesaji(e), 'error');
   }
@@ -10876,7 +10880,7 @@ function hakkindaBilgileriKopyala() {
     `Geliştirici: Merih Yazılım`,
     `Kurum: Karaman İl Özel İdaresi - Yatırım ve İnşaat Müdürlüğü`,
     `Sürüm: v${APP_CURRENT_VERSION}`,
-    `Sürüm Numarası: 20261026 (dtm-v120)`,
+    `Sürüm Numarası: 20261028 (dtm-v139)`,
     `Platform: Web PWA / Firebase Cloud`,
     `Tarayıcı: ${tarayici}`,
     `Tarih: ${new Date().toLocaleString('tr-TR')}`
@@ -11008,7 +11012,7 @@ async function renderHakkindaPage() {
             </tr>
             <tr>
               <td style="padding:7px 8px;color:#475569">Sürüm numarası</td>
-              <td style="padding:7px 8px;font-weight:600;color:#1e293b;font-family:monospace">20261026 (dtm-v120)</td>
+              <td style="padding:7px 8px;font-weight:600;color:#1e293b;font-family:monospace">20261028 (dtm-v139)</td>
             </tr>
             <tr>
               <td style="padding:7px 8px;color:#475569">Yayım tarihi</td>
