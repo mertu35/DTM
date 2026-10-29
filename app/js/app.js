@@ -8766,7 +8766,183 @@ async function adminSifreSifirlaClick(email, username, ad) {
 }
 
 // ===================== PROJELERİM SAYFASI (KULLANICI) =====================
+let dtmAcikProjeDetayId = null;
+
+window.toggleProjelerimDetay = function(projeId) {
+  const idStr = String(projeId ?? '');
+  if (!idStr) return;
+  dtmAcikProjeDetayId = (dtmAcikProjeDetayId === idStr) ? null : idStr;
+  if (typeof window.projelerimFiltrele === 'function') {
+    window.projelerimFiltrele(false);
+  }
+};
+
+window.projelerimdenSayfayaGit = async function(projeId, hedefSayfa) {
+  const idStr = String(projeId ?? '');
+  if (!idStr) return;
+  currentPage = hedefSayfa === 'dokumanlar' ? 'dokumanlar' : 'belgeler';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector(`[data-page="${currentPage}"]`)?.classList.add('active');
+  await belgelerProjeAc(idStr);
+};
+
+function renderProjeBilgiKarti(p) {
+  const d = Object.assign(getDefaultProje(), p.data || {});
+  const ref = (p.belgeReferans && typeof referansBirlesik === 'function') ? referansBirlesik(referans, p.belgeReferans) : referans;
+  const kalemler = (Array.isArray(d.isKalemleri) ? d.isKalemleri : [])
+    .map((k, idx) => ({ ...k, _idx: idx }))
+    .filter(k => (k.ad || '').trim() !== '');
+
+  const ymTutar = typeof hesaplaYaklasikMaliyet === 'function' ? hesaplaYaklasikMaliyet(d) : 0;
+  const ymDoluFirma = (Array.isArray(d.ymFirmalar) ? d.ymFirmalar : []).filter(f => (f?.ad || '').trim() !== '').length;
+
+  const kazananIdx = (typeof d.kazananFirmaIndex === 'number' && d.kazananFirmaIndex >= 0)
+    ? d.kazananFirmaIndex
+    : (typeof hesaplaKazananFirma === 'function' ? hesaplaKazananFirma(d) : -1);
+  const kazananFirma = (kazananIdx >= 0 && Array.isArray(d.teklifFirmalar)) ? d.teklifFirmalar[kazananIdx] : null;
+  const kazananAd = (kazananFirma?.ad || '').trim();
+  const kazananTutar = (kazananAd && typeof hesaplaFirmaToplam === 'function') ? hesaplaFirmaToplam(d, kazananFirma) : 0;
+  const basitUsul = p.kazananBasitUsul === true || (kazananAd && typeof isFirmaBasitUsul === 'function' ? isFirmaBasitUsul(kazananAd, ref) : false);
+  const kdvOrani = basitUsul ? 0 : (parseFloat(d.kdvOrani) || 0);
+  const kdvDahilToplam = kazananTutar > 0 ? kazananTutar * (1 + kdvOrani / 100) : 0;
+  const teklifDoluFirma = (Array.isArray(d.teklifFirmalar) ? d.teklifFirmalar : []).filter(f => (f?.ad || '').trim() !== '').length;
+
+  const ymGorevliAdlar = (d.ymGorevliler || []).slice(0, d.ymGorevliSayisi || 1).map(g => (g?.ad || '').trim()).filter(Boolean);
+  const dtGorevliAdlar = d.dtGorevlilerYmIleAyni
+    ? ymGorevliAdlar
+    : (d.dtGorevliler || []).slice(0, d.dtGorevliSayisi || 1).map(g => (g?.ad || '').trim()).filter(Boolean);
+
+  const eksikler = typeof projeValidasyon === 'function' ? projeValidasyon(d) : [];
+  const aktifMi = p.status === 'taslak' || p.status === 'geri_gonderildi' || !p.status;
+
+  let durumBanner = '';
+  if (aktifMi) {
+    if (eksikler.length === 0) {
+      durumBanner = `
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin-bottom:12px;font-size:12.5px;color:#166534;font-weight:600">
+          <span>✅</span>
+          <span>Tüm zorunlu proje verileri tamamlandı — Gerçekleştirmeciye gönderime hazır.</span>
+        </div>`;
+    } else {
+      durumBanner = `
+        <div style="padding:9px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-bottom:12px;font-size:12px;color:#92400e">
+          <div style="font-weight:700;margin-bottom:4px">⚠️ Tamamlanacak Alanlar (${eksikler.length}):</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">
+            ${eksikler.map(e => `<span style="background:#fef3c7;border:1px solid #fcd34d;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600">${escHtml(e)}</span>`).join('')}
+          </div>
+        </div>`;
+    }
+  } else if (p.status === 'gonderildi') {
+    const gcTarih = p.gonderildiAt?.toDate ? p.gonderildiAt.toDate().toLocaleDateString('tr-TR') : '-';
+    durumBanner = `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:9px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:12px;font-size:12.5px;color:#1e40af;font-weight:600">
+        <span>📤 Gerçekleştirmeci (${escHtml(p.atananGerceklestirmeciAd || '-')}) onayında bekliyor</span>
+        <span style="font-size:11.5px;color:#3b82f6">Gönderim: ${gcTarih}</span>
+      </div>`;
+  } else if (p.status === 'onaylandi') {
+    const onayTarih = p.onaylandiAt?.toDate ? p.onaylandiAt.toDate().toLocaleDateString('tr-TR') : '-';
+    durumBanner = `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:9px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin-bottom:12px;font-size:12.5px;color:#166534;font-weight:600">
+        <span>✅ Onaylandı ${p.onaylandiBy ? `• Onaylayan: ${escHtml(p.onaylandiBy)}` : ''} ${d.butceTertibi ? `• Tertip: ${escHtml(d.butceTertibi)}` : ''}</span>
+        <span style="font-size:11.5px;color:#15803d">Onay Tarihi: ${onayTarih}</span>
+      </div>`;
+  }
+
+  const gosterilenKalemler = kalemler.slice(0, 5);
+  const kalanKalemSayisi = Math.max(0, kalemler.length - gosterilenKalemler.length);
+
+  const kalemTabloHtml = kalemler.length === 0
+    ? `<div style="padding:10px 12px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;font-size:12px;color:#64748b">Henüz iş kalemi girilmemiş.</div>`
+    : `
+      <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#fff">
+        <div style="padding:7px 12px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;font-size:11.5px;font-weight:700;color:#334155;display:flex;justify-content:space-between;align-items:center">
+          <span>📦 İş Kalemleri Özeti (${kalemler.length} Kalem)</span>
+          ${kazananAd ? `<span style="color:#15803d;font-weight:600">Kazanan: ${escHtml(kazananAd)}</span>` : ''}
+        </div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:#f8fafc;color:#64748b;text-align:left;border-bottom:1px solid #e2e8f0">
+                <th style="padding:6px 10px;width:36px">#</th>
+                <th style="padding:6px 10px">Kalem Adı</th>
+                <th style="padding:6px 10px;width:110px">Miktar / Birim</th>
+                <th style="padding:6px 10px;width:130px;text-align:right">Kazanan B.Fiyat</th>
+                <th style="padding:6px 10px;width:130px;text-align:right">Tutar (KDV Hariç)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${gosterilenKalemler.map((k, sira) => {
+                const miktar = parseFloat(k.miktar) || 0;
+                const bFiyat = kazananFirma && Array.isArray(kazananFirma.fiyatlar) ? (parseFloat(kazananFirma.fiyatlar[k._idx]) || 0) : 0;
+                const satirTutar = miktar * bFiyat;
+                return `
+                  <tr style="border-bottom:1px solid #f1f5f9">
+                    <td style="padding:6px 10px;color:#64748b;font-weight:600">${sira + 1}</td>
+                    <td style="padding:6px 10px;font-weight:600;color:#1e293b">${escHtml(k.ad || '-')}</td>
+                    <td style="padding:6px 10px;color:#475569">${escHtml(String(k.miktar || '-'))} ${escHtml(k.birim || '')}</td>
+                    <td style="padding:6px 10px;text-align:right;color:#475569">${bFiyat > 0 ? formatCurrency(bFiyat) + ' TL' : '—'}</td>
+                    <td style="padding:6px 10px;text-align:right;font-weight:700;color:#0f172a">${satirTutar > 0 ? formatCurrency(satirTutar) + ' TL' : '—'}</td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        ${kalanKalemSayisi > 0 ? `<div style="padding:6px 12px;background:#f8fafc;font-size:11.5px;color:#64748b;text-align:center;border-top:1px solid #e2e8f0">+ ${kalanKalemSayisi} iş kalemi daha bulunuyor</div>` : ''}
+      </div>`;
+
+  return `
+    <div class="ky-proje-detay-kart" style="border:1.5px solid #93c5fd;border-top:1px dashed #bfdbfe;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#f8fafc 0%,#ffffff 100%);padding:14px 18px;box-shadow:0 8px 20px rgba(26,86,219,0.07)">
+      ${durumBanner}
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:12px">
+        <div style="background:#fff;border:1px solid #e2e8f0;border-left:3.5px solid #0284c7;border-radius:8px;padding:10px 12px">
+          <div style="font-size:11px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.03em">📊 Yaklaşık Maliyet</div>
+          <div style="font-size:16px;font-weight:800;color:#0f172a;margin-top:3px">${ymTutar > 0 ? formatCurrency(ymTutar) + ' TL' : 'Hesaplanmadı'}</div>
+          <div style="font-size:11.5px;color:#64748b;margin-top:3px">${ymDoluFirma}/3 Firma • Olur: ${d.ymOnayTarihi ? formatDate(d.ymOnayTarihi) : '-'}${d.ymOnayNo ? ` (${escHtml(d.ymOnayNo)})` : ''}</div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #e2e8f0;border-left:3.5px solid #16a34a;border-radius:8px;padding:10px 12px">
+          <div style="font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:0.03em">🏆 Kazanan Teklif / Sözleşme</div>
+          <div style="font-size:16px;font-weight:800;color:#0f172a;margin-top:3px">${kazananTutar > 0 ? formatCurrency(kazananTutar) + ' TL' : 'Girilmedi'}</div>
+          <div style="font-size:11.5px;color:#166534;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escAttr(kazananAd || 'Firma seçilmedi')}">🏢 ${kazananAd ? escHtml(kazananAd) : 'Henüz firma seçilmedi'}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px">${kazananTutar > 0 ? `KDV (%${kdvOrani}${basitUsul ? ' Basit Usul' : ''}) Dahil: <strong>${formatCurrency(kdvDahilToplam)} TL</strong>` : `${teklifDoluFirma}/3 Teklif firması • Olur: ${d.dtOnayTarihi ? formatDate(d.dtOnayTarihi) : '-'}`}</div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #e2e8f0;border-left:3.5px solid #6366f1;border-radius:8px;padding:10px 12px">
+          <div style="font-size:11px;font-weight:700;color:#4f46e5;text-transform:uppercase;letter-spacing:0.03em">🏛️ Konum, Süre & Tarih</div>
+          <div style="font-size:13.5px;font-weight:700;color:#1e293b;margin-top:3px">📍 ${escHtml(d.ilce || 'Merkez')} / ${escHtml(d.sehir || 'Karaman')}</div>
+          <div style="font-size:11.5px;color:#64748b;margin-top:3px">📅 Sözleşme: ${d.sozlesmeTarihi ? formatDate(d.sozlesmeTarihi) : '-'} • Süre: ${d.isSuresi ? escHtml(String(d.isSuresi)) + ' gün' : '-'}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🏢 ${escHtml(d.mudurluk || d.idareAdi || '-')}</div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #e2e8f0;border-left:3.5px solid #f59e0b;border-radius:8px;padding:10px 12px">
+          <div style="font-size:11px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:0.03em">👥 Görevliler & Amir</div>
+          <div style="font-size:12.5px;font-weight:700;color:#1e293b;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">✒️ ${escHtml(d.onaylayanAmir?.ad || 'Amir seçilmedi')}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="Y.M.: ${escAttr(ymGorevliAdlar.join(', '))}">👷 Y.M.: ${ymGorevliAdlar.length ? escHtml(ymGorevliAdlar.join(', ')) : '-'}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="D.T.: ${escAttr(dtGorevliAdlar.join(', '))}">👷 D.T.: ${dtGorevliAdlar.length ? escHtml(dtGorevliAdlar.join(', ')) : '-'}</div>
+        </div>
+      </div>
+
+      ${kalemTabloHtml}
+
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0">
+        <span style="font-size:11.5px;color:#64748b">💡 Kartı kapatmak için proje satırına tekrar tıklayın.</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { cloudProjeAc(String(p.id ?? '')) })} style="font-size:12px;padding:5px 12px;background:#fff">
+            ✏️ Veri Girişte Aç
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { projelerimdenSayfayaGit(String(p.id ?? ''), 'belgeler') })} style="font-size:12px;padding:5px 12px;background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe">
+            📄 Belgeleri Gör
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" ${dtmEventAttr('click', function(event) { projelerimdenSayfayaGit(String(p.id ?? ''), 'dokumanlar') })} style="font-size:12px;padding:5px 12px;background:#f0fdf4;color:#15803d;border-color:#bbf7d0">
+            📎 Dokümanlar
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
 async function renderProjelerimPage() {
+  dtmAcikProjeDetayId = null;
   const main = document.getElementById('mainContent');
   main.innerHTML = `<div class="page-header"><h2>Projelerim</h2><p>Tüm projeleriniz ve durumları.</p></div>
     <div style="text-align:center;padding:40px;color:var(--gray-400)">Yükleniyor...</div>`;
@@ -8805,31 +8981,36 @@ async function renderProjelerimPage() {
       }
 
       const aktif = p.status === 'taslak' || p.status === 'geri_gonderildi';
-      return `<div class="ky-proje-item">
-        <div class="ky-proje-info">
-          <div class="ky-proje-name">
-            ${kilitli ? '<span style="margin-right:4px">🔒</span>' : ''}
-            ${escHtml(p.isAdi || '(İsimsiz)')}
+      const detayAcik = dtmAcikProjeDetayId !== null && dtmAcikProjeDetayId === String(p.id ?? '');
+      return `<div class="ky-proje-wrapper" style="display:flex;flex-direction:column">
+        <div class="ky-proje-item" style="${detayAcik ? 'border-radius:12px 12px 0 0;border-color:#60a5fa;background:#f8fafc;' : ''}">
+          <div class="ky-proje-info" style="cursor:pointer" title="Proje bilgi kartını aç/kapatmak için tıklayın" ${dtmEventAttr('click', function(event) { toggleProjelerimDetay(String(p.id ?? '')) })}>
+            <div class="ky-proje-name">
+              ${kilitli ? '<span style="margin-right:4px">🔒</span>' : ''}
+              <span>${escHtml(p.isAdi || '(İsimsiz)')}</span>
+              <span style="font-size:11px;font-weight:600;color:${detayAcik ? '#1d4ed8' : '#64748b'};background:${detayAcik ? '#dbeafe' : '#f1f5f9'};padding:1px 7px;border-radius:999px;margin-left:4px;flex-shrink:0">${detayAcik ? '▴ Özeti Gizle' : '▾ Bilgi Kartı'}</span>
+            </div>
+            <div class="ky-proje-meta">
+              <span class="ky-proje-date">📅 ${tarih}</span>
+              ${getIsTuruBadge(p.isTuru)}
+              ${p.atananGerceklestirmeciAd ? `<span class="ky-proje-user">👷 ${escHtml(p.atananGerceklestirmeciAd)}</span>` : ''}
+              <span id="projeEvrakRozet_${escAttr(p.id)}" class="ky-proje-evrak-rozet" style="display:none;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:10px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd"></span>
+            </div>
+            ${durmBilgisi}
+            ${p.status === 'geri_gonderildi' && p.geriGonderNot ? `
+              <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:7px 10px;margin-top:6px;font-size:12px;color:#991b1b">
+                <strong>Not:</strong> ${escHtml(p.geriGonderNot)}
+              </div>` : ''}
           </div>
-          <div class="ky-proje-meta">
-            <span class="ky-proje-date">📅 ${tarih}</span>
-            ${getIsTuruBadge(p.isTuru)}
-            ${p.atananGerceklestirmeciAd ? `<span class="ky-proje-user">👷 ${escHtml(p.atananGerceklestirmeciAd)}</span>` : ''}
-            <span id="projeEvrakRozet_${escAttr(p.id)}" class="ky-proje-evrak-rozet" style="display:none;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:10px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd"></span>
+          <div class="ky-proje-actions">
+            <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { cloudProjeAc(String(p.id ?? '')) })}>Aç</button>
+            <button class="ky-btn-lock" ${dtmEventAttr('click', function(event) { projeSablonKopyalaClick(String(p.id ?? '')) })} style="background:#faf5ff;color:#6d28d9;border-color:#ddd6fe" title="Bu projeyi şablon olarak kopyala ve yeni taslak oluştur">📑 Kopyala</button>
+            ${aktif && !kilitli ? `<button class="ky-btn-lock" ${dtmEventAttr('click', function(event) { gonderiClick(String(p.id ?? ''), String(isAdiSafe ?? '')) })} style="background:#16a34a;color:#fff;border-color:#16a34a">📤 Gönder</button>` : ''}
+            ${aktif ? `<button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" ${dtmEventAttr('click', function(event) { cloudProjeKilitle(String(p.id ?? ''), (!kilitli)) })}>${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>` : ''}
+            ${aktif && !kilitli ? `<button class="ky-btn-delete" ${dtmEventAttr('click', function(event) { cloudProjeSil(String(p.id ?? ''), String(isAdiSafe ?? ''), (kilitli)) })}>Sil</button>` : ''}
           </div>
-          ${durmBilgisi}
-          ${p.status === 'geri_gonderildi' && p.geriGonderNot ? `
-            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:7px 10px;margin-top:6px;font-size:12px;color:#991b1b">
-              <strong>Not:</strong> ${escHtml(p.geriGonderNot)}
-            </div>` : ''}
         </div>
-        <div class="ky-proje-actions">
-          <button class="ky-btn-open" ${dtmEventAttr('click', function(event) { cloudProjeAc(String(p.id ?? '')) })}>Aç</button>
-          <button class="ky-btn-lock" ${dtmEventAttr('click', function(event) { projeSablonKopyalaClick(String(p.id ?? '')) })} style="background:#faf5ff;color:#6d28d9;border-color:#ddd6fe" title="Bu projeyi şablon olarak kopyala ve yeni taslak oluştur">📑 Kopyala</button>
-          ${aktif && !kilitli ? `<button class="ky-btn-lock" ${dtmEventAttr('click', function(event) { gonderiClick(String(p.id ?? ''), String(isAdiSafe ?? '')) })} style="background:#16a34a;color:#fff;border-color:#16a34a">📤 Gönder</button>` : ''}
-          ${aktif ? `<button class="ky-btn-lock ${kilitli ? 'ky-btn-lock-active' : ''}" ${dtmEventAttr('click', function(event) { cloudProjeKilitle(String(p.id ?? ''), (!kilitli)) })}>${kilitli ? '🔓 Kilidi Aç' : '🔒 Kilitle'}</button>` : ''}
-          ${aktif && !kilitli ? `<button class="ky-btn-delete" ${dtmEventAttr('click', function(event) { cloudProjeSil(String(p.id ?? ''), String(isAdiSafe ?? ''), (kilitli)) })}>Sil</button>` : ''}
-        </div>
+        ${detayAcik ? renderProjeBilgiKarti(p) : ''}
       </div>`;
     };
 
@@ -8896,10 +9077,12 @@ async function renderProjelerimPage() {
       if (sayfaSifirla) {
         Object.keys(bolumSayfalari).forEach(k => { bolumSayfalari[k] = 1; });
       }
-      const ara = document.getElementById('projelerimArama').value;
-      const durum = document.getElementById('projelerimDurum').value;
-      const sirala = document.getElementById('projelerimSirala').value;
-      document.getElementById('projelerimListe').innerHTML = renderProjelerimListe(ara, durum, sirala);
+      const listeEl = document.getElementById('projelerimListe');
+      if (!listeEl) return;
+      const ara = document.getElementById('projelerimArama')?.value || '';
+      const durum = document.getElementById('projelerimDurum')?.value || 'hepsi';
+      const sirala = document.getElementById('projelerimSirala')?.value || 'tarih-yeni';
+      listeEl.innerHTML = renderProjelerimListe(ara, durum, sirala);
       projeListesiEvrakRozetleriniYukle(sonGorunenProjelerim);
     };
     projeListesiEvrakRozetleriniYukle(sonGorunenProjelerim);
@@ -10880,7 +11063,7 @@ function hakkindaBilgileriKopyala() {
     `Geliştirici: Merih Yazılım`,
     `Kurum: Karaman İl Özel İdaresi - Yatırım ve İnşaat Müdürlüğü`,
     `Sürüm: v${APP_CURRENT_VERSION}`,
-    `Sürüm Numarası: 20261028 (dtm-v139)`,
+    `Sürüm Numarası: 20261028 (dtm-v140)`,
     `Platform: Web PWA / Firebase Cloud`,
     `Tarayıcı: ${tarayici}`,
     `Tarih: ${new Date().toLocaleString('tr-TR')}`
@@ -11012,7 +11195,7 @@ async function renderHakkindaPage() {
             </tr>
             <tr>
               <td style="padding:7px 8px;color:#475569">Sürüm numarası</td>
-              <td style="padding:7px 8px;font-weight:600;color:#1e293b;font-family:monospace">20261028 (dtm-v139)</td>
+              <td style="padding:7px 8px;font-weight:600;color:#1e293b;font-family:monospace">20261028 (dtm-v140)</td>
             </tr>
             <tr>
               <td style="padding:7px 8px;color:#475569">Yayım tarihi</td>
